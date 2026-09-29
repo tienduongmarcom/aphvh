@@ -15,3 +15,35 @@ SUPPORTED_RULES = (RULE_KG_V1,)
 
 # Tên đơn vị đo "Kg" trên site.
 KG_UOM = "Kg"
+
+# --- Phân quyền nhà máy (0.2) -------------------------------------------------------------
+
+# Vai trò của kế toán nhà máy: nhận hàng, cấp liệu, sản xuất, chuyển kho; không xem giá
+# nguyên phụ liệu, giá trị tồn kho và giá thành.
+ROLE_FACTORY = "Kế toán nhà máy APH"
+
+# Người có một trong các vai trò này luôn xem được giá, kể cả khi có thêm ROLE_FACTORY.
+PRICE_ROLES = (
+    "Administrator",
+    "System Manager",
+    "Stock Manager",
+    "Accounts User",
+    "Accounts Manager",
+    "Purchase User",
+    "Purchase Manager",
+    "Auditor",
+)
+
+# Ô trên Nhóm hàng: nhóm nào được tích thì kế toán nhà máy tự nhập giá (vật tư vận hành).
+IG_FACTORY_CAN_PRICE = "aphvh_factory_can_price"
+# Nhóm được tích sẵn lần đầu tạo ô (sau đó kế toán trưởng tự tích/bỏ trên Nhóm hàng).
+DEFAULT_FACTORY_PRICE_GROUPS = ("Vật tư tiêu hao",)
+
+# Ô trên Phiếu nhập mua hàng: phiếu nhập vật tư vận hành (được xem, nhập giá).
+PR_OPEX = "aphvh_vat_tu_van_hanh"
+
+# Mẫu in (tên hiển thị) và báo cáo tồn kho số lượng.
+PRINT_PURCHASE_RECEIPT = "Phiếu nhập kho APH"
+PRINT_STOCK_ENTRY = "Phiếu kho APH"
+REPORT_QTY = "Ton kho so luong APH"
+REPORT_QTY_LABEL = "Tồn kho số lượng APH"

@@ -1,7 +1,11 @@
 # aphvh — tùy biến ERPNext cho An Phú Hưng và Vĩnh Hưng
 
-App riêng chạy trên ERPNext v16. Bản 0.1 chỉ làm một việc ERPNext không tự làm được:
-**chia giá thành phẩm theo kg cho phiếu sản xuất có nhiều đầu ra.**
+App riêng chạy trên ERPNext v16.
+
+- **0.1** — chia giá thành phẩm theo kg cho phiếu sản xuất có nhiều đầu ra.
+- **0.2** — vai trò kế toán nhà máy, ẩn giá nguyên phụ liệu với vai trò này, phiếu nhập
+  nguyên phụ liệu bắt buộc lấy từ đơn mua, báo cáo tồn kho số lượng, mẫu in phiếu nhập/xuất
+  kho Việt Nam (01-VT, 02-VT theo TT133).
 
 ## Bản 0.1 làm gì
 
@@ -18,6 +22,56 @@ Phiếu kho loại khác, và công ty không dùng loại phiếu này, giữ n
 **Chưa hỗ trợ ở bản 0.1** (phiếu sẽ báo lỗi): phụ phẩm định giá riêng, chi phí cộng thêm
 trên phiếu, dòng vừa có kho nguồn vừa có kho đích.
 
+## Bản 0.2 làm gì (ghi chú phát hành — duyệt trước khi cài)
+
+### Vai trò mới "Kế toán nhà máy APH"
+
+Gán cho kế toán nhà máy **thay cho** Stock User (Stock User xem được toàn bộ giá). Quyền app tạo
+khi cài (chỉ tạo khi chưa có; đã chỉnh tay trong Role Permission Manager thì giữ nguyên):
+
+| Loại chứng từ | Quyền |
+|---|---|
+| Phiếu nhập mua hàng (Purchase Receipt), Phiếu kho (Stock Entry) | đọc, sửa, tạo, gửi, hủy, sửa đổi, xóa nháp, in |
+| Gói lô/serial (Serial and Batch Bundle) | đọc, sửa, tạo, gửi, hủy, xóa |
+| Lô (Batch), hồ sơ Lô nhập khẩu | đọc, sửa, tạo |
+| Đơn mua hàng | chỉ đọc (để lấy hàng vào phiếu nhập; không in) |
+| Mã hàng, Kho, Nhà cung cấp, Loại phiếu kho, ĐVT, Nhóm hàng, Thương hiệu, Công ty, Điều khoản | chỉ đọc |
+| Kho | thêm quyền báo cáo (để mở báo cáo Tồn kho số lượng APH) |
+| Tài khoản, Trung tâm chi phí, Dự án | chỉ chọn trong ô liên kết |
+
+**Không có:** xem dạng bảng/xuất Excel phiếu, sổ kho (Stock Ledger Entry), Bin, sổ cái, báo cáo
+có giá trị (Stock Balance, Stock Ledger…), tạo mã hàng, tạo nhà cung cấp, phiếu kiểm kê, phân bổ
+chi phí mua hàng. Lần đầu thêm quyền cho một loại chứng từ, Frappe chép quyền chuẩn sang quyền
+tùy chỉnh (như khi bấm trong Role Permission Manager): quyền các vai trò khác giữ nguyên, nhưng
+bản cập nhật ERPNext sau này đổi quyền chuẩn của các loại chứng từ đó sẽ không tự áp dụng.
+
+### Ẩn giá (mức màn hình + báo cáo, đã chốt 29/09/2026)
+
+Người có vai trò trên mà **không** có vai trò xem giá (Stock Manager, Accounts User/Manager,
+Purchase User/Manager, System Manager, Auditor):
+- Không thấy đơn giá, thành tiền, tổng tiền, thuế trên phiếu nhập (trừ phiếu vật tư vận hành),
+  đơn mua, phiếu kho, gói lô; không thấy giá trên mã hàng; cột tổng tiền bị bỏ khỏi danh sách.
+- Mẫu in của app để trống cột đơn giá, thành tiền.
+- Giới hạn: người rành kỹ thuật vẫn đọc được giá qua API. Muốn khóa ở máy chủ thì dùng che
+  trường (mask) của Frappe v16 — khi đó phiếu vật tư vận hành phải tách sang loại phiếu khác.
+
+### Phiếu nhập
+
+- Ô **"Phiếu nhập vật tư vận hành"**: tích thì hiện giá để kế toán nhà máy tự nhập, và chỉ
+  nhận mã thuộc nhóm hàng tích **"Nhà máy tự nhập giá"** (cài sẵn cho nhóm "Vật tư tiêu hao";
+  kế toán trưởng tích thêm nhóm khác trên Nhóm hàng).
+- Không tích: người bị ẩn giá phải lấy hàng từ đơn mua (giá do kế toán trưởng đặt trên đơn;
+  Buying Settings đang để "Maintain same rate" = Stop nên giá không đổi được).
+
+### Báo cáo và mẫu in
+
+- **Tồn kho số lượng APH** (tên gốc `Ton kho so luong APH`): tồn thực tế và số đặt mua chưa
+  nhận theo mã, kho — không có giá trị.
+- **Phiếu nhập kho APH** (Purchase Receipt) và **Phiếu kho APH** (Stock Entry) đặt làm mẫu in
+  mặc định. Phiếu kho tự chọn mẫu: nhập khác → 01-VT, xuất/chuyển kho → 02-VT, sản xuất/đóng
+  gói → Phiếu sản xuất (xuất dùng + nhập kho, có số kg). Nợ/Có lấy từ sổ cái của phiếu đã gửi.
+  Sửa mẫu: sửa `.html`/`phieu_in_aph.css` rồi chạy `python tools/build_print_formats.py`.
+
 ## Mở rộng về sau
 
 - Quy tắc mới (ví dụ phụ phẩm tính theo giá trị thuần có thể thực hiện được) = mã quy tắc mới
@@ -33,8 +87,15 @@ aphvh/
   constants.py        tên loại phiếu, mã quy tắc, đơn vị Kg
   costing_rules.py    phép chia thuần (kiểm thử không cần Frappe)
   stock_entry_kg.py   lớp mở rộng Stock Entry
-  install.py          custom field + loại phiếu (chạy lại được nhiều lần)
+  install.py          custom field, loại phiếu, vai trò + quyền, mẫu in mặc định (chạy lại được)
+  price_visibility.py ai bị ẩn giá, quy tắc phiếu nhập nguyên phụ liệu / vật tư vận hành
+  print_utils.py      hàm dùng trong mẫu in (Nợ/Có, số tiền bằng chữ, định dạng số)
+  vn_words.py         đọc số tiền bằng chữ, định dạng số kiểu Việt Nam (thuần Python)
+  public/js/          ẩn cột giá trên màn hình (nạp qua doctype_js, không cần build)
+  aph_vh/print_format mẫu in 01-VT, 02-VT, phiếu sản xuất
+  aph_vh/report       báo cáo Tồn kho số lượng APH
   tests/              kiểm thử đơn vị
+tools/build_print_formats.py   ghép .html/.css vào .json mẫu in
 Dockerfile            dựng bản cài ERPNext kèm app
 ```
 
@@ -58,8 +119,21 @@ docker exec <du-an>-backend-1 bench --site frontend install-app aphvh
 Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app aphvh`
 (phiếu đã gửi vẫn giữ nguyên giá trị trên sổ).
 
+## Nâng cấp bản đã cài (0.1 → 0.2)
+
+```bash
+# Sao lưu site trước
+docker exec <du-an>-backend-1 bench --site frontend backup
+# Dựng bản mới (tự chạy kiểm thử đơn vị)
+docker build -t aphvh-erpnext:0.2.0 .
+# Đổi image trong tệp compose 0.1.0 -> 0.2.0, khởi động lại, rồi migrate để nạp mẫu in,
+# báo cáo, vai trò, quyền và custom field
+docker compose -p <du-an> -f <tep-compose> up -d
+docker exec <du-an>-backend-1 bench --site frontend migrate
+```
+
 ## Kiểm thử
 
 ```bash
-python -m unittest aphvh.tests.test_costing_rules -v
+python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats -v
 ```

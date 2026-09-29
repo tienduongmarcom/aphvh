@@ -1,0 +1,63 @@
+"""Ghép mẫu in (.html + .css chung) vào tệp .json mà Frappe đồng bộ khi migrate.
+
+Chạy lại sau mỗi lần sửa .html/.css:  python tools/build_print_formats.py
+Kiểm thử tests/test_print_formats.py báo lỗi nếu .json lệch với nguồn.
+"""
+
+import json
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
+MODIFIED = "2026-09-29 15:00:00.000000"
+
+FORMATS = {
+    "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),
+    "phieu_kho_aph": ("Phiếu kho APH", "Stock Entry"),
+}
+
+
+def build_doc(folder: str) -> dict:
+    name, doc_type = FORMATS[folder]
+    return {
+        "absolute_value": 0,
+        "align_labels_right": 0,
+        "creation": MODIFIED,
+        "css": (ROOT / "phieu_in_aph.css").read_text(encoding="utf-8"),
+        "custom_format": 1,
+        "default_print_language": "vi",
+        "disabled": 0,
+        "doc_type": doc_type,
+        "docstatus": 0,
+        "doctype": "Print Format",
+        "font_size": 0,
+        "html": (ROOT / folder / f"{folder}.html").read_text(encoding="utf-8"),
+        "idx": 0,
+        "line_breaks": 0,
+        "margin_bottom": 12.0,
+        "margin_left": 12.0,
+        "margin_right": 12.0,
+        "margin_top": 12.0,
+        "modified": MODIFIED,
+        "modified_by": "Administrator",
+        "module": "APH VH",
+        "name": name,
+        "owner": "Administrator",
+        "page_number": "Hide",
+        "print_format_builder": 0,
+        "print_format_builder_beta": 0,
+        "print_format_type": "Jinja",
+        "raw_printing": 0,
+        "show_section_headings": 0,
+        "standard": "Yes",
+    }
+
+
+def main():
+    for folder in FORMATS:
+        path = ROOT / folder / f"{folder}.json"
+        path.write_text(json.dumps(build_doc(folder), ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        print("wrote", path.relative_to(ROOT.parents[2]))
+
+
+if __name__ == "__main__":
+    main()
