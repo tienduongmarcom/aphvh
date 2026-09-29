@@ -125,6 +125,13 @@ docker exec <du-an>-backend-1 bench --site frontend install-app aphvh
 Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app aphvh`
 (phiếu đã gửi vẫn giữ nguyên giá trị trên sổ).
 
+## 0.2.2 – bản dịch chốt cho màn hình kế toán trưởng
+
+- `aphvh/translations/vi.csv`: 679 chuỗi (Frappe nạp sau ERPNext nên đè bản dịch chính thức), sinh từ
+  `tools/translation/export_csv.py` theo bảng đã rà 3 vòng và anh Tiến chốt 29/09. Không ghi bản ghi Translation vào CSDL;
+  gỡ app là về bản dịch gốc.
+- Sau khi cài: migrate (xóa bộ nhớ đệm bản dịch), mỗi người bấm Ctrl+Shift+R.
+
 ## Nâng cấp bản đã cài (0.1 → 0.2.x)
 
 ```bash
@@ -141,5 +148,5 @@ docker exec <du-an>-backend-1 bench --site frontend migrate
 ## Kiểm thử
 
 ```bash
-python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats -v
+python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations -v
 ```

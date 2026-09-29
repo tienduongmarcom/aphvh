@@ -17,4 +17,4 @@ RUN SITE_PACKAGES="$(./env/bin/python -c 'import sysconfig; print(sysconfig.get_
  && echo "/home/frappe/frappe-bench/apps/aphvh" > "${SITE_PACKAGES}/aphvh.pth" \
  && (grep -qx aphvh sites/apps.txt || { sed -i -e '$a\' sites/apps.txt && echo aphvh >> sites/apps.txt; }) \
  && ./env/bin/python -c "import aphvh, aphvh.hooks, aphvh.costing_rules; print('aphvh', aphvh.__version__)" \
- && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats -v
+ && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations -v
