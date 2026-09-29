@@ -114,7 +114,7 @@ git clone git@github.com:<chu-so-huu>/aphvh.git && cd aphvh && git checkout v0.1
 # 2. Dựng bản cài (tự chạy kiểm thử đơn vị trong lúc dựng)
 docker build -t aphvh-erpnext:0.1.0 .
 
-# 3. Trong tệp compose, đổi mọi dòng "image: frappe/erpnext:v16.36.0" thành
+# 3. Trong tệp compose, đổi mọi dòng "image: frappe/erpnext:v16.36.1" thành
 #    "image: aphvh-erpnext:0.1.0", rồi khởi động lại (configurator tự cập nhật apps.txt)
 docker compose -p <du-an> -f <tep-compose> up -d
 

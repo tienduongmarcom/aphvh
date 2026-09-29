@@ -50,3 +50,19 @@ lập (thay Dung): 1.000 kg NL.DXHAT7 @ 23.000 + 100 kg VT.BAO17 @ 3.000.
 
 Giới hạn đã biết (mức ẩn giá đã chốt): dữ liệu giá vẫn đọc được qua API /api/resource bởi người
 rành kỹ thuật.
+
+# Nâng ERPNext 16.36.0 → 16.36.1 (aphvh 0.2.1)
+
+16.36.1 chỉ khác 16.36.0 ở số phiên bản và `erpnext/public/js/utils/crm_activities.js` (4 dòng,
+bỏ tải hoạt động CRM trên phiếu chưa lưu); không có bản vá dữ liệu. Image
+`aphvh-erpnext:0.2.1-v16.36.1` (Frappe 16.35.0). Thử trên 8080 ngày 29/09/2026 sau migrate:
+
+| Ca thử | Kết quả |
+|---|---|
+| Phiên bản: frappe 16.35.0, erpnext 16.36.1, aphvh 0.2.1; không có lỗi hệ thống | Đạt |
+| 20 dòng quyền vai trò nhà máy giữ nguyên | Đạt |
+| Tài khoản nhà máy: phiếu nhập từ đơn mua PUR-ORD-2026-00002, sửa 195 kg, giá 24.000 giữ nguyên, cột giá ẩn | Đạt |
+| Nhận nguyên phụ liệu không có đơn mua bị chặn | Đạt |
+| Đóng gói theo kg 190 kg + 5 kg bao → 170 + 15 kg: kg-v1, cùng 24.233,76/kg, Nợ 155 / Có 152 | Đạt |
+| In mẫu Standard và Phiếu nhập kho APH: không lộ giá | Đạt |
+| Kho = sổ cái (chênh 0), không còn phiếu tính lại giá treo | Đạt |
