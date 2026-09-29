@@ -20,3 +20,33 @@ Chuỗi: phiếu nhập 100 kg @ 90.000 → phân bổ chi phí nhập khẩu t�
 | 12 | Sổ kho so với sổ cái (báo cáo Stock and Account Value Comparison) | 0 dòng lệch | Đạt |
 
 Ở mọi ca, giá trị trên sổ kho của từng dòng khớp bút toán sổ cái (152 → 155).
+
+# Nghiệm thu aphvh 0.2.1
+
+Ngày 29/09/2026, trên bản thử 8080 (ERPNext v16.36.0), công ty APH, bằng tài khoản thử chỉ có
+vai trò "Kế toán nhà máy APH" (không có vai trò xem giá). Đơn mua PUR-ORD-2026-00001 do quản trị
+lập (thay Dung): 1.000 kg NL.DXHAT7 @ 23.000 + 100 kg VT.BAO17 @ 3.000.
+
+| # | Ca thử | Kết quả mong đợi | Kết quả |
+|---|---|---|---|
+| 1 | Tạo phiếu nhập từ đơn mua, sửa 980 kg theo cân, gửi | Giá giữ 23.000; Nợ 152 / Có 3318; đơn còn mở 20 kg | Đạt |
+| 2 | Phiếu nhập NL.DXHAT7 không có đơn mua | Bị chặn, báo "Thiếu đơn mua" | Đạt |
+| 3 | Phiếu vật tư vận hành nhưng chọn NL.DXHAT7 | Bị chặn, báo sai nhóm hàng | Đạt |
+| 4 | Phiếu vật tư vận hành 500 kg than @ 3.500, gửi | Thấy và nhập được giá; Nợ 152 / Có 3318 | Đạt |
+| 5 | Cấp liệu 500 kg sang kho dở dang đậu | Gửi được | Đạt |
+| 6 | Đóng gói theo kg: 500 kg đậu + 10 kg bao → 450 kg TP + 40 kg tấm | kg-v1; 23.959,18/kg cả hai; Nợ 155 / Có 152 = 11.739.998,2 | Đạt |
+| 7 | Thiếu 5 kg vào 1381 | Nợ 1381 / Có 152 theo bình quân 23.000 | Đạt |
+| 8 | Thừa 2 kg, không nhập giá | Lấy bình quân 23.000; Nợ 152 / Có 3381 | Đạt |
+| 9 | Màn hình phiếu nhập từ đơn, đơn mua, phiếu kho, mã hàng | Không có cột/ô giá, tổng tiền, thuế | Đạt |
+| 10 | Màn hình phiếu vật tư vận hành | Có cột đơn giá, thành tiền | Đạt |
+| 11 | Danh sách phiếu nhập, đơn mua | Không có cột tổng tiền | Đạt |
+| 12 | Sổ kho, Bin, sổ cái, bảng giá; báo cáo Stock Balance, Stock Ledger, Stock Projected Qty | Bị từ chối (403) | Đạt |
+| 13 | Báo cáo Tồn kho số lượng APH | Chạy, chỉ có số lượng | Đạt |
+| 14 | Xuất Excel phiếu nhập | Bị từ chối (0.2.0 lọt, sửa ở 0.2.1) | Đạt |
+| 15 | Mở phiếu mới, lấy hàng từ đơn mua | Không còn thông báo lỗi quyền Cài đặt kho / mua hàng (sửa ở 0.2.1) | Đạt |
+| 16 | In mẫu Standard phiếu nhập, đơn mua, phiếu kho | Không có giá (sửa ở 0.2.1); phiếu vật tư vẫn có giá | Đạt |
+| 17 | In Phiếu nhập kho APH, Phiếu kho APH | Đúng 01-VT / 02-VT / phiếu sản xuất, Nợ/Có theo sổ cái, giá trống | Đạt |
+| 18 | Chọn tài khoản 1381 trong ô liên kết | Tìm được (quyền chọn) | Đạt |
+
+Giới hạn đã biết (mức ẩn giá đã chốt): dữ liệu giá vẫn đọc được qua API /api/resource bởi người
+rành kỹ thuật.
