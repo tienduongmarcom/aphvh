@@ -4,3 +4,4 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+aphvh.patches.v0_2.normalize_factory_role_perms

@@ -100,7 +100,17 @@ ROLE_FACTORY_PERMS = {
     "Account": {"select": 1},
     "Cost Center": {"select": 1},
     "Project": {"select": 1},
+    # Màn hình phiếu nhập, phiếu kho đọc các cài đặt này (không chứa giá)
+    "Stock Settings": {"read": 1},
+    "Buying Settings": {"read": 1},
 }
+
+# Mọi loại quyền của một dòng Custom DocPerm. Dòng mới mặc định read=1, export=1 nên phải đặt
+# rõ từng loại, không để giá trị mặc định.
+PTYPES = (
+    "select", "read", "write", "create", "delete", "submit", "cancel", "amend",
+    "report", "export", "import", "share", "print", "email",
+)
 
 DEFAULT_PRINT_FORMATS = {
     "Purchase Receipt": PRINT_PURCHASE_RECEIPT,
@@ -164,18 +174,24 @@ def ensure_role_permissions():
     Lần đầu thêm quyền cho một loại chứng từ, Frappe chép quyền chuẩn sang quyền tùy chỉnh
     (giống thao tác trong Role Permission Manager); quyền của các vai trò khác không đổi.
     """
-    from frappe.permissions import add_permission, update_permission_property
+    from frappe.permissions import add_permission
 
     for doctype, rights in ROLE_FACTORY_PERMS.items():
         if not frappe.db.exists("DocType", doctype):
             continue
         if frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": ROLE_FACTORY, "permlevel": 0}):
             continue
-        ptypes = list(rights)
-        add_permission(doctype, ROLE_FACTORY, 0, ptypes[0])
-        for ptype in ptypes[1:]:
-            update_permission_property(doctype, ROLE_FACTORY, 0, ptype, rights[ptype], validate=False)
-        frappe.clear_cache(doctype=doctype)
+        add_permission(doctype, ROLE_FACTORY, 0, next(iter(rights)))
+        set_factory_role_rights(doctype, rights)
+
+
+def set_factory_role_rights(doctype: str, rights: dict):
+    """Đặt đúng từng loại quyền của vai trò nhà máy trên một loại chứng từ (quyền không nêu = 0)."""
+    from frappe.permissions import update_permission_property
+
+    for ptype in PTYPES:
+        update_permission_property(doctype, ROLE_FACTORY, 0, ptype, rights.get(ptype, 0), validate=False)
+    frappe.clear_cache(doctype=doctype)
 
 
 def ensure_default_print_formats():

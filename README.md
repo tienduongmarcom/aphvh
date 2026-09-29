@@ -38,6 +38,7 @@ khi cài (chỉ tạo khi chưa có; đã chỉnh tay trong Role Permission Mana
 | Mã hàng, Kho, Nhà cung cấp, Loại phiếu kho, ĐVT, Nhóm hàng, Thương hiệu, Công ty, Điều khoản | chỉ đọc |
 | Kho | thêm quyền báo cáo (để mở báo cáo Tồn kho số lượng APH) |
 | Tài khoản, Trung tâm chi phí, Dự án | chỉ chọn trong ô liên kết |
+| Cài đặt kho, Cài đặt mua hàng | chỉ đọc (màn hình phiếu cần đọc; không có giá) |
 
 **Không có:** xem dạng bảng/xuất Excel phiếu, sổ kho (Stock Ledger Entry), Bin, sổ cái, báo cáo
 có giá trị (Stock Balance, Stock Ledger…), tạo mã hàng, tạo nhà cung cấp, phiếu kiểm kê, phân bổ
@@ -51,9 +52,14 @@ Người có vai trò trên mà **không** có vai trò xem giá (Stock Manager,
 Purchase User/Manager, System Manager, Auditor):
 - Không thấy đơn giá, thành tiền, tổng tiền, thuế trên phiếu nhập (trừ phiếu vật tư vận hành),
   đơn mua, phiếu kho, gói lô; không thấy giá trên mã hàng; cột tổng tiền bị bỏ khỏi danh sách.
-- Mẫu in của app để trống cột đơn giá, thành tiền.
+- Bản in (mọi mẫu, kể cả mẫu Standard) để trống đơn giá, thành tiền, tổng tiền, thuế: app xóa
+  các trường này trong bộ nhớ ngay trước khi dựng bản in (`before_print`), không lưu vào phiếu.
 - Giới hạn: người rành kỹ thuật vẫn đọc được giá qua API. Muốn khóa ở máy chủ thì dùng che
   trường (mask) của Frappe v16 — khi đó phiếu vật tư vận hành phải tách sang loại phiếu khác.
+
+Bản 0.2.1 sửa: dòng quyền mới của Frappe mặc định có "xuất" (export) và "đọc" — bản 0.2.0 để lọt
+quyền xuất Excel và đọc Tài khoản/Trung tâm chi phí/Dự án. Bản vá `normalize_factory_role_perms`
+đặt lại đúng bảng trên cho site đã cài 0.2.0.
 
 ### Phiếu nhập
 
@@ -119,14 +125,14 @@ docker exec <du-an>-backend-1 bench --site frontend install-app aphvh
 Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app aphvh`
 (phiếu đã gửi vẫn giữ nguyên giá trị trên sổ).
 
-## Nâng cấp bản đã cài (0.1 → 0.2)
+## Nâng cấp bản đã cài (0.1 → 0.2.x)
 
 ```bash
 # Sao lưu site trước
 docker exec <du-an>-backend-1 bench --site frontend backup
 # Dựng bản mới (tự chạy kiểm thử đơn vị)
-docker build -t aphvh-erpnext:0.2.0 .
-# Đổi image trong tệp compose 0.1.0 -> 0.2.0, khởi động lại, rồi migrate để nạp mẫu in,
+docker build -t aphvh-erpnext:0.2.1 .
+# Đổi image trong tệp compose sang bản mới, khởi động lại, rồi migrate để nạp mẫu in,
 # báo cáo, vai trò, quyền và custom field
 docker compose -p <du-an> -f <tep-compose> up -d
 docker exec <du-an>-backend-1 bench --site frontend migrate

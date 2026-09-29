@@ -26,10 +26,17 @@ boot_session = ["aphvh.price_visibility.boot_session"]
 
 # Phiếu nhập: vật tư vận hành chỉ nhận nhóm hàng được tích; người bị ẩn giá nhận nguyên phụ liệu
 # phải lấy từ đơn mua.
+# before_print: xóa giá trên bản in (mọi mẫu, kể cả Standard) với người bị ẩn giá.
+_BLANK = "aphvh.price_visibility.blank_prices_for_print"
 doc_events = {
     "Purchase Receipt": {
         "validate": "aphvh.price_visibility.validate_purchase_receipt",
+        "before_print": _BLANK,
     },
+    "Purchase Order": {"before_print": _BLANK},
+    "Stock Entry": {"before_print": _BLANK},
+    "Serial and Batch Bundle": {"before_print": _BLANK},
+    "Item": {"before_print": _BLANK},
 }
 
 # Ẩn cột giá trên màn hình với vai trò "Kế toán nhà máy APH" (không cần build asset).

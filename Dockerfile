@@ -1,5 +1,5 @@
 # Bản cài ERPNext có kèm app aphvh.
-# Dựng:  docker build -t aphvh-erpnext:0.2.0 .
+# Dựng:  docker build -t aphvh-erpnext:0.2.1 .
 # ERPNEXT_IMAGE phải trùng phiên bản ERPNext đang chạy (hiện là v16.36.0).
 ARG ERPNEXT_IMAGE=frappe/erpnext:v16.36.0
 FROM ${ERPNEXT_IMAGE}
