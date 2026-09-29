@@ -11,7 +11,10 @@ COPY --chown=frappe:frappe . apps/aphvh
 
 # Tệp JS của app nạp qua hook doctype_js (đọc thẳng từ thư mục app), không cần build asset: chỉ cần đưa thư mục app vào đường dẫn
 # import của môi trường Python của bench (tương đương cài "editable"), không cần mạng.
+# Ghi aphvh vào sites/apps.txt của bản dựng để `bench version` và site mới trên ổ trống đều thấy app
+# (site đang chạy đọc apps.txt trong ổ dữ liệu sites của nó).
 RUN SITE_PACKAGES="$(./env/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
  && echo "/home/frappe/frappe-bench/apps/aphvh" > "${SITE_PACKAGES}/aphvh.pth" \
+ && (grep -qx aphvh sites/apps.txt || { sed -i -e '$a\' sites/apps.txt && echo aphvh >> sites/apps.txt; }) \
  && ./env/bin/python -c "import aphvh, aphvh.hooks, aphvh.costing_rules; print('aphvh', aphvh.__version__)" \
  && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats -v

@@ -66,3 +66,22 @@ bỏ tải hoạt động CRM trên phiếu chưa lưu); không có bản vá d�
 | Đóng gói theo kg 190 kg + 5 kg bao → 170 + 15 kg: kg-v1, cùng 24.233,76/kg, Nợ 155 / Có 152 | Đạt |
 | In mẫu Standard và Phiếu nhập kho APH: không lộ giá | Đạt |
 | Kho = sổ cái (chênh 0), không còn phiếu tính lại giá treo | Đạt |
+
+# Chuyển 8081 lên máy chủ chính thức Google Cloud (29/09/2026)
+
+Máy ảo erpnext-prod (Ubuntu 24.04, frappe_docker, dự án compose `erpnext-clean`), image
+`aphvh-erpnext:0.2.1-v16.36.1`. Khôi phục bản sao lưu 8081 lúc 17:16 (sau khi xóa công ty thử TST)
+đè lên site trống `frontend`, rồi migrate. Kiểm tra chỉ đọc sau khi đăng nhập:
+
+| Ca kiểm tra | Kết quả |
+|---|---|
+| Phiên bản site: frappe 16.35.0, erpnext 16.36.1, aphvh 0.2.1; hook của aphvh chạy (thông tin khởi động có `aphvh`) | Đạt |
+| Chỉ còn công ty APH; có Kho Hà Nội - APH | Đạt |
+| 20 dòng quyền vai trò nhà máy; 2 mẫu in; báo cáo Tồn kho số lượng APH | Đạt |
+| Tồn kho 142 dòng: 2.178.165,49 đơn vị, 49.707.344.935,47 đ = số dư 5 tài khoản kho trên sổ cái (chênh 0) | Đạt |
+| Không có phiếu tính lại giá treo; không có lỗi hệ thống mới sau khôi phục (29 lỗi cũ từ 28/09, mang theo từ 8081) | Đạt |
+| Khóa mã hóa: bản sao lưu 8081 không có `encryption_key` (Frappe chỉ tạo khi cần). 21 trường mật khẩu trên site đều trống, không có tài khoản email → không có dữ liệu mã hóa, dùng khóa của site cloud | Đạt |
+
+`bench version` chạy trong container tạm (không gắn ổ dữ liệu sites) chỉ liệt kê frappe, erpnext vì
+apps.txt của image chưa có aphvh; site đang chạy vẫn nhận app. Từ bản dựng sau, Dockerfile ghi aphvh
+vào apps.txt.
