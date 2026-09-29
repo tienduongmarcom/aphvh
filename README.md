@@ -125,9 +125,9 @@ docker exec <du-an>-backend-1 bench --site frontend install-app aphvh
 Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app aphvh`
 (phiếu đã gửi vẫn giữ nguyên giá trị trên sổ).
 
-## 0.2.2 – bản dịch chốt cho màn hình kế toán trưởng
+## 0.2.2–0.2.3 – bản dịch chốt cho màn hình kế toán trưởng
 
-- `aphvh/translations/vi.csv`: 679 chuỗi (Frappe nạp sau ERPNext nên đè bản dịch chính thức), sinh từ
+- `aphvh/translations/vi.csv`: 686 chuỗi (0.2.3 thêm 7 nút bấm, trong đó "Update Rate and Availability" đang dịch sai là tỷ giá) (Frappe nạp sau ERPNext nên đè bản dịch chính thức), sinh từ
   `tools/translation/export_csv.py` theo bảng đã rà 3 vòng và anh Tiến chốt 29/09. Không ghi bản ghi Translation vào CSDL;
   gỡ app là về bản dịch gốc.
 - Sau khi cài: migrate (xóa bộ nhớ đệm bản dịch), mỗi người bấm Ctrl+Shift+R.

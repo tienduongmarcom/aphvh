@@ -19,7 +19,12 @@ with open(out, 'w', newline='', encoding='utf-8') as f:
         n += 1
     # Thuật ngữ đã chốt nhưng không nằm trên màn hình Dung (vẫn áp cho toàn hệ thống)
     EXTRA = {'BOM': 'Định mức nguyên vật liệu', 'Raw Material': 'Nguyên vật liệu', 'Naming Series': 'Ký hiệu chứng từ',
-             'Balance Sheet': 'Báo cáo tình hình tài chính'}
+             'Balance Sheet': 'Báo cáo tình hình tài chính',
+             # Nút trên màn hình Dung (trường kiểu Button, kiểm tra trên 8080 ngày 29/09)
+             'Update Rate and Availability': 'Cập nhật đơn giá và tồn kho khả dụng', 'Get Items': 'Lấy hàng',
+             'Add Serial / Batch No': 'Thêm Serial / số lô', 'Add Serial / Batch No (Rejected Qty)': 'Thêm Serial / số lô (SL không đạt)',
+             'Landed Cost Help': 'Hướng dẫn chi phí nhập hàng', 'Make Difference Entry': 'Tạo bút toán chênh lệch',
+             'Get Outstanding Invoices': 'Lấy hóa đơn còn nợ'}
     for k, v in EXTRA.items():
         if k not in seen:
             w.writerow([k, v]); seen.add(k); n += 1
