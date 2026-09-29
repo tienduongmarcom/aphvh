@@ -1,0 +1,10 @@
+[Unit]
+Description=Sao luu ERPNext len Cloud Storage
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/erpnext-backup.sh
+TimeoutStartSec=1h
