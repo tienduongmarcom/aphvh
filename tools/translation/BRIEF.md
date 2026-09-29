@@ -52,3 +52,10 @@ Ghi kết quả ra file JSON (mảng) CHỈ các dòng mà `final` khác `prop`,
 {"id": <id>, "en": "...", "prop": "...", "final": "...", "loai": "Sai nghiệp vụ" | "Khó hiểu" | "Chính tả/trình bày" | "Nhất quán",
  "ly_do": "một câu ngắn tiếng Việt"}
 Dòng nào `prop` đã đúng thì không ghi. Không bỏ sót: đọc hết mọi dòng. Cuối cùng trả lời bằng 2–3 câu: số dòng đã sửa theo từng loại và 3 lỗi đáng chú ý nhất.
+
+## Chốt thêm 29/09 22:34 (anh Tiến, đối chiếu tài liệu ERPNext)
+- "Received But Not Billed" xét từ phía bên mua = "đã nhận chưa nhận hóa đơn" (Stock/Asset Received But Not Billed).
+- Tax Withholding Category = Danh mục thuế khấu trừ tại nguồn (Category = Danh mục; Group = Nhóm).
+- Excise Entry = Bút toán Excise (không quy về thuế TTĐB Việt Nam). Clearance Date = Ngày ngân hàng ghi nhận.
+- Target Incoming Rate (vốn hóa tài sản) = Giá trị vốn hóa của tài sản đích. Grant Commission = Cho phép tính hoa hồng.
+- Contra Entry = Bút toán chuyển tiền giữa quỹ/ngân hàng (tránh "nội bộ" = liên công ty).

@@ -1,8 +1,8 @@
 import json, collections, openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-H='/tmp/claude-0/-home-claude-aphvh/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
+H='/home/claude/aphvh/tools/translation/'
 o=json.load(open(H+'final_rows.json'))
-ns={}; src=open(H+'build.py').read()
+ns={}; src=open(H+'build_proposals.py').read()
 exec(src.split("# ---- Thuật ngữ chuẩn")[1].split("PROPOSE =")[0].split('\n',1)[1], ns)
 KEYS=list(ns['APPROVED'])+[k for k in ns['GLOSS'] if k not in ns['APPROVED']]
 by_en={r['src']:r for r in o}
