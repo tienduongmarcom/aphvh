@@ -56,3 +56,51 @@ aphvh.price.hn_storekeeper =
 		},
 	});
 })();
+
+// 0.3.1: Xuất hóa đơn GTGT (Có/Không). Máy chủ quyết định thuế khi lưu (aphvh/invoice_flag.py);
+// trên màn hình chỉ xem trước: chọn Không thì bỏ ngay dòng thuế, chọn Có thì thuế tính lại khi lưu.
+// Đổi khách thì lấy mặc định của khách (nếu khách đã đặt).
+frappe.provide("aphvh.inv");
+if (!aphvh.inv.setup) {
+	aphvh.inv.FIELD = "aphvh_xuat_hoa_don";
+	aphvh.inv.NO = "Không";
+	aphvh.inv.strip = (frm) => {
+		if (frm.doc[aphvh.inv.FIELD] !== aphvh.inv.NO || frm.doc.docstatus !== 0) return;
+		const had = (frm.doc.taxes || []).length || frm.doc.taxes_and_charges
+			|| (frm.doc.items || []).some((r) => r.item_tax_template);
+		if (!had) return;
+		frm.doc.taxes_and_charges = null;
+		frm.clear_table("taxes");
+		for (const r of frm.doc.items || []) {
+			r.item_tax_template = null;
+			r.item_tax_rate = "{}";
+		}
+		frm.refresh_fields(["taxes_and_charges", "taxes", "items"]);
+		if (frm.cscript.calculate_taxes_and_totals) frm.cscript.calculate_taxes_and_totals();
+	};
+	aphvh.inv.setup = (doctype) => {
+		frappe.ui.form.on(doctype, {
+			aphvh_xuat_hoa_don(frm) {
+				if (frm.doc[aphvh.inv.FIELD] === aphvh.inv.NO) {
+					aphvh.inv.strip(frm);
+				} else if (frm.doc[aphvh.inv.FIELD] && !(frm.doc.taxes || []).length) {
+					frappe.show_alert({message: "Thuế GTGT sẽ được tính lại khi lưu.", indicator: "blue"});
+				}
+			},
+			taxes_and_charges(frm) {
+				setTimeout(() => aphvh.inv.strip(frm), 300);
+			},
+			customer(frm) {
+				if (!frm.doc.customer || frm.doc.docstatus !== 0) return;
+				frappe.db.get_value("Customer", frm.doc.customer, aphvh.inv.FIELD).then((r) => {
+					const v = r && r.message && r.message[aphvh.inv.FIELD];
+					if (v && v !== frm.doc[aphvh.inv.FIELD]) frm.set_value(aphvh.inv.FIELD, v);
+				});
+			},
+			validate(frm) {
+				aphvh.inv.strip(frm);
+			},
+		});
+	};
+}
+aphvh.inv.setup("Sales Order");

@@ -81,7 +81,7 @@
   </tbody>
 </table>
 <div class="aph-info">
-  <div>- Tổng số tiền (viết bằng chữ): {{ aphvh_bang_chu(tong) }}{% if tong %} <i>(giá bán chưa thuế GTGT)</i>{% endif %}</div>
+  <div>- Tổng số tiền (viết bằng chữ): {{ aphvh_bang_chu(tong) }}{% if tong and doc.aphvh_xuat_hoa_don != "Không" %} <i>(giá bán chưa thuế GTGT)</i>{% endif %}</div>
   <div>- Số chứng từ gốc kèm theo: {{ "biên bản nhận lại hàng" if tra else "biên bản giao nhận hàng hóa" }} số {{ doc.name }}</div>
 </div>
 

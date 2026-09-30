@@ -190,6 +190,23 @@ Cài: dựng bản mới, migrate, Ctrl+Shift+R. Không có bản vá dữ liệ
 quyền (chỉ khi chưa có), đặt mẫu in mặc định của phiếu giao hàng (trừ khi đã chọn mẫu khác
 "with Item Image").
 
+## 0.3.1 – có / không xuất hóa đơn GTGT (30/09/2026)
+
+ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn để kê khai thuế.
+
+- Ô **Xuất hóa đơn GTGT** (Có/Không) trên Đơn bán hàng, Phiếu giao hàng, Hóa đơn bán hàng; mặc định
+  theo ô cùng tên trên Khách hàng (kế toán đặt). Khách chưa đặt thì người lập phải chọn. Đơn → phiếu
+  giao → hóa đơn → hóa đơn trả lại tự mang theo. Thủ kho không đổi được (phải giống đơn).
+- **Không**: máy chủ bỏ dòng thuế, mẫu thuế mặt hàng khi lưu; khách nợ đúng tiền hàng, không ghi 33311.
+  Biên bản giao nhận không in dòng thuế; phiếu xuất kho không ghi "chưa thuế".
+- **Có**: tính thuế như chuẩn; chứng từ đổi từ Không sang Có thì nạp lại mẫu thuế bán hàng mặc định
+  của công ty (phải có một mẫu "Mặc định" cho công ty).
+- Hóa đơn bán hàng có ô ký hiệu, số, ngày hóa đơn điện tử (ghi được sau khi xác nhận); chỉ ghi khi Có;
+  báo trùng ký hiệu + số.
+- Báo cáo **Bán hàng có hóa đơn APH** (kế toán): hóa đơn Có đã xác nhận theo kỳ, lọc đã/chưa ghi số,
+  để đối chiếu bảng kê đầu ra MISA.
+- Bỏ qua với khách nội bộ và hóa đơn đầu kỳ (Is Opening).
+
 ## Nâng cấp bản đã cài (0.1 → 0.2.x)
 
 ```bash

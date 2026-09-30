@@ -19,17 +19,25 @@ from aphvh.constants import (
     DN_PLATE,
     DN_RECEIVER,
     IG_FACTORY_CAN_PRICE,
+    INV_FLAG,
+    INV_NO,
+    INV_YES,
     KG_ENTRY_TYPE,
     PR_OPEX,
     PRINT_DN_ISSUE,
     PRINT_PURCHASE_RECEIPT,
     PRINT_STOCK_ENTRY,
+    REPORT_INVOICED,
+    REPORT_INVOICED_LABEL,
     REPORT_QTY,
     REPORT_QTY_LABEL,
     ROLE_FACTORY,
     ROLE_HN_STOCK,
     ROLE_SALES,
     SI_AUTO,
+    SI_EINV_DATE,
+    SI_EINV_NO,
+    SI_EINV_SERIES,
     SO_BELOW_PRICE,
     SO_OVER_LIMIT,
     SO_WARNING,
@@ -93,6 +101,83 @@ CUSTOM_FIELDS = {
             "print_hide": 1,
             "description": "Tích khi nhập vật tư vận hành (nhóm hàng được tích 'Nhà máy tự nhập giá'). "
             "Không tích: nguyên phụ liệu, nhận từ đơn mua do kế toán trưởng lập.",
+        },
+    ],
+}
+
+# --- 0.3.1: có / không xuất hóa đơn GTGT ---------------------------------------------------
+
+_INV_OPTIONS = f"\n{INV_YES}\n{INV_NO}"
+_INV_DOC_FIELD = {
+    "fieldname": INV_FLAG,
+    "label": "Xuất hóa đơn GTGT",
+    "fieldtype": "Select",
+    "options": _INV_OPTIONS,
+    "insert_after": "customer_name",
+    # Bắt buộc với khách thường; bỏ qua với khách nội bộ và hóa đơn đầu kỳ (công nợ đầu kỳ).
+    "mandatory_depends_on": "eval:!doc.is_internal_customer && doc.is_opening!='Yes'",
+    "in_list_view": 1,
+    "in_standard_filter": 1,
+    "print_hide": 1,
+    "description": "Có: tính thuế GTGT theo mặt hàng, kế toán xuất hóa đơn trên MISA. "
+    "Không: không tính thuế, khách trả đúng tiền hàng. Lấy theo mặc định của khách, sửa được trên từng chứng từ.",
+}
+
+INVOICE_CUSTOM_FIELDS = {
+    "Customer": [
+        {
+            "fieldname": INV_FLAG,
+            "label": "Xuất hóa đơn GTGT (mặc định)",
+            "fieldtype": "Select",
+            "options": _INV_OPTIONS,
+            "insert_after": "tax_category",
+            "in_standard_filter": 1,
+            "description": "Mặc định cho đơn mới của khách. Để trống thì người lập đơn chọn trên từng đơn.",
+        },
+    ],
+    "Sales Order": [dict(_INV_DOC_FIELD)],
+    "Delivery Note": [dict(_INV_DOC_FIELD)],
+    "Sales Invoice": [
+        dict(_INV_DOC_FIELD),
+        {
+            "fieldname": "aphvh_hddt_section",
+            "label": "Hóa đơn điện tử đã xuất (MISA)",
+            "fieldtype": "Section Break",
+            "insert_after": "amended_from",
+            "depends_on": f"eval:doc.{INV_FLAG}=='{INV_YES}'",
+            "collapsible": 0,
+        },
+        {
+            "fieldname": SI_EINV_SERIES,
+            "label": "Ký hiệu hóa đơn",
+            "fieldtype": "Data",
+            "insert_after": "aphvh_hddt_section",
+            "allow_on_submit": 1,
+            "no_copy": 1,
+            "print_hide": 1,
+        },
+        {"fieldname": "aphvh_hddt_col", "fieldtype": "Column Break", "insert_after": SI_EINV_SERIES},
+        {
+            "fieldname": SI_EINV_NO,
+            "label": "Số hóa đơn",
+            "fieldtype": "Data",
+            "insert_after": "aphvh_hddt_col",
+            "allow_on_submit": 1,
+            "no_copy": 1,
+            "print_hide": 1,
+            "in_standard_filter": 1,
+            "search_index": 1,
+        },
+        {"fieldname": "aphvh_hddt_col2", "fieldtype": "Column Break", "insert_after": SI_EINV_NO},
+        {
+            "fieldname": SI_EINV_DATE,
+            "label": "Ngày hóa đơn",
+            "fieldtype": "Date",
+            "insert_after": "aphvh_hddt_col2",
+            "allow_on_submit": 1,
+            "no_copy": 1,
+            "print_hide": 1,
+            "description": "Kế toán ghi sau khi xuất hóa đơn điện tử trên MISA (ghi được cả khi hóa đơn đã xác nhận).",
         },
     ],
 }
@@ -359,7 +444,7 @@ DEFAULT_PRINT_FORMATS = {
     "Delivery Note": PRINT_DN_ISSUE,
 }
 
-TRANSLATIONS = {REPORT_QTY: REPORT_QTY_LABEL}
+TRANSLATIONS = {REPORT_QTY: REPORT_QTY_LABEL, REPORT_INVOICED: REPORT_INVOICED_LABEL}
 
 
 def after_install():
@@ -382,6 +467,7 @@ def setup():
     ]
     create_custom_fields(CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(SALES_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(INVOICE_CUSTOM_FIELDS, ignore_validate=True, update=True)
     if new_ig_field:
         flag_default_factory_price_groups()
     for fieldname in new_ss_fields:

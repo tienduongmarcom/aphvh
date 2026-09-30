@@ -19,9 +19,9 @@ Bật/tắt: Cài đặt bán hàng → "Tự tạo hóa đơn nháp khi xác nh
 from collections import defaultdict
 
 import frappe
-from frappe.utils import cint, escape_html, flt, fmt_money, get_link_to_form
+from frappe.utils import cint, cstr, escape_html, flt, fmt_money, get_link_to_form
 
-from aphvh.constants import SI_AUTO, SS_AUTO_INVOICE
+from aphvh.constants import INV_FLAG, SI_AUTO, SS_AUTO_INVOICE
 from aphvh.sales_warnings import setting_on
 from aphvh.vn_words import so_vn
 
@@ -323,6 +323,23 @@ def validate_delivery_note(doc, method=None):
             "Dòng chưa gắn đơn: " + ", ".join(f"#{r.idx} {r.item_code}" for r in bad),
             title="Thiếu đơn bán hàng",
         )
+
+    # 0.3.1: có/không xuất hóa đơn đi theo đơn; thủ kho không đổi.
+    if doc.meta.has_field(INV_FLAG):
+        so_flags = set(
+            frappe.get_all(
+                "Sales Order",
+                filters={"name": ["in", list({r.against_sales_order for r in doc.items})]},
+                pluck=INV_FLAG,
+            )
+        )
+        if so_flags and so_flags != {doc.get(INV_FLAG)}:
+            frappe.throw(
+                "Ô Xuất hóa đơn GTGT trên phiếu giao hàng phải giống đơn bán hàng "
+                f"({', '.join(sorted(cstr(f) or '(trống)' for f in so_flags))}); muốn đổi thì nhân viên bán hàng "
+                "hoặc kế toán sửa đơn.",
+                title="Không đổi Xuất hóa đơn GTGT khi giao hàng",
+            )
 
     so_rows = {
         r.name: r

@@ -39,15 +39,20 @@ doc_events = {
     "Item": {"before_print": _BLANK},
     # 0.3: cảnh báo công nợ/giá khi lưu và xác nhận đơn; hóa đơn nháp tự tạo từ phiếu giao hàng;
     # thủ kho chỉ giao theo đơn; ẩn giá vốn trên bản in với nhân viên bán hàng, thủ kho.
+    # 0.3.1: có/không xuất hóa đơn GTGT (Không = bỏ thuế) chạy trước cảnh báo công nợ.
     "Sales Order": {
-        "validate": "aphvh.sales_warnings.validate_sales_order",
+        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_warnings.validate_sales_order"],
         "before_print": _BLANK,
     },
     "Delivery Note": {
-        "validate": "aphvh.sales_flow.validate_delivery_note",
+        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_flow.validate_delivery_note"],
         "on_submit": "aphvh.sales_flow.make_draft_invoice",
         "on_cancel": "aphvh.sales_flow.remove_draft_invoices",
         "before_print": _BLANK,
+    },
+    "Sales Invoice": {
+        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.invoice_flag.validate_einvoice"],
+        "before_update_after_submit": "aphvh.invoice_flag.validate_einvoice",
     },
 }
 
@@ -76,6 +81,7 @@ doctype_js = {
     "Serial and Batch Bundle": "public/js/serial_and_batch_bundle.js",
     "Sales Order": "public/js/sales_order.js",
     "Delivery Note": "public/js/delivery_note.js",
+    "Sales Invoice": "public/js/sales_invoice.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",

@@ -85,3 +85,21 @@ DN_DRIVER_PHONE = "aphvh_sdt_lai_xe"
 
 PRINT_DN_ISSUE = "Phiếu xuất kho bán hàng APH"
 PRINT_DN_HANDOVER = "Biên bản giao nhận APH"
+
+# --- Có / không xuất hóa đơn GTGT (0.3.1) ---------------------------------------------------
+# ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn. Ô này trên khách (mặc định do
+# kế toán đặt), đơn bán hàng, phiếu giao hàng, hóa đơn bán hàng. "Không" = không tính thuế GTGT.
+INV_FLAG = "aphvh_xuat_hoa_don"
+INV_YES = "Có"
+INV_NO = "Không"
+INV_DOCTYPES = ("Sales Order", "Delivery Note", "Sales Invoice")
+
+# Hóa đơn điện tử đã xuất trên MISA: kế toán ghi lên hóa đơn bán hàng ERPNext (sửa được sau khi
+# xác nhận) để đối chiếu với bảng kê đầu ra MISA.
+SI_EINV_SERIES = "aphvh_hd_ky_hieu"
+SI_EINV_NO = "aphvh_hd_so"
+SI_EINV_DATE = "aphvh_hd_ngay"
+EINV_FIELDS = (SI_EINV_SERIES, SI_EINV_NO, SI_EINV_DATE)
+
+REPORT_INVOICED = "Ban hang co hoa don APH"
+REPORT_INVOICED_LABEL = "Bán hàng có hóa đơn APH"

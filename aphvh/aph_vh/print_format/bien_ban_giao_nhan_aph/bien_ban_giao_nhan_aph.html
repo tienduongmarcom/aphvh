@@ -1,5 +1,5 @@
 {#- Biên bản giao nhận hàng hóa, in từ Phiếu giao hàng: 2 liên trong một lần in (liên 1 giao khách,
-    liên 2 công ty lưu). Có đơn giá bán, thành tiền, thuế GTGT, tổng tiền thanh toán, số tiền bằng chữ.
+    liên 2 công ty lưu). Có đơn giá bán, thành tiền, thuế GTGT, tổng tiền thanh toán, số tiền bằng chữ (không in dòng thuế khi Xuất hóa đơn GTGT = Không).
     Thuê xe, nhà xe: thêm người vận chuyển ký. Phiếu nhận hàng trả lại (is_return): biên bản nhận lại
     hàng hóa, bên giao là khách hàng. -#}
 {%- set cty = aphvh_cong_ty(doc.company) -%}
@@ -84,7 +84,9 @@
     </tr>
   {%- endfor %}
     <tr class="aph-sum"><td colspan="7" class="l">Cộng tiền hàng</td><td class="r">{{ aphvh_so(tien_hang, 0) }}</td></tr>
+    {%- if doc.aphvh_xuat_hoa_don != "Không" %}
     <tr class="aph-sum"><td colspan="7" class="l">Thuế GTGT</td><td class="r">{{ aphvh_so(tien_thue, 0) }}</td></tr>
+    {%- endif %}
     <tr class="aph-sum"><td colspan="7" class="l">Tổng cộng tiền thanh toán</td><td class="r">{{ aphvh_so(tong, 0) }}</td></tr>
   </tbody>
 </table>
