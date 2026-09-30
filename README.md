@@ -171,6 +171,9 @@ trả lại → hủy phiếu giao), số dư 131, 5111, 33311, 632, 156 khớp 
 
 Kế toán dùng vai trò chuẩn (Accounts User, Sales Manager…): thấy giá vốn, xác nhận hóa đơn.
 
+Công ty APH đã bật tài khoản kho theo nhóm hàng (8080 và bản chính thức, kiểm 30/09): Kho Hà Nội chứa
+được cả thành phẩm (155) và hàng hóa (156), tài khoản lấy theo nhóm hàng, không theo kho.
+
 Lưu ý:
 - Hạn mức tín dụng chuẩn của ERPNext (chặn) bị ẩn; nếu khách/nhóm khách nào đang có số ở cột đó thì
   app KHÔNG ẩn và in cảnh báo khi migrate — xóa số đó để chỉ còn cảnh báo.
@@ -180,7 +183,7 @@ Lưu ý:
   Price" (thông báo lỗi của nó nêu giá vốn).
 
 **Chưa làm ở bản này (bước cài nền, làm sau khi chị Dung trả lời):** nhóm khách, loại thuế, mẫu thuế,
-quy tắc thuế; 5 kho vệ tinh; bật tài khoản kho theo nhóm hàng (Kho Hà Nội chứa cả 155 và 156);
+quy tắc thuế; 5 kho vệ tinh;
 Selling Settings "giữ đúng giá từ đơn sang hóa đơn"; giới hạn kho cho thủ kho (User Permission).
 
 Cài: dựng bản mới, migrate, Ctrl+Shift+R. Không có bản vá dữ liệu; `after_migrate` tạo ô, vai trò,
