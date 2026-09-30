@@ -1,5 +1,6 @@
 {#- Biên bản giao nhận hàng hóa, in từ Phiếu giao hàng: 2 liên trong một lần in (liên 1 giao khách,
-    liên 2 công ty lưu). Có đơn giá bán, thành tiền, thuế GTGT, tổng tiền thanh toán, số tiền bằng chữ (không in dòng thuế khi Xuất hóa đơn GTGT = Không).
+    liên 2 công ty lưu). Đơn giá, thành tiền ĐÃ GỒM THUẾ GTGT (chị Dung chốt 30/09: không tách giá và thuế),
+    tổng tiền thanh toán, số tiền bằng chữ.
     Thuê xe, nhà xe: thêm người vận chuyển ký. Phiếu nhận hàng trả lại (is_return): biên bản nhận lại
     hàng hóa, bên giao là khách hàng. -#}
 {%- set cty = aphvh_cong_ty(doc.company) -%}
@@ -8,9 +9,8 @@
 {%- set thue = doc.aphvh_hinh_thuc_giao == "Thuê xe, nhà xe" -%}
 {%- set cham = ".............................." -%}
 {%- set dc = aphvh_dia_chi(doc.shipping_address or doc.address_display) -%}
-{%- set tien_hang = (doc.base_net_total or 0) | abs -%}
-{%- set tien_thue = (doc.base_total_taxes_and_charges or 0) | abs -%}
-{%- set tong = (doc.base_rounded_total or doc.base_grand_total or 0) | abs -%}
+{%- set gia = aphvh_gia_gom_thue(doc) -%}
+{%- set tong = gia.tong -%}
 
 {%- macro ben_cty(nhan) -%}
   <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ cty.ten }}</div>
@@ -66,8 +66,8 @@
       <th class="c-dvt">ĐVT</th>
       <th class="c-lo">Số lô</th>
       <th class="c-sl">Số lượng</th>
-      <th class="c-tien">Đơn giá</th>
-      <th class="c-tien">Thành tiền</th>
+      <th class="c-tien">Đơn giá{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
+      <th class="c-tien">Thành tiền{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
     </tr>
   </thead>
   <tbody>
@@ -79,15 +79,12 @@
       <td class="c">{{ row.uom }}</td>
       <td class="c">{{ aphvh_lo(row) }}</td>
       <td class="r">{{ aphvh_so((row.qty or 0) | abs) }}</td>
-      <td class="r">{{ aphvh_so(row.base_net_rate, 0) }}</td>
-      <td class="r">{{ aphvh_so((row.base_net_amount or 0) | abs, 0) }}</td>
+      {%- set g = gia.dong[loop.index0] %}
+      <td class="r">{{ aphvh_so(g.don_gia, g.le) }}</td>
+      <td class="r">{{ aphvh_so(g.thanh_tien, 0) }}</td>
     </tr>
   {%- endfor %}
-    <tr class="aph-sum"><td colspan="7" class="l">Cộng tiền hàng</td><td class="r">{{ aphvh_so(tien_hang, 0) }}</td></tr>
-    {%- if doc.aphvh_xuat_hoa_don != "Không" %}
-    <tr class="aph-sum"><td colspan="7" class="l">Thuế GTGT</td><td class="r">{{ aphvh_so(tien_thue, 0) }}</td></tr>
-    {%- endif %}
-    <tr class="aph-sum"><td colspan="7" class="l">Tổng cộng tiền thanh toán</td><td class="r">{{ aphvh_so(tong, 0) }}</td></tr>
+    <tr class="aph-sum"><td colspan="7" class="l">Tổng cộng tiền thanh toán{% if gia.co_thue %} (đã gồm thuế GTGT){% endif %}</td><td class="r">{{ aphvh_so(tong, 0) }}</td></tr>
   </tbody>
 </table>
 <div class="aph-info">

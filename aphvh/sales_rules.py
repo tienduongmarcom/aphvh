@@ -76,3 +76,28 @@ def credit_lines(limit, source, outstanding, order_amount, overdue) -> tuple[boo
     if float(overdue or 0) > 0:
         lines.append(f"Khách đang có {_dong(overdue)} nợ quá hạn thanh toán.")
     return bool(lines), lines
+
+
+def _lam_tron(x: float) -> int:
+    """Làm tròn nửa lên (VND), theo trị tuyệt đối."""
+    return int(abs(float(x or 0)) + 0.5)
+
+
+def gia_gom_thue(lines, total) -> list[dict]:
+    """Đơn giá, thành tiền ĐÃ GỒM THUẾ GTGT từng dòng cho biên bản giao nhận (0.3.2).
+
+    lines: [(số lượng, tiền hàng sau chiết khấu, tiền thuế của dòng)] — lấy trị tuyệt đối (hàng trả lại).
+    total: tổng thanh toán của chứng từ. Thành tiền từng dòng làm tròn đồng; phần lệch do làm tròn
+    dồn vào dòng lớn nhất để cộng các dòng đúng bằng tổng thanh toán.
+    """
+    amts = [_lam_tron(abs(float(net or 0)) + abs(float(tax or 0))) for _, net, tax in lines]
+    if amts and total:
+        diff = _lam_tron(total) - sum(amts)
+        big = max(range(len(amts)), key=lambda i: amts[i])
+        amts[big] += diff
+    out = []
+    for (qty, _, _), amt in zip(lines, amts):
+        q = abs(float(qty or 0))
+        price = amt / q if q else 0.0
+        out.append({"don_gia": price, "thanh_tien": amt, "le": 0 if abs(price - round(price)) < 0.005 else 2})
+    return out

@@ -78,6 +78,26 @@ def apply_invoice_flag(doc, method=None):
     changed = strip_taxes(doc) if flag == INV_NO else restore_taxes(doc)
     if changed:
         doc.calculate_taxes_and_totals()
+    if flag == INV_YES:
+        check_tax_rates(doc)
+
+
+def check_tax_rates(doc):
+    """Bán có hóa đơn mà mặt hàng chưa có thuế suất (chưa có mẫu thuế mặt hàng): không tự coi là 0%.
+
+    Lưu nháp thì cảnh báo; xác nhận thì chặn. Thuế suất từng mặt hàng do kế toán trưởng xác định.
+    """
+    missing = [r for r in doc.get("items") or [] if r.get("item_code") and not r.get("item_tax_template")]
+    if not missing:
+        return
+    rows = ", ".join(f"#{r.idx} {r.item_code}" for r in missing)
+    msg = (
+        f"Mặt hàng chưa có thuế suất GTGT: {rows}. Kế toán trưởng gán thuế suất cho mặt hàng (Mẫu thuế mặt hàng) "
+        "trước khi bán có xuất hóa đơn; hoặc chọn Xuất hóa đơn GTGT = Không nếu lần bán này không xuất hóa đơn."
+    )
+    if doc.get("_action") == "submit":
+        frappe.throw(msg, title="Chưa có thuế suất")
+    frappe.msgprint(msg, title="Chưa có thuế suất", indicator="orange")
 
 
 def validate_einvoice(doc, method=None):

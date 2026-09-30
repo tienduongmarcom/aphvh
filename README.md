@@ -190,6 +190,15 @@ Cài: dựng bản mới, migrate, Ctrl+Shift+R. Không có bản vá dữ liệ
 quyền (chỉ khi chưa có), đặt mẫu in mặc định của phiếu giao hàng (trừ khi đã chọn mẫu khác
 "with Item Image").
 
+## 0.3.2 – mẫu in theo kế toán trưởng, chặn bán có hóa đơn khi chưa có thuế suất (30/09/2026)
+
+- **Phiếu xuất kho** (và phiếu nhập kho hàng trả lại): chỉ số lượng, không in đơn giá, thành tiền.
+- **Biên bản giao nhận**: đơn giá, thành tiền đã gồm thuế GTGT, một dòng tổng thanh toán; không tách
+  tiền hàng và thuế. Thuế lấy theo từng dòng hàng (bảng thuế theo dòng của ERPNext); phần lệch do làm
+  tròn dồn vào dòng lớn nhất để cộng đúng tổng thanh toán.
+- Bán **Có** hóa đơn mà mặt hàng chưa có mẫu thuế mặt hàng: lưu nháp thì cảnh báo, xác nhận thì chặn
+  (không tự coi là 0%).
+
 ## 0.3.1 – có / không xuất hóa đơn GTGT (30/09/2026)
 
 ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn để kê khai thuế.

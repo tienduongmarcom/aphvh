@@ -5,7 +5,7 @@ import pathlib
 import re
 import unittest
 
-from aphvh.sales_rules import below_price_rows, credit_lines, pick_limit, price_lines
+from aphvh.sales_rules import below_price_rows, credit_lines, gia_gom_thue, pick_limit, price_lines
 
 APP = pathlib.Path(__file__).resolve().parents[1]
 
@@ -56,6 +56,26 @@ class TestCreditWarning(unittest.TestCase):
         over, lines = credit_lines(0, None, 0, 1, 5)
         self.assertTrue(over)
         self.assertIn("nợ quá hạn", lines[0])
+
+
+class TestGiaGomThue(unittest.TestCase):
+    def test_exact(self):
+        out = gia_gom_thue([(500, 16_000_000, 800_000), (200, 5_600_000, 448_000)], 22_848_000)
+        self.assertEqual([o["thanh_tien"] for o in out], [16_800_000, 6_048_000])
+        self.assertEqual([o["don_gia"] for o in out], [33_600, 30_240])
+        self.assertEqual([o["le"] for o in out], [0, 0])
+
+    def test_rounding_goes_to_largest_line(self):
+        # 3 dòng 333,33 đ thuế → làm tròn lệch 1 đ, dồn vào dòng lớn nhất; tổng đúng tổng thanh toán.
+        out = gia_gom_thue([(3, 10_001, 500.05), (1, 20_003, 1000.15), (7, 7, 0.35)], 31_512)
+        self.assertEqual(sum(o["thanh_tien"] for o in out), 31_512)
+        self.assertEqual(out[2]["thanh_tien"], 7)
+        self.assertEqual(out[0]["le"], 2)
+
+    def test_return_negative(self):
+        out = gia_gom_thue([(-50, -1_600_000, -80_000)], -1_680_000)
+        self.assertEqual(out[0]["thanh_tien"], 1_680_000)
+        self.assertEqual(out[0]["don_gia"], 33_600)
 
 
 def _module_defs(dotted: str) -> tuple[pathlib.Path, set[str]]:

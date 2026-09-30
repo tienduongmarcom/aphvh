@@ -103,5 +103,6 @@ jinja = {
         "aphvh.print_utils.aphvh_sl_don_ban",
         "aphvh.print_utils.aphvh_dia_chi",
         "aphvh.print_utils.aphvh_lo",
+        "aphvh.print_utils.aphvh_gia_gom_thue",
     ],
 }

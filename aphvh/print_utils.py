@@ -132,3 +132,24 @@ def aphvh_lo(row) -> str:
         return ""
     lots = frappe.get_all("Serial and Batch Entry", filters={"parent": bundle}, pluck="batch_no")
     return ", ".join(sorted({x for x in lots if x}))
+
+
+def aphvh_gia_gom_thue(doc) -> dict:
+    """Biên bản giao nhận: đơn giá, thành tiền đã gồm thuế GTGT từng dòng (thuế lấy theo từng dòng hàng)."""
+    from collections import defaultdict
+
+    from aphvh.sales_rules import gia_gom_thue
+
+    items = doc.get("items") or []
+    tax_row = defaultdict(float)
+    for d in doc.get("item_wise_tax_details") or []:
+        tax_row[d.get("item_row")] += flt(d.get("amount"))
+    total_tax = abs(flt(doc.get("base_total_taxes_and_charges")))
+    if total_tax and not tax_row:
+        # Không có thuế theo dòng: chia tổng thuế theo tiền hàng.
+        net = sum(abs(flt(r.get("base_net_amount"))) for r in items) or 1
+        for r in items:
+            tax_row[r.get("name")] = total_tax * abs(flt(r.get("base_net_amount"))) / net
+    total = abs(flt(doc.get("base_rounded_total")) or flt(doc.get("base_grand_total")))
+    lines = [(r.get("qty"), r.get("base_net_amount"), tax_row.get(r.get("name"), 0)) for r in items]
+    return {"dong": gia_gom_thue(lines, total), "tong": total, "co_thue": bool(total_tax)}

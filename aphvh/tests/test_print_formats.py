@@ -26,6 +26,17 @@ class Row:
         return self.__dict__.get(key, default)
 
 
+def _gia_gom_thue(doc):
+    """Như print_utils.aphvh_gia_gom_thue (không có thuế theo dòng: chia tổng thuế theo tiền hàng)."""
+    from aphvh.sales_rules import gia_gom_thue
+
+    tax = abs(doc.base_total_taxes_and_charges or 0)
+    net = sum(abs(r.base_net_amount or 0) for r in doc.items) or 1
+    total = abs(doc.base_rounded_total or doc.base_grand_total or 0)
+    lines = [(r.qty, r.base_net_amount, tax * abs(r.base_net_amount or 0) / net) for r in doc.items]
+    return {"dong": gia_gom_thue(lines, total), "tong": total, "co_thue": bool(tax)}
+
+
 def _env(an):
     from aphvh.vn_words import so_tien_bang_chu, so_vn
 
@@ -43,6 +54,7 @@ def _env(an):
         aphvh_sl_don_ban=lambda row: 800 if row.get("so_detail") else None,
         aphvh_dia_chi=lambda t: (t or "").replace("<br>", ", ").strip(", "),
         aphvh_lo=lambda row: row.get("batch_no") or "",
+        aphvh_gia_gom_thue=_gia_gom_thue,
     )
     return env
 
@@ -143,9 +155,10 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("Trần Văn Nhận", out)
         self.assertIn("theo đơn hàng số SAL-ORD-2026-00031", out)
         self.assertIn("Giao đến: Số 5 ngõ 12 Láng, Hà Nội", out)
-        self.assertIn("32.000", out)  # giá bán
-        self.assertIn("21.600.000", out)
-        self.assertIn("Hai mươi mốt triệu sáu trăm nghìn đồng", out)
+        self.assertNotIn("32.000", out)  # chỉ số lượng: không in giá bán
+        self.assertNotIn("21.600.000", out)
+        self.assertNotIn("Đơn giá", out)
+        self.assertIn("500", out)
         self.assertIn("Lô: PT-2609-01", out)
         self.assertIn("800", out)  # số lượng theo đơn
         self.assertNotIn("28.100", out)  # giá vốn không bao giờ in
@@ -169,8 +182,8 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("PHIẾU NHẬP KHO", out)
         self.assertIn("Mẫu số 01 - VT", out)
         self.assertIn("phiếu giao hàng số MAT-DN-2026-00012", out)
-        self.assertIn("1.600.000", out)
-        self.assertNotIn("-1.600.000", out)
+        self.assertNotIn("1.600.000", out)
+        self.assertIn("50", out)
         self.assertNotIn("-50", out)
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
@@ -185,8 +198,16 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("BÊN NHẬN (Bên B): Công ty TNHH Bình An", out)
         self.assertIn("Mã số thuế: 0101234567", out)
         self.assertIn("Căn cứ đơn hàng số SAL-ORD-2026-00031; đơn đặt hàng của khách số PO-KH-77", out)
-        self.assertIn("1.080.000", out)
+        # Giá đã gồm thuế: 32.000 × 1,05 = 33.600; 28.000 × 1,05 = 29.400; không tách dòng thuế.
+        self.assertIn("33.600", out)
+        self.assertIn("16.800.000", out)
+        self.assertIn("29.400", out)
+        self.assertIn("5.880.000", out)
         self.assertIn("22.680.000", out)
+        self.assertIn("đã gồm thuế GTGT", out)
+        self.assertNotIn("1.080.000", out)
+        self.assertNotIn("Cộng tiền hàng", out)
+        self.assertNotIn("32.000", out)
         self.assertIn("Hai mươi hai triệu sáu trăm tám mươi nghìn đồng", out)
         self.assertIn("PT-2609-01", out)
         self.assertNotIn("NGƯỜI VẬN CHUYỂN", out)
@@ -209,6 +230,15 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("BÊN NHẬN (Bên B): CÔNG TY TNHH APH", out)
         self.assertIn("1.680.000", out)
         self.assertNotIn("-1.680.000", out)
+
+        # Không xuất hóa đơn: không thuế, không ghi "đã gồm thuế".
+        out = _env(False).from_string(html).render(
+            doc=_dn(aphvh_xuat_hoa_don="Không", base_total_taxes_and_charges=0, base_grand_total=21_600_000,
+                    base_rounded_total=21_600_000)
+        )
+        self.assertIn("32.000", out)
+        self.assertIn("21.600.000", out)
+        self.assertNotIn("gồm thuế", out)
 
 
 def _load_tools():

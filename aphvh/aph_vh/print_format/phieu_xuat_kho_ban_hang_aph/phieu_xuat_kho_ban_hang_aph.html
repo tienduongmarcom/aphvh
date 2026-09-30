@@ -1,5 +1,5 @@
 {#- Phiếu xuất kho (Mẫu 02-VT, TT133) in từ Phiếu giao hàng. Thủ kho và người nhận hàng ký.
-    In GIÁ BÁN theo đơn hàng (đơn giá sau chiết khấu, chưa thuế), không có giá vốn.
+    CHỈ CÓ SỐ LƯỢNG (chị Dung chốt 30/09): không in giá bán, không in giá vốn.
     Phiếu nhận hàng trả lại (is_return) in thành Phiếu nhập kho (Mẫu 01-VT) hàng bán bị trả lại. -#}
 {%- set cty = aphvh_cong_ty(doc.company) -%}
 {%- set tra = doc.is_return -%}
@@ -8,7 +8,6 @@
 {%- set uoms = doc.items | map(attribute="uom") | unique | list -%}
 {%- set thue = doc.aphvh_hinh_thuc_giao == "Thuê xe, nhà xe" -%}
 {%- set cham = ".............................." -%}
-{%- set tong = (doc.base_net_total or 0) | abs -%}
 <div class="aph-vt">
 <table class="aph-head"><tr>
   <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
@@ -48,14 +47,12 @@
       <th rowspan="2" class="c-ma">Mã số</th>
       <th rowspan="2" class="c-dvt">Đơn vị tính</th>
       <th colspan="2">Số lượng</th>
-      <th rowspan="2" class="c-tien">Đơn giá</th>
-      <th rowspan="2" class="c-tien">Thành tiền</th>
     </tr>
     <tr>
       <th class="c-sl">{{ "Theo chứng từ" if tra else "Theo đơn hàng" }}</th>
       <th class="c-sl">{{ "Thực nhập" if tra else "Thực xuất" }}</th>
     </tr>
-    <tr class="aph-letter"><td>A</td><td>B</td><td>C</td><td>D</td><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+    <tr class="aph-letter"><td>A</td><td>B</td><td>C</td><td>D</td><td>1</td><td>2</td></tr>
   </thead>
   <tbody>
   {%- for row in doc.items %}
@@ -68,20 +65,15 @@
       <td class="c">{{ row.uom }}</td>
       <td class="r">{{ aphvh_so(sl_don) if sl_don is not none else "" }}</td>
       <td class="r">{{ aphvh_so((row.qty or 0) | abs) }}</td>
-      <td class="r">{{ aphvh_so(row.base_net_rate, 0) }}</td>
-      <td class="r">{{ aphvh_so((row.base_net_amount or 0) | abs, 0) }}</td>
     </tr>
   {%- endfor %}
     <tr>
       <td></td><td class="c"><b>Cộng</b></td><td></td><td></td><td></td>
       <td class="r"><b>{{ aphvh_so((doc.total_qty or 0) | abs) if uoms | length == 1 else "" }}</b></td>
-      <td></td>
-      <td class="r"><b>{{ aphvh_so(tong, 0) }}</b></td>
     </tr>
   </tbody>
 </table>
 <div class="aph-info">
-  <div>- Tổng số tiền (viết bằng chữ): {{ aphvh_bang_chu(tong) }}{% if tong and doc.aphvh_xuat_hoa_don != "Không" %} <i>(giá bán chưa thuế GTGT)</i>{% endif %}</div>
   <div>- Số chứng từ gốc kèm theo: {{ "biên bản nhận lại hàng" if tra else "biên bản giao nhận hàng hóa" }} số {{ doc.name }}</div>
 </div>
 
