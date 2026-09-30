@@ -13,19 +13,23 @@ class TestViCsv(unittest.TestCase):
     def test_shape(self):
         rows = load()
         self.assertGreater(len(rows), 600)
-        srcs = [r[0] for r in rows]
-        self.assertEqual(len(srcs), len(set(srcs)), 'trùng chuỗi nguồn')
+        keys = [(r[0], r[2] if len(r) > 2 else '') for r in rows]
+        self.assertEqual(len(keys), len(set(keys)), 'trùng chuỗi nguồn')
         for r in rows:
-            self.assertEqual(len(r), 2, r)
+            self.assertIn(len(r), (2, 3), r)
             self.assertTrue(r[0].strip() and r[1].strip(), r)
+            if len(r) == 3:
+                self.assertTrue(r[2].strip(), r)
 
     def test_placeholders_kept(self):
-        for src, vi in load():
+        for src, vi, *_ in load():
             self.assertEqual(sorted(re.findall(r'\{\d*\}|%s', src)), sorted(re.findall(r'\{\d*\}|%s', vi)), src)
 
     def test_no_known_mistranslations(self):
-        for src, vi in load():
+        for src, vi, *_ in load():
             low = vi.lower()
+            self.assertNotIn('chứng khoán', low, src)
+            self.assertNotIn('tỷ giá định giá', low, src)
             self.assertNotIn('cổ phiếu', low, src)
             self.assertNotIn('hoá', low, src)
             if re.search(r'\bBill(ed|ing)?\b', src) and 'Not Billed' not in src and 'Bill No' not in src and 'Bill Date' not in src:
@@ -34,14 +38,19 @@ class TestViCsv(unittest.TestCase):
                 self.assertNotIn('nợ', low, src)
 
     def test_decided_terms(self):
-        d = dict(load())
+        d = {r[0]: r[1] for r in load() if len(r) == 2}
         expect = {
             'Stock Reconciliation': 'Điều chỉnh theo kiểm kê', 'Opening Stock': 'Nhập số dư đầu kỳ',
             'BOM': 'Định mức nguyên vật liệu', 'Submit': 'Xác nhận', 'Valuation Rate': 'Đơn giá vốn',
             'Purchase Receipt': 'Phiếu nhập mua hàng', 'Stock Entry': 'Phiếu kho', 'Delete': 'Xóa',
             'Credit in Company Currency': 'Có (tiền tệ công ty)', 'Clearance Date': 'Ngày ngân hàng ghi nhận',
             'Stock Received But Not Billed': 'Hàng đã nhận chưa nhận hóa đơn', 'Excise Entry': 'Bút toán Excise',
+            # 0.2.4
+            'Opening Qty': 'SL đầu kỳ', 'In Qty': 'SL nhập', 'Out Qty': 'SL xuất', 'Balance Qty': 'SL tồn cuối',
+            'Lead': 'Khách hàng tiềm năng', 'Subcontracting': 'Gia công', 'Serial and Batch Bundle': 'Gói serial/lô',
         }
+        ctx = {(r[0], r[2]): r[1] for r in load() if len(r) == 3}
+        self.assertEqual(ctx.get(('No.', "Title of the 'row number' column")), 'STT')
         for k, v in expect.items():
             self.assertEqual(d.get(k), v, k)
 

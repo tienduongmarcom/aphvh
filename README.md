@@ -132,6 +132,17 @@ Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app
   gỡ app là về bản dịch gốc.
 - Sau khi cài: migrate (xóa bộ nhớ đệm bản dịch), mỗi người bấm Ctrl+Shift+R.
 
+## 0.2.4 – dịch báo cáo kho, thông báo, màn hình nhà máy (30/09/2026)
+
+- `vi.csv` thêm 678 chuỗi (tổng 1.364): cột và bộ lọc báo cáo kho (Tổng hợp nhập – xuất – tồn: SL đầu kỳ / SL nhập /
+  SL xuất / SL tồn cuối…), thông báo lỗi, cảnh báo, hộp thoại trong mã Python/JS của kho và mua hàng (tồn kho âm, lô,
+  phiếu kho, phiếu nhập, đơn mua), mô tả trường, màn hình kế toán nhà máy.
+- Sửa lỗi phát hiện khi quay video: Lead "Chì" → Khách hàng tiềm năng; Subcontracting "Ký gửi" → Gia công; cột số thứ tự
+  "Không." → STT (dòng có ngữ cảnh, cột thứ 3 của CSV).
+- Công cụ: `tools/translation/v024/` (extract.py gom chuỗi bằng AST cho Python để lấy đủ chuỗi viết nhiều dòng; BRIEF.md;
+  final_rows_024.json). Giữ nguyên bản dịch của "Stores", "Standard Selling", "after" vì mã dùng chúng để tra tên.
+- Sau khi cài: migrate, Ctrl+Shift+R; báo cáo chạy nền (Tổng hợp nhập – xuất – tồn) bấm "Xây dựng lại" để cột lấy tên mới.
+
 ## Nâng cấp bản đã cài (0.1 → 0.2.x)
 
 ```bash
