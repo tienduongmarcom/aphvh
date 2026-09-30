@@ -1,5 +1,9 @@
 """Ẩn giá với kế toán nhà máy (mức màn hình + báo cáo) và quy tắc phiếu nhập nguyên phụ liệu.
 
+0.3: ẩn GIÁ VỐN (không ẩn giá bán) với nhân viên bán hàng và thủ kho Hà Nội: giá tồn kho trên
+dòng đơn/phiếu giao hàng, lãi gộp, giá vào/ra của gói lô, đơn giá phiếu kho, giá mua trên mã hàng;
+bảng giá chỉ thấy bảng giá bán.
+
 Mức bảo vệ đã chốt (29/09/2026): ẩn cột giá trên phiếu và bản in, không cho mở báo cáo có giá
 trị, không có quyền xem dạng bảng/xuất Excel. Không phải khóa ở máy chủ: người rành kỹ thuật
 vẫn đọc được giá qua API. Muốn khóa hẳn thì dùng che trường (mask) của Frappe v16 — xem README.
@@ -15,7 +19,17 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-from aphvh.constants import IG_FACTORY_CAN_PRICE, PR_OPEX, PRICE_ROLES, ROLE_FACTORY
+from aphvh.constants import (
+    COST_HIDDEN_ROLES,
+    IG_FACTORY_CAN_PRICE,
+    PR_OPEX,
+    PRICE_ROLES,
+    ROLE_FACTORY,
+    ROLE_HN_STOCK,
+)
+
+# Quản lý bán hàng xem được giá vốn, lãi gộp dù có thêm vai trò bị ẩn giá vốn.
+COST_ROLES = (*PRICE_ROLES, "Sales Manager", "Sales Master Manager")
 
 
 def is_price_restricted(user: str | None = None) -> bool:
@@ -24,6 +38,28 @@ def is_price_restricted(user: str | None = None) -> bool:
         return False
     roles = set(frappe.get_roles(user))
     return ROLE_FACTORY in roles and not roles.intersection(PRICE_ROLES)
+
+
+def _roles(user: str | None) -> set[str]:
+    return set(frappe.get_roles(user or frappe.session.user))
+
+
+def is_cost_restricted(user: str | None = None) -> bool:
+    """Không được xem giá vốn: có vai trò bán hàng/thủ kho/nhà máy của app và không có vai trò xem giá."""
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return False
+    roles = _roles(user)
+    return bool(roles.intersection(COST_HIDDEN_ROLES)) and not roles.intersection(COST_ROLES)
+
+
+def is_hn_storekeeper(user: str | None = None) -> bool:
+    """Thủ kho Hà Nội thuần (không kiêm quản lý kho, kế toán, quản lý bán hàng)."""
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return False
+    roles = _roles(user)
+    return ROLE_HN_STOCK in roles and not roles.intersection(COST_ROLES)
 
 
 def factory_price_groups() -> list[str]:
@@ -41,6 +77,8 @@ def factory_price_groups() -> list[str]:
 def boot_session(bootinfo):
     bootinfo.aphvh = {
         "price_restricted": is_price_restricted(),
+        "cost_restricted": is_cost_restricted(),
+        "hn_storekeeper": is_hn_storekeeper(),
         "factory_price_groups": factory_price_groups(),
     }
 
@@ -122,14 +160,21 @@ PRINT_MASK = {
 }
 
 
-def blank_prices_for_print(doc, method=None, *args, **kwargs):
-    if not is_price_restricted():
-        return
-    if doc.doctype == "Purchase Receipt" and cint(doc.get(PR_OPEX)):
-        return
-    spec = PRINT_MASK.get(doc.doctype)
-    if not spec:
-        return
+# Giá vốn xóa trên bản in với người bị ẩn giá vốn (giá bán vẫn in).
+COST_MASK = {
+    "Sales Order": {"parent": (), "tables": {"items": ("valuation_rate", "gross_profit")}, "clear": ()},
+    "Delivery Note": {
+        "parent": (),
+        "tables": {"items": ("incoming_rate",), "packed_items": ("incoming_rate",)},
+        "clear": (),
+    },
+    "Stock Entry": PRINT_MASK["Stock Entry"],
+    "Serial and Batch Bundle": PRINT_MASK["Serial and Batch Bundle"],
+    "Item": {"parent": ("valuation_rate", "last_purchase_rate"), "tables": {}, "clear": ()},
+}
+
+
+def _apply_mask(doc, spec):
     for field in spec["parent"]:
         if doc.meta.has_field(field):
             doc.set(field, None)
@@ -141,3 +186,51 @@ def blank_prices_for_print(doc, method=None, *args, **kwargs):
     for table in spec["clear"]:
         if doc.meta.has_field(table):
             doc.set(table, [])
+
+
+def blank_prices_for_print(doc, method=None, *args, **kwargs):
+    if is_price_restricted() and not (doc.doctype == "Purchase Receipt" and cint(doc.get(PR_OPEX))):
+        spec = PRINT_MASK.get(doc.doctype)
+        if spec:
+            _apply_mask(doc, spec)
+    if is_cost_restricted():
+        spec = COST_MASK.get(doc.doctype)
+        if spec:
+            _apply_mask(doc, spec)
+
+
+# Bảng giá: người bị ẩn giá vốn chỉ thấy giá của bảng giá chỉ dùng để bán (không thấy giá mua).
+def item_price_query_conditions(user=None, **kwargs):
+    if not is_cost_restricted(user):
+        return ""
+    return "(`tabItem Price`.`selling` = 1 and `tabItem Price`.`buying` = 0)"
+
+
+def item_price_has_permission(doc, ptype=None, user=None, **kwargs):
+    # Hook chỉ được từ chối: trả về True khi không có ý kiến.
+    if is_cost_restricted(user) and (not cint(doc.get("selling")) or cint(doc.get("buying"))):
+        return False
+    return True
+
+
+# Nút "Xem trước → Sổ cái / Sổ kho" trên phiếu nháp trả về giá vốn, giá trị kho; hàm chuẩn chỉ
+# kiểm quyền đọc phiếu. Chặn với người bị ẩn giá vốn (khai báo override_whitelisted_methods).
+def _deny_ledger_preview():
+    if is_cost_restricted():
+        frappe.throw(_("Bạn không có quyền xem trước sổ cái, sổ kho (có giá vốn)."), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def show_accounting_ledger_preview(company: str, doctype: str, docname: str):
+    from erpnext.controllers.stock_controller import show_accounting_ledger_preview as original
+
+    _deny_ledger_preview()
+    return original(company=company, doctype=doctype, docname=docname)
+
+
+@frappe.whitelist()
+def show_stock_ledger_preview(company: str, doctype: str, docname: str):
+    from erpnext.controllers.stock_controller import show_stock_ledger_preview as original
+
+    _deny_ledger_preview()
+    return original(company=company, doctype=doctype, docname=docname)

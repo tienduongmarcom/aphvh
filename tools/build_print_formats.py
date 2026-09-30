@@ -8,11 +8,13 @@ import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
-MODIFIED = "2026-09-29 15:00:00.000000"
+MODIFIED = "2026-09-30 15:00:00.000000"
 
 FORMATS = {
     "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),
     "phieu_kho_aph": ("Phiếu kho APH", "Stock Entry"),
+    "phieu_xuat_kho_ban_hang_aph": ("Phiếu xuất kho bán hàng APH", "Delivery Note"),
+    "bien_ban_giao_nhan_aph": ("Biên bản giao nhận APH", "Delivery Note"),
 }
 
 

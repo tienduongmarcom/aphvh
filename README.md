@@ -6,6 +6,9 @@ App riêng chạy trên ERPNext v16.
 - **0.2** — vai trò kế toán nhà máy, ẩn giá nguyên phụ liệu với vai trò này, phiếu nhập
   nguyên phụ liệu bắt buộc lấy từ đơn mua, báo cáo tồn kho số lượng, mẫu in phiếu nhập/xuất
   kho Việt Nam (01-VT, 02-VT theo TT133).
+- **0.3** — luồng bán hàng kho Hà Nội: cảnh báo công nợ và giá (không chặn), hóa đơn nháp tự tạo
+  khi xác nhận phiếu giao hàng, phiếu xuất kho và biên bản giao nhận 2 liên, vai trò nhân viên bán
+  hàng và thủ kho Hà Nội (thấy giá bán, không thấy giá vốn).
 
 ## Bản 0.1 làm gì
 
@@ -95,10 +98,13 @@ aphvh/
   stock_entry_kg.py   lớp mở rộng Stock Entry
   install.py          custom field, loại phiếu, vai trò + quyền, mẫu in mặc định (chạy lại được)
   price_visibility.py ai bị ẩn giá, quy tắc phiếu nhập nguyên phụ liệu / vật tư vận hành
-  print_utils.py      hàm dùng trong mẫu in (Nợ/Có, số tiền bằng chữ, định dạng số)
+  print_utils.py      hàm dùng trong mẫu in (Nợ/Có, số tiền bằng chữ, định dạng số, lô, địa chỉ)
+  sales_rules.py      0.3: so giá với bảng giá, chọn hạn mức, câu cảnh báo (thuần Python)
+  sales_warnings.py   0.3: cảnh báo công nợ/giá trên đơn bán hàng
+  sales_flow.py       0.3: hóa đơn nháp tự tạo từ phiếu giao hàng, thủ kho chỉ giao theo đơn
   vn_words.py         đọc số tiền bằng chữ, định dạng số kiểu Việt Nam (thuần Python)
   public/js/          ẩn cột giá trên màn hình (nạp qua doctype_js, không cần build)
-  aph_vh/print_format mẫu in 01-VT, 02-VT, phiếu sản xuất
+  aph_vh/print_format mẫu in 01-VT, 02-VT, phiếu sản xuất, phiếu xuất kho bán hàng, biên bản giao nhận
   aph_vh/report       báo cáo Tồn kho số lượng APH
   tests/              kiểm thử đơn vị
 tools/build_print_formats.py   ghép .html/.css vào .json mẫu in
@@ -143,6 +149,44 @@ Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app
   final_rows_024.json). Giữ nguyên bản dịch của "Stores", "Standard Selling", "after" vì mã dùng chúng để tra tên.
 - Sau khi cài: migrate, Ctrl+Shift+R; báo cáo chạy nền (Tổng hợp nhập – xuất – tồn) bấm "Xây dựng lại" để cột lấy tên mới.
 
+## 0.3 – luồng bán hàng kho Hà Nội (30/09/2026, duyệt trước khi cài)
+
+Theo thiết kế "Thiết kế luồng bán hàng APH – kho Hà Nội" và các quyết định của anh Tiến ngày 30/09.
+Chạy thử đủ chuỗi trên ERPNext 16.36.1 riêng (đơn → giao thiếu → giao nốt → hóa đơn → thu một phần →
+trả lại → hủy phiếu giao), số dư 131, 5111, 33311, 632, 156 khớp tính tay.
+
+| Phần | Làm gì |
+|---|---|
+| Cảnh báo công nợ | Khi lưu và xác nhận đơn bán hàng: công nợ (sổ 131 + đơn chưa lập hóa đơn) cộng đơn này vượt **Hạn mức cảnh báo**, hoặc khách có nợ quá hạn → hiện hộp "Cảnh báo", **vẫn lưu, vẫn xác nhận**. Hạn mức đặt ở bảng hạn mức tín dụng của nhóm khách, sửa riêng được cho từng khách, theo từng công ty; khách không đặt thì lấy nhóm, rồi nhóm cha. Cột hạn mức chuẩn của ERPNext (chặn) bị ẩn. |
+| Cảnh báo giá | Dòng có giá thấp hơn giá trong bảng giá → cảnh báo. Nhân viên bán hàng sửa giá tự do. |
+| Đánh dấu đơn | Đơn bị cảnh báo có ô "Vượt hạn mức hoặc có nợ quá hạn" / "Có dòng giá thấp hơn bảng giá" và nội dung cảnh báo; lọc được trên danh sách đơn. |
+| Hóa đơn nháp tự tạo | Xác nhận phiếu giao hàng → hóa đơn bán hàng **nháp** đúng số lượng đã giao, giá và thuế theo đơn, ngày hóa đơn = ngày giao, hạn thanh toán tính từ ngày giao. Kế toán kiểm tra rồi xác nhận. Phiếu nhận hàng trả lại: hóa đơn gốc **còn nháp** → trừ số trả lại thẳng vào hóa đơn nháp đó (trả hết thì xóa), không lập hóa đơn trả lại; hóa đơn gốc **đã xác nhận** → hóa đơn trả lại nháp gắn hóa đơn gốc (từng dòng, giảm công nợ của hóa đơn gốc). Đơn đã lập hóa đơn một phần trước khi giao, hoặc phiếu giao có dòng lập từ hóa đơn → không tự tạo (tránh trùng), báo kế toán. Tạo lỗi thì phiếu giao vẫn xác nhận, có Nhật ký lỗi và thông báo để kế toán lập tay. Hủy phiếu giao → xóa hóa đơn nháp app đã tạo từ phiếu đó. Hóa đơn có ô "Tự tạo từ phiếu giao hàng" để lọc. |
+| Phiếu xuất kho bán hàng APH | Mẫu 02-VT, thủ kho và người nhận ký. Giá bán theo đơn (chưa thuế), không có giá vốn; cột số lượng theo đơn và thực xuất; lô. Phiếu nhận hàng trả lại in thành phiếu nhập kho 01-VT. Mẫu in mặc định của phiếu giao hàng. |
+| Biên bản giao nhận APH | 2 liên trong một lần in (liên 1 giao khách, liên 2 công ty lưu): bên giao, người vận chuyển (khi thuê xe), bên nhận, đơn giá, thành tiền, thuế GTGT, tổng thanh toán, bằng chữ. |
+| Ô giao nhận trên phiếu giao hàng | Hình thức giao (Khách tự lấy / Thuê xe, nhà xe), người nhận hàng bên khách, nhà xe, lái xe, biển số, SĐT lái xe. Sửa được sau khi xác nhận. Nút **In → Phiếu xuất kho / Biên bản giao nhận (2 liên)**. |
+| Vai trò "Nhân viên bán hàng APH" | Lập, xác nhận đơn bán hàng; đọc khách, mã hàng, bảng giá **bán** (không thấy bảng giá mua), phiếu giao hàng; không tạo khách, không xem hóa đơn, không xuất Excel. |
+| Vai trò "Thủ kho Hà Nội APH" | Lập, in, xác nhận phiếu giao hàng **từ đơn** (không có đơn thì không lưu được), phiếu trả lại; không sửa giá (khóa trên màn hình và chặn ở máy chủ); đọc đơn, phiếu kho chuyển về; không xem hóa đơn. |
+| Ẩn giá vốn | Với hai vai trò trên (và kế toán nhà máy): giá tồn kho, lãi gộp trên dòng đơn; giá vào trên phiếu giao (cả hàng bộ); giá tồn kho, giá mua trên mã hàng; giá trên gói lô và phiếu kho — ẩn trên màn hình và xóa khỏi bản in. Nút "Xem trước → Sổ cái / Sổ kho" trên phiếu nháp bị chặn. Bảng giá chỉ thấy bảng giá chỉ dùng để bán. Báo cáo Tồn kho số lượng APH mở cho hai vai trò. |
+| Cài đặt bán hàng | Mục "An Phú Hưng – luồng bán hàng": bật/tắt tự tạo hóa đơn, cảnh báo công nợ, cảnh báo giá (bật sẵn). |
+
+Kế toán dùng vai trò chuẩn (Accounts User, Sales Manager…): thấy giá vốn, xác nhận hóa đơn.
+
+Lưu ý:
+- Hạn mức tín dụng chuẩn của ERPNext (chặn) bị ẩn; nếu khách/nhóm khách nào đang có số ở cột đó thì
+  app KHÔNG ẩn và in cảnh báo khi migrate — xóa số đó để chỉ còn cảnh báo.
+- Trả lại khi hóa đơn gốc còn nháp: phiếu giao gốc hiện "Partially Billed" (hóa đơn = số giữ lại), giống
+  luồng chuẩn của ERPNext khi trả hàng trước khi lập hóa đơn.
+- Cài đặt bán hàng dùng chung mọi công ty (khi thêm Vĩnh Hưng sẽ xem lại). Không bật "Validate Selling
+  Price" (thông báo lỗi của nó nêu giá vốn).
+
+**Chưa làm ở bản này (bước cài nền, làm sau khi chị Dung trả lời):** nhóm khách, loại thuế, mẫu thuế,
+quy tắc thuế; 5 kho vệ tinh; bật tài khoản kho theo nhóm hàng (Kho Hà Nội chứa cả 155 và 156);
+Selling Settings "giữ đúng giá từ đơn sang hóa đơn"; giới hạn kho cho thủ kho (User Permission).
+
+Cài: dựng bản mới, migrate, Ctrl+Shift+R. Không có bản vá dữ liệu; `after_migrate` tạo ô, vai trò,
+quyền (chỉ khi chưa có), đặt mẫu in mặc định của phiếu giao hàng (trừ khi đã chọn mẫu khác
+"with Item Image").
+
 ## Nâng cấp bản đã cài (0.1 → 0.2.x)
 
 ```bash
@@ -159,5 +203,5 @@ docker exec <du-an>-backend-1 bench --site frontend migrate
 ## Kiểm thử
 
 ```bash
-python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations -v
+python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations aphvh.tests.test_sales_rules -v
 ```

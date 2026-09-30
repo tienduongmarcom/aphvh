@@ -1,4 +1,4 @@
-// aphvh — ẩn giá với kế toán nhà máy ở mức màn hình (xem aphvh/price_visibility.py).
+// aphvh — ẩn giá (nhà máy) và giá vốn (bán hàng, thủ kho) ở mức màn hình (xem aphvh/price_visibility.py).
 // Đoạn khai báo dùng chung này có ở đầu mỗi tệp; tệp nào nạp trước thì khai báo, tệp sau dùng lại.
 frappe.provide("aphvh.price");
 if (!aphvh.price.toggle_grid) {
@@ -39,12 +39,17 @@ if (!aphvh.price.toggle_grid) {
 		listview.refresh();
 	};
 }
+// 0.3: khai báo riêng (ngoài khối trên) để không hỏng khi trình duyệt còn bản JS cũ đã nạp khối trên.
+aphvh.price.cost_restricted =
+	aphvh.price.cost_restricted || (() => !!(frappe.boot.aphvh && frappe.boot.aphvh.cost_restricted));
+aphvh.price.hn_storekeeper =
+	aphvh.price.hn_storekeeper || (() => !!(frappe.boot.aphvh && frappe.boot.aphvh.hn_storekeeper));
 
 // Gói lô/serial: ẩn giá vào, giá trị.
 (() => {
 	frappe.ui.form.on("Serial and Batch Bundle", {
 		refresh(frm) {
-			if (!aphvh.price.restricted()) return;
+			if (!aphvh.price.restricted() && !aphvh.price.cost_restricted()) return;
 			aphvh.price.toggle_fields(frm, ["avg_rate", "total_amount"], false);
 			aphvh.price.toggle_grid(frm, "entries", ["incoming_rate", "outgoing_rate", "stock_value_difference"], false);
 		},

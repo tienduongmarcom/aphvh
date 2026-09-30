@@ -1,5 +1,8 @@
 """Hàm dùng trong mẫu in (khai báo ở hooks.jinja). Tên hàm có tiền tố aphvh_ để không trùng."""
 
+import html
+import re
+
 import frappe
 from frappe.utils import cint, flt, getdate
 
@@ -61,8 +64,9 @@ def aphvh_bang_chu(amount) -> str:
 
 
 def aphvh_cong_ty(company: str) -> dict:
-    """Tên và địa chỉ đơn vị cho đầu mẫu in."""
+    """Tên, địa chỉ, mã số thuế đơn vị cho đầu mẫu in."""
     name = frappe.get_cached_value("Company", company, "company_name") or company
+    mst = frappe.get_cached_value("Company", company, "tax_id") or ""
     address = ""
     link = frappe.get_all(
         "Dynamic Link",
@@ -74,7 +78,7 @@ def aphvh_cong_ty(company: str) -> dict:
         a = frappe.db.get_value("Address", link[0], ["address_line1", "address_line2", "city"], as_dict=True)
         if a:
             address = ", ".join(x for x in (a.address_line1, a.address_line2, a.city) if x)
-    return {"ten": name, "dia_chi": address}
+    return {"ten": name, "dia_chi": address, "mst": mst}
 
 
 def aphvh_ten_nguoi(user: str) -> str:
@@ -95,3 +99,36 @@ def aphvh_ten_kho(warehouse: str) -> str:
     if not warehouse:
         return ""
     return frappe.get_cached_value("Warehouse", warehouse, "warehouse_name") or warehouse
+
+
+def aphvh_sl_don_ban(row) -> float | None:
+    """Số lượng trên đơn bán hàng của dòng phiếu giao hàng; None nếu dòng không lấy từ đơn."""
+    if not row.get("so_detail"):
+        return None
+    return frappe.db.get_value("Sales Order Item", row.so_detail, "qty")
+
+
+def aphvh_dia_chi(text) -> str:
+    """Địa chỉ dạng HTML nhiều dòng (address_display) thành một dòng để in."""
+    return mot_dong(text)
+
+
+def mot_dong(text) -> str:
+    """Bỏ thẻ HTML, gộp các dòng bằng dấu phẩy; kết quả đã escape để in thẳng vào HTML."""
+    if not text:
+        return ""
+    s = re.sub(r"<br\s*/?>|\n", ", ", str(text))
+    s = html.unescape(re.sub(r"<[^>]+>", "", s))
+    parts = [p.strip() for p in s.split(",")]
+    return html.escape(", ".join(p for p in parts if p), quote=False)
+
+
+def aphvh_lo(row) -> str:
+    """Số lô của dòng phiếu (ô lô trên dòng, hoặc các lô trong gói serial/lô)."""
+    if row.get("batch_no"):
+        return row.batch_no
+    bundle = row.get("serial_and_batch_bundle")
+    if not bundle:
+        return ""
+    lots = frappe.get_all("Serial and Batch Entry", filters={"parent": bundle}, pluck="batch_no")
+    return ", ".join(sorted({x for x in lots if x}))

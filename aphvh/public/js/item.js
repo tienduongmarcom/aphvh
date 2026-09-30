@@ -1,4 +1,4 @@
-// aphvh — ẩn giá với kế toán nhà máy ở mức màn hình (xem aphvh/price_visibility.py).
+// aphvh — ẩn giá (nhà máy) và giá vốn (bán hàng, thủ kho) ở mức màn hình (xem aphvh/price_visibility.py).
 // Đoạn khai báo dùng chung này có ở đầu mỗi tệp; tệp nào nạp trước thì khai báo, tệp sau dùng lại.
 frappe.provide("aphvh.price");
 if (!aphvh.price.toggle_grid) {
@@ -39,15 +39,22 @@ if (!aphvh.price.toggle_grid) {
 		listview.refresh();
 	};
 }
+// 0.3: khai báo riêng (ngoài khối trên) để không hỏng khi trình duyệt còn bản JS cũ đã nạp khối trên.
+aphvh.price.cost_restricted =
+	aphvh.price.cost_restricted || (() => !!(frappe.boot.aphvh && frappe.boot.aphvh.cost_restricted));
+aphvh.price.hn_storekeeper =
+	aphvh.price.hn_storekeeper || (() => !!(frappe.boot.aphvh && frappe.boot.aphvh.hn_storekeeper));
 
-// Mã hàng: ẩn giá bán chuẩn, giá tồn kho, giá mua lần cuối, bảng giá.
+// Mã hàng: kế toán nhà máy không thấy giá bán chuẩn, giá tồn kho, giá mua lần cuối, bảng giá.
+// Nhân viên bán hàng, thủ kho Hà Nội thấy giá bán, không thấy giá tồn kho và giá mua.
 (() => {
 	const FIELDS = ["standard_rate", "valuation_rate", "last_purchase_rate", "pricing_tab", "prices_html"];
+	const COST = ["valuation_rate", "last_purchase_rate"];
 
 	frappe.ui.form.on("Item", {
 		refresh(frm) {
-			if (!aphvh.price.restricted()) return;
-			aphvh.price.toggle_fields(frm, FIELDS, false);
+			if (aphvh.price.restricted()) aphvh.price.toggle_fields(frm, FIELDS, false);
+			else if (aphvh.price.cost_restricted()) aphvh.price.toggle_fields(frm, COST, false);
 		},
 	});
 })();

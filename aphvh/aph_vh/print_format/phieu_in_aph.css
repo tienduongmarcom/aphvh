@@ -24,3 +24,9 @@
 .aph-vt .aph-sign-date { text-align: right; font-style: italic; margin-top: 10px; padding-right: 4%; }
 .aph-vt .aph-sign td { text-align: center; padding-top: 4px; }
 .aph-vt .aph-sign-name { margin-top: 70px; }
+.aph-vt .aph-qh { width: 50%; text-align: center; }
+.aph-vt .aph-lien { font-style: italic; margin-top: 2px; }
+.aph-vt .aph-party { font-weight: bold; margin-top: 6px; }
+.aph-vt .aph-tbl .aph-sum td { font-weight: bold; }
+.aph-vt .aph-tbl .aph-sum .l { text-align: right; }
+.aph-vt .c-lo { width: 11%; }

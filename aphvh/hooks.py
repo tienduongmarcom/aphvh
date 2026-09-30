@@ -37,6 +37,34 @@ doc_events = {
     "Stock Entry": {"before_print": _BLANK},
     "Serial and Batch Bundle": {"before_print": _BLANK},
     "Item": {"before_print": _BLANK},
+    # 0.3: cảnh báo công nợ/giá khi lưu và xác nhận đơn; hóa đơn nháp tự tạo từ phiếu giao hàng;
+    # thủ kho chỉ giao theo đơn; ẩn giá vốn trên bản in với nhân viên bán hàng, thủ kho.
+    "Sales Order": {
+        "validate": "aphvh.sales_warnings.validate_sales_order",
+        "before_print": _BLANK,
+    },
+    "Delivery Note": {
+        "validate": "aphvh.sales_flow.validate_delivery_note",
+        "on_submit": "aphvh.sales_flow.make_draft_invoice",
+        "on_cancel": "aphvh.sales_flow.remove_draft_invoices",
+        "before_print": _BLANK,
+    },
+}
+
+# 0.3: nhân viên bán hàng chỉ thấy giá của bảng giá bán.
+permission_query_conditions = {
+    "Item Price": "aphvh.price_visibility.item_price_query_conditions",
+}
+has_permission = {
+    "Item Price": "aphvh.price_visibility.item_price_has_permission",
+}
+
+# Xem trước sổ cái / sổ kho trên phiếu nháp lộ giá vốn: chặn với người bị ẩn giá vốn.
+override_whitelisted_methods = {
+    "erpnext.controllers.stock_controller.show_accounting_ledger_preview":
+        "aphvh.price_visibility.show_accounting_ledger_preview",
+    "erpnext.controllers.stock_controller.show_stock_ledger_preview":
+        "aphvh.price_visibility.show_stock_ledger_preview",
 }
 
 # Ẩn cột giá trên màn hình với vai trò "Kế toán nhà máy APH" (không cần build asset).
@@ -46,13 +74,15 @@ doctype_js = {
     "Stock Entry": "public/js/stock_entry.js",
     "Item": "public/js/item.js",
     "Serial and Batch Bundle": "public/js/serial_and_batch_bundle.js",
+    "Sales Order": "public/js/sales_order.js",
+    "Delivery Note": "public/js/delivery_note.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
     "Purchase Order": "public/js/purchase_order_list.js",
 }
 
-# Hàm dùng trong mẫu in Phiếu nhập kho APH / Phiếu kho APH.
+# Hàm dùng trong mẫu in Phiếu nhập kho APH / Phiếu kho APH / phiếu xuất kho bán hàng, biên bản giao nhận.
 jinja = {
     "methods": [
         "aphvh.print_utils.aphvh_an_gia",
@@ -64,5 +94,8 @@ jinja = {
         "aphvh.print_utils.aphvh_ten_nguoi",
         "aphvh.print_utils.aphvh_sl_chung_tu",
         "aphvh.print_utils.aphvh_ten_kho",
+        "aphvh.print_utils.aphvh_sl_don_ban",
+        "aphvh.print_utils.aphvh_dia_chi",
+        "aphvh.print_utils.aphvh_lo",
     ],
 }

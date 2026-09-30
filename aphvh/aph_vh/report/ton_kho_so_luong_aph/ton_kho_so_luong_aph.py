@@ -1,4 +1,4 @@
-"""Tồn kho theo SỐ LƯỢNG (không có giá, giá trị) — cho kế toán nhà máy.
+"""Tồn kho theo SỐ LƯỢNG (không có giá, giá trị) — cho kế toán nhà máy, nhân viên bán hàng, thủ kho Hà Nội.
 
 Báo cáo gốc có giá trị (Stock Balance, Stock Ledger…) không mở cho vai trò nhà máy.
 """
