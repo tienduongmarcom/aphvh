@@ -1,0 +1,64 @@
+{#- Phiếu thu (01-TT) / phiếu chi (02-TT) in từ Thanh toán (Payment Entry).
+    Thu hay chi theo phía tài khoản tiền mặt; tiền gửi ngân hàng in chứng từ thu/chi ngân hàng (không mẫu).
+    Căn cứ mẫu theo công ty: APH TT133/2016, VH TT99/2025. Lý do viết tiếng Việt (ERPNext tự sinh tiếng Anh). -#}
+{%- set cty = aphvh_cong_ty(doc.company) -%}
+{%- set nc = aphvh_no_co(doc) -%}
+{%- set p = aphvh_thu_chi(doc) -%}
+{%- set cham = ".................................................." -%}
+<div class="aph-vt">
+<table class="aph-head"><tr>
+  <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
+  <td class="aph-mau">{% if p.mau %}<b>Mẫu số {{ p.mau }}</b>{% if p.can_cu %}<br><i>{{ p.can_cu }}</i>{% endif %}{% endif %}</td>
+</tr></table>
+<table class="aph-title"><tr>
+  <td class="aph-side"></td>
+  <td class="aph-center">
+    <div class="aph-name">{{ p.tieu_de }}</div>
+    <div class="aph-date">{{ aphvh_ngay(doc.posting_date) }}</div>
+    <div>Số: {{ doc.name }}</div>
+  </td>
+  <td class="aph-side aph-noco">Nợ: {{ nc.no }}<br>Có: {{ nc.co }}</td>
+</tr></table>
+
+<div class="aph-info aph-tc">
+  {%- if p.kieu == "thu" %}
+  <div>Họ và tên người nộp tiền: <b>{{ p.nguoi or cham }}</b></div>
+  {%- elif p.kieu == "chi" %}
+  <div>Họ và tên người nhận tiền: <b>{{ p.nguoi or cham }}</b></div>
+  {%- endif %}
+  {%- if p.kieu != "chuyen" %}
+  <div>Địa chỉ: {{ p.dia_chi or cham }}</div>
+  {%- endif %}
+  <div>{{ "Lý do nộp" if p.kieu == "thu" else ("Lý do chi" if p.kieu == "chi" else "Nội dung") }}: {{ p.ly_do }}</div>
+  <div>Số tiền: <b>{{ p.so_tien }} {{ p.tien_te }}</b> &nbsp;<i>(Viết bằng chữ): {{ p.bang_chu }}</i></div>
+  {%- if p.ngoai_te %}
+  <div>+ Tỷ giá ngoại tệ: {{ p.ty_gia }} &nbsp;&nbsp; + Số tiền quy đổi: {{ p.quy_doi }} đồng</div>
+  {%- endif %}
+  {%- if not p.tien_mat %}
+  <div>Tài khoản ngân hàng: {{ p.tai_khoan }}{% if p.tham_chieu %} &nbsp; Số tham chiếu: {{ p.tham_chieu }}{% endif %}</div>
+  {%- endif %}
+  <div>Kèm theo: ............ chứng từ gốc.</div>
+</div>
+
+<div class="aph-sign-date">{{ aphvh_ngay(doc.posting_date) }}</div>
+<table class="aph-sign"><tr>
+  <td><b>Giám đốc</b><br><i>(Ký, họ tên, đóng dấu)</i></td>
+  <td><b>Kế toán trưởng</b><br><i>(Ký, họ tên)</i></td>
+  {%- if p.tien_mat and p.kieu == "thu" %}
+  <td><b>Người nộp tiền</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ aphvh_ten_nguoi(doc.owner) }}</div></td>
+  <td><b>Thủ quỹ</b><br><i>(Ký, họ tên)</i></td>
+  {%- elif p.tien_mat and p.kieu == "chi" %}
+  <td><b>Thủ quỹ</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ aphvh_ten_nguoi(doc.owner) }}</div></td>
+  <td><b>Người nhận tiền</b><br><i>(Ký, họ tên)</i></td>
+  {%- else %}
+  <td><b>Người lập</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ aphvh_ten_nguoi(doc.owner) }}</div></td>
+  {%- endif %}
+</tr></table>
+{%- if p.tien_mat and p.kieu in ("thu", "chi") %}
+<div class="aph-info aph-tc">
+  <div>Đã nhận đủ số tiền (viết bằng chữ): {{ cham }}{{ cham }}</div>
+</div>
+{%- endif %}
+</div>

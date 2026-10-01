@@ -55,6 +55,8 @@ def _env(an):
         aphvh_dia_chi=lambda t: (t or "").replace("<br>", ", ").strip(", "),
         aphvh_lo=lambda row: row.get("batch_no") or "",
         aphvh_gia_gom_thue=_gia_gom_thue,
+        aphvh_mau=lambda c: "(Ban hành theo Thông tư số 133/2016/TT-BTC ngày 26/08/2016 của Bộ Tài chính)" if c == "APH" else "",
+        aphvh_loai_phieu_kho=__import__("aphvh.print_rules", fromlist=["x"]).ten_loai_phieu_kho,
     )
     return env
 
@@ -122,6 +124,12 @@ class TestPrintFormats(unittest.TestCase):
 
             out = env.from_string(html).render(doc=se("Material Issue", [nl]))
             self.assertIn("PHIẾU XUẤT KHO", out)
+            self.assertIn("Lý do xuất kho: Xuất kho", out)
+            self.assertNotIn("Material Issue", out)
+
+            out = env.from_string(html).render(doc=se("Manufacture", [nl, tp]))
+            self.assertIn("Loại phiếu: Sản xuất", out)
+            self.assertNotIn("Manufacture", out)
 
 
 def _dn(**kw):
@@ -239,6 +247,123 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("32.000", out)
         self.assertIn("21.600.000", out)
         self.assertNotIn("gồm thuế", out)
+
+
+def _thu_chi(kieu, tien_mat=True, **kw):
+    from aphvh.print_rules import tieu_de_thu_chi
+
+    td, mau = tieu_de_thu_chi(kieu, tien_mat)
+    base = dict(kieu=kieu, tien_mat=tien_mat, tieu_de=td, mau=mau,
+                can_cu="(Ban hành theo Thông tư số 133/2016/TT-BTC ngày 26/08/2016 của Bộ Tài chính)" if mau else "",
+                nguoi="Nguyễn Văn Nộp", dia_chi="Số 1 Láng, Hà Nội", ly_do="Thu tiền hàng theo hóa đơn ACC-SINV-2026-00069",
+                so_tien="1.050.000", tien_te="VND", bang_chu="Một triệu không trăm năm mươi nghìn đồng",
+                ngoai_te=False, ty_gia="", quy_doi="", tai_khoan="Tiền gửi MB", tham_chieu="FT26275")
+    base.update(kw)
+    return base
+
+
+class TestPaymentPrints(unittest.TestCase):
+    def render(self, p):
+        html = (ROOT / "phieu_thu_chi_aph" / "phieu_thu_chi_aph.html").read_text(encoding="utf-8")
+        env = _env(False)
+        env.globals["aphvh_thu_chi"] = lambda doc: p
+        return env.from_string(html).render(doc=Row(doctype="Payment Entry", name="ACC-PAY-2026-00010", company="APH",
+                                                    posting_date="2026-10-02", owner="ktbh@x"))
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_phieu_thu(self):
+        out = self.render(_thu_chi("thu"))
+        self.assertIn("PHIẾU THU", out)
+        self.assertIn("Mẫu số 01-TT", out)
+        self.assertIn("133/2016/TT-BTC", out)
+        self.assertIn("Họ và tên người nộp tiền: <b>Nguyễn Văn Nộp</b>", out)
+        self.assertIn("Lý do nộp: Thu tiền hàng", out)
+        self.assertIn("1.050.000 VND", out)
+        self.assertIn("Một triệu không trăm năm mươi nghìn đồng", out)
+        self.assertIn("Thủ quỹ", out)
+        self.assertIn("Người nộp tiền", out)
+        self.assertIn("Đã nhận đủ số tiền", out)
+        self.assertNotIn("Tài khoản ngân hàng", out)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_phieu_chi(self):
+        out = self.render(_thu_chi("chi", ly_do="Chi trả tiền hàng theo hóa đơn mua ACC-PINV-2026-00003"))
+        self.assertIn("PHIẾU CHI", out)
+        self.assertIn("Mẫu số 02-TT", out)
+        self.assertIn("Họ và tên người nhận tiền", out)
+        self.assertIn("Lý do chi: Chi trả tiền hàng", out)
+        self.assertIn("Người nhận tiền", out)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_ngan_hang_ngoai_te(self):
+        out = self.render(_thu_chi("thu", tien_mat=False, ngoai_te=True, so_tien="1.000", tien_te="USD",
+                                   ty_gia="26.100", quy_doi="26.100.000", bang_chu="Một nghìn đô la Mỹ"))
+        self.assertIn("CHỨNG TỪ THU TIỀN GỬI NGÂN HÀNG", out)
+        self.assertNotIn("Mẫu số", out)
+        self.assertIn("Tài khoản ngân hàng: Tiền gửi MB", out)
+        self.assertIn("Số tham chiếu: FT26275", out)
+        self.assertIn("Tỷ giá ngoại tệ: 26.100", out)
+        self.assertIn("26.100.000 đồng", out)
+        self.assertNotIn("Thủ quỹ", out)
+
+
+def _si(**kw):
+    base = dict(
+        doctype="Sales Invoice", name="ACC-SINV-2026-00069", company="APH", posting_date="2026-10-02", owner="ktbh@x",
+        customer="KH-1", customer_name="Hộ kinh doanh Nguyễn Văn A", tax_id="001099000001", is_return=0,
+        address_display="Chợ Long Biên<br>Hà Nội", aphvh_xuat_hoa_don="Có", aphvh_hd_so="123", aphvh_hd_ky_hieu="1C26TAP",
+        net_total=1_100_000, total_taxes_and_charges=58_000, grand_total=1_158_000, rounded_total=1_158_000,
+        items=[
+            Row(item_name="Đậu đen", uom="Kg", qty=10, net_rate=100_000, net_amount=1_000_000),
+            Row(item_name="Tinh bột sắn", uom="Kg", qty=1, net_rate=100_000, net_amount=100_000),
+        ],
+        taxes=[Row(rate=0)],
+    )
+    base.update(kw)
+    return Row(**base)
+
+
+class TestSalesInvoicePrint(unittest.TestCase):
+    def render(self, doc, bh):
+        html = (ROOT / "phieu_ban_hang_aph" / "phieu_ban_hang_aph.html").read_text(encoding="utf-8")
+        env = _env(False)
+        env.globals["aphvh_ban_hang"] = lambda d: bh
+        return env.from_string(html).render(doc=doc)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_co_hoa_don(self):
+        bh = {"co_thue": True, "dong": [{"nhan": "5%", "thue": 50_000}, {"nhan": "8%", "thue": 8_000}],
+              "no": {"cu": 2_000_000, "con_no_hd": 1_158_000, "tong": 3_158_000}}
+        out = self.render(_si(), bh)
+        self.assertIn("PHIẾU BÁN HÀNG", out)
+        self.assertIn("Thuế suất", out)
+        self.assertIn("50.000", out)
+        self.assertIn("8%", out)
+        self.assertIn("1.158.000", out)
+        self.assertIn("Một triệu một trăm năm mươi tám nghìn đồng", out)
+        self.assertIn("Tổng nợ: 3.158.000", out)
+        self.assertIn("ký hiệu 1C26TAP, số 123", out)
+        self.assertIn("Chợ Long Biên, Hà Nội", out)
+        self.assertIn("không thay thế hóa đơn", out)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_khong_hoa_don_va_tra_hang(self):
+        bh = {"co_thue": False, "dong": [{"nhan": "", "thue": 0}], "no": None}
+        doc = _si(aphvh_xuat_hoa_don="Không", aphvh_hd_so=None, total_taxes_and_charges=0, net_total=1_000_000,
+                  grand_total=1_000_000, rounded_total=1_000_000,
+                  items=[Row(item_name="Đậu đen", uom="Kg", qty=10, net_rate=100_000, net_amount=1_000_000)])
+        out = self.render(doc, bh)
+        self.assertNotIn("Thuế suất", out)
+        self.assertNotIn("Tiền thuế GTGT", out)
+        self.assertNotIn("Công nợ", out)
+        doc = _si(is_return=1, return_against="ACC-SINV-2026-00069", net_total=-1_000_000, grand_total=-1_050_000,
+                  rounded_total=-1_050_000, total_taxes_and_charges=-50_000,
+                  items=[Row(item_name="Đậu đen", uom="Kg", qty=-10, net_rate=100_000, net_amount=-1_000_000)])
+        out = self.render(doc, {"co_thue": True, "dong": [{"nhan": "5%", "thue": -50_000}], "no": None})
+        self.assertIn("PHIẾU NHẬN LẠI HÀNG BÁN", out)
+        self.assertIn("1.050.000", out)
+        self.assertNotIn("-1.050.000", out)
+        self.assertIn("tiền trả lại", out)
 
 
 def _load_tools():

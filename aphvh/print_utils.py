@@ -153,3 +153,130 @@ def aphvh_gia_gom_thue(doc) -> dict:
     total = abs(flt(doc.get("base_rounded_total")) or flt(doc.get("base_grand_total")))
     lines = [(r.get("qty"), r.get("base_net_amount"), tax_row.get(r.get("name"), 0)) for r in items]
     return {"dong": gia_gom_thue(lines, total), "tong": total, "co_thue": bool(total_tax)}
+
+
+# --- 0.3.7: phiếu thu/chi, phiếu bán hàng, tên loại phiếu kho, căn cứ mẫu theo công ty ------------
+
+def aphvh_mau(company) -> str:
+    """Dòng căn cứ mẫu chứng từ theo chế độ kế toán của công ty (APH: TT133, VH: TT99, hộ KD: không ghi)."""
+    from aphvh.print_rules import can_cu_mau
+
+    return can_cu_mau(frappe.get_cached_value("Company", company, "abbr") if company else "")
+
+
+def aphvh_loai_phieu_kho(name) -> str:
+    from aphvh.print_rules import ten_loai_phieu_kho
+
+    return ten_loai_phieu_kho(name)
+
+
+def _dia_chi_doi_tuong(party_type, party) -> str:
+    if not party_type or not party or party_type not in ("Customer", "Supplier"):
+        return ""
+    field = "customer_primary_address" if party_type == "Customer" else "supplier_primary_address"
+    addr = frappe.get_cached_value(party_type, party, field)
+    if not addr:
+        link = frappe.get_all(
+            "Dynamic Link",
+            filters={"link_doctype": party_type, "link_name": party, "parenttype": "Address"},
+            pluck="parent",
+            limit=1,
+        )
+        addr = link[0] if link else None
+    if not addr:
+        return ""
+    a = frappe.db.get_value("Address", addr, ["address_line1", "address_line2", "city"], as_dict=True) or {}
+    return html.escape(", ".join(x for x in (a.get("address_line1"), a.get("address_line2"), a.get("city")) if x), quote=False)
+
+
+def aphvh_thu_chi(doc) -> dict:
+    """Thông tin in phiếu thu / phiếu chi từ Payment Entry."""
+    from aphvh.print_rules import chu_tien_te, ly_do, loai_thu_chi, tieu_de_thu_chi
+    from aphvh.vn_words import so_tien_bang_chu
+
+    t_from = frappe.get_cached_value("Account", doc.paid_from, "account_type") if doc.get("paid_from") else ""
+    t_to = frappe.get_cached_value("Account", doc.paid_to, "account_type") if doc.get("paid_to") else ""
+    loai = loai_thu_chi(doc.payment_type, t_from, t_to)
+    tieu_de, mau = tieu_de_thu_chi(loai["kieu"], loai["tien_mat"])
+    if loai["kieu"] == "thu":
+        tien, tt, tk = flt(doc.received_amount), doc.get("paid_to_account_currency"), doc.paid_to
+        ty_gia = flt(doc.get("target_exchange_rate"))
+    else:
+        tien, tt, tk = flt(doc.paid_amount), doc.get("paid_from_account_currency"), doc.paid_from
+        ty_gia = flt(doc.get("source_exchange_rate"))
+    company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "VND"
+    ngoai_te = bool(tt) and tt != company_currency
+    refs = [(r.reference_doctype, r.reference_name) for r in doc.get("references") or []]
+    ghi_chu = doc.get("remarks") if doc.get("custom_remarks") else None
+    nguoi = doc.get("aphvh_nguoi_nop_nhan") or doc.get("party_name") or ""
+    return {
+        "kieu": loai["kieu"],
+        "tien_mat": loai["tien_mat"],
+        "tieu_de": tieu_de,
+        "mau": mau,
+        "can_cu": aphvh_mau(doc.company) if mau else "",
+        "nguoi": html.escape(nguoi, quote=False),
+        "dia_chi": _dia_chi_doi_tuong(doc.get("party_type"), doc.get("party")),
+        "ly_do": html.escape(ly_do(doc.payment_type, doc.get("party_type"), refs, t_from, t_to, ghi_chu), quote=False),
+        "so_tien": so_vn(tien, 2 if ngoai_te else 0),
+        "tien_te": tt or company_currency,
+        "bang_chu": so_tien_bang_chu(tien, chu_tien_te(tt)),
+        "ngoai_te": ngoai_te,
+        "ty_gia": so_vn(ty_gia, 2) if ngoai_te else "",
+        "quy_doi": so_vn(tien * ty_gia, 0) if ngoai_te else "",
+        "tai_khoan": frappe.get_cached_value("Account", tk, "account_name") if tk else "",
+        "tham_chieu": doc.get("reference_no") or "",
+    }
+
+
+def aphvh_ban_hang(doc) -> dict:
+    """Phiếu bán hàng (Sales Invoice): thuế suất, tiền thuế từng dòng, công nợ của khách."""
+    import json as _json
+    from collections import defaultdict
+
+    from aphvh.constants import INV_FLAG, INV_YES
+    from aphvh.print_rules import nhan_thue_suat
+
+    co_thue = doc.get(INV_FLAG) == INV_YES and bool(doc.get("taxes"))
+    vat_acc = frappe.db.get_value("Account", {"company": doc.company, "account_number": "33311", "is_group": 0}, "name")
+    tax_row = defaultdict(float)
+    for d in doc.get("item_wise_tax_details") or []:
+        tax_row[d.get("item_row")] += flt(d.get("amount"))
+    dong = []
+    for r in doc.get("items") or []:
+        rate = None
+        if r.get("item_tax_rate"):
+            try:
+                m = _json.loads(r.item_tax_rate) if isinstance(r.item_tax_rate, str) else r.item_tax_rate
+                rate = (m or {}).get(vat_acc)
+            except ValueError:
+                rate = None
+        if rate is None and co_thue:
+            rate = next((flt(t.rate) for t in doc.taxes if t.account_head == vat_acc), None)
+        title = frappe.get_cached_value("Item Tax Template", r.item_tax_template, "title") if r.get("item_tax_template") else ""
+        thue = tax_row.get(r.name)
+        if thue is None or (not thue and rate):
+            thue = flt(r.get("net_amount")) * flt(rate) / 100
+        dong.append(
+            {
+                "nhan": nhan_thue_suat(title, rate) if co_thue else "",
+                "thue": thue if co_thue else 0,
+            }
+        )
+    walk_in = bool(frappe.get_cached_value("Customer", doc.customer, "aphvh_khach_chung")) if doc.get("customer") else True
+    no = None
+    if not walk_in and not doc.get("is_return"):
+        # Công nợ của khách tại công ty này, tính đến lúc in (gồm cả các phiếu thu sau ngày hóa đơn).
+        so_du = flt(
+            frappe.db.sql(
+                """select ifnull(sum(debit - credit), 0) from `tabGL Entry`
+                   where party_type='Customer' and party=%s and company=%s and is_cancelled=0""",
+                (doc.customer, doc.company),
+            )[0][0]
+        )
+        tong_hd = flt(doc.get("rounded_total") or doc.get("grand_total"))
+        con_no_hd = flt(doc.get("outstanding_amount")) if doc.docstatus == 1 else tong_hd
+        if doc.docstatus != 1:
+            so_du += tong_hd
+        no = {"cu": so_du - con_no_hd, "con_no_hd": con_no_hd, "tong": so_du}
+    return {"co_thue": co_thue, "dong": dong, "no": no}

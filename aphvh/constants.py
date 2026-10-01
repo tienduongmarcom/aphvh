@@ -93,6 +93,9 @@ DN_DRIVER_PHONE = "aphvh_sdt_lai_xe"
 
 PRINT_DN_ISSUE = "Phiếu xuất kho bán hàng APH"
 PRINT_DN_HANDOVER = "Biên bản giao nhận APH"
+PRINT_PAYMENT = "Phiếu thu chi APH"
+PRINT_SALES_INVOICE = "Phiếu bán hàng APH"
+PE_PERSON = "aphvh_nguoi_nop_nhan"
 
 # --- Có / không xuất hóa đơn GTGT (0.3.1) ---------------------------------------------------
 # ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn. Ô này trên khách (mặc định do

@@ -26,6 +26,9 @@ from aphvh.constants import (
     KG_ENTRY_TYPE,
     PR_OPEX,
     PRINT_DN_ISSUE,
+    PRINT_PAYMENT,
+    PRINT_SALES_INVOICE,
+    PE_PERSON,
     PRINT_PURCHASE_RECEIPT,
     PRINT_STOCK_ENTRY,
     REPORT_INVOICED,
@@ -462,6 +465,8 @@ DEFAULT_PRINT_FORMATS = {
     "Purchase Receipt": PRINT_PURCHASE_RECEIPT,
     "Stock Entry": PRINT_STOCK_ENTRY,
     "Delivery Note": PRINT_DN_ISSUE,
+    "Payment Entry": PRINT_PAYMENT,
+    "Sales Invoice": PRINT_SALES_INVOICE,
 }
 
 TRANSLATIONS = {REPORT_QTY: REPORT_QTY_LABEL, REPORT_INVOICED: REPORT_INVOICED_LABEL}
@@ -489,6 +494,16 @@ _AP_THUE_FIELD = {
 }
 
 VAT_CUSTOM_FIELDS = {
+    # 0.3.7: tên người nộp / nhận tiền in trên phiếu thu, phiếu chi (trống thì in tên đối tượng).
+    "Payment Entry": [
+        {
+            "fieldname": PE_PERSON,
+            "label": "Người nộp / nhận tiền",
+            "fieldtype": "Data",
+            "insert_after": "party_name",
+            "description": "Người thực tế nộp hoặc nhận tiền, in trên phiếu thu / phiếu chi. Trống thì in tên khách / nhà cung cấp.",
+        },
+    ],
     "Sales Order": [dict(_AP_THUE_FIELD)],
     "Delivery Note": [dict(_AP_THUE_FIELD)],
     "Sales Invoice": [dict(_AP_THUE_FIELD)],

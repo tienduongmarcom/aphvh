@@ -70,7 +70,7 @@
 <div class="aph-vt">
 <table class="aph-head"><tr>
   <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
-  <td class="aph-mau">{% if mau %}<b>Mẫu số {{ mau }}</b><br><i>(Ban hành theo Thông tư số 133/2016/TT-BTC<br>ngày 26/08/2016 của Bộ Tài chính)</i>{% endif %}</td>
+  <td class="aph-mau">{% if mau %}<b>Mẫu số {{ mau }}</b>{% set cc = aphvh_mau(doc.company) %}{% if cc %}<br><i>{{ cc }}</i>{% endif %}{% endif %}</td>
 </tr></table>
 <table class="aph-title"><tr>
   <td class="aph-side"></td>
@@ -85,20 +85,20 @@
 {%- if kieu == "nhap" %}
 <div class="aph-info">
   <div>- Họ và tên người giao: ..............................</div>
-  <div>- Theo: {{ doc.stock_entry_type }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
+  <div>- Theo: {{ aphvh_loai_phieu_kho(doc.stock_entry_type) }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
   <div>- Nhập tại kho: {{ ten_kho(vao, "t_warehouse") }}</div>
 </div>
 {{ bang(vao, "nhap", an) }}
 {%- elif kieu == "xuat" %}
 <div class="aph-info">
   <div>- Họ và tên người nhận hàng: ..............................  Địa chỉ (bộ phận): ..............................</div>
-  <div>- Lý do xuất kho: {{ doc.stock_entry_type }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
+  <div>- Lý do xuất kho: {{ aphvh_loai_phieu_kho(doc.stock_entry_type) }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
   <div>- Xuất tại kho: {{ ten_kho(ra, "s_warehouse") }}{% if vao %}. Nhập tại kho: {{ ten_kho(vao, "t_warehouse") }}{% endif %}</div>
 </div>
 {{ bang(ra, "xuat", an) }}
 {%- else %}
 <div class="aph-info">
-  <div>- Loại phiếu: {{ doc.stock_entry_type }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
+  <div>- Loại phiếu: {{ aphvh_loai_phieu_kho(doc.stock_entry_type) }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
   <div>- Xuất tại kho: {{ ten_kho(ra, "s_warehouse") }}. Nhập tại kho: {{ ten_kho(vao, "t_warehouse") }}</div>
 </div>
 <div class="aph-sec">I. Nguyên liệu, bao bì xuất dùng</div>

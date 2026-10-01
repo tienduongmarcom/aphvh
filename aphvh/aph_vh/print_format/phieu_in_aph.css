@@ -30,3 +30,6 @@
 .aph-vt .aph-tbl .aph-sum td { font-weight: bold; }
 .aph-vt .aph-tbl .aph-sum .l { text-align: right; }
 .aph-vt .c-lo { width: 11%; }
+.aph-vt .aph-tc { line-height: 1.9; font-size: 13.5px; }
+.aph-vt .aph-tong { width: 55%; margin-left: 45%; margin-top: -1px; }
+.aph-vt .aph-tong .l { text-align: left; }

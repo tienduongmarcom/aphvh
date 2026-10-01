@@ -11,7 +11,7 @@
 <div class="aph-vt">
 <table class="aph-head"><tr>
   <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
-  <td class="aph-mau"><b>Mẫu số {{ "01 - VT" if tra else "02 - VT" }}</b><br><i>(Ban hành theo Thông tư số 133/2016/TT-BTC<br>ngày 26/08/2016 của Bộ Tài chính)</i></td>
+  <td class="aph-mau"><b>Mẫu số {{ "01 - VT" if tra else "02 - VT" }}</b>{% set cc = aphvh_mau(doc.company) %}{% if cc %}<br><i>{{ cc }}</i>{% endif %}</td>
 </tr></table>
 <table class="aph-title"><tr>
   <td class="aph-side"></td>
