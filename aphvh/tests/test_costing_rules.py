@@ -36,3 +36,28 @@ class TestSplitByWeight(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSplitWithFixed(unittest.TestCase):
+    def test_fixed_rows_deducted_first(self):
+        from aphvh.costing_rules import split_with_fixed
+
+        # Đầu vào 1.000.000; phế 100.000 giá cố định; còn 900.000 chia 30 kg : 60 kg.
+        self.assertEqual(split_with_fixed(1_000_000, [100_000], [30, 60]), [300000.0, 600000.0])
+
+    def test_no_fixed_equals_v1(self):
+        from aphvh.costing_rules import split_by_weight, split_with_fixed
+
+        self.assertEqual(split_with_fixed(10_800_000, [], [40, 20]), split_by_weight(10_800_000, [40, 20]))
+
+    def test_fixed_larger_than_total(self):
+        from aphvh.costing_rules import split_with_fixed
+
+        with self.assertRaises(ValueError):
+            split_with_fixed(100, [60, 50], [1])
+
+    def test_sum_equals_total(self):
+        from aphvh.costing_rules import split_with_fixed
+
+        out = split_with_fixed(1_000_001, [123_457, 1], [7, 11, 13])
+        self.assertEqual(sum(out) + 123_457 + 1, 1_000_001)

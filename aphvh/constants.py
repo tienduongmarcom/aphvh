@@ -11,7 +11,15 @@ KG_ENTRY_TYPE = "Đóng gói theo kg"
 # Mã quy tắc tính giá lưu trên từng phiếu. Phiếu nào mang mã nào thì khi tính lại giá
 # (repost) vẫn dùng đúng quy tắc đó, dù sau này có thêm quy tắc mới.
 RULE_KG_V1 = "kg-v1"
-SUPPORTED_RULES = (RULE_KG_V1,)
+# kg-v2 (0.3.3): như kg-v1, thêm dòng GIÁ CỐ ĐỊNH (phế, dở dang cuối kỳ): giá nhập tay trên dòng,
+# trừ khỏi tổng đầu vào trước; phần còn lại chia theo kg cho các thành phẩm khác.
+RULE_KG_V2 = "kg-v2"
+SUPPORTED_RULES = (RULE_KG_V1, RULE_KG_V2)
+
+# Nhóm hàng được tích ô này: dòng đầu ra thuộc nhóm (hoặc nhóm con) trên phiếu "Đóng gói theo kg"
+# là dòng giá cố định (kế toán nhập giá). Ô trên dòng phiếu lưu lại kết quả lúc lưu/gửi phiếu.
+IG_FIXED_RATE = "aphvh_gia_co_dinh_kg"
+SED_FIXED_RATE = "aphvh_gia_co_dinh"
 
 # Tên đơn vị đo "Kg" trên site.
 KG_UOM = "Kg"

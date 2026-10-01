@@ -34,3 +34,19 @@ def split_by_weight(total, weights, precision=0, rounder=None):
         largest = max(range(len(weights)), key=lambda i: (weights[i], -i))
         amounts[largest] = rnd(amounts[largest] + residual, precision)
     return amounts
+
+
+def split_with_fixed(total, fixed_amounts, weights, precision=0, rounder=None):
+    """Quy tắc kg-v2: trừ giá trị các dòng giá cố định khỏi `total`, phần còn lại chia theo kg.
+
+    Trả về danh sách số tiền cho các dòng chia theo kg (cùng thứ tự `weights`).
+    Báo lỗi nếu phần còn lại âm (giá cố định lớn hơn tổng đầu vào).
+
+    >>> split_with_fixed(1_000_000, [100_000], [30, 60])
+    [300000.0, 600000.0]
+    """
+    rnd = rounder or (lambda v, p: round(v, p))
+    rest = rnd(float(total or 0) - sum(float(a or 0) for a in fixed_amounts), precision)
+    if rest < 0:
+        raise ValueError(f"Giá trị các dòng giá cố định lớn hơn tổng đầu vào {rnd(-rest, precision)}")
+    return split_by_weight(rest, weights, precision, rounder=rnd)

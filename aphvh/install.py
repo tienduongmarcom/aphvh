@@ -19,6 +19,7 @@ from aphvh.constants import (
     DN_PLATE,
     DN_RECEIVER,
     IG_FACTORY_CAN_PRICE,
+    IG_FIXED_RATE,
     INV_FLAG,
     INV_NO,
     INV_YES,
@@ -37,6 +38,7 @@ from aphvh.constants import (
     SI_AUTO,
     SI_EINV_DATE,
     SI_EINV_NO,
+    SED_FIXED_RATE,
     SI_EINV_SERIES,
     SO_BELOW_PRICE,
     SO_OVER_LIMIT,
@@ -81,6 +83,16 @@ CUSTOM_FIELDS = {
             "print_hide": 1,
             "in_list_view": 0,
         },
+        {
+            "fieldname": SED_FIXED_RATE,
+            "label": "Giá cố định (phế, dở dang)",
+            "fieldtype": "Check",
+            "insert_after": "aphvh_kg",
+            "read_only": 1,
+            "no_copy": 1,
+            "print_hide": 1,
+            "description": "App tự đánh dấu theo nhóm hàng khi lưu phiếu Đóng gói theo kg (quy tắc kg-v2).",
+        },
     ],
     "Item Group": [
         {
@@ -90,6 +102,14 @@ CUSTOM_FIELDS = {
             "insert_after": "is_group",
             "description": "Tích cho nhóm vật tư vận hành (than, củi, phụ tùng…): kế toán nhà máy "
             "được xem và nhập giá khi nhận hàng. Nhóm con được áp dụng theo.",
+        },
+        {
+            "fieldname": IG_FIXED_RATE,
+            "label": "Giá cố định trên phiếu chia theo kg",
+            "fieldtype": "Check",
+            "insert_after": IG_FACTORY_CAN_PRICE,
+            "description": "Tích cho nhóm phế phẩm, dở dang: trên phiếu Đóng gói theo kg, dòng đầu ra thuộc nhóm "
+            "này lấy đơn giá kế toán nhập; phần giá trị còn lại chia theo kg cho thành phẩm. Nhóm con áp dụng theo.",
         },
     ],
     "Purchase Receipt": [

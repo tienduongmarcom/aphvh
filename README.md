@@ -190,6 +190,18 @@ Cài: dựng bản mới, migrate, Ctrl+Shift+R. Không có bản vá dữ liệ
 quyền (chỉ khi chưa có), đặt mẫu in mặc định của phiếu giao hàng (trừ khi đã chọn mẫu khác
 "with Item Image").
 
+## 0.3.3 – dòng giá cố định trên phiếu "Đóng gói theo kg" (quy tắc kg-v2, 01/10/2026)
+
+Giá thành phồng tôm tính theo kỳ (dây chuyền liên hoàn, không theo mẻ) — chị Dung chốt 01/10:
+- Nhóm hàng có ô mới **"Giá cố định trên phiếu chia theo kg"** (tích cho nhóm phế phẩm, dở dang; nhóm con theo).
+- Trên phiếu "Đóng gói theo kg", dòng đầu ra thuộc nhóm đó là **dòng giá cố định**: kế toán nhập Đơn giá cơ bản
+  (phế: giá cố định; dở dang cuối kỳ: giá trị chị Dung tính ngoài ÷ số lượng). App trừ giá trị các dòng này khỏi
+  tổng đầu vào, phần còn lại chia theo kg cho thành phẩm (mã thùng = kg/thùng × giá/kg).
+- Dở dang đầu kỳ đưa vào phiếu như một dòng đầu vào (mã dở dang, kho dở dang).
+- Phiếu mới lưu quy tắc **kg-v2** và cờ giá cố định trên từng dòng; tính lại giá (repost) đọc cờ đã lưu, giữ giá cố
+  định, chia lại phần còn lại. Phiếu kg-v1 cũ giữ nguyên cách tính.
+- Báo lỗi: dòng giá cố định chưa có giá; tổng giá cố định lớn hơn tổng đầu vào; không còn thành phẩm chia theo kg.
+
 ## 0.3.2 – mẫu in theo kế toán trưởng, chặn bán có hóa đơn khi chưa có thuế suất (30/09/2026)
 
 - **Phiếu xuất kho** (và phiếu nhập kho hàng trả lại): chỉ số lượng, không in đơn giá, thành tiền.

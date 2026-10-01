@@ -21,8 +21,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from aphvh.constants import KG_ENTRY_TYPE, KG_UOM, RULE_KG_V1
-from aphvh.costing_rules import split_by_weight
+from aphvh.constants import IG_FIXED_RATE, KG_ENTRY_TYPE, KG_UOM, RULE_KG_V1, RULE_KG_V2, SED_FIXED_RATE
+from aphvh.costing_rules import split_by_weight, split_with_fixed
 
 
 class StockEntryKgCosting:
@@ -30,7 +30,7 @@ class StockEntryKgCosting:
 
     def validate_repack_entry(self):
         if self.purpose == "Repack" and self.stock_entry_type == KG_ENTRY_TYPE:
-            self.aphvh_costing_rule = RULE_KG_V1
+            self.aphvh_costing_rule = RULE_KG_V2
             snapshot_kg(self)
             validate_kg_entry(self)
             return
@@ -48,7 +48,33 @@ class StockEntryKgCosting:
 
 def uses_kg_rule(doc):
     """Phiếu có dùng quy tắc chia theo kg không — đọc mã quy tắc ĐÃ LƯU trên phiếu."""
-    return doc.purpose == "Repack" and doc.get("aphvh_costing_rule") == RULE_KG_V1
+    return doc.purpose == "Repack" and doc.get("aphvh_costing_rule") in (RULE_KG_V1, RULE_KG_V2)
+
+
+def is_fixed_rate_row(doc, d):
+    """Dòng giá cố định (kg-v2): đọc cờ ĐÃ LƯU trên dòng, chỉ với phiếu quy tắc kg-v2."""
+    return doc.get("aphvh_costing_rule") == RULE_KG_V2 and bool(d.get(SED_FIXED_RATE)) and d.t_warehouse and not d.s_warehouse
+
+
+def fixed_rows(doc):
+    return [d for d in doc.get("items") if is_fixed_rate_row(doc, d)]
+
+
+def kg_rows(doc):
+    """Thành phẩm chia giá theo kg (trừ dòng giá cố định)."""
+    return [d for d in finished_rows(doc) if not is_fixed_rate_row(doc, d)]
+
+
+def group_is_fixed_rate(item_group):
+    """Nhóm hàng (hoặc một nhóm cha) có tích "Giá cố định trên phiếu chia theo kg"."""
+    from frappe.utils.nestedset import get_ancestors_of
+
+    if not item_group or not frappe.get_meta("Item Group").has_field(IG_FIXED_RATE):
+        return False
+    for g in [item_group, *(get_ancestors_of("Item Group", item_group) or [])]:
+        if frappe.get_cached_value("Item Group", g, IG_FIXED_RATE):
+            return True
+    return False
 
 
 def finished_rows(doc):
@@ -90,6 +116,10 @@ def snapshot_kg(doc):
         factor = kg_per_stock_uom(d.item_code, d.stock_uom)
         d.aphvh_kg_per_unit = factor
         d.aphvh_kg = flt(flt(d.transfer_qty) * factor, 6)
+        if d.meta.has_field(SED_FIXED_RATE):
+            target_only = d.t_warehouse and not d.s_warehouse
+            group = frappe.get_cached_value("Item", d.item_code, "item_group") if target_only else None
+            d.set(SED_FIXED_RATE, 1 if target_only and group_is_fixed_rate(group) else 0)
 
 
 def validate_kg_entry(doc):
@@ -126,7 +156,23 @@ def validate_kg_entry(doc):
             title=_("Chưa hỗ trợ"),
         )
 
-    missing = [d for d in finished_rows(doc) if flt(d.aphvh_kg) <= 0]
+    for d in fixed_rows(doc):
+        if flt(d.basic_rate) <= 0:
+            frappe.throw(
+                _("Dòng {0} ({1}): dòng giá cố định (phế, dở dang) cần nhập Đơn giá cơ bản.").format(
+                    d.idx, d.item_code
+                ),
+                title=_("Thiếu giá cố định"),
+            )
+        d.set_basic_rate_manually = 1
+
+    if not kg_rows(doc):
+        frappe.throw(
+            _("Phiếu {0} cần ít nhất một thành phẩm chia giá theo kg.").format(KG_ENTRY_TYPE),
+            title=_("Thiếu thành phẩm"),
+        )
+
+    missing = [d for d in kg_rows(doc) if flt(d.aphvh_kg) <= 0]
     if missing:
         items = ", ".join(sorted({d.item_code for d in missing}))
         frappe.throw(
@@ -138,25 +184,35 @@ def validate_kg_entry(doc):
         )
 
     # Giá thành phẩm do app chia theo kg, không nhận giá tay.
-    for d in finished_rows(doc):
+    for d in kg_rows(doc):
         d.set_basic_rate_manually = 0
 
 
 def allocate_finished_cost_by_kg(doc):
-    """Chia tổng giá đầu vào cho các dòng thành phẩm theo số kg đã lưu trên dòng."""
-    fg = finished_rows(doc)
+    """Chia tổng giá đầu vào cho các dòng thành phẩm theo số kg đã lưu trên dòng.
+
+    kg-v2: trước khi chia, trừ giá trị các dòng giá cố định (số lượng × đơn giá nhập tay).
+    """
+    fg = kg_rows(doc)
     weights = [flt(d.aphvh_kg) for d in fg]
     if not fg or sum(weights) <= 0:
         return
 
     pool = sum(flt(d.basic_amount) for d in input_rows(doc))
-    # Giá trị các dòng định giá riêng (chưa dùng ở bản 0.1) được trừ trước khi chia.
+    # Giá trị các dòng định giá riêng chuẩn của ERPNext (không dùng trên phiếu này) được trừ trước.
     costed_out = getattr(doc, "get_costed_out_items_cost", None)
     if costed_out:
         pool -= flt(costed_out())
 
     precision = fg[0].precision("basic_amount")
-    amounts = split_by_weight(pool, weights, precision, rounder=flt)
+    fixed_amounts = []
+    for d in fixed_rows(doc):
+        d.basic_amount = flt(flt(d.transfer_qty) * flt(d.basic_rate), precision)
+        fixed_amounts.append(d.basic_amount)
+    try:
+        amounts = split_with_fixed(pool, fixed_amounts, weights, precision, rounder=flt)
+    except ValueError as e:
+        frappe.throw(_("Phiếu {0}: {1}.").format(doc.name or KG_ENTRY_TYPE, e), title=_("Giá cố định quá lớn"))
     for d, amount in zip(fg, amounts, strict=True):
         d.basic_amount = amount
         # Không làm tròn đơn giá, giống ERPNext, để tránh mất chính xác.
