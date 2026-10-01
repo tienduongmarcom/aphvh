@@ -467,6 +467,40 @@ DEFAULT_PRINT_FORMATS = {
 TRANSLATIONS = {REPORT_QTY: REPORT_QTY_LABEL, REPORT_INVOICED: REPORT_INVOICED_LABEL}
 
 
+# --- 0.3.4: kiểm soát sau đợt kiểm thử 8086 ------------------------------------------------
+
+_BUYER_FIELDS = [
+    {"fieldname": "aphvh_ten_nguoi_mua", "label": "Tên người mua (khách lẻ)", "fieldtype": "Data", "insert_after": "customer_name",
+     "description": "Ghi khi bán cho khách vãng lai chung: tên người mua thực tế. Không thay tên khách trên hóa đơn."},
+    {"fieldname": "aphvh_sdt_nguoi_mua", "label": "SĐT người mua", "fieldtype": "Data", "options": "Phone", "insert_after": "aphvh_ten_nguoi_mua"},
+]
+CONTROL_CUSTOM_FIELDS = {
+    "Customer": [
+        {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
+         "description": "Mã dùng chung cho khách lẻ không để lại thông tin. Chỉ được bán thu tiền ngay; khách mua nợ phải có mã riêng."},
+    ],
+    "Sales Invoice": [
+        *[dict(f) for f in _BUYER_FIELDS],
+        {"fieldname": "aphvh_thu_ngay_tk", "label": "Thu tiền ngay vào tài khoản", "fieldtype": "Link", "options": "Account",
+         "insert_after": "aphvh_sdt_nguoi_mua",
+         "description": "Chọn tiền mặt hoặc ngân hàng: khi xác nhận hóa đơn, hệ thống tự lập phiếu thu đủ tiền. Bắt buộc với khách vãng lai chung."},
+    ],
+    "Sales Order": [dict(f) for f in _BUYER_FIELDS],
+    "Delivery Note": [dict(f) for f in _BUYER_FIELDS],
+}
+
+
+def ensure_frozen_party_modifier():
+    """Kế toán trưởng (Accounts Manager) được ghi sổ với khách/NCC đã khóa và vào kỳ đã khóa sổ — để xóa nợ (J14).
+
+    ERPNext v16 đọc vai trò này ở Company.role_allowed_for_frozen_entries. Chỉ đặt khi công ty chưa đặt.
+    """
+    if not frappe.get_meta("Company").has_field("role_allowed_for_frozen_entries"):
+        return
+    for co in frappe.get_all("Company", filters={"role_allowed_for_frozen_entries": ["in", ["", None]]}, pluck="name"):
+        frappe.db.set_value("Company", co, "role_allowed_for_frozen_entries", "Accounts Manager")
+
+
 def after_install():
     setup()
 
@@ -488,6 +522,8 @@ def setup():
     create_custom_fields(CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(SALES_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(INVOICE_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(CONTROL_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    ensure_frozen_party_modifier()
     if new_ig_field:
         flag_default_factory_price_groups()
     for fieldname in new_ss_fields:

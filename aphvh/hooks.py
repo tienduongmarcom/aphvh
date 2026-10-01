@@ -28,15 +28,18 @@ boot_session = ["aphvh.price_visibility.boot_session"]
 # phải lấy từ đơn mua.
 # before_print: xóa giá trên bản in (mọi mẫu, kể cả Standard) với người bị ẩn giá.
 _BLANK = "aphvh.price_visibility.blank_prices_for_print"
+_PD = "aphvh.controls.validate_posting_date"
 doc_events = {
     "Purchase Receipt": {
-        "validate": "aphvh.price_visibility.validate_purchase_receipt",
+        "validate": ["aphvh.price_visibility.validate_purchase_receipt", _PD],
         "before_print": _BLANK,
     },
     "Purchase Order": {"before_print": _BLANK},
-    "Stock Entry": {"before_print": _BLANK},
+    "Stock Entry": {"validate": _PD, "before_print": _BLANK},
+    "Stock Reconciliation": {"validate": _PD},
     "Serial and Batch Bundle": {"before_print": _BLANK},
-    "Item": {"before_print": _BLANK},
+    # 0.3.4: không đổi nhóm hàng khi mã đã có giao dịch kho (tài khoản kho theo nhóm hàng).
+    "Item": {"validate": "aphvh.controls.validate_item", "before_print": _BLANK},
     # 0.3: cảnh báo công nợ/giá khi lưu và xác nhận đơn; hóa đơn nháp tự tạo từ phiếu giao hàng;
     # thủ kho chỉ giao theo đơn; ẩn giá vốn trên bản in với nhân viên bán hàng, thủ kho.
     # 0.3.1: có/không xuất hóa đơn GTGT (Không = bỏ thuế) chạy trước cảnh báo công nợ.
@@ -45,15 +48,25 @@ doc_events = {
         "before_print": _BLANK,
     },
     "Delivery Note": {
-        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_flow.validate_delivery_note"],
+        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_flow.validate_delivery_note", _PD],
         "on_submit": "aphvh.sales_flow.make_draft_invoice",
         "on_cancel": "aphvh.sales_flow.remove_draft_invoices",
         "before_print": _BLANK,
     },
+    # 0.3.4: khách vãng lai chung chỉ bán thu tiền ngay (tự lập phiếu thu); chặn ngày tương lai.
     "Sales Invoice": {
-        "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.invoice_flag.validate_einvoice"],
+        "validate": [
+            "aphvh.invoice_flag.apply_invoice_flag",
+            "aphvh.invoice_flag.validate_einvoice",
+            "aphvh.controls.validate_sales_invoice",
+        ],
+        "on_submit": "aphvh.controls.sales_invoice_on_submit",
         "before_update_after_submit": "aphvh.invoice_flag.validate_einvoice",
     },
+    # 0.3.4: không ghi tay vào tài khoản kho; cảnh báo tiền mặt lớn, tiền trả trước chưa gắn đơn.
+    "Journal Entry": {"validate": ["aphvh.controls.validate_journal_entry", _PD]},
+    "Payment Entry": {"validate": "aphvh.controls.validate_payment_entry"},
+    "Purchase Invoice": {"validate": "aphvh.controls.validate_purchase_invoice"},
 }
 
 # 0.3: nhân viên bán hàng chỉ thấy giá của bảng giá bán.
