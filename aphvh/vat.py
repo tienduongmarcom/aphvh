@@ -1,7 +1,8 @@
 """Thuế GTGT theo loại khách (0.3.5). Quy tắc thuần ở vat_rules.py.
 
 - Customer: chưa có Loại thuế thì app tự phân loại theo MST và tên (kế toán sửa được, không ghi đè).
-- Đơn bán, phiếu giao, hóa đơn "Có" xuất hóa đơn: lấy Loại thuế của khách, chọn mẫu thuế từng mặt hàng
+- Đơn bán, phiếu giao, hóa đơn "Có" xuất hóa đơn: ô "Áp thuế theo" (kế toán bán hàng chọn Công ty/HTX hay
+  Hộ KD/cá nhân, mặc định theo hồ sơ khách) quyết định Loại thuế; chọn mẫu thuế từng mặt hàng
   theo loại khách (mặt hàng trước, rồi nhóm hàng và nhóm cha) — chạy trước validate của ERPNext.
 - Cài đặt: Loại thuế, mẫu thuế mặt hàng và mẫu thuế bán hàng cho mọi công ty có TK 33311.
 - load_rules: nạp quy tắc thuế theo nhóm hàng / mặt hàng (tệp của kế toán trưởng hoặc dữ liệu thử).
@@ -14,6 +15,7 @@ from aphvh import vat_rules as V
 from aphvh.constants import INV_FLAG, INV_YES
 
 F_REASON = "aphvh_ly_do_loai_thue"  # Customer
+F_AP_THUE = "aphvh_ap_thue"  # Sales Order / Delivery Note / Sales Invoice: áp thuế theo loại khách
 
 
 # --- Khách ----------------------------------------------------------------------------------
@@ -66,9 +68,11 @@ def before_validate_sales(doc, method=None):
         return
     if _flag(doc) != INV_YES:
         return
-    cat = frappe.get_cached_value("Customer", doc.customer, "tax_category")
+    cat = V.choose_category(doc.get(F_AP_THUE), frappe.get_cached_value("Customer", doc.customer, "tax_category"))
     if cat:
         doc.tax_category = cat
+        if doc.meta.has_field(F_AP_THUE):
+            doc.set(F_AP_THUE, cat)
     acc = _vat_account(doc.company)
     if not acc:
         return  # hộ kinh doanh: không có thuế GTGT khấu trừ trên hóa đơn

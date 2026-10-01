@@ -127,3 +127,8 @@ def classify_customer(name, tax_id) -> tuple[str, str]:
     if not mst:
         return CAT_HKD, "Không có MST → khách lẻ"
     return CAT_HKD, "Tên người, có MST riêng → cá nhân kinh doanh"
+
+
+def choose_category(doc_choice, customer_category) -> str | None:
+    """Loại thuế áp cho chứng từ: kế toán chọn trên chứng từ thắng; trống thì lấy theo hồ sơ khách."""
+    return (doc_choice or "").strip() or (customer_category or "").strip() or None

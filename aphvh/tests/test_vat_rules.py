@@ -70,6 +70,24 @@ class TestLabels(unittest.TestCase):
         self.assertNotIn("GTGT 0%", rates)  # 0% chỉ dành cho xuất khẩu, không dùng
 
 
+class TestChoose(unittest.TestCase):
+    def test_doc_choice_wins(self):
+        self.assertEqual(V.choose_category(V.CAT_HKD, V.CAT_DN), V.CAT_HKD)
+
+    def test_fallback_customer(self):
+        self.assertEqual(V.choose_category("", V.CAT_DN), V.CAT_DN)
+        self.assertEqual(V.choose_category(None, V.CAT_HKD), V.CAT_HKD)
+        self.assertIsNone(V.choose_category("", None))
+
+
+class TestScreen(unittest.TestCase):
+    def test_js_wired(self):
+        for f, dt in (("sales_order", "Sales Order"), ("delivery_note", "Delivery Note"), ("sales_invoice", "Sales Invoice")):
+            js = (APP / "public" / "js" / f"{f}.js").read_text()
+            self.assertIn(f'frappe.ui.form.on("{dt}", aphvh.vat.handlers)', js)
+            self.assertIn("aphvh_ap_thue", js)
+
+
 class TestHooks(unittest.TestCase):
     def test_wired(self):
         tree = ast.parse((APP / "hooks.py").read_text())

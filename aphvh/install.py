@@ -475,7 +475,23 @@ _BUYER_FIELDS = [
     {"fieldname": "aphvh_sdt_nguoi_mua", "label": "SĐT người mua", "fieldtype": "Data", "options": "Phone", "insert_after": "aphvh_ten_nguoi_mua"},
 ]
 # 0.3.5: lý do app phân loại loại thuế của khách (kế toán xem để rà soát).
+_AP_THUE_FIELD = {
+    "fieldname": "aphvh_ap_thue",
+    "label": "Áp thuế theo",
+    "fieldtype": "Select",
+    "options": "\nDoanh nghiệp/HTX\nHộ KD/cá nhân",
+    "insert_after": INV_FLAG,
+    "depends_on": f"eval:doc.{INV_FLAG}=='{INV_YES}'",
+    "in_standard_filter": 1,
+    "print_hide": 1,
+    "description": "Bán cho công ty/HTX: nông sản Không kê khai tính nộp. Bán cho hộ KD/cá nhân: 5%. "
+    "Tự lấy theo loại của khách; kế toán bán hàng đổi được trên từng chứng từ (theo người mua ghi trên hóa đơn).",
+}
+
 VAT_CUSTOM_FIELDS = {
+    "Sales Order": [dict(_AP_THUE_FIELD)],
+    "Delivery Note": [dict(_AP_THUE_FIELD)],
+    "Sales Invoice": [dict(_AP_THUE_FIELD)],
     "Customer": [
         {
             "fieldname": "aphvh_ly_do_loai_thue",

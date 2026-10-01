@@ -157,3 +157,20 @@ if (!aphvh.inv.setup) {
 	};
 }
 aphvh.inv.setup("Delivery Note");
+
+// 0.3.5 — "Áp thuế theo" (Công ty/HTX hay Hộ KD/cá nhân) nối với Loại thuế chuẩn của ERPNext:
+// đổi ô này thì ERPNext tính lại mẫu thuế từng dòng ngay trên màn hình; đổi khách thì ô tự theo loại của khách.
+frappe.provide("aphvh.vat");
+if (!aphvh.vat.handlers) {
+	aphvh.vat.handlers = {
+		aphvh_ap_thue(frm) {
+			const v = frm.doc.aphvh_ap_thue || "";
+			if ((frm.doc.tax_category || "") !== v) frm.set_value("tax_category", v);
+		},
+		tax_category(frm) {
+			const v = frm.doc.tax_category || "";
+			if (v && frm.doc.aphvh_ap_thue !== v) frm.set_value("aphvh_ap_thue", v);
+		},
+	};
+}
+frappe.ui.form.on("Delivery Note", aphvh.vat.handlers);
