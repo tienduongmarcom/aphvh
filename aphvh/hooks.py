@@ -29,6 +29,8 @@ boot_session = ["aphvh.price_visibility.boot_session"]
 # before_print: xóa giá trên bản in (mọi mẫu, kể cả Standard) với người bị ẩn giá.
 _BLANK = "aphvh.price_visibility.blank_prices_for_print"
 _PD = "aphvh.controls.validate_posting_date"
+_VAT = "aphvh.vat.before_validate_sales"
+
 doc_events = {
     "Purchase Receipt": {
         "validate": ["aphvh.price_visibility.validate_purchase_receipt", _PD],
@@ -43,11 +45,15 @@ doc_events = {
     # 0.3: cảnh báo công nợ/giá khi lưu và xác nhận đơn; hóa đơn nháp tự tạo từ phiếu giao hàng;
     # thủ kho chỉ giao theo đơn; ẩn giá vốn trên bản in với nhân viên bán hàng, thủ kho.
     # 0.3.1: có/không xuất hóa đơn GTGT (Không = bỏ thuế) chạy trước cảnh báo công nợ.
+    # 0.3.5: thuế GTGT theo loại khách — chọn mẫu thuế mặt hàng trước validate của ERPNext.
+    "Customer": {"validate": "aphvh.vat.validate_customer"},
     "Sales Order": {
+        "before_validate": _VAT,
         "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_warnings.validate_sales_order"],
         "before_print": _BLANK,
     },
     "Delivery Note": {
+        "before_validate": _VAT,
         "validate": ["aphvh.invoice_flag.apply_invoice_flag", "aphvh.sales_flow.validate_delivery_note", _PD],
         "on_submit": "aphvh.sales_flow.make_draft_invoice",
         "on_cancel": "aphvh.sales_flow.remove_draft_invoices",
@@ -55,6 +61,7 @@ doc_events = {
     },
     # 0.3.4: khách vãng lai chung chỉ bán thu tiền ngay (tự lập phiếu thu); chặn ngày tương lai.
     "Sales Invoice": {
+        "before_validate": _VAT,
         "validate": [
             "aphvh.invoice_flag.apply_invoice_flag",
             "aphvh.invoice_flag.validate_einvoice",

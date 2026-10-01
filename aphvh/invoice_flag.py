@@ -2,8 +2,8 @@
 
 ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn để kê khai thuế.
 - "Không": không tính thuế GTGT — bỏ dòng thuế và mẫu thuế mặt hàng, khách nợ đúng tiền hàng.
-- "Có": tính thuế như chuẩn (mẫu thuế mặt hàng theo loại thuế của khách). Chứng từ trước đó để
-  "Không" rồi đổi sang "Có" thì nạp lại mẫu thuế mặc định của công ty.
+- "Có": tính thuế như chuẩn — mẫu thuế mặt hàng theo Loại thuế của khách (0.3.5, xem vat.py).
+  Chứng từ trước đó để "Không" rồi đổi sang "Có" thì nạp lại mẫu thuế.
 Chứng từ trống ô này thì lấy mặc định của khách; khách chưa đặt thì người lập phải chọn.
 Bỏ qua với khách nội bộ và hóa đơn đầu kỳ.
 """
@@ -87,6 +87,15 @@ def check_tax_rates(doc):
 
     Lưu nháp thì cảnh báo; xác nhận thì chặn. Thuế suất từng mặt hàng do kế toán trưởng xác định.
     """
+    from aphvh.vat import _vat_account, missing_category_message
+
+    if not _vat_account(doc.get("company")):
+        return  # hộ kinh doanh (không có TK 33311): hóa đơn bán hàng, không tách thuế GTGT
+    cat_msg = missing_category_message(doc)
+    if cat_msg:
+        if doc.get("_action") == "submit":
+            frappe.throw(cat_msg, title="Khách chưa có Loại thuế")
+        frappe.msgprint(cat_msg, title="Khách chưa có Loại thuế", indicator="orange")
     missing = [r for r in doc.get("items") or [] if r.get("item_code") and not r.get("item_tax_template")]
     if not missing:
         return

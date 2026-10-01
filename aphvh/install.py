@@ -474,6 +474,23 @@ _BUYER_FIELDS = [
      "description": "Ghi khi bán cho khách vãng lai chung: tên người mua thực tế. Không thay tên khách trên hóa đơn."},
     {"fieldname": "aphvh_sdt_nguoi_mua", "label": "SĐT người mua", "fieldtype": "Data", "options": "Phone", "insert_after": "aphvh_ten_nguoi_mua"},
 ]
+# 0.3.5: lý do app phân loại loại thuế của khách (kế toán xem để rà soát).
+VAT_CUSTOM_FIELDS = {
+    "Customer": [
+        {
+            "fieldname": "aphvh_ly_do_loai_thue",
+            "label": "Lý do phân loại loại thuế",
+            "fieldtype": "Data",
+            "insert_after": "tax_category",
+            "read_only": 1,
+            "no_copy": 1,
+            "print_hide": 1,
+            "description": "App tự ghi khi tự phân loại Doanh nghiệp/HTX hay Hộ KD/cá nhân theo MST và tên. "
+            "Kế toán đổi Loại thuế nếu sai; app không ghi đè.",
+        },
+    ],
+}
+
 CONTROL_CUSTOM_FIELDS = {
     "Customer": [
         {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
@@ -523,7 +540,11 @@ def setup():
     create_custom_fields(SALES_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(INVOICE_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(CONTROL_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(VAT_CUSTOM_FIELDS, ignore_validate=True, update=True)
     ensure_frozen_party_modifier()
+    from aphvh.vat import setup_defaults
+
+    setup_defaults()
     if new_ig_field:
         flag_default_factory_price_groups()
     for fieldname in new_ss_fields:

@@ -58,7 +58,7 @@ class TestHooks(unittest.TestCase):
         tree = ast.parse((APP / "hooks.py").read_text())
         env = {}
         for node in tree.body:
-            if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id in ("_BLANK", "_PD", "doc_events"):
+            if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id in ("_BLANK", "_PD", "_VAT", "doc_events"):
                 exec(compile(ast.Module([node], []), "hooks", "exec"), env)
         self.ev = env["doc_events"]
 
