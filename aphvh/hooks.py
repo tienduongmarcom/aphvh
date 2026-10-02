@@ -102,6 +102,7 @@ doctype_js = {
     "Sales Order": "public/js/sales_order.js",
     "Delivery Note": "public/js/delivery_note.js",
     "Sales Invoice": "public/js/sales_invoice.js",
+    "Customer": "public/js/customer.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -126,7 +127,6 @@ jinja = {
         "aphvh.print_utils.aphvh_loai_phieu_kho",
         "aphvh.print_utils.aphvh_thu_chi",
         "aphvh.print_utils.aphvh_ban_hang",
-        "aphvh.print_utils.aphvh_don_tong",
         "aphvh.print_utils.aphvh_lo",
         "aphvh.print_utils.aphvh_gia_gom_thue",
     ],

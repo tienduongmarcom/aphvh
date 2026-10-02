@@ -367,30 +367,6 @@ class TestSalesInvoicePrint(unittest.TestCase):
         self.assertIn("Người trả hàng", out)
 
 
-class TestPhieuTong(unittest.TestCase):
-    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
-    def test_phieu_tong(self):
-        html = (ROOT / "phieu_tong_aph" / "phieu_tong_aph.html").read_text(encoding="utf-8")
-        r1 = Row(item_name="Đậu đen", uom="Kg", qty=10, rate=56000, amount=560000, xuat_hoa_don="Có")
-        r2 = Row(item_name="Đậu xanh", uom="Kg", qty=5, rate=56000, amount=280000, xuat_hoa_don="Không")
-        r3 = Row(item_name="Đậu đỏ", uom="Kg", qty=10, rate=56000, amount=560000, xuat_hoa_don="Không")
-        dt = {"nhom": [{"ten": "An Phú Hưng", "dong": [r1, r2], "tien_hang": 840000},
-                       {"ten": "Vĩnh Hưng", "dong": [r3], "tien_hang": 560000}],
-              "tinh_hinh": {"don_con": [], "tong": {"tong": 1_428_000, "da_thu": 868_000, "con_phai_thu": 560_000}}}
-        env = _env(False)
-        env.globals["aphvh_don_tong"] = lambda d: dt
-        out = env.from_string(html).render(doc=Row(name="DT-26.10.-0001", customer_name="Công ty Phương Nam",
-                                                   transaction_date="2026-10-02", delivery_date="2026-10-03",
-                                                   tong_tien_hang=1_400_000, owner="ktbh@x", docstatus=1))
-        self.assertIn("PHIẾU TỔNG ĐƠN HÀNG", out)
-        self.assertIn("1. An Phú Hưng", out)
-        self.assertIn("2. Vĩnh Hưng", out)
-        self.assertIn("840.000", out)
-        self.assertIn("1.428.000", out)
-        self.assertIn("Còn phải thanh toán", out)
-        self.assertIn("Năm trăm sáu mươi nghìn đồng", out)
-
-
 def _load_tools():
     import importlib.util
 

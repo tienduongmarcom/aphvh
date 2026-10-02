@@ -281,17 +281,3 @@ def aphvh_ban_hang(doc) -> dict:
         no = {"cu": so_du - con_no_hd, "con_no_hd": con_no_hd, "tong": so_du}
     return {"co_thue": co_thue, "dong": dong, "no": no}
 
-
-def aphvh_don_tong(doc) -> dict:
-    """Phiếu tổng: dòng hàng nhóm theo đơn vị bán, và tình hình tiền (gồm thuế) của các đơn con."""
-    from aphvh.aph_vh.doctype.don_tong_aph.don_tong_aph import tinh_hinh
-
-    nhom = []
-    for r in doc.get("items") or []:
-        ten = frappe.get_cached_value("Company", r.cong_ty, "company_name") or r.cong_ty
-        if not nhom or nhom[-1]["cong_ty"] != r.cong_ty:
-            nhom.append({"cong_ty": r.cong_ty, "ten": ten, "dong": [], "tien_hang": 0.0})
-        nhom[-1]["dong"].append(r)
-        nhom[-1]["tien_hang"] += flt(r.amount)
-    th = tinh_hinh(doc.name) if doc.docstatus == 1 else {"don_con": [], "tong": None}
-    return {"nhom": nhom, "tinh_hinh": th}

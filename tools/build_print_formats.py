@@ -18,7 +18,6 @@ FORMATS = {
     "bien_ban_giao_nhan_aph": ("Biên bản giao nhận APH", "Delivery Note"),
     "phieu_thu_chi_aph": ("Phiếu thu chi APH", "Payment Entry"),
     "phieu_ban_hang_aph": ("Phiếu bán hàng APH", "Sales Invoice"),
-    "phieu_tong_aph": ("Phiếu tổng APH", "Don Tong APH"),
 }
 
 
