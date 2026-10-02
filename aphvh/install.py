@@ -569,6 +569,17 @@ def _nganh_options():
 
 
 HKD_CUSTOM_FIELDS = {
+    # 0.4.13: đơn vị theo dõi nội bộ (TL) — không mã số thuế, không thuế GTGT, giai đoạn chuyển tiếp
+    "Company": [
+        {
+            "fieldname": "aphvh_noi_bo",
+            "label": "Đơn vị theo dõi nội bộ (không kê khai)",
+            "fieldtype": "Check",
+            "insert_after": "abbr",
+            "description": "Chỉ để theo dõi hàng, công nợ, lãi lỗ trong giai đoạn chuyển tiếp; dự kiến chuyển dần sang hộ kinh doanh. "
+            "Không có mẫu thuế GTGT, phiếu in không ghi mẫu số thông tư.",
+        }
+    ],
     "Item Group": [
         {
             "fieldname": "aphvh_nganh_hkd",
