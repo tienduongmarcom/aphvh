@@ -51,6 +51,8 @@ def _chung_tu(customer, company, f, t):
             acc = pe.paid_to if pe.payment_type == "Receive" else pe.paid_from
             ct.update(loai="Phiếu thu" if pe.payment_type == "Receive" else "Phiếu chi",
                       dien_giai=frappe.get_cached_value("Account", acc, "account_name") or "")
+        elif g.voucher_type == "Journal Entry":
+            ct["dien_giai"] = (frappe.db.get_value("Journal Entry", g.voucher_no, "user_remark") or "").strip()[:160]
         out.append(ct)
     return out
 
@@ -80,4 +82,9 @@ def execute(filters=None):
             continue
         don_vi.append({"don_vi": c.abbr, "ten": c.company_name, "dau_ky": _so_du(f.customer, c.name, f.from_date),
                        "chung_tu": _chung_tu(f.customer, c.name, f.from_date, f.to_date)})
-    return cols, dong_bao_cao(don_vi)
+    rows = dong_bao_cao(don_vi)
+    if rows:
+        # Dòng tổng mang tên khách, MST cho đầu bản in (bản in chỉ nhận filters và data).
+        ten, mst = frappe.db.get_value("Customer", f.customer, ["customer_name", "tax_id"]) or (f.customer, "")
+        rows[-1].update(ten_khach=ten, mst=mst or "")
+    return cols, rows

@@ -19,7 +19,7 @@ var tong = data.filter(function (r) { return r.kieu === "tong"; })[0];
 <div class="thk">
 	<h3>BẢNG TỔNG HỢP MUA HÀNG VÀ CÔNG NỢ</h3>
 	<div style="text-align:center">Từ ngày {%= ngay(filters.from_date) %} đến ngày {%= ngay(filters.to_date) %}</div>
-	<p>Khách hàng: <b>{%= filters.customer %}</b></p>
+	<p>Khách hàng: <b>{%= (tong && tong.ten_khach) || filters.customer %}</b>{% if (tong && tong.mst) { %} &nbsp; MST: {%= tong.mst %}{% } %} &nbsp; (mã {%= filters.customer %})</p>
 	<table>
 		<thead><tr>
 			<th>Ngày</th><th>Chứng từ</th><th>Diễn giải</th><th>HĐ</th>
