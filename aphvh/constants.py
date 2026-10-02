@@ -95,6 +95,7 @@ PRINT_DN_ISSUE = "Phiếu xuất kho bán hàng APH"
 PRINT_DN_HANDOVER = "Biên bản giao nhận APH"
 PRINT_PAYMENT = "Phiếu thu chi APH"
 PRINT_SALES_INVOICE = "Phiếu bán hàng APH"
+PRINT_DON_TONG = "Phiếu tổng APH"
 PE_PERSON = "aphvh_nguoi_nop_nhan"
 
 # --- Có / không xuất hóa đơn GTGT (0.3.1) ---------------------------------------------------

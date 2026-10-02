@@ -9,7 +9,7 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
 # Frappe chỉ nạp lại mẫu in khi "modified" mới hơn bản trên site: sửa mẫu nào thì tăng mốc này.
-MODIFIED = "2026-10-02 08:30:00.000000"
+MODIFIED = "2026-10-02 09:00:00.000000"
 
 FORMATS = {
     "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),
@@ -18,6 +18,7 @@ FORMATS = {
     "bien_ban_giao_nhan_aph": ("Biên bản giao nhận APH", "Delivery Note"),
     "phieu_thu_chi_aph": ("Phiếu thu chi APH", "Payment Entry"),
     "phieu_ban_hang_aph": ("Phiếu bán hàng APH", "Sales Invoice"),
+    "phieu_tong_aph": ("Phiếu tổng APH", "Don Tong APH"),
 }
 
 

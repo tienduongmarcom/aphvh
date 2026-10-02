@@ -126,6 +126,7 @@ jinja = {
         "aphvh.print_utils.aphvh_loai_phieu_kho",
         "aphvh.print_utils.aphvh_thu_chi",
         "aphvh.print_utils.aphvh_ban_hang",
+        "aphvh.print_utils.aphvh_don_tong",
         "aphvh.print_utils.aphvh_lo",
         "aphvh.print_utils.aphvh_gia_gom_thue",
     ],

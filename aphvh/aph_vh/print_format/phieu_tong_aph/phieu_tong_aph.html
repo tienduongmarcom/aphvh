@@ -1,0 +1,53 @@
+{#- Phiếu tổng in từ Đơn tổng: hàng hóa nhóm theo đơn vị bán (APH / VH / HKD), có / không xuất hóa đơn,
+    tiền hàng chưa thuế; sau khi xác nhận có thêm tình hình tiền gồm thuế, đã thu, còn phải thu. -#}
+{%- set dt = aphvh_don_tong(doc) -%}
+{%- set th = dt.tinh_hinh -%}
+{%- set cham = ".............................." -%}
+<div class="aph-vt">
+<table class="aph-title"><tr>
+  <td class="aph-center">
+    <div class="aph-name">PHIẾU TỔNG ĐƠN HÀNG</div>
+    <div>Số: {{ doc.name }} &nbsp;–&nbsp; <span class="aph-date">{{ aphvh_ngay(doc.transaction_date) }}</span></div>
+  </td>
+</tr></table>
+<div class="aph-info">
+  <div>Khách hàng: <b>{{ doc.customer_name }}</b></div>
+  <div>Ngày giao dự kiến: {{ aphvh_ngay(doc.delivery_date) }}</div>
+  {%- if doc.ghi_chu %}<div>Ghi chú: {{ doc.ghi_chu }}</div>{% endif %}
+</div>
+{%- for g in dt.nhom %}
+<div class="aph-sec">{{ loop.index }}. {{ g.ten }}</div>
+<table class="aph-tbl">
+  <thead><tr>
+    <th class="c-stt">STT</th><th>Tên hàng hóa</th><th class="c-dvt">ĐVT</th><th class="c-sl">Số lượng</th>
+    <th class="c-tien">Đơn giá</th><th class="c-tien">Thành tiền</th><th class="c-dvt">Xuất HĐ</th>
+  </tr></thead>
+  <tbody>
+  {%- for r in g.dong %}
+    <tr>
+      <td class="c">{{ loop.index }}</td><td>{{ r.item_name }}</td><td class="c">{{ r.uom }}</td>
+      <td class="r">{{ aphvh_so(r.qty) }}</td><td class="r">{{ aphvh_so(r.rate, 0) }}</td>
+      <td class="r">{{ aphvh_so(r.amount, 0) }}</td><td class="c">{{ r.xuat_hoa_don }}</td>
+    </tr>
+  {%- endfor %}
+    <tr class="aph-sum"><td></td><td class="l" colspan="4">Cộng tiền hàng (chưa thuế)</td><td class="r">{{ aphvh_so(g.tien_hang, 0) }}</td><td></td></tr>
+  </tbody>
+</table>
+{%- endfor %}
+<table class="aph-tbl aph-tong">
+  <tr class="aph-sum"><td class="l">Tổng tiền hàng (chưa thuế)</td><td class="r">{{ aphvh_so(doc.tong_tien_hang, 0) }}</td></tr>
+  {%- if th.tong %}
+  <tr><td class="l">Tổng tiền đơn (gồm thuế)</td><td class="r">{{ aphvh_so(th.tong.tong, 0) }}</td></tr>
+  <tr><td class="l">Đã thanh toán</td><td class="r">{{ aphvh_so(th.tong.da_thu, 0) }}</td></tr>
+  <tr class="aph-sum"><td class="l">Còn phải thanh toán</td><td class="r">{{ aphvh_so(th.tong.con_phai_thu, 0) }}</td></tr>
+  {%- endif %}
+</table>
+{%- if th.tong %}
+<div class="aph-info"><div>Số tiền còn phải thanh toán (viết bằng chữ): <i>{{ aphvh_bang_chu(th.tong.con_phai_thu) }}</i></div></div>
+{%- endif %}
+<div class="aph-sign-date">{{ aphvh_ngay(doc.transaction_date) }}</div>
+<table class="aph-sign"><tr>
+  <td><b>Khách hàng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ aphvh_ten_nguoi(doc.owner) }}</div></td>
+</tr></table>
+</div>

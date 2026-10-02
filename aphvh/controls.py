@@ -53,8 +53,21 @@ def validate_posting_date(doc, method=None):
         )
 
 
+def _set_don_tong(doc):
+    """Phiếu thu gắn với đơn bán / hóa đơn thuộc một Đơn tổng thì ghi số đơn tổng (để xem trên đơn tổng)."""
+    if not doc.meta.has_field("aphvh_don_tong") or doc.get("aphvh_don_tong"):
+        return
+    for r in doc.get("references") or []:
+        if r.reference_doctype in ("Sales Order", "Sales Invoice") and r.reference_name:
+            dt = frappe.db.get_value(r.reference_doctype, r.reference_name, "aphvh_don_tong")
+            if dt:
+                doc.aphvh_don_tong = dt
+                return
+
+
 def validate_payment_entry(doc, method=None):
     validate_posting_date(doc)
+    _set_don_tong(doc)
     cash_acc = doc.paid_to if doc.payment_type == "Receive" else doc.paid_from
     if cash_acc and _account_type(cash_acc) == "Cash":
         msg = R.cash_warning(doc.paid_amount)

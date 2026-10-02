@@ -28,6 +28,7 @@ from aphvh.constants import (
     PRINT_DN_ISSUE,
     PRINT_PAYMENT,
     PRINT_SALES_INVOICE,
+    PRINT_DON_TONG,
     PE_PERSON,
     PRINT_PURCHASE_RECEIPT,
     PRINT_STOCK_ENTRY,
@@ -435,6 +436,7 @@ _SALES_MASTERS = {
 ROLE_SALES_PERMS = {
     **_SALES_MASTERS,
     "Sales Order": _DOC,
+    "Don Tong APH": _DOC,  # 0.3.9: đơn tổng nhiều đơn vị
     "Delivery Note": {"read": 1, "print": 1},
     "Item Price": _READ,  # chỉ bảng giá bán (price_visibility.item_price_query_conditions)
     "Sales Person": _READ,
@@ -444,6 +446,7 @@ ROLE_HN_STOCK_PERMS = {
     **_SALES_MASTERS,
     "Delivery Note": _DOC,
     "Sales Order": {"read": 1, "print": 1},
+    "Don Tong APH": {"read": 1, "print": 1},
     "Serial and Batch Bundle": {"read": 1, "write": 1, "create": 1, "submit": 1, "cancel": 1, "delete": 1},
     "Stock Entry": {"read": 1, "print": 1},
     "Stock Entry Type": _READ,
@@ -467,9 +470,16 @@ DEFAULT_PRINT_FORMATS = {
     "Delivery Note": PRINT_DN_ISSUE,
     "Payment Entry": PRINT_PAYMENT,
     "Sales Invoice": PRINT_SALES_INVOICE,
+    "Don Tong APH": PRINT_DON_TONG,
 }
 
-TRANSLATIONS = {REPORT_QTY: REPORT_QTY_LABEL, REPORT_INVOICED: REPORT_INVOICED_LABEL}
+TRANSLATIONS = {
+    REPORT_QTY: REPORT_QTY_LABEL,
+    REPORT_INVOICED: REPORT_INVOICED_LABEL,
+    "Don Tong APH": "Đơn tổng",
+    "Don Tong APH Item": "Dòng đơn tổng",
+    "Cong no don tong APH": "Công nợ theo đơn tổng",
+}
 
 
 # --- 0.3.4: kiểm soát sau đợt kiểm thử 8086 ------------------------------------------------
@@ -522,6 +532,24 @@ VAT_CUSTOM_FIELDS = {
     ],
 }
 
+# 0.3.9: chứng từ con của Đơn tổng (đi theo đơn bán → phiếu giao → hóa đơn; phiếu thu lấy theo chứng từ được thu).
+_DON_TONG_FIELD = {
+    "fieldname": "aphvh_don_tong",
+    "label": "Đơn tổng",
+    "fieldtype": "Link",
+    "options": "Don Tong APH",
+    "read_only": 1,
+    "in_standard_filter": 1,
+    "print_hide": 1,
+    "search_index": 1,
+}
+DON_TONG_CUSTOM_FIELDS = {
+    "Sales Order": [dict(_DON_TONG_FIELD, insert_after="customer_name")],
+    "Delivery Note": [dict(_DON_TONG_FIELD, insert_after="customer_name")],
+    "Sales Invoice": [dict(_DON_TONG_FIELD, insert_after="customer_name")],
+    "Payment Entry": [dict(_DON_TONG_FIELD, insert_after="party_name")],
+}
+
 CONTROL_CUSTOM_FIELDS = {
     "Customer": [
         {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
@@ -572,6 +600,7 @@ def setup():
     create_custom_fields(INVOICE_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(CONTROL_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(VAT_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(DON_TONG_CUSTOM_FIELDS, ignore_validate=True, update=True)
     ensure_frozen_party_modifier()
     from aphvh.vat import setup_defaults
 
