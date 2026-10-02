@@ -52,3 +52,44 @@ def tong_hop(don_con: list) -> dict:
         t["da_thu"] += float(d.get("da_thu") or 0)
     t["con_phai_thu"] = t["tong"] - t["da_thu"]
     return t
+
+
+# --- 0.4.0: phiếu thu gộp -------------------------------------------------------------------
+
+# Tài khoản nội bộ giữa các đơn vị: NOI_BO[đơn vị ghi sổ][đơn vị đối ứng] = (phải thu, phải trả) — số hiệu TK.
+# APH: 13883/33885 với VH, 13884/33886 với HKD (đã thống nhất 1388/3388 chi tiết theo đơn vị);
+# VH và HKD: 13881/33881 với APH. Kế toán trưởng xác nhận lại trước khi lên hệ thống chính thức.
+NOI_BO = {
+    "APH": {"VHT": ("13883", "33885"), "MKT": ("13884", "33886")},
+    "VHT": {"APH": ("13881", "33881"), "MKT": ("13884", "33886")},
+    "MKT": {"APH": ("13881", "33881"), "VHT": ("13883", "33885")},
+}
+
+
+def tk_noi_bo(cong_ty: str, doi_ung: str) -> tuple:
+    """(phải thu, phải trả) của `cong_ty` với `doi_ung`; KeyError nếu chưa khai báo."""
+    return NOI_BO[cong_ty][doi_ung]
+
+
+def phan_bo_thu_gop(so_tien, don_vi_nhan: str, cho_thu: list) -> dict:
+    """Chia tiền khách trả một lần cho các khoản còn phải thu của đơn tổng.
+
+    cho_thu: [{"cong_ty", "loai": "SI" | "SO", "ten", "con_lai", "ngay"}]. Thứ tự: hóa đơn trước đơn chưa lập hóa đơn;
+    trong mỗi loại, đơn vị nhận tiền trước rồi đơn vị khác; cùng nhóm thì ngày cũ trước.
+    -> {"dong": [{"cong_ty", "loai", "ten", "so_tien"}], "tra_truoc": phần thừa (ghi trả trước tại đơn vị nhận)}.
+    """
+    con = round(float(so_tien or 0), 2)
+    if con <= 0:
+        raise ValueError("Số tiền thu phải lớn hơn 0")
+    thu_tu = sorted(
+        [c for c in cho_thu or [] if float(c.get("con_lai") or 0) > 0],
+        key=lambda c: (c["loai"] != "SI", c["cong_ty"] != don_vi_nhan, str(c.get("ngay") or ""), c["ten"]),
+    )
+    dong = []
+    for c in thu_tu:
+        if con <= 0:
+            break
+        a = round(min(con, float(c["con_lai"])), 2)
+        dong.append({"cong_ty": c["cong_ty"], "loai": c["loai"], "ten": c["ten"], "so_tien": a})
+        con = round(con - a, 2)
+    return {"dong": dong, "tra_truoc": con}

@@ -35,6 +35,36 @@ class TestRules(unittest.TestCase):
         self.assertEqual(t["con_phai_thu"], 770_000)
 
 
+class TestThuGop(unittest.TestCase):
+    CHO = [
+        {"cong_ty": "VHT", "loai": "SI", "ten": "V1", "con_lai": 560, "ngay": "2026-10-01"},
+        {"cong_ty": "APH", "loai": "SI", "ten": "A1", "con_lai": 300, "ngay": "2026-10-02"},
+        {"cong_ty": "APH", "loai": "SO", "ten": "S1", "con_lai": 500, "ngay": "2026-10-01"},
+        {"cong_ty": "MKT", "loai": "SO", "ten": "M1", "con_lai": 200, "ngay": "2026-10-01"},
+    ]
+
+    def test_order_and_split(self):
+        p = R.phan_bo_thu_gop(1000, "APH", self.CHO)
+        self.assertEqual([(d["ten"], d["so_tien"]) for d in p["dong"]], [("A1", 300), ("V1", 560), ("S1", 140)])
+        self.assertEqual(p["tra_truoc"], 0)
+
+    def test_excess_is_prepayment(self):
+        p = R.phan_bo_thu_gop(2000, "VHT", self.CHO)
+        self.assertEqual(p["dong"][0]["ten"], "V1")  # hóa đơn của đơn vị nhận tiền trước
+        self.assertEqual(sum(d["so_tien"] for d in p["dong"]), 1560)
+        self.assertEqual(p["tra_truoc"], 440)
+
+    def test_invalid(self):
+        with self.assertRaises(ValueError):
+            R.phan_bo_thu_gop(0, "APH", self.CHO)
+
+    def test_noi_bo_symmetric(self):
+        for a, m in R.NOI_BO.items():
+            for b in m:
+                self.assertIn(a, R.NOI_BO[b], f"{b} thiếu TK nội bộ với {a}")
+        self.assertEqual(R.tk_noi_bo("APH", "VHT"), ("13883", "33885"))
+
+
 class TestDoctype(unittest.TestCase):
     def test_json(self):
         p = json.loads((DT / "don_tong_aph" / "don_tong_aph.json").read_text(encoding="utf-8"))
