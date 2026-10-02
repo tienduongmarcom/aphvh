@@ -8,7 +8,8 @@ import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
-MODIFIED = "2026-09-30 23:50:00.000000"
+# Frappe chỉ nạp lại mẫu in khi "modified" mới hơn bản trên site: sửa mẫu nào thì tăng mốc này.
+MODIFIED = "2026-10-02 08:30:00.000000"
 
 FORMATS = {
     "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),

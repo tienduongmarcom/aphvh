@@ -45,9 +45,9 @@ def loai_thu_chi(payment_type, from_type, to_type) -> dict:
 def tieu_de_thu_chi(kieu: str, tien_mat: bool) -> tuple[str, str]:
     """(tiêu đề, mẫu số)."""
     if kieu == "thu":
-        return ("PHIẾU THU", "01-TT") if tien_mat else ("CHỨNG TỪ THU TIỀN GỬI NGÂN HÀNG", "")
+        return ("PHIẾU THU", "01-TT") if tien_mat else ("CHỨNG TỪ THU NGÂN HÀNG", "")
     if kieu == "chi":
-        return ("PHIẾU CHI", "02-TT") if tien_mat else ("CHỨNG TỪ CHI TIỀN GỬI NGÂN HÀNG", "")
+        return ("PHIẾU CHI", "02-TT") if tien_mat else ("CHỨNG TỪ CHI NGÂN HÀNG", "")
     return ("CHỨNG TỪ CHUYỂN TIỀN NỘI BỘ", "")
 
 

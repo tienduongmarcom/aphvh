@@ -680,11 +680,23 @@ def hide_standard_fields():
                 )
 
 
+def reload_print_formats():
+    """Nạp lại mọi mẫu in của app từ mã nguồn (force): Frappe chỉ tự nạp khi "modified" mới hơn,
+    sửa mẫu mà quên tăng mốc thì site giữ bản cũ (lỗi gặp ở 0.3.7)."""
+    import os
+
+    base = os.path.join(os.path.dirname(__file__), "aph_vh", "print_format")
+    for folder in sorted(os.listdir(base)):
+        if os.path.isfile(os.path.join(base, folder, f"{folder}.json")):
+            frappe.reload_doc("aph_vh", "print_format", folder, force=True)
+
+
 def ensure_default_print_formats():
     """Đặt mẫu in mặc định của app, trừ khi đã có người chọn mẫu khác.
 
     Mẫu "<chứng từ> with Item Image" do ERPNext tự đặt lúc cài thì coi như chưa chọn.
     """
+    reload_print_formats()
     for doctype, print_format in DEFAULT_PRINT_FORMATS.items():
         if not frappe.db.exists("Print Format", print_format):
             continue

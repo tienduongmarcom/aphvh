@@ -298,7 +298,7 @@ class TestPaymentPrints(unittest.TestCase):
     def test_ngan_hang_ngoai_te(self):
         out = self.render(_thu_chi("thu", tien_mat=False, ngoai_te=True, so_tien="1.000", tien_te="USD",
                                    ty_gia="26.100", quy_doi="26.100.000", bang_chu="Một nghìn đô la Mỹ"))
-        self.assertIn("CHỨNG TỪ THU TIỀN GỬI NGÂN HÀNG", out)
+        self.assertIn("CHỨNG TỪ THU NGÂN HÀNG", out)
         self.assertNotIn("Mẫu số", out)
         self.assertIn("Tài khoản ngân hàng: Tiền gửi MB", out)
         self.assertIn("Số tham chiếu: FT26275", out)
@@ -364,6 +364,7 @@ class TestSalesInvoicePrint(unittest.TestCase):
         self.assertIn("1.050.000", out)
         self.assertNotIn("-1.050.000", out)
         self.assertIn("tiền trả lại", out)
+        self.assertIn("Người trả hàng", out)
 
 
 def _load_tools():

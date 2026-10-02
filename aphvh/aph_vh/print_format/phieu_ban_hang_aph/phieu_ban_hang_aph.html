@@ -77,15 +77,17 @@
   <div>Số tiền viết bằng chữ: <i>{{ aphvh_bang_chu(tong | abs) }}</i></div>
   {%- if bh.no %}
   <div class="aph-sec">Công nợ tại thời điểm in</div>
-  <div>- Nợ trước phiếu này: {{ aphvh_so(bh.no.cu, 0) }} đ &nbsp;&nbsp; - Phiếu này còn nợ: {{ aphvh_so(bh.no.con_no_hd, 0) }} đ &nbsp;&nbsp; - <b>Tổng nợ: {{ aphvh_so(bh.no.tong, 0) }} đ</b></div>
+  <div>- Nợ trước phiếu này: {{ aphvh_so(bh.no.cu, 0) }} đ</div>
+  <div>- Phiếu này còn nợ: {{ aphvh_so(bh.no.con_no_hd, 0) }} đ</div>
+  <div>- <b>Tổng nợ: {{ aphvh_so(bh.no.tong, 0) }} đ</b></div>
   {%- endif %}
   <div><i>Phiếu này không thay thế hóa đơn giá trị gia tăng.</i></div>
 </div>
 
 <div class="aph-sign-date">{{ aphvh_ngay(doc.posting_date) }}</div>
 <table class="aph-sign"><tr>
-  <td><b>Người mua hàng</b><br><i>(Ký, họ tên)</i></td>
-  <td><b>Người giao hàng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ "Người trả hàng" if tra else "Người mua hàng" }}</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ "Người nhận hàng" if tra else "Người giao hàng" }}</b><br><i>(Ký, họ tên)</i></td>
   <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ aphvh_ten_nguoi(doc.owner) }}</div></td>
 </tr></table>
 </div>
