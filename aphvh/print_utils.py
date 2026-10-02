@@ -208,7 +208,10 @@ def aphvh_thu_chi(doc) -> dict:
     ngoai_te = bool(tt) and tt != company_currency
     refs = [(r.reference_doctype, r.reference_name) for r in doc.get("references") or []]
     ghi_chu = doc.get("remarks") if doc.get("custom_remarks") else None
-    nguoi = doc.get("aphvh_nguoi_nop_nhan") or doc.get("party_name") or ""
+    from aphvh.ben_thu_ba_rules import nguoi_tren_phieu
+
+    nguoi = (nguoi_tren_phieu(doc.get("aphvh_ben_thu_ba"), doc.get("aphvh_btb_ten"), doc.get("party_name"), loai["kieu"])
+             or doc.get("aphvh_nguoi_nop_nhan") or doc.get("party_name") or "")
     return {
         "kieu": loai["kieu"],
         "tien_mat": loai["tien_mat"],

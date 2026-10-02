@@ -96,6 +96,13 @@ PRINT_DN_HANDOVER = "Biên bản giao nhận APH"
 PRINT_PAYMENT = "Phiếu thu chi APH"
 PRINT_SALES_INVOICE = "Phiếu bán hàng APH"
 PE_PERSON = "aphvh_nguoi_nop_nhan"
+# 0.4.11: thanh toán qua bên thứ ba
+PE_BTB = "aphvh_ben_thu_ba"
+PE_BTB_TEN = "aphvh_btb_ten"
+PE_BTB_GIAY = "aphvh_btb_cccd_mst"
+PE_BTB_CAN_CU = "aphvh_btb_can_cu"
+PE_BTB_FILE = "aphvh_btb_van_ban"
+PE_BTB_TT = "aphvh_btb_trang_thai"
 
 # --- Có / không xuất hóa đơn GTGT (0.3.1) ---------------------------------------------------
 # ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn. Ô này trên khách (mặc định do

@@ -505,6 +505,32 @@ _AP_THUE_FIELD = {
     "Tự lấy theo loại của khách; kế toán bán hàng đổi được trên từng chứng từ (theo người mua ghi trên hóa đơn).",
 }
 
+def _btb_fields():
+    """0.4.11: thanh toán qua bên thứ ba (người / đơn vị khác trả hoặc nhận tiền thay)."""
+    from aphvh.ben_thu_ba_rules import CAN_CU, TRANG_THAI
+    from aphvh.constants import PE_BTB, PE_BTB_CAN_CU, PE_BTB_FILE, PE_BTB_GIAY, PE_BTB_TEN, PE_BTB_TT
+
+    dep = f"eval:doc.{PE_BTB}"
+    return [
+        {"fieldname": PE_BTB, "label": "Bên thứ ba trả / nhận thay", "fieldtype": "Check", "insert_after": PE_PERSON,
+         "in_standard_filter": 1, "print_hide": 1,
+         "description": "Tích khi tiền do người / đơn vị KHÁC khách hàng (nhà cung cấp) chuyển hoặc nhận thay."},
+        {"fieldname": PE_BTB_TEN, "label": "Tên người / đơn vị trả (nhận) thay", "fieldtype": "Data", "insert_after": PE_BTB,
+         "depends_on": dep, "mandatory_depends_on": dep, "print_hide": 1},
+        {"fieldname": PE_BTB_GIAY, "label": "CCCD / MST bên trả (nhận) thay", "fieldtype": "Data", "insert_after": PE_BTB_TEN,
+         "depends_on": dep, "print_hide": 1},
+        {"fieldname": PE_BTB_CAN_CU, "label": "Căn cứ", "fieldtype": "Select", "options": "\n" + "\n".join(CAN_CU),
+         "insert_after": PE_BTB_GIAY, "depends_on": dep, "mandatory_depends_on": dep, "print_hide": 1},
+        {"fieldname": PE_BTB_FILE, "label": "Văn bản ủy quyền / xác nhận", "fieldtype": "Attach", "insert_after": PE_BTB_CAN_CU,
+         "depends_on": dep, "allow_on_submit": 1, "print_hide": 1,
+         "description": "Đính kèm được cả sau khi đã xác nhận phiếu. Có văn bản thì trạng thái chuyển 'Đủ hồ sơ'."},
+        {"fieldname": PE_BTB_TT, "label": "Trạng thái rà soát", "fieldtype": "Select", "options": "\n" + "\n".join(TRANG_THAI),
+         "insert_after": PE_BTB_FILE, "depends_on": dep, "allow_on_submit": 1, "in_standard_filter": 1, "in_list_view": 1,
+         "print_hide": 1, "no_copy": 1,
+         "description": "Tự đặt theo căn cứ và văn bản. Chỉ Kế toán trưởng (Accounts Manager) chọn được 'Kế toán trưởng đã duyệt'."},
+    ]
+
+
 VAT_CUSTOM_FIELDS = {
     # 0.3.7: tên người nộp / nhận tiền in trên phiếu thu, phiếu chi (trống thì in tên đối tượng).
     "Payment Entry": [
@@ -515,6 +541,7 @@ VAT_CUSTOM_FIELDS = {
             "insert_after": "party_name",
             "description": "Người thực tế nộp hoặc nhận tiền, in trên phiếu thu / phiếu chi. Trống thì in tên khách / nhà cung cấp.",
         },
+        *_btb_fields(),
     ],
     "Sales Order": [dict(_AP_THUE_FIELD)],
     "Delivery Note": [dict(_AP_THUE_FIELD)],

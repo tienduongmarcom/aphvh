@@ -12,6 +12,7 @@ import frappe
 from frappe.utils import flt, getdate, nowdate
 
 from aphvh import control_rules as R
+from aphvh.constants import INV_FLAG, INV_YES
 
 F_WALK_IN = "aphvh_khach_chung"  # Customer
 F_PAY_NOW = "aphvh_thu_ngay_tk"  # Sales Invoice: tài khoản tiền thu ngay
@@ -53,8 +54,47 @@ def validate_posting_date(doc, method=None):
         )
 
 
+def _ben_thu_ba(doc, sau_xac_nhan=False):
+    """0.4.11: thanh toán qua bên thứ ba — kiểm tra hồ sơ, đặt trạng thái rà soát, nhắc rủi ro thuế."""
+    from aphvh import ben_thu_ba_rules as B
+    from aphvh.constants import PE_BTB, PE_BTB_CAN_CU, PE_BTB_FILE, PE_BTB_GIAY, PE_BTB_TEN, PE_BTB_TT, PE_PERSON
+
+    if not doc.meta.has_field(PE_BTB):
+        return
+    cu = doc.get_doc_before_save().get(PE_BTB_TT) if doc.get_doc_before_save() else None
+    if doc.get(PE_BTB_TT) == B.TT_DA_DUYET and cu != B.TT_DA_DUYET and "Accounts Manager" not in frappe.get_roles():
+        frappe.throw("Chỉ Kế toán trưởng được chọn 'Kế toán trưởng đã duyệt'.")
+    kq = B.kiem_tra(doc.get(PE_BTB), doc.get(PE_BTB_TEN), doc.get(PE_BTB_CAN_CU), bool(doc.get(PE_BTB_FILE)),
+                    doc.get(PE_BTB_TT) if doc.get(PE_BTB_TT) == B.TT_DA_DUYET else cu)
+    if kq["loi"]:
+        frappe.throw("<br>".join(kq["loi"]), title="Thanh toán qua bên thứ ba")
+    if not doc.get(PE_BTB):
+        if doc.get(PE_BTB_TT):
+            doc.set(PE_BTB_TT, None)
+        return
+    doc.set(PE_BTB_TT, kq["trang_thai"])
+    if sau_xac_nhan:
+        return
+    if not doc.get(PE_PERSON):
+        doc.set(PE_PERSON, doc.get(PE_BTB_TEN))
+    if doc.party_type == "Customer" and doc.party:
+        hd = [r.reference_name for r in doc.get("references") or [] if r.reference_doctype == "Sales Invoice"]
+        co_hd = bool(hd) and bool(frappe.get_all("Sales Invoice", {"name": ["in", hd], INV_FLAG: INV_YES}, limit=1))
+        msg = B.canh_bao_thue(True, doc.get(PE_BTB_GIAY), frappe.get_cached_value("Customer", doc.party, "tax_id"), co_hd)
+        if msg:
+            frappe.msgprint(msg, title="Thanh toán qua bên thứ ba", indicator="orange")
+    if kq["trang_thai"] == B.TT_CAN_RA_SOAT:
+        frappe.msgprint("Phiếu được ghi nhận nhưng ở trạng thái <b>Cần rà soát</b> (chưa có văn bản). "
+                        "Đính kèm văn bản sau, hoặc Kế toán trưởng duyệt.", title="Thanh toán qua bên thứ ba", indicator="orange")
+
+
+def before_update_after_submit_payment_entry(doc, method=None):
+    _ben_thu_ba(doc, sau_xac_nhan=True)
+
+
 def validate_payment_entry(doc, method=None):
     validate_posting_date(doc)
+    _ben_thu_ba(doc)
     cash_acc = doc.paid_to if doc.payment_type == "Receive" else doc.paid_from
     if cash_acc and _account_type(cash_acc) == "Cash":
         msg = R.cash_warning(doc.paid_amount)
