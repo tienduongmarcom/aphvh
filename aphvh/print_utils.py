@@ -241,6 +241,8 @@ def aphvh_ban_hang(doc) -> dict:
     from aphvh.print_rules import nhan_thue_suat
 
     co_thue = doc.get(INV_FLAG) == INV_YES and bool(doc.get("taxes"))
+    # 0.4.15: khách không lấy hóa đơn -> in đơn giá, thành tiền ĐÃ GỒM VAT, không dòng thuế
+    gom_thue = doc.get(INV_FLAG) != INV_YES
     vat_acc = frappe.db.get_value("Account", {"company": doc.company, "account_number": "33311", "is_group": 0}, "name")
     tax_row = defaultdict(float)
     for d in doc.get("item_wise_tax_details") or []:
@@ -266,6 +268,9 @@ def aphvh_ban_hang(doc) -> dict:
                 "thue": thue if co_thue else 0,
             }
         )
+    for r, d in zip(doc.get("items") or [], dong):
+        d["don_gia"] = flt(r.get("rate")) if gom_thue else flt(r.get("net_rate"))
+        d["thanh_tien"] = flt(r.get("amount")) if gom_thue else flt(r.get("net_amount"))
     walk_in = bool(frappe.get_cached_value("Customer", doc.customer, "aphvh_khach_chung")) if doc.get("customer") else True
     no = None
     if not walk_in and not doc.get("is_return"):

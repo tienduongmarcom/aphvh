@@ -133,7 +133,7 @@ CUSTOM_FIELDS = {
 _INV_OPTIONS = f"\n{INV_YES}\n{INV_NO}"
 _INV_DOC_FIELD = {
     "fieldname": INV_FLAG,
-    "label": "Xuất hóa đơn GTGT",
+    "label": "Khách lấy hóa đơn",
     "fieldtype": "Select",
     "options": _INV_OPTIONS,
     "insert_after": "customer_name",
@@ -142,20 +142,21 @@ _INV_DOC_FIELD = {
     "in_list_view": 1,
     "in_standard_filter": 1,
     "print_hide": 1,
-    "description": "Có: tính thuế GTGT theo mặt hàng, kế toán xuất hóa đơn trên MISA. "
-    "Không: không tính thuế, khách trả đúng tiền hàng. Lấy theo mặc định của khách, sửa được trên từng chứng từ.",
+    "description": "Có: đơn giá CHƯA thuế, VAT cộng thêm, phiếu in tách thuế. "
+    "Không: đơn giá ĐÃ GỒM VAT (giá báo khách), hệ thống tách ngược, phiếu in không có dòng thuế; "
+    "kế toán vẫn xuất hóa đơn trên MISA (người mua không lấy hóa đơn). Lấy theo mặc định của khách.",
 }
 
 INVOICE_CUSTOM_FIELDS = {
     "Customer": [
         {
             "fieldname": INV_FLAG,
-            "label": "Xuất hóa đơn GTGT (mặc định)",
+            "label": "Khách lấy hóa đơn (mặc định)",
             "fieldtype": "Select",
             "options": _INV_OPTIONS,
             "insert_after": "tax_category",
             "in_standard_filter": 1,
-            "description": "Mặc định cho đơn mới của khách. Để trống thì người lập đơn chọn trên từng đơn.",
+            "description": "Mặc định cho đơn mới của khách. Khi khách chuyển sang lấy hóa đơn: đổi thành Có.",
         },
     ],
     "Sales Order": [dict(_INV_DOC_FIELD)],
@@ -167,7 +168,6 @@ INVOICE_CUSTOM_FIELDS = {
             "label": "Hóa đơn điện tử đã xuất (MISA)",
             "fieldtype": "Section Break",
             "insert_after": "amended_from",
-            "depends_on": f"eval:doc.{INV_FLAG}=='{INV_YES}'",
             "collapsible": 0,
         },
         {
@@ -498,7 +498,6 @@ _AP_THUE_FIELD = {
     "fieldtype": "Select",
     "options": "\nDoanh nghiệp/HTX\nHộ KD/cá nhân",
     "insert_after": INV_FLAG,
-    "depends_on": f"eval:doc.{INV_FLAG}=='{INV_YES}'",
     "in_standard_filter": 1,
     "print_hide": 1,
     "description": "Bán cho công ty/HTX: nông sản Không kê khai tính nộp. Bán cho hộ KD/cá nhân: 5%. "
@@ -576,8 +575,8 @@ HKD_CUSTOM_FIELDS = {
             "label": "Đơn vị chuyển tiếp",
             "fieldtype": "Check",
             "insert_after": "abbr",
-            "description": "Bật: đơn vị được mua / bán không xuất hóa đơn (giai đoạn chuyển tiếp, sẽ chuyển dần về hộ kinh doanh). "
-            "Tắt (APH, VH, Minh Khang): mọi đơn bán đều xuất hóa đơn, hệ thống không cho chọn 'Không'.",
+            "description": "Bật: đơn vị mua / bán không hóa đơn, không VAT (giai đoạn chuyển tiếp, sẽ chuyển dần về hộ kinh doanh). "
+            "Tắt (APH, VH, Minh Khang): mọi lần bán đều phát hành hóa đơn trên MISA.",
         }
     ],
     "Item Group": [

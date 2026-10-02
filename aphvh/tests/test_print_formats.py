@@ -332,7 +332,8 @@ class TestSalesInvoicePrint(unittest.TestCase):
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_co_hoa_don(self):
-        bh = {"co_thue": True, "dong": [{"nhan": "5%", "thue": 50_000}, {"nhan": "8%", "thue": 8_000}],
+        bh = {"co_thue": True, "dong": [{"nhan": "5%", "thue": 50_000, "don_gia": 100_000, "thanh_tien": 1_000_000},
+                                       {"nhan": "8%", "thue": 8_000, "don_gia": 100_000, "thanh_tien": 100_000}],
               "no": {"cu": 2_000_000, "con_no_hd": 1_158_000, "tong": 3_158_000}}
         out = self.render(_si(), bh)
         self.assertIn("PHIẾU BÁN HÀNG", out)
@@ -348,18 +349,21 @@ class TestSalesInvoicePrint(unittest.TestCase):
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_khong_hoa_don_va_tra_hang(self):
-        bh = {"co_thue": False, "dong": [{"nhan": "", "thue": 0}], "no": None}
+        # 0.4.15: khách không lấy hóa đơn — in đơn giá, thành tiền ĐÃ GỒM VAT, không dòng thuế, không dòng "Cộng tiền hàng"
+        bh = {"co_thue": False, "dong": [{"nhan": "", "thue": 0, "don_gia": 105_000, "thanh_tien": 1_050_000}], "no": None}
         doc = _si(aphvh_xuat_hoa_don="Không", aphvh_hd_so=None, total_taxes_and_charges=0, net_total=1_000_000,
                   grand_total=1_000_000, rounded_total=1_000_000,
                   items=[Row(item_name="Đậu đen", uom="Kg", qty=10, net_rate=100_000, net_amount=1_000_000)])
         out = self.render(doc, bh)
         self.assertNotIn("Thuế suất", out)
         self.assertNotIn("Tiền thuế GTGT", out)
+        self.assertNotIn("Cộng tiền hàng", out)
+        self.assertIn("105.000", out)
         self.assertNotIn("Công nợ", out)
         doc = _si(is_return=1, return_against="ACC-SINV-2026-00069", net_total=-1_000_000, grand_total=-1_050_000,
                   rounded_total=-1_050_000, total_taxes_and_charges=-50_000,
                   items=[Row(item_name="Đậu đen", uom="Kg", qty=-10, net_rate=100_000, net_amount=-1_000_000)])
-        out = self.render(doc, {"co_thue": True, "dong": [{"nhan": "5%", "thue": -50_000}], "no": None})
+        out = self.render(doc, {"co_thue": True, "dong": [{"nhan": "5%", "thue": -50_000, "don_gia": 100_000, "thanh_tien": -1_000_000}], "no": None})
         self.assertIn("PHIẾU NHẬN LẠI HÀNG BÁN", out)
         self.assertIn("1.050.000", out)
         self.assertNotIn("-1.050.000", out)

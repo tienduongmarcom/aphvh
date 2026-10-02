@@ -65,29 +65,50 @@ def apply_invoice_flag(doc, method=None):
     """validate của Sales Order, Delivery Note, Sales Invoice."""
     if not _applies(doc):
         return
-    if frappe.get_meta("Company").has_field("aphvh_noi_bo") and doc.get("company"):
-        from aphvh.don_vi_noi_bo import co_xuat_hoa_don
-
-        flag, loi = co_xuat_hoa_don(bool(cint(frappe.get_cached_value("Company", doc.company, "aphvh_noi_bo"))),
-                                     doc.get(INV_FLAG), customer_default(doc.customer), INV_YES, INV_NO)
-        if loi:
-            frappe.throw(loi, title="Xuất hóa đơn GTGT")
-        doc.set(INV_FLAG, flag)
+    chuyen_tiep = is_chuyen_tiep(doc.get("company"))
+    if chuyen_tiep:
+        doc.set(INV_FLAG, INV_NO)
     if not doc.get(INV_FLAG):
         doc.set(INV_FLAG, customer_default(doc.customer))
     flag = doc.get(INV_FLAG)
     if flag not in (INV_YES, INV_NO):
         frappe.throw(
-            f"Chọn ô <b>Xuất hóa đơn GTGT</b> (Có / Không). Khách {frappe.bold(doc.customer)} chưa đặt mặc định; "
+            f"Chọn ô <b>Khách lấy hóa đơn</b> (Có / Không). Khách {frappe.bold(doc.customer)} chưa đặt mặc định; "
             "kế toán đặt mặc định trên hồ sơ khách để lần sau tự điền.",
-            title="Thiếu Xuất hóa đơn GTGT",
+            title="Thiếu Khách lấy hóa đơn",
         )
 
-    changed = strip_taxes(doc) if flag == INV_NO else restore_taxes(doc)
+    if chuyen_tiep:
+        changed = strip_taxes(doc)  # đơn vị chuyển tiếp: không VAT
+    else:
+        # 0.4.15: pháp nhân luôn tính VAT; khách không lấy hóa đơn -> đơn giá đã gồm VAT (tách ngược)
+        changed = restore_taxes(doc)
+        gom = flag == INV_NO
+        for t in doc.get("taxes") or []:
+            if t.get("charge_type") == "On Net Total" and cint(t.get("included_in_print_rate")) != int(gom):
+                t.included_in_print_rate = int(gom)
+                changed = True
+        _nhac_doi_cach_tinh_gia(doc, flag)
     if changed:
         doc.calculate_taxes_and_totals()
-    if flag == INV_YES:
+    if not chuyen_tiep:
         check_tax_rates(doc)
+
+
+def is_chuyen_tiep(company) -> bool:
+    if not company or not frappe.get_meta("Company").has_field("aphvh_noi_bo"):
+        return False
+    return bool(cint(frappe.get_cached_value("Company", company, "aphvh_noi_bo")))
+
+
+def _nhac_doi_cach_tinh_gia(doc, flag):
+    """Đổi ô Khách lấy hóa đơn trên chứng từ đã có giá: ý nghĩa đơn giá đổi theo (chưa thuế <-> đã gồm VAT)."""
+    cu = doc.get_doc_before_save()
+    if not cu or not cu.get(INV_FLAG) or cu.get(INV_FLAG) == flag or not any(r.get("rate") for r in doc.get("items") or []):
+        return
+    y = "đã gồm VAT (giá báo khách)" if flag == INV_NO else "chưa thuế (VAT cộng thêm)"
+    frappe.msgprint(f"Đã đổi Khách lấy hóa đơn sang <b>{flag}</b>: đơn giá trên chứng từ giờ được hiểu là giá {y}. "
+                    "Kiểm tra lại đơn giá.", title="Kiểm tra đơn giá", indicator="orange")
 
 
 def check_tax_rates(doc):
@@ -110,7 +131,7 @@ def check_tax_rates(doc):
     rows = ", ".join(f"#{r.idx} {r.item_code}" for r in missing)
     msg = (
         f"Mặt hàng chưa có thuế suất GTGT: {rows}. Kế toán trưởng gán thuế suất cho mặt hàng (Mẫu thuế mặt hàng) "
-        "trước khi bán có xuất hóa đơn; hoặc chọn Xuất hóa đơn GTGT = Không nếu lần bán này không xuất hóa đơn."
+        "trước khi bán (mọi đơn của APH, VH đều xuất hóa đơn trên MISA, kể cả khách không lấy hóa đơn)."
     )
     if doc.get("_action") == "submit":
         frappe.throw(msg, title="Chưa có thuế suất")
@@ -126,12 +147,9 @@ def validate_einvoice(doc, method=None):
             doc.set(f, doc.get(f).strip() or None)
     if not any(doc.get(f) for f in EINV_FIELDS):
         return
-    if doc.get(INV_FLAG) != INV_YES:
-        frappe.throw(
-            "Hóa đơn này để Xuất hóa đơn GTGT = Không nên không ghi ký hiệu, số, ngày hóa đơn điện tử. "
-            "Nếu thực tế đã xuất hóa đơn thì hủy, sửa thành Có rồi xác nhận lại.",
-            title="Không ghi số hóa đơn",
-        )
+    if is_chuyen_tiep(doc.get("company")):
+        frappe.throw("Đơn vị chuyển tiếp không phát hành hóa đơn nên không ghi ký hiệu, số, ngày hóa đơn điện tử.",
+                     title="Không ghi số hóa đơn")
     if not doc.get(SI_EINV_NO):
         return
     dup = frappe.get_all(

@@ -66,8 +66,10 @@ def before_validate_sales(doc, method=None):
         return
     if doc.get("is_internal_customer") or doc.get("is_opening") == "Yes" or doc.get("is_return"):
         return
-    if _flag(doc) != INV_YES:
-        return
+    from aphvh.invoice_flag import is_chuyen_tiep
+
+    if is_chuyen_tiep(doc.get("company")) or _flag(doc) not in (INV_YES, "Không"):
+        return  # 0.4.15: pháp nhân tính VAT cả khi khách không lấy hóa đơn (giá đã gồm VAT)
     cat = V.choose_category(doc.get(F_AP_THUE), frappe.get_cached_value("Customer", doc.customer, "tax_category"))
     if cat:
         doc.tax_category = cat

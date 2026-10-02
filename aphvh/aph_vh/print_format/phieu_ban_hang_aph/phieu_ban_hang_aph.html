@@ -53,8 +53,8 @@
       <td>{{ row.item_name }}{% if row.batch_no %}<br><small>Lô: {{ row.batch_no }}</small>{% endif %}</td>
       <td class="c">{{ row.uom }}</td>
       <td class="r">{{ aphvh_so(row.qty | abs) }}</td>
-      <td class="r">{{ aphvh_so(row.net_rate, 0) }}</td>
-      <td class="r">{{ aphvh_so(row.net_amount | abs, 0) }}</td>
+      <td class="r">{{ aphvh_so(t.don_gia, 0) }}</td>
+      <td class="r">{{ aphvh_so(t.thanh_tien | abs, 0) }}</td>
       {%- if bh.co_thue %}
       <td class="c">{{ t.nhan }}</td>
       <td class="r">{{ aphvh_so(t.thue | abs, 0) }}</td>
@@ -64,8 +64,8 @@
   </tbody>
 </table>
 <table class="aph-tbl aph-tong">
-  <tr><td class="l">Cộng tiền hàng</td><td class="r">{{ aphvh_so(doc.net_total | abs, 0) }}</td></tr>
   {%- if bh.co_thue %}
+  <tr><td class="l">Cộng tiền hàng</td><td class="r">{{ aphvh_so(doc.net_total | abs, 0) }}</td></tr>
   <tr><td class="l">Tiền thuế GTGT</td><td class="r">{{ aphvh_so(doc.total_taxes_and_charges | abs, 0) }}</td></tr>
   {%- endif %}
   {%- if doc.discount_amount %}

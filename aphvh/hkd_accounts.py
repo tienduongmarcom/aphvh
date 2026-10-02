@@ -40,7 +40,7 @@ DEFAULTS = {
     "default_receivable_account": "131",
     "default_payable_account": "331",
     "default_income_account": "5111",
-    "default_expense_account": "6428",
+    "default_expense_account": "632",  # giá vốn khi bán hàng (ERPNext lấy TK chi phí mặc định làm TK giá vốn)
     "default_cash_account": "1111",
     "default_bank_account": "1121",
     "default_inventory_account": "1561",

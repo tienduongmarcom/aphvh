@@ -38,11 +38,18 @@ def setup(ten: str, abbr: str, kho=None) -> dict:
     return out
 
 
-# --- 0.4.14: APH, VH, Minh Khang xuất hóa đơn 100%; chỉ đơn vị chuyển tiếp được bán không hóa đơn ---------------
+# --- 0.4.15: ô "Khách lấy hóa đơn" ---------------------------------------------------------------------------
+# APH, VH, Minh Khang phát hành hóa đơn (trên MISA) cho mọi lần bán; ô chỉ cho biết khách có lấy hóa đơn không:
+#   Có  -> đơn giá chưa thuế, cộng thêm VAT, in tách thuế;
+#   Không -> đơn giá đã gồm VAT (giá báo khách), hệ thống tách ngược, in giá đã gồm VAT, MISA ghi "người mua không lấy hóa đơn".
+# Đơn vị chuyển tiếp (TL): không VAT, ô luôn "Không".
 def co_xuat_hoa_don(chuyen_tiep: bool, chon_tren_chung_tu: str, mac_dinh_khach: str, co="Có", khong="Không"):
-    """-> (giá trị ô Xuất HĐ, lỗi | None). Quy tắc thuần, kiểm thử không cần Frappe."""
+    """-> (giá trị ô Khách lấy hóa đơn, lỗi | None). Quy tắc thuần, kiểm thử không cần Frappe."""
     if chuyen_tiep:
-        return khong, None  # đơn vị chuyển tiếp không phát hành hóa đơn
-    if chon_tren_chung_tu == khong:
-        return khong, ("APH, VH, Minh Khang xuất hóa đơn cho mọi đơn bán. Đơn không xuất hóa đơn ghi ở đơn vị chuyển tiếp (TL).")
-    return co, None
+        return khong, None
+    return (chon_tren_chung_tu or mac_dinh_khach or ""), None
+
+
+def gia_gom_thue(chuyen_tiep: bool, khach_lay_hd: str, khong="Không") -> bool:
+    """Đơn giá nhập vào đã gồm VAT? (khách không lấy hóa đơn của pháp nhân)."""
+    return (not chuyen_tiep) and khach_lay_hd == khong
