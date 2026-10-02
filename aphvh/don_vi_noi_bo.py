@@ -1,4 +1,4 @@
-"""Đơn vị theo dõi nội bộ (0.4.13) — vd TL: hàng mua / bán không hóa đơn trong giai đoạn chuyển tiếp,
+"""Đơn vị chuyển tiếp (0.4.13, 0.4.14) — vd TL: hàng mua / bán không hóa đơn trong giai đoạn chuyển tiếp,
 dự kiến chuyển dần về hộ kinh doanh Minh Khang trong 6–12 tháng.
 
 - Công ty riêng trong ERPNext, không mã số thuế, đánh dấu "Đơn vị theo dõi nội bộ".
@@ -36,3 +36,13 @@ def setup(ten: str, abbr: str, kho=None) -> dict:
     frappe.db.commit()
     out["kho"] = frappe.get_all("Warehouse", {"company": ten, "is_group": 0}, pluck="name")
     return out
+
+
+# --- 0.4.14: APH, VH, Minh Khang xuất hóa đơn 100%; chỉ đơn vị chuyển tiếp được bán không hóa đơn ---------------
+def co_xuat_hoa_don(chuyen_tiep: bool, chon_tren_chung_tu: str, mac_dinh_khach: str, co="Có", khong="Không"):
+    """-> (giá trị ô Xuất HĐ, lỗi | None). Quy tắc thuần, kiểm thử không cần Frappe."""
+    if chuyen_tiep:
+        return khong, None  # đơn vị chuyển tiếp không phát hành hóa đơn
+    if chon_tren_chung_tu == khong:
+        return khong, ("APH, VH, Minh Khang xuất hóa đơn cho mọi đơn bán. Đơn không xuất hóa đơn ghi ở đơn vị chuyển tiếp (TL).")
+    return co, None

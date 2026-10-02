@@ -65,6 +65,14 @@ def apply_invoice_flag(doc, method=None):
     """validate của Sales Order, Delivery Note, Sales Invoice."""
     if not _applies(doc):
         return
+    if frappe.get_meta("Company").has_field("aphvh_noi_bo") and doc.get("company"):
+        from aphvh.don_vi_noi_bo import co_xuat_hoa_don
+
+        flag, loi = co_xuat_hoa_don(bool(cint(frappe.get_cached_value("Company", doc.company, "aphvh_noi_bo"))),
+                                     doc.get(INV_FLAG), customer_default(doc.customer), INV_YES, INV_NO)
+        if loi:
+            frappe.throw(loi, title="Xuất hóa đơn GTGT")
+        doc.set(INV_FLAG, flag)
     if not doc.get(INV_FLAG):
         doc.set(INV_FLAG, customer_default(doc.customer))
     flag = doc.get(INV_FLAG)

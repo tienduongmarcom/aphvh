@@ -573,11 +573,11 @@ HKD_CUSTOM_FIELDS = {
     "Company": [
         {
             "fieldname": "aphvh_noi_bo",
-            "label": "Đơn vị theo dõi nội bộ (không kê khai)",
+            "label": "Đơn vị chuyển tiếp",
             "fieldtype": "Check",
             "insert_after": "abbr",
-            "description": "Chỉ để theo dõi hàng, công nợ, lãi lỗ trong giai đoạn chuyển tiếp; dự kiến chuyển dần sang hộ kinh doanh. "
-            "Không có mẫu thuế GTGT, phiếu in không ghi mẫu số thông tư.",
+            "description": "Bật: đơn vị được mua / bán không xuất hóa đơn (giai đoạn chuyển tiếp, sẽ chuyển dần về hộ kinh doanh). "
+            "Tắt (APH, VH, Minh Khang): mọi đơn bán đều xuất hóa đơn, hệ thống không cho chọn 'Không'.",
         }
     ],
     "Item Group": [
