@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 aphvh.patches.v0_2.normalize_factory_role_perms
 aphvh.patches.v0_4.remove_don_tong
+aphvh.patches.v0_4.remove_don_tong_lan2
