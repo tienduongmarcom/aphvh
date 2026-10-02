@@ -83,3 +83,76 @@ def tncn_sau_nguong(doanh_thu_nam: float, thue_ty_le: float) -> float:
     if dt <= NGUONG_TNCN_NAM:
         return 0.0
     return float(thue_ty_le or 0) * (dt - NGUONG_TNCN_NAM) / dt
+
+
+# --- 0.4.6: hộ kinh doanh nộp thuế theo thu nhập (doanh thu > 3 tỷ; > 50 tỷ: TNCN 20%) — S2c, S2d, S2e ------------
+
+THUE_SUAT_TNCN_MAC_DINH = 20.0  # doanh thu năm trên 50 tỷ (NĐ 68/2026); kế toán trưởng xác nhận
+
+
+def dong_s2c(doanh_thu: list, chi_phi: list, thue_suat=THUE_SUAT_TNCN_MAC_DINH) -> list:
+    """S2c-HKD. doanh_thu / chi_phi: [{"so", "ngay", "dien_giai", "so_tien"}]."""
+    out = [{"kieu": "muc", "dien_giai": "(1) Doanh thu bán hàng hóa, dịch vụ"}]
+    dt = 0.0
+    for d in doanh_thu or []:
+        out.append(dict(d, kieu="ct", so_tien=_r(d.get("so_tien"))))
+        dt += float(d.get("so_tien") or 0)
+    out.append({"kieu": "cong", "dien_giai": "Cộng doanh thu (1)", "so_tien": _r(dt)})
+    out.append({"kieu": "muc", "dien_giai": "(2) Chi phí hợp lý"})
+    cp = 0.0
+    for d in chi_phi or []:
+        out.append(dict(d, kieu="ct", so_tien=_r(d.get("so_tien"))))
+        cp += float(d.get("so_tien") or 0)
+    out.append({"kieu": "cong", "dien_giai": "Cộng chi phí hợp lý (2)", "so_tien": _r(cp)})
+    cl = dt - cp
+    out.append({"kieu": "tong", "dien_giai": "(3) Chênh lệch = (1) − (2)", "so_tien": _r(cl)})
+    out.append({"kieu": "tong", "dien_giai": f"(4) Thuế TNCN phải nộp = (3) × {_pt(thue_suat)}", "so_tien": _r(max(cl, 0) * float(thue_suat) / 100)})
+    return out
+
+
+def dong_s2d(mat_hang: list) -> list:
+    """S2d-HKD. mat_hang: [{"ma", "ten", "dvt", "ton_sl", "ton_tt", "ps": [{"so", "ngay", "dien_giai", "don_gia",
+    "nhap_sl", "nhap_tt", "xuat_sl", "xuat_tt"}]}] -> từng mặt hàng: dòng tên, tồn đầu kỳ, phát sinh (tồn chạy), cộng."""
+    out = []
+    for m in mat_hang or []:
+        sl, tt = float(m.get("ton_sl") or 0), float(m.get("ton_tt") or 0)
+        ps = m.get("ps") or []
+        if not ps and not sl and not tt:
+            continue
+        out.append({"kieu": "muc", "dien_giai": f"{m['ma']} – {m.get('ten') or ''}", "dvt": m.get("dvt")})
+        out.append({"kieu": "dau_ky", "dien_giai": "Số dư đầu kỳ", "dvt": m.get("dvt"), "ton_sl": sl, "ton_tt": _r(tt)})
+        c = {"nhap_sl": 0.0, "nhap_tt": 0.0, "xuat_sl": 0.0, "xuat_tt": 0.0}
+        for p in ps:
+            for k in c:
+                c[k] += float(p.get(k) or 0)
+            sl += float(p.get("nhap_sl") or 0) - float(p.get("xuat_sl") or 0)
+            tt += float(p.get("nhap_tt") or 0) - float(p.get("xuat_tt") or 0)
+            out.append(dict(p, kieu="ct", dvt=m.get("dvt"), nhap_tt=_r(p.get("nhap_tt")), xuat_tt=_r(p.get("xuat_tt")),
+                            ton_sl=round(sl, 3), ton_tt=_r(tt)))
+        out.append({"kieu": "cong", "dien_giai": "Cộng phát sinh / tồn cuối kỳ", "dvt": m.get("dvt"),
+                    "nhap_sl": round(c["nhap_sl"], 3), "nhap_tt": _r(c["nhap_tt"]), "xuat_sl": round(c["xuat_sl"], 3),
+                    "xuat_tt": _r(c["xuat_tt"]), "ton_sl": round(sl, 3), "ton_tt": _r(tt)})
+    return out
+
+
+def dong_s2e(tai_khoan: list) -> list:
+    """S2e-HKD. tai_khoan: [{"ten", "dau_ky", "ps": [{"so", "ngay", "dien_giai", "thu", "chi"}]}] -> mỗi tài khoản tiền
+    (tiền mặt, từng tài khoản ngân hàng): số dư đầu kỳ, thu, chi, tồn chạy, cộng và số dư cuối kỳ."""
+    out = []
+    for a in tai_khoan or []:
+        du = float(a.get("dau_ky") or 0)
+        ps = a.get("ps") or []
+        if not ps and not du:
+            continue
+        out.append({"kieu": "muc", "dien_giai": a["ten"]})
+        out.append({"kieu": "dau_ky", "dien_giai": "Số dư đầu kỳ", "ton": _r(du)})
+        thu = chi = 0.0
+        for p in ps:
+            t, c = float(p.get("thu") or 0), float(p.get("chi") or 0)
+            thu += t
+            chi += c
+            du += t - c
+            out.append(dict(p, kieu="ct", thu=_r(t), chi=_r(c), ton=_r(du)))
+        out.append({"kieu": "cong", "dien_giai": "Cộng phát sinh trong kỳ", "thu": _r(thu), "chi": _r(chi)})
+        out.append({"kieu": "cuoi_ky", "dien_giai": "Số dư cuối kỳ", "ton": _r(du)})
+    return out

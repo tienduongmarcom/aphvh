@@ -57,3 +57,42 @@ class TestSoHKD(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSoThuNhap(unittest.TestCase):
+    def test_s2c(self):
+        r = S.dong_s2c([{"so": "H1", "so_tien": 100_000_000}, {"so": "H2", "so_tien": -5_000_000}],
+                       [{"so": "J1", "so_tien": 80_000_000}, {"so": "J2", "so_tien": 5_000_000}])
+        self.assertEqual([x["kieu"] for x in r], ["muc", "ct", "ct", "cong", "muc", "ct", "ct", "cong", "tong", "tong"])
+        self.assertEqual(r[3]["so_tien"], 95_000_000)
+        self.assertEqual(r[7]["so_tien"], 85_000_000)
+        self.assertEqual(r[8]["so_tien"], 10_000_000)
+        self.assertEqual(r[9]["so_tien"], 2_000_000)  # 20%
+        lo = S.dong_s2c([{"so_tien": 1}], [{"so_tien": 5}])
+        self.assertEqual(lo[-1]["so_tien"], 0)  # lỗ: không có thuế
+
+    def test_s2d(self):
+        r = S.dong_s2d([
+            {"ma": "HH.DEN6", "ten": "Đậu đen", "dvt": "Kg", "ton_sl": 100, "ton_tt": 2_000_000,
+             "ps": [{"so": "PN1", "nhap_sl": 50, "nhap_tt": 1_000_000}, {"so": "PX1", "xuat_sl": 120, "xuat_tt": 2_400_000}]},
+            {"ma": "HH.X", "ten": "Không phát sinh", "dvt": "Kg", "ton_sl": 0, "ton_tt": 0, "ps": []},
+        ])
+        self.assertEqual([x["kieu"] for x in r], ["muc", "dau_ky", "ct", "ct", "cong"])
+        self.assertEqual((r[3]["ton_sl"], r[3]["ton_tt"]), (30, 600_000))
+        self.assertEqual((r[-1]["nhap_sl"], r[-1]["xuat_tt"], r[-1]["ton_tt"]), (50, 2_400_000, 600_000))
+
+    def test_s2e(self):
+        r = S.dong_s2e([{"ten": "Tiền mặt", "dau_ky": 1_000_000, "ps": [{"so": "PT1", "thu": 500_000}, {"so": "PC1", "chi": 200_000}]},
+                        {"ten": "Ngân hàng trống", "dau_ky": 0, "ps": []}])
+        self.assertEqual([x["kieu"] for x in r], ["muc", "dau_ky", "ct", "ct", "cong", "cuoi_ky"])
+        self.assertEqual(r[3]["ton"], 1_300_000)
+        self.assertEqual((r[4]["thu"], r[4]["chi"]), (500_000, 200_000))
+        self.assertEqual(r[-1]["ton"], 1_300_000)
+
+    def test_files(self):
+        rep = APP / "aph_vh" / "report" / "so_ke_toan_hkd"
+        for ext in ("json", "py", "js", "html"):
+            self.assertTrue((rep / f"so_ke_toan_hkd.{ext}").exists(), ext)
+        html = (rep / "so_ke_toan_hkd.html").read_text()
+        for t in ("SỔ CHI TIẾT DOANH THU, CHI PHÍ", "SỔ CHI TIẾT VẬT LIỆU, DỤNG CỤ, SẢN PHẨM, HÀNG HÓA", "SỔ CHI TIẾT TIỀN"):
+            self.assertIn(t, html)
