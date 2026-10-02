@@ -36,10 +36,12 @@ def kiem_tra(ben_thu_ba, ten, can_cu, co_file, trang_thai_cu=None) -> dict:
         loi.append("Chọn căn cứ thanh toán qua bên thứ ba.")
     elif can_cu != CAN_CU_CHUA_CO and not co_file:
         loi.append("Đính kèm văn bản ủy quyền / xác nhận của khách, hoặc chọn căn cứ 'Chưa có giấy tờ – cần rà soát'.")
-    if can_cu == CAN_CU_CHUA_CO or not co_file:
-        tt = TT_CAN_RA_SOAT if trang_thai_cu != TT_DA_DUYET else TT_DA_DUYET
+    if trang_thai_cu == TT_DA_DUYET:
+        tt = TT_DA_DUYET
+    elif co_file:  # có văn bản (kể cả đính kèm sau khi đã xác nhận phiếu) -> đủ hồ sơ
+        tt = TT_DU_HO_SO
     else:
-        tt = trang_thai_cu if trang_thai_cu == TT_DA_DUYET else TT_DU_HO_SO
+        tt = TT_CAN_RA_SOAT
     return {"loi": loi, "trang_thai": tt}
 
 

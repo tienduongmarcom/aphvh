@@ -21,6 +21,11 @@ class TestBenThuBa(unittest.TestCase):
         kq = B.kiem_tra(1, "Công ty A", B.CAN_CU_UY_QUYEN, True)
         self.assertEqual((kq["loi"], kq["trang_thai"]), ([], B.TT_DU_HO_SO))
 
+    def test_dinh_kem_sau(self):
+        # ghi "chưa có giấy tờ", sau đó đính kèm văn bản -> đủ hồ sơ (lỗi B6 trên 8086, 0.4.11)
+        kq = B.kiem_tra(1, "Trần Văn X", B.CAN_CU_CHUA_CO, True, B.TT_CAN_RA_SOAT)
+        self.assertEqual((kq["loi"], kq["trang_thai"]), ([], B.TT_DU_HO_SO))
+
     def test_giu_trang_thai_da_duyet(self):
         self.assertEqual(B.kiem_tra(1, "X", B.CAN_CU_CHUA_CO, False, B.TT_DA_DUYET)["trang_thai"], B.TT_DA_DUYET)
 

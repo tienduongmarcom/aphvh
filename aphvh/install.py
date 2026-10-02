@@ -520,7 +520,7 @@ def _btb_fields():
         {"fieldname": PE_BTB_GIAY, "label": "CCCD / MST bên trả (nhận) thay", "fieldtype": "Data", "insert_after": PE_BTB_TEN,
          "depends_on": dep, "print_hide": 1},
         {"fieldname": PE_BTB_CAN_CU, "label": "Căn cứ", "fieldtype": "Select", "options": "\n" + "\n".join(CAN_CU),
-         "insert_after": PE_BTB_GIAY, "depends_on": dep, "mandatory_depends_on": dep, "print_hide": 1},
+         "insert_after": PE_BTB_GIAY, "depends_on": dep, "mandatory_depends_on": dep, "allow_on_submit": 1, "print_hide": 1},
         {"fieldname": PE_BTB_FILE, "label": "Văn bản ủy quyền / xác nhận", "fieldtype": "Attach", "insert_after": PE_BTB_CAN_CU,
          "depends_on": dep, "allow_on_submit": 1, "print_hide": 1,
          "description": "Đính kèm được cả sau khi đã xác nhận phiếu. Có văn bản thì trạng thái chuyển 'Đủ hồ sơ'."},
