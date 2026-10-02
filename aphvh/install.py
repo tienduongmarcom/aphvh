@@ -473,6 +473,12 @@ TRANSLATIONS = {
     REPORT_QTY: REPORT_QTY_LABEL,
     REPORT_INVOICED: REPORT_INVOICED_LABEL,
     "Tong hop ban hang theo khach APH": "Tổng hợp bán hàng theo khách (3 đơn vị)",
+    # 0.4.3: hộp Cài đặt in — bản dịch sẵn có của ERPNext dịch máy ("Phong cảnh", "Định hướng").
+    "Orientation": "Hướng giấy",
+    "Landscape": "Ngang",
+    "Portrait": "Dọc",
+    "With Letter Head": "Kèm tiêu đề công ty",
+    "Print Format": "Mẫu in",
 }
 
 
@@ -722,10 +728,17 @@ def ensure_default_print_formats():
             validate_fields_for_doctype=False,
         )
 
+# Bản dịch cũ được phép thay bằng bản trong TRANSLATIONS (nếu site đang lưu đúng chữ cũ này).
+OLD_TRANSLATIONS = {"Orientation": ("Định hướng",), "Landscape": ("Phong cảnh",), "Portrait": ("Chân dung",)}
+
 
 def ensure_translations():
     for source, target in TRANSLATIONS.items():
-        if frappe.db.exists("Translation", {"language": "vi", "source_text": source}):
+        name = frappe.db.get_value("Translation", {"language": "vi", "source_text": source})
+        if name:
+            # Bản dịch app đặt mà còn giữ bản cũ (sai) thì sửa; người dùng tự sửa khác thì giữ.
+            if frappe.db.get_value("Translation", name, "translated_text") in OLD_TRANSLATIONS.get(source, ()):
+                frappe.db.set_value("Translation", name, "translated_text", target)
             continue
         frappe.get_doc(
             {"doctype": "Translation", "language": "vi", "source_text": source, "translated_text": target}

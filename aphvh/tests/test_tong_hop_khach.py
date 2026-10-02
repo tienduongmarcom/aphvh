@@ -41,3 +41,11 @@ class TestTongHop(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTranslations(unittest.TestCase):
+    def test_print_dialog(self):
+        src = (APP / "install.py").read_text()
+        for a, b in (("Orientation", "Hướng giấy"), ("Landscape", "Ngang"), ("Portrait", "Dọc")):
+            self.assertIn(f'"{a}": "{b}"', src)
+        self.assertNotIn('"Landscape": "Phong cảnh"', src.split("OLD_TRANSLATIONS")[0])
