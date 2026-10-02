@@ -13,7 +13,7 @@ APH = [
     r("Hà Nội", nhom=1), r("Kho bán hàng Hà Nội", "Hà Nội"), r("Kho vệ tinh chị Thoa", "Hà Nội"),
     r("Kho vệ tinh bác Hiền", "Hà Nội"), r("Hàng chờ xử lý Hà Nội", "Hà Nội"),
     r("Đà Nẵng", nhom=1), r("Kho Đà Nẵng", "Đà Nẵng"), r("Hồ Chí Minh", nhom=1), r("Kho Hồ Chí Minh", "Hồ Chí Minh"),
-    r("Hàng đang vận chuyển", loai="Transit"), r("Stores", tat=1),
+    r("Hàng đang vận chuyển", loai="Transit"), r("Stores", tat=1), r("Hàng nhận ký gửi (TEST)", "Hà Nội"),
 ]
 
 
@@ -23,6 +23,7 @@ class TestKhoChung(unittest.TestCase):
         self.assertNotIn("Kho hàng hóa nhà máy", ten)
         self.assertNotIn("Nhà máy An Phú Hưng", ten)
         self.assertNotIn("Stores", ten)
+        self.assertNotIn("Hàng nhận ký gửi (TEST)", ten)
         for n in ("Kho bán hàng Hà Nội", "Kho vệ tinh chị Thoa", "Kho vệ tinh bác Hiền", "Kho Đà Nẵng", "Kho Hồ Chí Minh", "Hàng đang vận chuyển"):
             self.assertIn(n, ten)
 

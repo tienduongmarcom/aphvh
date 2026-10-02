@@ -40,8 +40,8 @@ def cay_mau(rows: list) -> list:
 
     out = []
     for r in rows:
-        if r.get("disabled"):
-            continue
+        if r.get("disabled") or "(TEST)" in r["warehouse_name"].upper():
+            continue  # kho tắt / kho thử không chép
         if dinh(r) in DIA_DIEM or (r.get("warehouse_type") == "Transit" and not r.get("parent_name")):
             out.append((r["warehouse_name"], r.get("parent_name"), int(r.get("is_group") or 0), r.get("warehouse_type") or ""))
     if not any(n in DIA_DIEM for n, *_ in out):
