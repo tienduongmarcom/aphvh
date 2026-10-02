@@ -91,7 +91,11 @@ THUE_SUAT_TNCN_MAC_DINH = 20.0  # doanh thu năm trên 50 tỷ (NĐ 68/2026); k�
 
 
 def dong_s2c(doanh_thu: list, chi_phi: list, thue_suat=THUE_SUAT_TNCN_MAC_DINH) -> list:
-    """S2c-HKD. doanh_thu / chi_phi: [{"so", "ngay", "dien_giai", "so_tien"}]."""
+    """S2c-HKD. doanh_thu / chi_phi: [{"so", "ngay", "dien_giai", "so_tien"}].
+
+    0.4.8: chi phí có "khong_hop_ly" (kế toán tích trên chứng từ) không vào mục (2), không trừ khi tính thuế;
+    liệt kê riêng sau dòng thuế (kiểu "khl_*") để đối chiếu — bản in chính thức bỏ các dòng này.
+    """
     out = [{"kieu": "muc", "dien_giai": "(1) Doanh thu bán hàng hóa, dịch vụ"}]
     dt = 0.0
     for d in doanh_thu or []:
@@ -100,13 +104,26 @@ def dong_s2c(doanh_thu: list, chi_phi: list, thue_suat=THUE_SUAT_TNCN_MAC_DINH) 
     out.append({"kieu": "cong", "dien_giai": "Cộng doanh thu (1)", "so_tien": _r(dt)})
     out.append({"kieu": "muc", "dien_giai": "(2) Chi phí hợp lý"})
     cp = 0.0
+    loai = []
     for d in chi_phi or []:
+        if d.get("khong_hop_ly"):
+            loai.append(d)
+            continue
         out.append(dict(d, kieu="ct", so_tien=_r(d.get("so_tien"))))
         cp += float(d.get("so_tien") or 0)
     out.append({"kieu": "cong", "dien_giai": "Cộng chi phí hợp lý (2)", "so_tien": _r(cp)})
     cl = dt - cp
     out.append({"kieu": "tong", "dien_giai": "(3) Chênh lệch = (1) − (2)", "so_tien": _r(cl)})
     out.append({"kieu": "tong", "dien_giai": f"(4) Thuế TNCN phải nộp = (3) × {_pt(thue_suat)}", "so_tien": _r(max(cl, 0) * float(thue_suat) / 100)})
+    if loai:
+        out.append({"kieu": "khl_muc", "dien_giai": "Chi phí không hợp lý — đã ghi sổ, không trừ khi tính thuế (đối chiếu)"})
+        tong = 0.0
+        for d in loai:
+            ly_do = (d.get("ly_do") or "").strip()
+            out.append(dict(d, kieu="khl_ct", so_tien=_r(d.get("so_tien")),
+                            dien_giai=(d.get("dien_giai") or "") + (f" [Lý do: {ly_do}]" if ly_do else "")))
+            tong += float(d.get("so_tien") or 0)
+        out.append({"kieu": "khl_cong", "dien_giai": "Cộng chi phí không hợp lý", "so_tien": _r(tong)})
     return out
 
 

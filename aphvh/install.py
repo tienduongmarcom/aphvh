@@ -555,6 +555,29 @@ HKD_CUSTOM_FIELDS = {
     ],
 }
 
+# 0.4.8: chi phí không hợp lý — vẫn ghi sổ đầy đủ, kế toán tích để loại khỏi mục (2) sổ S2c-HKD.
+# Sửa được cả khi chứng từ đã xác nhận (allow_on_submit). Đặt trên cả chứng từ: chứng từ lẫn khoản hợp lệ
+# và không hợp lệ thì tách thành hai chứng từ.
+F_CP_KHL = "aphvh_cp_khong_hop_ly"
+F_CP_KHL_LY_DO = "aphvh_ly_do_cp_khl"
+CP_KHL_DOCTYPES = {"Journal Entry": "user_remark", "Purchase Invoice": "remarks", "Payment Entry": "remarks",
+                   "Expense Claim": "remark"}
+
+
+def _cp_khl_fields(after):
+    return [
+        {"fieldname": F_CP_KHL, "label": "Chi phí không hợp lý (loại khỏi sổ S2c-HKD)", "fieldtype": "Check",
+         "insert_after": after, "allow_on_submit": 1, "no_copy": 1,
+         "description": "Chỉ dùng cho hộ kinh doanh nộp thuế theo thu nhập. Chi phí vẫn ghi sổ; sổ S2c không trừ khoản này khi tính thuế TNCN."},
+        {"fieldname": F_CP_KHL_LY_DO, "label": "Lý do không hợp lý", "fieldtype": "Small Text", "insert_after": F_CP_KHL,
+         "allow_on_submit": 1, "no_copy": 1, "depends_on": f"eval:doc.{F_CP_KHL}", "mandatory_depends_on": f"eval:doc.{F_CP_KHL}"},
+    ]
+
+
+def cp_khl_custom_fields() -> dict:
+    return {dt: _cp_khl_fields(after) for dt, after in CP_KHL_DOCTYPES.items() if frappe.db.exists("DocType", dt)}
+
+
 CONTROL_CUSTOM_FIELDS = {
     "Customer": [
         {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
@@ -606,6 +629,7 @@ def setup():
     create_custom_fields(CONTROL_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(VAT_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(HKD_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(cp_khl_custom_fields(), ignore_validate=True, update=True)
     ensure_frozen_party_modifier()
     from aphvh.vat import setup_defaults
 

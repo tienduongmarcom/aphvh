@@ -38,10 +38,20 @@ def _s2c(f):
         (f.company, f.from_date, f.to_date),
         as_dict=True,
     )
-    chi_phi = [{"so": c.so, "ngay": c.ngay, "so_tien": flt(c.st),
+    chi_phi = [{"so": c.so, "ngay": c.ngay, "so_tien": flt(c.st), **_khong_hop_ly(c.vt, c.so),
                 "dien_giai": c.tk + (f" – {d}" if (d := _dien_giai(c.vt, c.so, None, c.ghi)) else "")} for c in cp if flt(c.st)]
     cols = [C_SO, C_NGAY, C_DG, _cur("so_tien", "Số tiền", 150), C_KIEU]
     return cols, dong_s2c(doanh_thu, chi_phi, flt(f.thue_suat_tncn or THUE_SUAT_TNCN_MAC_DINH))
+
+
+def _khong_hop_ly(voucher_type, voucher_no) -> dict:
+    """Cờ "Chi phí không hợp lý" kế toán tích trên chứng từ (0.4.8)."""
+    from aphvh.install import CP_KHL_DOCTYPES, F_CP_KHL, F_CP_KHL_LY_DO
+
+    if voucher_type not in CP_KHL_DOCTYPES or not frappe.get_meta(voucher_type).has_field(F_CP_KHL):
+        return {}
+    v = frappe.db.get_value(voucher_type, voucher_no, [F_CP_KHL, F_CP_KHL_LY_DO], as_dict=True) or {}
+    return {"khong_hop_ly": 1, "ly_do": v.get(F_CP_KHL_LY_DO)} if v.get(F_CP_KHL) else {}
 
 
 def _s2d(f):

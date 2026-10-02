@@ -71,6 +71,20 @@ class TestSoThuNhap(unittest.TestCase):
         lo = S.dong_s2c([{"so_tien": 1}], [{"so_tien": 5}])
         self.assertEqual(lo[-1]["so_tien"], 0)  # lỗ: không có thuế
 
+    def test_s2c_khong_hop_ly(self):
+        r = S.dong_s2c([{"so": "H1", "so_tien": 100_000_000}],
+                       [{"so": "J1", "so_tien": 60_000_000},
+                        {"so": "J2", "so_tien": 10_000_000, "khong_hop_ly": 1, "dien_giai": "Tiếp khách", "ly_do": "Không hóa đơn"}])
+        chinh = [x for x in r if not x["kieu"].startswith("khl")]
+        self.assertEqual([x["so"] for x in chinh if x["kieu"] == "ct"], ["H1", "J1"])
+        self.assertEqual(chinh[-3]["so_tien"], 60_000_000)  # cộng chi phí hợp lý
+        self.assertEqual(chinh[-1]["so_tien"], 8_000_000)  # (100 − 60) × 20%
+        self.assertEqual([x["kieu"] for x in r[len(chinh):]], ["khl_muc", "khl_ct", "khl_cong"])
+        self.assertIn("Lý do: Không hóa đơn", r[-2]["dien_giai"])
+        self.assertEqual(r[-1]["so_tien"], 10_000_000)
+        # Không có khoản loại: không thêm dòng đối chiếu
+        self.assertFalse(any(x["kieu"].startswith("khl") for x in S.dong_s2c([], [{"so_tien": 1}])))
+
     def test_s2d(self):
         r = S.dong_s2d([
             {"ma": "HH.DEN6", "ten": "Đậu đen", "dvt": "Kg", "ton_sl": 100, "ton_tt": 2_000_000,

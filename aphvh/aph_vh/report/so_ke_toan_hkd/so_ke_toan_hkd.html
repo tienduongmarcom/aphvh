@@ -53,8 +53,9 @@ var tieu = { "S2c-HKD": "SỔ CHI TIẾT DOANH THU, CHI PHÍ", "S2d-HKD": "SỔ 
 		{% } %}
 		</thead>
 		<tbody>
-		{% for (var i = 0; i < data.length; i++) { var r = data[i]; var bold = r.kieu !== "ct" ? "b" : ""; %}
-			{% if (r.kieu === "muc") { %}
+		{% for (var i = 0; i < data.length; i++) { var r = data[i]; var bold = (r.kieu !== "ct" && r.kieu !== "khl_ct") ? "b" : ""; %}
+			{% if ((r.kieu || "").indexOf("khl") === 0 && !filters.in_cp_khl) { continue; } %}
+			{% if (r.kieu === "muc" || r.kieu === "khl_muc") { %}
 				<tr class="b"><td colspan="{%= mau === 'S2d-HKD' ? 12 : (mau === 'S2e-HKD' ? 6 : 4) %}">{%= r.dien_giai %}</td></tr>
 			{% } else if (mau === "S2d-HKD") { %}
 				<tr class="{%= bold %}"><td>{%= r.so || "" %}</td><td class="c">{%= ngay(r.ngay) %}</td><td>{%= r.dien_giai %}</td><td class="c">{%= r.dvt || "" %}</td>
