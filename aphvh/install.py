@@ -474,6 +474,7 @@ TRANSLATIONS = {
     REPORT_INVOICED: REPORT_INVOICED_LABEL,
     "Tong hop ban hang theo khach APH": "Tổng hợp bán hàng theo khách (3 đơn vị)",
     # 0.4.3: hộp Cài đặt in — bản dịch sẵn có của ERPNext dịch máy ("Phong cảnh", "Định hướng").
+    "So doanh thu HKD": "Sổ doanh thu hộ kinh doanh (S1a, S2a, S2b)",
     "Orientation": "Hướng giấy",
     "Landscape": "Ngang",
     "Portrait": "Dọc",
@@ -532,6 +533,27 @@ VAT_CUSTOM_FIELDS = {
     ],
 }
 
+# 0.4.5: ngành nghề hộ kinh doanh theo nhóm hàng (sổ S2a/S2b-HKD, tỷ lệ thuế theo NĐ 68/2026).
+def _nganh_options():
+    from aphvh.so_hkd_rules import NGANH
+
+    return "\n" + "\n".join(n for n, _, _ in NGANH)
+
+
+HKD_CUSTOM_FIELDS = {
+    "Item Group": [
+        {
+            "fieldname": "aphvh_nganh_hkd",
+            "label": "Ngành nghề (sổ hộ kinh doanh)",
+            "fieldtype": "Select",
+            "options": _nganh_options(),
+            "insert_after": "parent_item_group",
+            "description": "Dùng cho sổ doanh thu S2a/S2b-HKD của hộ kinh doanh. Trống: theo nhóm cha; "
+            "không nhóm nào đặt thì là Phân phối, cung cấp hàng hóa (1% GTGT, 0,5% TNCN).",
+        }
+    ],
+}
+
 CONTROL_CUSTOM_FIELDS = {
     "Customer": [
         {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
@@ -582,6 +604,7 @@ def setup():
     create_custom_fields(INVOICE_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(CONTROL_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(VAT_CUSTOM_FIELDS, ignore_validate=True, update=True)
+    create_custom_fields(HKD_CUSTOM_FIELDS, ignore_validate=True, update=True)
     ensure_frozen_party_modifier()
     from aphvh.vat import setup_defaults
 
