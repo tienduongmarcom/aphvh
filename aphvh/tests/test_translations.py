@@ -48,6 +48,9 @@ class TestViCsv(unittest.TestCase):
             # 0.2.4
             'Opening Qty': 'SL đầu kỳ', 'In Qty': 'SL nhập', 'Out Qty': 'SL xuất', 'Balance Qty': 'SL tồn cuối',
             'Lead': 'Khách hàng tiềm năng', 'Subcontracting': 'Gia công', 'Serial and Batch Bundle': 'Gói serial/lô',
+            # 0.4.16: sửa bản dịch sai nghĩa Nợ/Có của ERPNext
+            'Debit To': 'Ghi Nợ tài khoản (phải thu)', 'Credit To': 'Ghi Có tài khoản (phải trả)',
+            'Debit Account': 'Tài khoản ghi Nợ', 'Credit Account': 'Tài khoản ghi Có', 'Territory': 'Khu vực',
         }
         ctx = {(r[0], r[2]): r[1] for r in load() if len(r) == 3}
         self.assertEqual(ctx.get(('No.', "Title of the 'row number' column")), 'STT')
