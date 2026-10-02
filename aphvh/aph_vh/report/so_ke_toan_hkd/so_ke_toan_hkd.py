@@ -31,15 +31,15 @@ def _s2c(f):
     doanh_thu = [{"so": d.hd or d.so, "ngay": d.ngay, "so_tien": flt(d.st),
                   "dien_giai": ("Hàng bán bị trả lại: " if d.is_return else "Bán hàng: ") + (d.kh or "")} for d in dt]
     cp = frappe.db.sql(
-        """select g.voucher_no so, g.posting_date ngay, a.account_name tk, sum(g.debit - g.credit) st, max(g.remarks) ghi
+        """select g.voucher_type vt, g.voucher_no so, g.posting_date ngay, a.account_name tk, sum(g.debit - g.credit) st, max(g.remarks) ghi
            from `tabGL Entry` g join tabAccount a on a.name = g.account
            where g.company=%s and g.is_cancelled=0 and a.root_type='Expense' and g.posting_date between %s and %s
-           group by g.voucher_no, g.posting_date, a.name order by g.posting_date, g.voucher_no""",
+           group by g.voucher_type, g.voucher_no, g.posting_date, a.name order by g.posting_date, g.voucher_no""",
         (f.company, f.from_date, f.to_date),
         as_dict=True,
     )
     chi_phi = [{"so": c.so, "ngay": c.ngay, "so_tien": flt(c.st),
-                "dien_giai": c.tk + (f" – {c.ghi[:80]}" if c.ghi and c.ghi != "No Remarks" else "")} for c in cp if flt(c.st)]
+                "dien_giai": c.tk + (f" – {d}" if (d := _dien_giai(c.vt, c.so, None, c.ghi)) else "")} for c in cp if flt(c.st)]
     cols = [C_SO, C_NGAY, C_DG, _cur("so_tien", "Số tiền", 150), C_KIEU]
     return cols, dong_s2c(doanh_thu, chi_phi, flt(f.thue_suat_tncn or THUE_SUAT_TNCN_MAC_DINH))
 
@@ -56,35 +56,55 @@ def _s2d(f):
     )
     mh = []
     for it in items:
-        dau = frappe.db.sql(
-            """select ifnull(sum(sle.actual_qty),0), ifnull(sum(sle.stock_value_difference),0) from `tabStock Ledger Entry` sle
-               join tabWarehouse w on w.name = sle.warehouse where w.company=%s and sle.item_code=%s and sle.is_cancelled=0
-               and sle.posting_date < %s""",
-            (f.company, it, f.from_date),
-        )[0]
-        ps = frappe.db.sql(
-            """select sle.voucher_type, sle.voucher_no, sle.posting_date, sle.actual_qty q, sle.stock_value_difference v,
-                      sle.incoming_rate, sle.valuation_rate
+        # Số lượng theo "tồn sau giao dịch" từng kho: phiếu kiểm kê (cả tồn đầu kỳ) không ghi số lượng thay đổi.
+        sles = frappe.db.sql(
+            """select sle.voucher_type, sle.voucher_no, sle.posting_date, sle.warehouse, sle.qty_after_transaction qa,
+                      sle.stock_value_difference v, sle.incoming_rate, sle.valuation_rate
                from `tabStock Ledger Entry` sle join tabWarehouse w on w.name = sle.warehouse
-               where w.company=%s and sle.item_code=%s and sle.is_cancelled=0 and sle.posting_date between %s and %s
+               where w.company=%s and sle.item_code=%s and sle.is_cancelled=0 and sle.posting_date <= %s
                order by sle.posting_date, sle.posting_time, sle.creation""",
-            (f.company, it, f.from_date, f.to_date),
+            (f.company, it, f.to_date),
             as_dict=True,
         )
-        ten, dvt = frappe.db.get_value("Item", it, ["item_name", "stock_uom"])
-        rows = []
-        for p in ps:
-            nhap = flt(p.q) > 0
+        truoc, dau_sl, dau_tt, rows = {}, 0.0, 0.0, []
+        for p in sles:
+            dq = flt(p.qa) - truoc.get(p.warehouse, 0.0)
+            truoc[p.warehouse] = flt(p.qa)
+            if str(p.posting_date) < str(f.from_date):
+                dau_sl += dq
+                dau_tt += flt(p.v)
+                continue
+            if not dq and not flt(p.v):
+                continue
+            nhap = dq > 0 or (dq == 0 and flt(p.v) > 0)
             rows.append({"so": p.voucher_no, "ngay": p.posting_date,
                          "dien_giai": ("Nhập – " if nhap else "Xuất – ") + _(p.voucher_type),
                          "don_gia": flt(p.incoming_rate if nhap and p.incoming_rate else p.valuation_rate),
-                         "nhap_sl": flt(p.q) if nhap else 0, "nhap_tt": flt(p.v) if nhap else 0,
-                         "xuat_sl": -flt(p.q) if not nhap else 0, "xuat_tt": -flt(p.v) if not nhap else 0})
-        mh.append({"ma": it, "ten": ten, "dvt": dvt, "ton_sl": flt(dau[0]), "ton_tt": flt(dau[1]), "ps": rows})
+                         "nhap_sl": dq if nhap else 0, "nhap_tt": flt(p.v) if nhap else 0,
+                         "xuat_sl": -dq if not nhap else 0, "xuat_tt": -flt(p.v) if not nhap else 0})
+        ten, dvt = frappe.db.get_value("Item", it, ["item_name", "stock_uom"])
+        mh.append({"ma": it, "ten": ten, "dvt": dvt, "ton_sl": dau_sl, "ton_tt": dau_tt, "ps": rows})
     cols = [C_SO, C_NGAY, C_DG, {"fieldname": "dvt", "label": "ĐVT", "fieldtype": "Data", "width": 60},
             _cur("don_gia", "Đơn giá", 100), _flt("nhap_sl", "Nhập SL"), _cur("nhap_tt", "Nhập thành tiền"),
             _flt("xuat_sl", "Xuất SL"), _cur("xuat_tt", "Xuất thành tiền"), _flt("ton_sl", "Tồn SL"), _cur("ton_tt", "Tồn thành tiền"), C_KIEU]
     return cols, dong_s2d(mh)
+
+
+def _dien_giai(voucher_type, voucher_no, party, ghi):
+    """Diễn giải tiếng Việt: phiếu thu chi lấy lý do như bản in phiếu (ERPNext tự sinh câu tiếng Anh)."""
+    if voucher_type == "Payment Entry":
+        from aphvh.print_rules import ly_do
+
+        pe = frappe.db.get_value("Payment Entry", voucher_no,
+                                 ["payment_type", "party_type", "party_name", "custom_remarks", "remarks", "paid_from", "paid_to"], as_dict=True)
+        if pe:
+            refs = frappe.get_all("Payment Entry Reference", {"parent": voucher_no}, ["reference_doctype", "reference_name"], as_list=True)
+            tf = frappe.get_cached_value("Account", pe.paid_from, "account_type") if pe.paid_from else None
+            tt = frappe.get_cached_value("Account", pe.paid_to, "account_type") if pe.paid_to else None
+            txt = ly_do(pe.payment_type, pe.party_type, refs, tf, tt, pe.remarks if pe.custom_remarks else None)
+            return (f"{pe.party_name}: " if pe.party_name and pe.party_name not in txt else "") + txt
+    ghi = "" if not ghi or ghi == "No Remarks" else ghi[:100]
+    return " – ".join(x for x in (party or "", ghi) if x)
 
 
 def _s2e(f):
@@ -95,16 +115,16 @@ def _s2e(f):
         dau = flt(frappe.db.sql("select ifnull(sum(debit-credit),0) from `tabGL Entry` where account=%s and is_cancelled=0 and posting_date < %s",
                                 (a.name, f.from_date))[0][0])
         ps = frappe.db.sql(
-            """select voucher_no so, posting_date ngay, sum(debit) thu, sum(credit) chi, max(remarks) ghi, max(party) dt
+            """select voucher_type vt, voucher_no so, posting_date ngay, sum(debit) thu, sum(credit) chi, max(remarks) ghi, max(party) dt
                from `tabGL Entry` where account=%s and is_cancelled=0 and posting_date between %s and %s
-               group by voucher_no, posting_date order by posting_date, min(creation)""",
+               group by voucher_type, voucher_no, posting_date order by posting_date, min(creation)""",
             (a.name, f.from_date, f.to_date),
             as_dict=True,
         )
         loai = "Tiền mặt" if a.account_type == "Cash" else "Tiền gửi ngân hàng"
         tk.append({"ten": f"{loai}: {a.account_number or ''} {a.account_name}".strip(), "dau_ky": dau,
                    "ps": [{"so": p.so, "ngay": p.ngay, "thu": flt(p.thu), "chi": flt(p.chi),
-                           "dien_giai": " – ".join(x for x in ((p.dt or ""), (p.ghi or "")[:80] if p.ghi != "No Remarks" else "") if x)} for p in ps]})
+                           "dien_giai": _dien_giai(p.vt, p.so, p.dt, p.ghi)} for p in ps]})
     cols = [C_SO, C_NGAY, C_DG, _cur("thu", "Thu (gửi vào)"), _cur("chi", "Chi (rút ra)"), _cur("ton", "Tồn"), C_KIEU]
     return cols, dong_s2e(tk)
 
