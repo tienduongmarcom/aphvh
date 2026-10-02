@@ -12,6 +12,25 @@ LOAI = {
 }
 
 
+VIET_TAT = {"Hóa đơn": "HĐ", "Trả hàng": "TH", "Phiếu thu": "PT", "Phiếu chi": "PC", "Phiếu thu/chi": "PT", "Chứng từ khác": "CT"}
+
+
+def so_gon(loai, so) -> str:
+    """0.4.10 — số chứng từ gọn cho bản in: "Hóa đơn", "ACC-SINV-2026-00043" -> "HĐ 43"; số tự đặt giữ nguyên."""
+    import re
+
+    s = str(so or "")
+    m = re.search(r"(\d+)$", s)
+    if not m or not re.search(r"\d{4}-\d+$", s):
+        return s
+    return f"{VIET_TAT.get(loai, loai or '')} {int(m.group(1))}".strip()
+
+
+def dien_giai_gon(text, n=60) -> str:
+    t = " ".join(str(text or "").split())
+    return t if len(t) <= n else t[: n - 1].rstrip() + "…"
+
+
 def dong_bao_cao(don_vi: list) -> list:
     """don_vi: [{"don_vi", "ten", "dau_ky", "chung_tu": [{"ngay", "loai", "so", "dien_giai", "xuat_hd", "so_hd",
     "tien_hang", "thue", "no", "co"}]}] -> các dòng báo cáo (đã có số dư chạy, dòng đầu kỳ, dòng cộng)."""
@@ -29,7 +48,8 @@ def dong_bao_cao(don_vi: list) -> list:
             du += no - co
             for k in c:
                 c[k] += float(ct.get(k) or 0)
-            rows.append(dict(ct, kieu="chung_tu", don_vi=dv["don_vi"], so_du=du, indent=1))
+            rows.append(dict(ct, kieu="chung_tu", don_vi=dv["don_vi"], so_du=du, indent=1,
+                             so_gon=so_gon(ct.get("loai"), ct.get("so")), dien_giai_gon=dien_giai_gon(ct.get("dien_giai"))))
         rows.append({"kieu": "cong", "don_vi": dv["don_vi"], "dien_giai": f"Cộng {dv.get('ten') or dv['don_vi']} — nợ cuối kỳ",
                      **c, "so_du": du, "indent": 0})
         tong["dau_ky"] += float(dv.get("dau_ky") or 0)

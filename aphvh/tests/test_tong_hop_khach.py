@@ -27,6 +27,14 @@ class TestTongHop(unittest.TestCase):
         self.assertEqual(rows[-1]["co"], 1_000_000)
         self.assertEqual(rows[-1]["dau_ky"], 1_000_000)
 
+    def test_so_gon(self):
+        from aphvh.tong_hop_khach_rules import so_gon, dien_giai_gon
+        self.assertEqual(so_gon("Hóa đơn", "ACC-SINV-2026-00043"), "HĐ 43")
+        self.assertEqual(so_gon("Phiếu thu", "ACC-PAY-2026-00105"), "PT 105")
+        self.assertEqual(so_gon("Trả hàng", "ACC-SINV-RET-2026-00007"), "TH 7")
+        self.assertEqual(so_gon("Phiếu thu", "PT-0915"), "PT-0915")  # số tự đặt giữ nguyên
+        self.assertEqual(dien_giai_gon("a " * 50, 10), "a a a a a…")
+
     def test_empty(self):
         self.assertEqual(dong_bao_cao([{"don_vi": "APH", "dau_ky": 0, "chung_tu": []}]), [])
 
