@@ -10,6 +10,17 @@ CU="$CUSTOM_TAG"
 [ "$CU" = "$MOI" ] && { echo "Đã ở phiên bản $MOI"; exit 0; }
 NGAY="$(date +%Y%m%d-%H%M%S)"
 mkdir -p "sao-luu/$NGAY"
+# Chốt chặn an toàn: lỗi sau khi đổi phiên bản thì tự quay lui (khôi phục bản sao lưu), rồi báo mã lỗi.
+# Tắt tự quay lui: TU_QUAY_LUI=0 ./nang-cap.sh <phien-ban>
+# Chụp snapshot ổ đĩa VM trước khi nâng cấp (tùy nhà cung cấp cloud): đặt SNAPSHOT_CMD, ví dụ
+#   SNAPSHOT_CMD='gcloud compute disks snapshot erp-khach --snapshot-names pre-$MOI' ./nang-cap.sh 0.7.0
+TU_QUAY_LUI="${TU_QUAY_LUI:-1}"
+if [ -n "${SNAPSHOT_CMD:-}" ]; then echo "0/5 Snapshot VM"; MOI="$MOI" bash -c "$SNAPSHOT_CMD" || { echo "Snapshot lỗi: dừng, chưa đổi gì"; exit 1; }; fi
+quay_lui() {
+  echo "$1"
+  if [ "$TU_QUAY_LUI" = 1 ]; then echo "TỰ QUAY LUI về $CU..."; ./quay-lui.sh "$NGAY" --tu-dong && echo "Đã quay về $CU. Xem lỗi ở trên, KHÔNG nâng cấp lại tới khi sửa." || echo "QUAY LUI CŨNG LỖI: gọi người hỗ trợ ngay, bản sao lưu ở sao-luu/$NGAY"
+  else echo "Quay lui bằng tay: ./quay-lui.sh $NGAY"; fi
+}
 echo "1/5 Sao lưu (CSDL + tệp) trước khi nâng cấp"
 ./erpctl exec -T backend bench --site frontend backup --with-files </dev/null
 BK="$(./erpctl exec -T backend bash -c 'ls -t sites/frontend/private/backups/*-database.sql.gz | head -1' </dev/null | tr -d '\r')"
@@ -25,11 +36,11 @@ sed -i "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$MOI/" .env
 sleep 20
 echo "3/5 Migrate"
 if ! ./erpctl exec -T backend bench --site frontend migrate; then
-  echo "MIGRATE LỖI. Quay lui: ./quay-lui.sh $NGAY"; exit 3
+  quay_lui "MIGRATE LỖI."; exit 3
 fi
 echo "4/5 Kiểm sau nâng cấp"
 ./erpctl cp khach.json backend:/tmp/khach.json
 if ! ./erpctl exec -T backend bench --site frontend execute aphvh.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "sao-luu/$NGAY/kiem-sau-nang-cap.txt" | grep -q "KHÔNG ĐẠT: 0"; then
-  echo "KIỂM KHÔNG ĐẠT. Xem sao-luu/$NGAY/kiem-sau-nang-cap.txt. Quay lui: ./quay-lui.sh $NGAY"; exit 4
+  quay_lui "KIỂM KHÔNG ĐẠT. Xem sao-luu/$NGAY/kiem-sau-nang-cap.txt."; exit 4
 fi
 echo "5/5 == XONG: $CU -> $MOI, kiểm đạt. Bản sao lưu trước nâng cấp: sao-luu/$NGAY"

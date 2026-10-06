@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Quay về phiên bản trước nâng cấp: đổi lại image và khôi phục CSDL + tệp từ bản sao lưu. Chạy trong thư mục của khách.
-# Dùng: ./quay-lui.sh <ten-thu-muc-trong-sao-luu>   (ví dụ 20261006-153000)
+# Dùng: ./quay-lui.sh <ten-thu-muc-trong-sao-luu> [--tu-dong]   (ví dụ 20261006-153000)
+# --tu-dong: không hỏi xác nhận (do nang-cap.sh gọi khi nâng cấp lỗi).
 set -euo pipefail
 umask 077
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
@@ -8,7 +9,7 @@ N="${1:?thư mục sao lưu}"; S="sao-luu/$N"
 [ -f "$S/phien-ban-truoc.txt" ] && compgen -G "$S/*-database.sql.gz" >/dev/null || { echo "Thiếu bản sao lưu đầy đủ trong $S"; exit 1; }
 TRUOC="$(cat "$S/phien-ban-truoc.txt")"
 echo "Sẽ quay về phiên bản $TRUOC và GHI ĐÈ dữ liệu hiện tại bằng bản sao lưu $N."
-read -r -p "Gõ CO để tiếp tục: " X; [ "$X" = CO ] || { echo "Hủy"; exit 1; }
+if [ "${2:-}" != "--tu-dong" ]; then read -r -p "Gõ CO để tiếp tục: " X; [ "$X" = CO ] || { echo "Hủy"; exit 1; }; fi
 set -a; source .env; set +a
 sed -i "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$TRUOC/" .env
 ./erpctl pull; ./erpctl up -d; sleep 20

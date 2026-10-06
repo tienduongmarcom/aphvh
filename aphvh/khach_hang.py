@@ -10,6 +10,10 @@ import re
 THONG_TU = {"133": "aph", "99": "vh"}  # TT133 -> bộ tài khoản 'aph'; TT99 -> 'vh'
 ABBR_RE = re.compile(r"^[A-Z0-9]{2,6}$")
 NAM_TC_RE = re.compile(r"^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$")
+# Cách đưa dữ liệu vào hệ thống của khách:
+#   tu_nhap          khách tự nhập toàn bộ (mình không chạm dữ liệu thật)
+#   import_mot_phan  khách gửi file mẫu; mình import danh mục + số dư đầu kỳ, khách nhập phiếu từ ngày chốt
+CHE_DO_DU_LIEU = ("tu_nhap", "import_mot_phan")
 
 
 def kiem_cau_hinh(cfg: dict) -> list:
@@ -19,6 +23,19 @@ def kiem_cau_hinh(cfg: dict) -> list:
         loi.append("thiếu 'khach_hang' (tên khách)")
     if not NAM_TC_RE.match(str(cfg.get("nam_tai_chinh_bat_dau", "01-01"))):
         loi.append("'nam_tai_chinh_bat_dau' phải dạng MM-DD (ví dụ 01-01)")
+    che_do = cfg.get("che_do_du_lieu", "tu_nhap")
+    if che_do not in CHE_DO_DU_LIEU:
+        loi.append("'che_do_du_lieu' phải là " + " hoặc ".join(CHE_DO_DU_LIEU))
+    chot = cfg.get("ngay_chot")
+    if chot is not None:
+        import datetime
+
+        try:
+            datetime.date.fromisoformat(str(chot))
+        except ValueError:
+            loi.append("'ngay_chot' phải dạng YYYY-MM-DD hợp lệ")
+    elif che_do == "import_mot_phan":
+        loi.append("chế độ 'import_mot_phan' bắt buộc có 'ngay_chot' (ngày chốt số dư đầu kỳ)")
     cts = cfg.get("cong_ty") or []
     if not cts:
         loi.append("cần ít nhất một công ty trong 'cong_ty'")

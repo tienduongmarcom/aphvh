@@ -35,3 +35,23 @@ class TestKhachHang(unittest.TestCase):
 
     def test_khong_co_cong_ty(self):
         self.assertTrue(K.kiem_cau_hinh({"khach_hang": "k"}))
+
+    def test_che_do_du_lieu(self):
+        co = {"khach_hang": "k", "cong_ty": [{"ten": "A", "abbr": "AB", "thong_tu": 99}]}
+        self.assertEqual(K.kiem_cau_hinh(co), [])  # mặc định tu_nhap, không cần ngày chốt
+        self.assertEqual(K.kiem_cau_hinh({**co, "che_do_du_lieu": "tu_nhap", "ngay_chot": "2026-01-01"}), [])
+        self.assertEqual(K.kiem_cau_hinh({**co, "che_do_du_lieu": "import_mot_phan", "ngay_chot": "2026-01-01"}), [])
+        self.assertTrue(any("ngay_chot" in x for x in K.kiem_cau_hinh({**co, "che_do_du_lieu": "import_mot_phan"})))
+        self.assertTrue(any("che_do_du_lieu" in x for x in K.kiem_cau_hinh({**co, "che_do_du_lieu": "khac"})))
+        self.assertTrue(any("YYYY-MM-DD" in x for x in K.kiem_cau_hinh({**co, "ngay_chot": "31/12/2025"})))
+        self.assertTrue(any("YYYY-MM-DD" in x for x in K.kiem_cau_hinh({**co, "ngay_chot": "2026-02-30"})))
+
+    def test_khach_dau_tien_hop_le(self):
+        d = os.path.join(os.path.dirname(__file__), "..", "..", "khach")
+        thay = 0
+        for ten in sorted(os.listdir(d)):
+            f = os.path.join(d, ten, "khach.json")
+            if os.path.isfile(f):
+                thay += 1
+                self.assertEqual(K.kiem_cau_hinh(json.load(open(f, encoding="utf-8"))), [], ten)
+        self.assertGreaterEqual(thay, 1)
