@@ -14,7 +14,7 @@ SO_TK_THU_HO_UNG_VIEN = tuple(str(n) for n in range(33880, 33890))
 # Số hiệu tài khoản (hoặc tài khoản con của nó) mà các nghiệp vụ của app dựa vào.
 CAN = {
     "aph": ["1111", "1121", "131", "1331", "152", "153", "154", "155", "156", "242", "331", "3331", "3381", "3388",
-            "5111", "627", "632", "641", "642", "711", "811", "1381", "1388"],
+            "5111", "632", "6421", "6422", "711", "811", "1381", "1388"],  # TT133: không có 621/622/627/641; chi phí bán hàng, quản lý là 6421, 6422
     "vh": ["1111", "1121", "131", "1331", "153", "1561", "242", "331", "3331", "3381", "3388",
            "5111", "632", "641", "642", "711", "811", "1381", "1388"],
     "mk": ["1111", "1121", "131", "1561", "331", "3339", "5111", "711", "632", "642"],
@@ -26,7 +26,9 @@ TEN_CHUAN = {
     "242": ("Chi phí trả trước", "Asset", ""),
     "1381": ("Tài sản thiếu chờ xử lý", "Asset", ""),
     "3381": ("Tài sản thừa chờ giải quyết", "Liability", ""),
-    "641": ("Chi phí bán hàng", "Expense", ""),
+    "641": ("Chi phí bán hàng", "Expense", ""),  # TT99
+    "6421": ("Chi phí bán hàng", "Expense", ""),  # TT133
+    "6422": ("Chi phí quản lý doanh nghiệp", "Expense", ""),  # TT133
     "642": ("Chi phí quản lý doanh nghiệp", "Expense", ""),
     "627": ("Chi phí sản xuất chung", "Expense", ""),
     "632": ("Giá vốn hàng bán", "Expense", "Cost of Goods Sold"),

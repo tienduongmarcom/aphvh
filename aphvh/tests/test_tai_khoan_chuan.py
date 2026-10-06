@@ -25,6 +25,13 @@ class TestTaiKhoanChuan(unittest.TestCase):
         for k in ("153", "242", "1381", "3381", "641"):
             self.assertIn(k, C.TEN_CHUAN)
 
+    def test_aph_theo_tt133_khong_dung_tk_cua_tt99(self):
+        for k in ("621", "622", "627", "641"):
+            self.assertNotIn(k, C.CAN["aph"])
+        for k in ("6421", "6422"):
+            self.assertIn(k, C.CAN["aph"]); self.assertIn(k, C.TEN_CHUAN)
+        self.assertIn("641", C.CAN["vh"])  # VH theo TT99
+
     def test_loai_don_vi(self):
         self.assertEqual(C.loai_don_vi("VHT"), "vh")
         self.assertEqual(C.loai_don_vi("tl"), "tl")
