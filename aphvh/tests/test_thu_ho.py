@@ -26,19 +26,19 @@ class TestThuHo(unittest.TestCase):
         self.assertEqual(T.kiem_tra(1, "K", "TL", 1, "linh tinh", "")["trang_thai"], T.TT_CAN_XU_LY)
 
     def test_tk_thu_ho(self):
-        self.assertTrue(T.la_tk_thu_ho("3388", ""))
-        self.assertTrue(T.la_tk_thu_ho("33881", ""))
-        self.assertTrue(T.la_tk_thu_ho("", "3388 - Phải trả, phải nộp khác - VH"))
+        self.assertTrue(T.la_tk_thu_ho("33880", T.TEN_TK_THU_HO))
+        self.assertFalse(T.la_tk_thu_ho("3388", "Phải trả, phải nộp khác"))
+        self.assertFalse(T.la_tk_thu_ho("33881", "Phải trả – vay mượn công ty liên quan"))
         self.assertFalse(T.la_tk_thu_ho("3381", "3381 - Tài sản thừa chờ xử lý - VH"))
         self.assertFalse(T.la_tk_thu_ho("1121", "1121 - Tiền gửi - VH"))
 
     def test_so_tien(self):
-        dong = [{"so_tk": "1121", "debit": 30_000_000, "credit": 0},
-                {"so_tk": "3388", "debit": 0, "credit": 30_000_000}]
+        dong = [{"so_tk": "1121", "ten_tk": "Tiền gửi", "debit": 30_000_000, "credit": 0},
+                {"so_tk": "33880", "ten_tk": T.TEN_TK_THU_HO, "debit": 0, "credit": 30_000_000}]
         self.assertEqual(T.so_tien_thu_ho(dong), 30_000_000)
         self.assertEqual(T.so_tien_thu_ho([dong[0]]), 0)
         # chuyển tiền trả TL: Nợ 3388 -> số tiền thu hộ ròng âm, bị chặn khi tích "Thu hộ"
-        self.assertLess(T.so_tien_thu_ho([{"so_tk": "3388", "debit": 5, "credit": 0}]), 0)
+        self.assertLess(T.so_tien_thu_ho([{"so_tk": "33880", "ten_tk": T.TEN_TK_THU_HO, "debit": 5, "credit": 0}]), 0)
 
     def test_so_ngay_cho(self):
         self.assertEqual(T.so_ngay_cho(datetime.date(2026, 10, 1), datetime.date(2026, 10, 6)), 5)

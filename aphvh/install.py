@@ -670,6 +670,18 @@ def ensure_frozen_party_modifier():
         frappe.db.set_value("Company", co, "role_allowed_for_frozen_entries", "Accounts Manager")
 
 
+def ensure_tai_khoan_chuan():
+    """0.4.21: tự kiểm và bổ sung tài khoản chuẩn (tài khoản thu hộ riêng) cho mọi đơn vị; không làm hỏng migrate."""
+    from aphvh.tai_khoan_chuan import setup_all
+
+    try:
+        for kq in setup_all():
+            if kq.get("viec") or kq.get("canh_bao"):
+                print("tai_khoan_chuan", kq["cong_ty"], kq["viec"], kq["canh_bao"])
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "aphvh tai_khoan_chuan")
+
+
 def after_install():
     setup()
 
@@ -696,6 +708,7 @@ def setup():
     create_custom_fields(HKD_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(cp_khl_custom_fields(), ignore_validate=True, update=True)
     create_custom_fields(thu_ho_custom_fields(), ignore_validate=True, update=True)
+    ensure_tai_khoan_chuan()
     ensure_frozen_party_modifier()
     from aphvh.vat import setup_defaults
 

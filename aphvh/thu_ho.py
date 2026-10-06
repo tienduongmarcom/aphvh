@@ -20,7 +20,7 @@ def _dong(doc):
     out = []
     for r in doc.get("accounts") or []:
         so, ten = frappe.get_cached_value("Account", r.account, ["account_number", "account_name"]) or ("", "")
-        out.append({"so_tk": so, "ten_tk": ten or r.account, "debit": r.debit_in_account_currency or r.debit,
+        out.append({"so_tk": so, "ten_tk": ten or "", "debit": r.debit_in_account_currency or r.debit,
                     "credit": r.credit_in_account_currency or r.credit})
     return out
 

@@ -22,7 +22,7 @@ def execute(filters=None):
         {"label": _("Số chứng từ MISA / ghi chú"), "fieldname": "ghi_chu", "fieldtype": "Data", "width": 220},
         {"label": "", "fieldname": "kieu", "fieldtype": "Data", "hidden": 1},
     ]
-    cond, val = ["je.docstatus = 1", "je.aphvh_thu_ho = 1", "(a.account_number like '3388%%' or a.name like '3388%%')"], {}
+    cond, val = ["je.docstatus = 1", "je.aphvh_thu_ho = 1", "a.account_name = %(ten_tk)s"], {"ten_tk": T.TEN_TK_THU_HO}
     for k, sql in (("company", "je.company = %(company)s"), ("trang_thai", "je.aphvh_th_trang_thai = %(trang_thai)s"),
                    ("chu_hang", "je.aphvh_th_chu_hang = %(chu_hang)s"), ("tu_ngay", "je.posting_date >= %(tu_ngay)s"),
                    ("den_ngay", "je.posting_date <= %(den_ngay)s")):

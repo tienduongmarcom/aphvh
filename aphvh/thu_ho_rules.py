@@ -9,13 +9,12 @@ Khách lấy hàng của đơn vị chuyển tiếp (TL) nhưng chuyển tiền 
 TT_CAN_XU_LY = "Cần xử lý"
 TT_DA_XU_LY = "Đã xử lý"
 TRANG_THAI = (TT_CAN_XU_LY, TT_DA_XU_LY)
-TK_THU_HO = "3388"
+TEN_TK_THU_HO = "Tiền thu hộ đơn vị khác"  # tài khoản riêng dưới 3388, app tự tạo (tai_khoan_chuan)
 
 
 def la_tk_thu_ho(so_tk, ten_tk) -> bool:
-    """Tài khoản 3388 và tài khoản chi tiết (33881, 33882…): theo số hiệu, hoặc tên bắt đầu bằng 3388."""
-    s = str(so_tk or "").strip()
-    return s.startswith(TK_THU_HO) or str(ten_tk or "").strip().startswith(TK_THU_HO)
+    """Chỉ nhận tài khoản riêng 'Tiền thu hộ đơn vị khác' (số hiệu bắt đầu 3388). Các tài khoản 3388 khác không tính."""
+    return str(so_tk or "").strip().startswith("3388") and str(ten_tk or "").strip() == TEN_TK_THU_HO
 
 
 def so_tien_thu_ho(dong) -> float:
@@ -34,7 +33,7 @@ def kiem_tra(thu_ho, khach, chu_hang, so_tien, trang_thai, ghi_chu_xu_ly) -> dic
     if not (chu_hang or "").strip():
         loi.append("Ghi chủ hàng (đơn vị có hàng, ví dụ TL).")
     if float(so_tien or 0) <= 0:
-        loi.append("Bút toán thu hộ phải có dòng Có tài khoản 3388 (tiền thu hộ).")
+        loi.append(f"Bút toán thu hộ phải có dòng Có tài khoản '{TEN_TK_THU_HO}' (dưới 3388).")
     tt = trang_thai if trang_thai in TRANG_THAI else TT_CAN_XU_LY
     if tt == TT_DA_XU_LY and not (ghi_chu_xu_ly or "").strip():
         loi.append("Ghi số chứng từ MISA hoặc ghi chú đã xử lý trước khi chuyển sang 'Đã xử lý'.")
