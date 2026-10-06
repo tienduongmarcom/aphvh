@@ -16,7 +16,7 @@ MAC_DINH_CHUNG = {
     "default_receivable_account": "131", "default_payable_account": "3311", "default_income_account": "5111",
     "default_expense_account": "6321", "default_cash_account": "1111", "default_bank_account": "1121",
     "stock_received_but_not_billed": "3318", "stock_adjustment_account": "6322",
-    "exchange_gain_loss_account": "6359", "default_payroll_payable_account": "334",
+    "exchange_gain_loss_account": "6359",
     "write_off_account": "811", "round_off_account": "811",
 }
 MAC_DINH_KHO = {"aph": "156", "vh": "1561"}
@@ -205,9 +205,10 @@ def cai(company: str) -> dict:
             frappe.db.rollback()
             kq["canh_bao"].append(f"Không tạo được {d['so']}: {str(e)[:120]}")
     # 3) tài khoản mặc định (chỉ đặt khi đang trống)
-    cur = frappe.db.get_value("Company", company, list(mac_dinh(loai)), as_dict=True) or {}
-    for truong, so in mac_dinh(loai).items():
-        if not cur.get(truong) and so in co and frappe.get_meta("Company").has_field(truong):
+    md = {k: v for k, v in mac_dinh(loai).items() if frappe.get_meta("Company").has_field(k)}  # trường chỉ có khi cài app khác (vd. lương) thì bỏ
+    cur = frappe.db.get_value("Company", company, list(md), as_dict=True) or {}
+    for truong, so in md.items():
+        if not cur.get(truong) and so in co:
             frappe.db.set_value("Company", company, truong, co[so])
     frappe.db.commit()
     kq["kho_nhom"] = cai_kho_nhom_hang(company, co, loai)

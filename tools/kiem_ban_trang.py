@@ -1,4 +1,4 @@
-# Kiểm bộ cài bản trắng (0.5.0) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
+# Kiểm bộ cài bản trắng (0.5.1) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
 import sys, json, datetime, frappe
 site, out = sys.argv[1:3]
 frappe.init(site=site, sites_path="."); frappe.connect(); frappe.set_user("Administrator")
@@ -41,8 +41,9 @@ for ab, co in cty.items():
         ok("B4b VH có 621–627, 641, 642", all(k in so for k in ("621", "622", "623", "627", "641", "642")))
     else:
         ok("B4b APH có 6421, 6422, 3385", all(k in so for k in ("6421", "6422", "3385")))
-    md = frappe.db.get_value("Company", co, list(C.mac_dinh(loai)), as_dict=True)
-    sai = {k: (md.get(k), so[s].name) for k, s in C.mac_dinh(loai).items() if s in so and md.get(k) != so[s].name}
+    mdk = {k: s for k, s in C.mac_dinh(loai).items() if frappe.get_meta("Company").has_field(k)}
+    md = frappe.db.get_value("Company", co, list(mdk), as_dict=True)
+    sai = {k: (md.get(k), so[s].name) for k, s in mdk.items() if s in so and md.get(k) != so[s].name}
     ok(f"B5 {ab}: tài khoản mặc định đúng", not sai, sai)
     ok(f"B6 {ab}: tồn kho vĩnh viễn + theo mặt hàng", bool(frappe.db.get_value("Company", co, "enable_perpetual_inventory")) and bool(frappe.db.get_value("Company", co, "enable_item_wise_inventory_account")))
     kho = {w.warehouse_name for w in frappe.get_all("Warehouse", {"company": co}, ["warehouse_name"])}
