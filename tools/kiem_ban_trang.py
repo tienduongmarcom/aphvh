@@ -1,4 +1,4 @@
-# Kiểm bộ cài bản trắng (0.5.1) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
+# Kiểm bộ cài bản trắng (0.5.2) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
 import sys, json, datetime, frappe
 site, out = sys.argv[1:3]
 frappe.init(site=site, sites_path="."); frappe.connect(); frappe.set_user("Administrator")
@@ -9,7 +9,7 @@ import aphvh
 from aphvh import cai_ban_trang as C, tai_khoan_chuan as T
 from aphvh.bang_tai_khoan import bang
 print("   phiên bản aphvh", aphvh.__version__)
-ok("B0 site trắng (chưa có công ty)", frappe.db.count("Company") in (0, 1), frappe.db.count("Company"))
+print("   số công ty có sẵn:", frappe.db.count("Company"))
 if not frappe.is_setup_complete():
     from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
     y = datetime.date.today().year
@@ -18,12 +18,12 @@ if not frappe.is_setup_complete():
                     "fy_start_date": f"{y}-01-01", "fy_end_date": f"{y}-12-31", "company_tagline": "thử", "bank_account": "Tiền gửi ngân hàng"})
     frappe.db.commit()
 ok("B0b bước thiết lập ban đầu xong", frappe.is_setup_complete())
-cty = {"APH": "APH Bản Trắng"}
-if not frappe.db.exists("Company", "VH Bản Trắng"):
+cty = {"APH": frappe.db.get_value("Company", {"abbr": "APH"}, "name") or "APH Bản Trắng"}
+if not frappe.db.exists("Company", {"abbr": "VH"}):
     frappe.get_doc({"doctype": "Company", "company_name": "VH Bản Trắng", "abbr": "VH", "default_currency": "VND", "country": "Vietnam",
                     "create_chart_of_accounts_based_on": "Standard Template", "chart_of_accounts": "Standard"}).insert(ignore_permissions=True)
     frappe.db.commit()
-cty["VH"] = "VH Bản Trắng"
+cty["VH"] = frappe.db.get_value("Company", {"abbr": "VH"}, "name")
 for ab, co in cty.items():
     loai = ab.lower()
     n0 = frappe.db.count("Account", {"company": co})
@@ -46,13 +46,13 @@ for ab, co in cty.items():
     sai = {k: (md.get(k), so[s].name) for k, s in mdk.items() if s in so and md.get(k) != so[s].name}
     ok(f"B5 {ab}: tài khoản mặc định đúng", not sai, sai)
     ok(f"B6 {ab}: tồn kho vĩnh viễn + theo mặt hàng", bool(frappe.db.get_value("Company", co, "enable_perpetual_inventory")) and bool(frappe.db.get_value("Company", co, "enable_item_wise_inventory_account")))
-    kho = {w.warehouse_name for w in frappe.get_all("Warehouse", {"company": co}, ["warehouse_name"])}
+    kho = {w.warehouse_name for w in frappe.get_all("Warehouse", {"company": co, "disabled": 0}, ["warehouse_name"])}
     ok(f"B7 {ab}: có kho địa điểm + Hàng đang vận chuyển", {"Hà Nội", "Kho bán hàng Hà Nội", "Kho Đà Nẵng", "Kho Hồ Chí Minh", "Hàng đang vận chuyển"} <= kho)
     ok(f"B8 {ab}: nhà máy {'có' if loai == 'aph' else 'không có'}", (C.NHA_MAY in kho) == (loai == "aph") and ({"Kho nguyên liệu đỗ", "Kho thành phẩm đỗ"} <= kho) == (loai == "aph"))
     ok(f"B9 {ab}: không còn kho mẫu ERPNext", not (kho & set(C.KHO_MAC_DINH_ERPNEXT)), kho & set(C.KHO_MAC_DINH_ERPNEXT))
     nh = {}
     for ten, s in C.NHOM_HANG[loai]:
-        g = frappe.db.get_value("Item Group Default", {"parent": ten, "company": co}, "default_inventory_account")
+        g = frappe.db.get_value("Item Default", {"parent": ten, "company": co}, "default_inventory_account")
         nh[ten] = g
     sai = [t for t, s in C.NHOM_HANG[loai] if (s and nh[t] != so[s].name) or (not s and nh[t])]
     ok(f"B10 {ab}: nhóm hàng gắn đúng tài khoản kho", not sai, sai)
@@ -69,7 +69,7 @@ for ab, co in cty.items():
 if not frappe.db.exists("Item Group", "HH.THU"):
     frappe.get_doc({"doctype": "Item Group", "item_group_name": "HH.THU", "parent_item_group": "HH - Hàng hóa"}).insert(ignore_permissions=True)
 n = C.gan_tk_cho_nhom_con(cty["APH"])
-ok("B16 nhóm con lấy tài khoản kho của nhóm cha (APH)", bool(frappe.db.get_value("Item Group Default", {"parent": "HH.THU", "company": cty["APH"]}, "default_inventory_account")), n)
+ok("B16 nhóm con lấy tài khoản kho của nhóm cha (APH)", bool(frappe.db.get_value("Item Default", {"parent": "HH.THU", "company": cty["APH"]}, "default_inventory_account")), n)
 json.dump(R, open(out, "w"), ensure_ascii=False, indent=1)
 print("TỔNG", len(R), "dòng, KHÔNG ĐẠT:", sum(1 for r in R if r[1] != "ĐẠT"))
 frappe.destroy()

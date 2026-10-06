@@ -115,6 +115,7 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
                 frappe.delete_doc("Warehouse", n, ignore_permissions=True)
             except Exception:
                 frappe.db.rollback(save_point="xoa_kho")
+                frappe.db.set_value("Warehouse", n, "disabled", 1)  # đã có liên kết: ngừng sử dụng thay vì xóa
     for ten in NHOM_MAC_DINH_ERPNEXT:
         if frappe.db.exists("Item Group", ten) and not frappe.db.exists("Item", {"item_group": ten}):
             frappe.db.savepoint("xoa_nhom")
@@ -130,7 +131,7 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
         if so and so in co:
             g = frappe.get_doc("Item Group", ten)
             if not any(r.company == company for r in g.get("item_group_defaults") or []):
-                frappe.get_doc({"doctype": "Item Group Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
+                frappe.get_doc({"doctype": "Item Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
                                 "parent": ten, "company": company, "default_inventory_account": co[so]}).insert(ignore_permissions=True)
     frappe.db.commit()
     return kq
@@ -143,19 +144,40 @@ def gan_tk_cho_nhom_con(company: str) -> int:
     n = 0
     co = {d.name for d in frappe.get_all("Account", {"company": company})}
     for g in frappe.get_all("Item Group", fields=["name", "parent_item_group"], order_by="lft"):
-        if frappe.db.exists("Item Group Default", {"parent": g.name, "company": company}):
+        if frappe.db.exists("Item Default", {"parent": g.name, "company": company}):
             continue
         cha = g.parent_item_group
         while cha:
-            m = frappe.db.get_value("Item Group Default", {"parent": cha, "company": company}, "default_inventory_account")
+            m = frappe.db.get_value("Item Default", {"parent": cha, "company": company}, "default_inventory_account")
             if m:
-                frappe.get_doc({"doctype": "Item Group Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
+                frappe.get_doc({"doctype": "Item Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
                                 "parent": g.name, "company": company, "default_inventory_account": m}).insert(ignore_permissions=True)
                 n += 1
                 break
             cha = frappe.db.get_value("Item Group", cha, "parent_item_group")
     frappe.db.commit()
     return n
+
+
+# Hình thức thanh toán mặc định -> số hiệu tài khoản chuẩn
+HINH_THUC_TT = {"Cash": "1111", "Bank Draft": "1121", "Wire Transfer": "1121", "Credit Card": "1121", "Cheque": "1121"}
+
+
+def _don_mau_thue_va_thanh_toan(company: str, co: dict):
+    """Trước khi bỏ tài khoản mẫu: bỏ mẫu thuế 'Vietnam Tax' của ERPNext (dùng tài khoản VAT mẫu), chuyển hình thức thanh toán sang tài khoản chuẩn."""
+    import frappe
+
+    for dt in ("Sales Taxes and Charges Template", "Purchase Taxes and Charges Template", "Item Tax Template"):
+        for n in frappe.get_all(dt, {"company": company, "title": "Vietnam Tax"}, pluck="name"):
+            frappe.db.savepoint("xoa_thue")
+            try:
+                frappe.delete_doc(dt, n, ignore_permissions=True)
+            except Exception:
+                frappe.db.rollback(save_point="xoa_thue")
+    for r in frappe.get_all("Mode of Payment Account", {"company": company}, ["name", "parent"]):
+        so = HINH_THUC_TT.get(r.parent)
+        if so and so in co:
+            frappe.db.set_value("Mode of Payment Account", r.name, "default_account", co[so])
 
 
 def cai(company: str) -> dict:
@@ -171,23 +193,7 @@ def cai(company: str) -> dict:
     goc = {d.root_type: d.name for d in frappe.get_all("Account", {"company": company, "parent_account": ["is", "not set"]},
                                                       ["name", "root_type"])}
     chuan = bang(loai) + [{"so": TK_TAM[0], "ten": TK_TAM[1], "cha": None, "nhom": 0, "root": TK_TAM[2], "loai_tk": TK_TAM[3]}]
-    # 1) bỏ tài khoản mẫu không thuộc bảng chuẩn (chỉ khi chưa có số phát sinh, chưa có số hiệu, không phải gốc)
-    if not co:
-        for truong in MAC_DINH_CHUNG:
-            if frappe.get_meta("Company").has_field(truong):
-                frappe.db.set_value("Company", company, truong, None)
-        mau = frappe.get_all("Account", {"company": company, "parent_account": ["is", "set"]}, ["name", "is_group", "lft"], order_by="lft desc")
-        for a in mau:  # lft giảm dần: con trước cha
-            if frappe.db.exists("GL Entry", {"account": a.name}):
-                continue
-            frappe.db.savepoint("xoa_tk")
-            try:
-                frappe.delete_doc("Account", a.name, ignore_permissions=True, force=0)
-                kq["bo"] += 1
-            except Exception:
-                frappe.db.rollback(save_point="xoa_tk")
-                kq["canh_bao"].append(f"Giữ lại {a.name} (đang được dùng)")
-    # 2) tạo tài khoản chuẩn còn thiếu
+    # 1) tạo tài khoản chuẩn còn thiếu
     for d in chuan:
         if d["so"] in co:
             continue
@@ -195,6 +201,7 @@ def cai(company: str) -> dict:
         if not cha:
             kq["canh_bao"].append(f"Chưa tạo {d['so']}: thiếu tài khoản cha")
             continue
+        frappe.db.savepoint("tao_tk")
         try:
             a = frappe.get_doc({"doctype": "Account", "account_name": d["ten"], "account_number": d["so"], "company": company,
                                 "parent_account": cha, "root_type": d["root"], "is_group": d["nhom"],
@@ -202,8 +209,31 @@ def cai(company: str) -> dict:
             co[d["so"]] = a.name
             kq["tao"] += 1
         except Exception as e:
-            frappe.db.rollback()
+            frappe.db.rollback(save_point="tao_tk")
             kq["canh_bao"].append(f"Không tạo được {d['so']}: {str(e)[:120]}")
+    # 2) bỏ tài khoản mẫu không thuộc bảng chuẩn: CHỈ khi công ty chưa có bút toán nào; tài khoản có số hiệu, có phát sinh hoặc đang được dùng thì giữ
+    if not frappe.db.exists("GL Entry", {"company": company}):
+        _don_mau_thue_va_thanh_toan(company, co)
+        meta = frappe.get_meta("Company")
+        for df in meta.fields:
+            if df.fieldtype == "Link" and df.options == "Account":
+                frappe.db.set_value("Company", company, df.fieldname, None)
+        mau = frappe.get_all("Account", {"company": company, "parent_account": ["is", "set"]},
+                             ["name", "account_number", "lft"], order_by="lft desc")
+        for a in mau:  # lft giảm dần: con trước cha
+            if a.account_number:
+                continue
+            frappe.db.savepoint("xoa_tk")
+            try:
+                frappe.delete_doc("Account", a.name, ignore_permissions=True)
+                kq["bo"] += 1
+            except frappe.QueueOverloaded:
+                frappe.db.rollback(save_point="xoa_tk")
+                kq["canh_bao"].append("Hàng đợi nền đang đầy: dừng bỏ tài khoản mẫu, chạy lại sau vài phút (chạy lại an toàn)")
+                break
+            except Exception:
+                frappe.db.rollback(save_point="xoa_tk")
+                kq["canh_bao"].append(f"Giữ lại {a.name} (đang được dùng)")
     # 3) tài khoản mặc định (chỉ đặt khi đang trống)
     md = {k: v for k, v in mac_dinh(loai).items() if frappe.get_meta("Company").has_field(k)}  # trường chỉ có khi cài app khác (vd. lương) thì bỏ
     cur = frappe.db.get_value("Company", company, list(md), as_dict=True) or {}
