@@ -15,3 +15,8 @@ class TestCaiBanTrang(unittest.TestCase):
     def test_tk_tam_khong_phai_3389(self):
         self.assertNotEqual(c.TK_TAM[0], "3389")
         self.assertEqual(c.TK_TAM[3], "Temporary")
+
+    def test_nhom_hang_va_kho(self):
+        for loai in ("aph", "vh"):
+            self.assertEqual(c.kiem_nhom_hang(loai), [], loai)
+        self.assertEqual(c.kiem_cay_nha_may(), [])

@@ -41,6 +41,123 @@ def kiem_mac_dinh(loai: str) -> list:
     return loi
 
 
+# Cây kho nhà máy (chỉ APH): (tên, cha | None = ngay dưới gốc "Nhà máy", là nhóm)
+NHA_MAY = "Nhà máy An Phú Hưng"
+CAY_NHA_MAY = [
+    (NHA_MAY, None, 1),
+    ("Nguyên liệu, vật liệu nhà máy", NHA_MAY, 1), ("Thành phẩm nhà máy", NHA_MAY, 1),
+    ("Kho hàng hóa nhà máy", NHA_MAY, 0), ("Kho CCDC và phụ tùng", NHA_MAY, 0), ("Kho sản phẩm dở dang", NHA_MAY, 0),
+    ("Thành phẩm chờ xử lý nhà máy", NHA_MAY, 0), ("Hàng khách gửi gia công", NHA_MAY, 1),
+    ("Kho nguyên liệu đỗ", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên liệu bột", "Nguyên liệu, vật liệu nhà máy", 0),
+    ("Kho nguyên liệu dầu", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên vật liệu phồng tôm", "Nguyên liệu, vật liệu nhà máy", 0),
+    ("Kho NVL đậu gói", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên vật liệu hàng hóa", "Nguyên liệu, vật liệu nhà máy", 0),
+    ("Kho bao bì các loại", "Nguyên liệu, vật liệu nhà máy", 0),
+    ("Kho thành phẩm đỗ", "Thành phẩm nhà máy", 0), ("Kho thành phẩm phồng tôm", "Thành phẩm nhà máy", 0),
+    ("Kho thành phẩm bột", "Thành phẩm nhà máy", 0), ("Kho thành phẩm dầu", "Thành phẩm nhà máy", 0),
+    ("Kho thành phẩm đậu gói", "Thành phẩm nhà máy", 0),
+]
+KHO_MAC_DINH_ERPNEXT = ("Stores", "Work In Progress", "Finished Goods", "Goods In Transit")
+NHOM_MAC_DINH_ERPNEXT = ("Products", "Raw Material", "Services", "Sub Assemblies", "Consumable")
+
+# Nhóm hàng cấp 1 và tài khoản kho mặc định (số hiệu trong bảng chuẩn). None = không phải hàng tồn kho.
+NHOM_HANG = {
+    "aph": [("HH - Hàng hóa", "156"), ("TP - Thành phẩm", "1551"), ("NL - Nguyên liệu", "1521"), ("VT - Vật tư, bao bì", "1523"),
+            ("DD - Sản phẩm dở dang", "15411"), ("PTSC - Phụ tùng, vật tư thay thế", "1524"), ("CCDC - Công cụ, dụng cụ", "153"),
+            ("DV - Dịch vụ", None), ("TS - Tài sản cố định", None)],
+    "vh": [("HH - Hàng hóa", "1561"), ("CCDC - Công cụ, dụng cụ", "153"), ("DV - Dịch vụ", None), ("TS - Tài sản cố định", None)],
+}
+
+
+def kiem_nhom_hang(loai: str) -> list:
+    """Thuần: tài khoản kho của nhóm hàng phải là tài khoản chi tiết loại Stock trong bảng chuẩn."""
+    ds = {x["so"]: x for x in bang(loai)}
+    loi = []
+    for ten, so in NHOM_HANG[loai]:
+        if so and (so not in ds or ds[so]["nhom"] or ds[so]["loai_tk"] != "Stock"):
+            loi.append(f"{ten}: {so} không phải tài khoản kho chi tiết")
+    return loi
+
+
+def kiem_cay_nha_may() -> list:
+    ten = {t for t, _, _ in CAY_NHA_MAY}
+    return [f"{t}: thiếu cha {c}" for t, c, _ in CAY_NHA_MAY if c and c not in ten]
+
+
+def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
+    """Kho (cây địa điểm dùng chung; nhà máy chỉ APH), nhóm hàng cấp 1 gắn tài khoản kho, bật tồn kho theo mặt hàng, bỏ kho/nhóm mẫu."""
+    import frappe
+
+    from aphvh import kho_chung
+
+    kq = {"kho": 0, "nhom": 0, "canh_bao": []}
+    abbr = frappe.db.get_value("Company", company, "abbr")
+    for f in ("enable_perpetual_inventory", "enable_item_wise_inventory_account"):
+        if frappe.get_meta("Company").has_field(f):
+            frappe.db.set_value("Company", company, f, 1)
+    try:
+        kho_chung.setup(company)
+    except Exception as e:
+        kq["canh_bao"].append(f"kho dùng chung: {str(e)[:120]}")
+    if loai == "aph":
+        goc = f"All Warehouses - {abbr}"
+        for ten, cha, nhom in CAY_NHA_MAY:
+            if frappe.db.exists("Warehouse", f"{ten} - {abbr}"):
+                continue
+            frappe.get_doc({"doctype": "Warehouse", "warehouse_name": ten, "company": company, "is_group": nhom,
+                            "parent_warehouse": f"{cha} - {abbr}" if cha else goc}).insert(ignore_permissions=True)
+            kq["kho"] += 1
+    for ten in KHO_MAC_DINH_ERPNEXT:  # kho mẫu của ERPNext, bỏ nếu chưa dùng
+        n = f"{ten} - {abbr}"
+        if frappe.db.exists("Warehouse", n):
+            frappe.db.savepoint("xoa_kho")
+            try:
+                frappe.db.set_value("Company", company, "default_in_transit_warehouse", None) if n.startswith("Goods In") else None
+                frappe.delete_doc("Warehouse", n, ignore_permissions=True)
+            except Exception:
+                frappe.db.rollback(save_point="xoa_kho")
+    for ten in NHOM_MAC_DINH_ERPNEXT:
+        if frappe.db.exists("Item Group", ten) and not frappe.db.exists("Item", {"item_group": ten}):
+            frappe.db.savepoint("xoa_nhom")
+            try:
+                frappe.delete_doc("Item Group", ten, ignore_permissions=True)
+            except Exception:
+                frappe.db.rollback(save_point="xoa_nhom")
+    for ten, so in NHOM_HANG[loai]:
+        if not frappe.db.exists("Item Group", ten):
+            frappe.get_doc({"doctype": "Item Group", "item_group_name": ten, "parent_item_group": "All Item Groups",
+                            "is_group": 1}).insert(ignore_permissions=True)
+            kq["nhom"] += 1
+        if so and so in co:
+            g = frappe.get_doc("Item Group", ten)
+            if not any(r.company == company for r in g.get("item_group_defaults") or []):
+                frappe.get_doc({"doctype": "Item Group Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
+                                "parent": ten, "company": company, "default_inventory_account": co[so]}).insert(ignore_permissions=True)
+    frappe.db.commit()
+    return kq
+
+
+def gan_tk_cho_nhom_con(company: str) -> int:
+    """Sau khi nhập danh mục: nhóm hàng con chưa có tài khoản kho thì lấy của nhóm cha gần nhất. Chạy tay, chạy lại an toàn."""
+    import frappe
+
+    n = 0
+    co = {d.name for d in frappe.get_all("Account", {"company": company})}
+    for g in frappe.get_all("Item Group", fields=["name", "parent_item_group"], order_by="lft"):
+        if frappe.db.exists("Item Group Default", {"parent": g.name, "company": company}):
+            continue
+        cha = g.parent_item_group
+        while cha:
+            m = frappe.db.get_value("Item Group Default", {"parent": cha, "company": company}, "default_inventory_account")
+            if m:
+                frappe.get_doc({"doctype": "Item Group Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
+                                "parent": g.name, "company": company, "default_inventory_account": m}).insert(ignore_permissions=True)
+                n += 1
+                break
+            cha = frappe.db.get_value("Item Group", cha, "parent_item_group")
+    frappe.db.commit()
+    return n
+
+
 def cai(company: str) -> dict:
     import frappe
 
@@ -93,6 +210,13 @@ def cai(company: str) -> dict:
         if not cur.get(truong) and so in co and frappe.get_meta("Company").has_field(truong):
             frappe.db.set_value("Company", company, truong, co[so])
     frappe.db.commit()
+    kq["kho_nhom"] = cai_kho_nhom_hang(company, co, loai)
+    try:
+        from aphvh.vat import ensure_vat_templates
+
+        kq["thue"] = len(ensure_vat_templates())  # mẫu thuế GTGT (33311) cho công ty có tài khoản thuế
+    except Exception as e:
+        kq["canh_bao"].append(f"mẫu thuế: {str(e)[:120]}")
     return kq
 
 

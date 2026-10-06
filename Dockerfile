@@ -1,5 +1,5 @@
 # Bản cài ERPNext có kèm app aphvh.
-# Dựng:  docker build -t aphvh-erpnext:0.4.23 .
+# Dựng:  docker build -t aphvh-erpnext:0.5.0 .
 # ERPNEXT_IMAGE phải trùng phiên bản ERPNext đang chạy (hiện là v16.36.1).
 ARG ERPNEXT_IMAGE=frappe/erpnext:v16.36.1
 FROM ${ERPNEXT_IMAGE}
@@ -17,4 +17,4 @@ RUN SITE_PACKAGES="$(./env/bin/python -c 'import sysconfig; print(sysconfig.get_
  && echo "/home/frappe/frappe-bench/apps/aphvh" > "${SITE_PACKAGES}/aphvh.pth" \
  && (grep -qx aphvh sites/apps.txt || { sed -i -e '$a\' sites/apps.txt && echo aphvh >> sites/apps.txt; }) \
  && ./env/bin/python -c "import aphvh, aphvh.hooks, aphvh.costing_rules; print('aphvh', aphvh.__version__)" \
- && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations aphvh.tests.test_sales_rules aphvh.tests.test_control_rules aphvh.tests.test_vat_rules aphvh.tests.test_print_rules aphvh.tests.test_tong_hop_khach aphvh.tests.test_so_hkd aphvh.tests.test_hkd_accounts aphvh.tests.test_ben_thu_ba aphvh.tests.test_don_vi_chuyen_tiep aphvh.tests.test_kho_chung aphvh.tests.test_ton_kho_tk aphvh.tests.test_thu_ho aphvh.tests.test_tai_khoan_chuan aphvh.tests.test_bang_tai_khoan aphvh.tests.test_report_paths -v
+ && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations aphvh.tests.test_sales_rules aphvh.tests.test_control_rules aphvh.tests.test_vat_rules aphvh.tests.test_print_rules aphvh.tests.test_tong_hop_khach aphvh.tests.test_so_hkd aphvh.tests.test_hkd_accounts aphvh.tests.test_ben_thu_ba aphvh.tests.test_don_vi_chuyen_tiep aphvh.tests.test_kho_chung aphvh.tests.test_ton_kho_tk aphvh.tests.test_thu_ho aphvh.tests.test_tai_khoan_chuan aphvh.tests.test_bang_tai_khoan aphvh.tests.test_cai_ban_trang aphvh.tests.test_report_paths -v
