@@ -8,7 +8,7 @@ Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên 
 | App `aphvh` + bộ cài | repo GitHub | chuẩn thông tư, kho, thu hộ, in ấn, bộ cài bản trắng |
 | Cấu hình + phiên bản của khách | `khach/<khach>/khach.json`, `phien-ban.yaml` | công ty, thông tư 133/99, kho, `che_do_du_lieu`, `ngay_chot`; image tag đang chạy |
 | Cổng 2 | `.github/workflows/cong-2-site-trang.yml` | với MỌI thư mục khách: dựng site trắng theo config rồi chạy bộ kiểm |
-| Phát hành image | `.github/workflows/phat-hanh.yml` | tag `v0.6.1` -> unit test -> **Cổng 2 phải đạt** -> image `ghcr.io/<chủ>/aphvh-erpnext:0.6.1` |
+| Phát hành image | `.github/workflows/phat-hanh.yml` | tag `v0.6.2` -> unit test -> **Cổng 2 phải đạt** -> image `ghcr.io/<chủ>/aphvh-erpnext:0.6.2` |
 | Khuôn máy chủ | `deploy/khach-hang/` | compose, `dung.sh`, `nang-cap.sh` (tự quay lui), `quay-lui.sh`, `erpctl` |
 | Sao lưu tự động | `deploy/cloud/erpnext-backup.*` | 2 lần/ngày lên bucket, giữ 90 ngày |
 

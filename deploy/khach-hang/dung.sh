@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dựng hệ thống cho MỘT khách trên máy này (Docker đã cài, đã docker login ghcr.io nếu image riêng tư).
 # Dùng:  ./dung.sh <ten-khach-viet-lien> <phien-ban-image> <duong-dan-cau-hinh.json> [ten-mien]
-# Ví dụ: ./dung.sh aph-vh 0.6.1 ./khach.json erp.congty.vn
+# Ví dụ: ./dung.sh aph-vh 0.6.2 ./khach.json erp.congty.vn
 # Biến môi trường tùy chọn: CUSTOM_IMAGE (mặc định ghcr.io/tienduongmarcom/aphvh-erpnext), HTTP_PORT (mặc định 80), HTTP_BIND (mặc định 0.0.0.0)
 set -euo pipefail
 umask 077
