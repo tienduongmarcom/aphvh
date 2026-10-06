@@ -10,7 +10,7 @@ Quy tắc lọc: giữ tài khoản có trong thông tư của đơn vị (APH: 
 | TK | Nội dung | Mức |
 |---|---|---|
 | TT133 6421 / 6422 | Chi phí bán hàng / Chi phí quản lý doanh nghiệp (dưới 642) | Đã đối chiếu, 2 nguồn khớp |
-| TT133 154 | 1541 NVL trực tiếp, 1542 nhân công trực tiếp, 1543 sử dụng máy thi công, 1547 sản xuất chung | 1 nguồn nêu rõ TT133 (bizzi.vn); 1 nguồn khác (ketoanthienung.net) ghi 1541 xây lắp, 1542 sản phẩm khác, 1543 dịch vụ, 1547 bảo hành xây lắp, giống kiểu TT200. Lệch nhau: chưa có văn bản gốc. DN được mở chi tiết 154 nên chọn theo nguồn đầu, ghi rõ "chi tiết do DN mở" |
+| TT133 154 | Thông tư không bắt buộc chi tiết cụ thể; hai nguồn lệch nhau về 1541–1547 (một nguồn: NVL, nhân công, máy, SXC; nguồn kia: xây lắp, sản phẩm khác, dịch vụ, bảo hành) | Chưa có văn bản gốc. **Không dùng cách chia 1541–1547 của em.** Dùng đúng chi tiết đã chốt trong lịch sử chat: theo dây chuyền (15411 sơ chế, 15421 phồng tôm), ghi là "chi tiết do DN mở" |
 | TT99 6271–6278, 6411–6418, 6421–6428 | Chi tiết 627, 641, 642 | Đã đối chiếu (thuvienphapluat.vn) |
 | TT99 1331, 1332, 1381, 1383, 1388, 3331, 3338, 3381–3388 | Chi tiết 133, 138, 333, 338 | Đã đối chiếu |
 | TT99 154 | Không quy định cấp 2 cụ thể, DN tự mở chi tiết | Đã đối chiếu (amis.misa.vn) |
@@ -20,3 +20,11 @@ Quy tắc lọc: giữ tài khoản có trong thông tư của đơn vị (APH: 
 - APH (TT133): bỏ yêu cầu 627, 641; thay bằng 6421, 6422. VH (TT99) giữ 627, 641.
 - Bản trắng APH không có 627, 641; chi phí sản xuất chung của APH đi qua chi tiết của 154 (1547).
 - Tài khoản "Tiền thu hộ đơn vị khác" (33880) là chi tiết DN dưới 3388, ghi nhận, bỏ khi về một sổ.
+
+## Đối chiếu với lịch sử chat (06/10/2026)
+- **Đã khớp:** sổ MISA của APH dùng 6422 (không có 641); VH dùng 6417, 6428 (kiểu TT99); VAT đầu ra 33311, TK 5111. APH theo TT133, VH theo TT99 đúng như đã chốt.
+- **Lệch cần dọn trong bản trắng:**
+  1. Ngày 28/09 đã dựng bảng tài khoản APH "TT133 92 tài khoản (+5113)" và đặt nhóm Vật tư tiêu hao dùng chi phí **627**. TT133 không có 627. Trong tài liệu có câu "kết chuyển 621/622/627 → 154 kiểu MISA" nhưng đó là suy đoán, sổ MISA mẫu không cho thấy APH dùng 627. Bản trắng APH bỏ 627; chi phí sản xuất chung đi vào chi tiết 154 do DN mở.
+  2. Tồn đầu kỳ của APH được đối ứng bằng **3389**. TT133 chỉ có 3381–3388 (3385 là BHTN), không có 3389. Bản trắng dùng tài khoản tạm số dư đầu kỳ, không dùng 3389.
+  3. Chi tiết 154 đã chốt theo dây chuyền (15411, 15421), không theo 1541–1547 kiểu thông tư.
+- **Không phải sai:** 6321/6322 (chi tiết 632), 3311/3312/3318 (chi tiết 331), 3351, 6359 (trung gian tỷ giá) là tài khoản chi tiết do DN mở, giữ nếu app còn dùng, ghi rõ "chi tiết DN".
