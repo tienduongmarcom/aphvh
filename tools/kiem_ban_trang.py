@@ -1,4 +1,4 @@
-# Kiểm bộ cài bản trắng (0.5.2) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
+# Kiểm bộ cài bản trắng (0.5.3) trên site TRẮNG trang2.localhost: công ty viết tắt thật APH / VH. Chỉ làm trên site này.
 import sys, json, datetime, frappe
 site, out = sys.argv[1:3]
 frappe.init(site=site, sites_path="."); frappe.connect(); frappe.set_user("Administrator")

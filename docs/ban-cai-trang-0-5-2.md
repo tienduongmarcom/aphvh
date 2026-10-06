@@ -9,3 +9,11 @@
 **Bản cài trắng (aphvh 0.5.2, nhánh v0.3-review):** `aphvh/bang_tai_khoan.py` (APH 138 tài khoản, VH 188) + `aphvh/cai_ban_trang.py`: bỏ tài khoản mẫu ERPNext (chỉ khi công ty chưa có bút toán), tạo cây chuẩn, đặt tài khoản mặc định, tài khoản tạm 9990 nhập số dư đầu kỳ (không dùng 3389), bật tồn kho vĩnh viễn và theo mặt hàng, kho (nhà máy chỉ APH), nhóm hàng cấp 1 gắn tài khoản kho (APH: HH 156, TP 1551, NL 1521, VT 1523, DD 15411, PTSC 1524, CCDC 153; VH: HH 1561, CCDC 153), mẫu thuế GTGT. Kiểm trên site trắng thật: 36/36 đạt (máy phát triển và site thử 8086). Chạy tay: `bench --site <site> execute aphvh.cai_ban_trang.cai_tat_ca`; chưa gắn tự động sau migrate để không đụng site có dữ liệu.
 
 **Chưa làm:** mẫu thuế mua hàng 1331 theo thuế suất; chặn đổi tài khoản kho sau khi có phát sinh; công cụ chuyển số dư khi tách tài khoản.
+
+## Đối chiếu với văn bản chính thức TT133 (anh Tiến cung cấp PDF "Hệ thống tài khoản kế toán TT133", 06/10/2026) — bản 0.5.3
+- Danh mục số hiệu của APH khớp **100%** với bản chính thức (148 tài khoản cấp 1–3 từ 111 đến 821). Phần thêm ngoài thông tư chỉ là chi tiết DN: 1521–1524, 15411, 15421, 1551, 1552, 1558, 3311, 3318, 3351, 33880, 6321, 6322, 6359.
+- Sửa tên theo bản chính thức: 228 "Đầu tư góp vào đơn vị khác", 3333 "Thuế xuất khẩu, nhập khẩu".
+- Xác nhận từ văn bản gốc: 154 và 156 **không có cấp 2**; 3385 Bảo hiểm thất nghiệp; 3386 Nhận ký quỹ, ký cược; 3387 Doanh thu chưa thực hiện; 642 có 6421 Chi phí bán hàng, 6422 Chi phí quản lý doanh nghiệp; 338 không có 3389; không có 621/622/623/627/641.
+- **911 (Xác định kết quả kinh doanh)** có trong thông tư nhưng cố ý không tạo: ERPNext xác định kết quả qua báo cáo và Period Closing Voucher (kết chuyển vào 4212), tài khoản 911 sẽ không dùng đến. Ghi nhận, thêm lại nếu kế toán muốn kết chuyển tay.
+- Có test cố định danh mục chính thức (test_bang_tai_khoan.TestKhopBanChinhThucTT133) để sau này sửa bảng không lệch thông tư.
+- Còn thiếu: bản chính thức TT99 cho VH (hiện dựa nguồn thứ cấp).
