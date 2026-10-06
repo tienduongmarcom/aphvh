@@ -71,7 +71,8 @@ doc_events = {
         "before_update_after_submit": "aphvh.invoice_flag.validate_einvoice",
     },
     # 0.3.4: không ghi tay vào tài khoản kho; cảnh báo tiền mặt lớn, tiền trả trước chưa gắn đơn.
-    "Journal Entry": {"validate": ["aphvh.controls.validate_journal_entry", _PD]},
+    "Journal Entry": {"validate": ["aphvh.controls.validate_journal_entry", "aphvh.thu_ho.validate", _PD],
+                      "before_update_after_submit": "aphvh.thu_ho.before_update_after_submit"},
     "Payment Entry": {"validate": "aphvh.controls.validate_payment_entry", "before_update_after_submit": "aphvh.controls.before_update_after_submit_payment_entry"},
     "Purchase Invoice": {"validate": "aphvh.controls.validate_purchase_invoice"},
 }

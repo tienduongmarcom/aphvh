@@ -615,6 +615,34 @@ def cp_khl_custom_fields() -> dict:
     return {dt: _cp_khl_fields(after) for dt, after in CP_KHL_DOCTYPES.items() if frappe.db.exists("DocType", dt)}
 
 
+# 0.4.20: bút toán thu hộ — khách lấy hàng của TL, chuyển tiền vào tài khoản VH hoặc APH.
+def thu_ho_custom_fields() -> dict:
+    from aphvh.thu_ho_rules import TRANG_THAI
+
+    dep = "eval:doc.aphvh_thu_ho"
+    return {"Journal Entry": [
+        {"fieldname": "aphvh_thu_ho", "label": "Thu hộ (tiền khách chuyển cho hàng của đơn vị khác)", "fieldtype": "Check",
+         "insert_after": F_CP_KHL_LY_DO, "in_standard_filter": 1, "no_copy": 1,
+         "description": "Tích khi tiền khách chuyển vào tài khoản công ty này nhưng hàng thuộc đơn vị khác (ví dụ TL). "
+         "Bút toán: Nợ tiền gửi / Có 3388. Các nghiệp vụ phía sau do kế toán xử lý trên MISA."},
+        {"fieldname": "aphvh_th_chu_hang", "label": "Chủ hàng", "fieldtype": "Data", "insert_after": "aphvh_thu_ho",
+         "depends_on": dep, "mandatory_depends_on": dep, "no_copy": 1, "default": "TL"},
+        {"fieldname": "aphvh_th_khach", "label": "Khách chuyển tiền", "fieldtype": "Link", "options": "Customer",
+         "insert_after": "aphvh_th_chu_hang", "depends_on": dep, "mandatory_depends_on": dep, "no_copy": 1,
+         "in_standard_filter": 1},
+        {"fieldname": "aphvh_th_tham_chieu", "label": "Số phiếu bán / hóa đơn của chủ hàng", "fieldtype": "Data",
+         "insert_after": "aphvh_th_khach", "depends_on": dep, "no_copy": 1, "allow_on_submit": 1},
+        {"fieldname": "aphvh_th_trang_thai", "label": "Trạng thái xử lý", "fieldtype": "Select",
+         "options": "\n" + "\n".join(TRANG_THAI), "insert_after": "aphvh_th_tham_chieu", "depends_on": dep,
+         "allow_on_submit": 1, "in_standard_filter": 1, "in_list_view": 1, "no_copy": 1,
+         "description": "Mặc định 'Cần xử lý'. Kế toán đổi sang 'Đã xử lý' sau khi xử lý xong trên MISA."},
+        {"fieldname": "aphvh_th_ghi_chu_xu_ly", "label": "Số chứng từ MISA / ghi chú xử lý", "fieldtype": "Small Text",
+         "insert_after": "aphvh_th_trang_thai", "depends_on": dep, "allow_on_submit": 1, "no_copy": 1},
+        {"fieldname": "aphvh_th_ngay_xu_ly", "label": "Ngày xử lý", "fieldtype": "Date", "insert_after": "aphvh_th_ghi_chu_xu_ly",
+         "depends_on": dep, "read_only": 1, "allow_on_submit": 1, "no_copy": 1},
+    ]}
+
+
 CONTROL_CUSTOM_FIELDS = {
     "Customer": [
         {"fieldname": "aphvh_khach_chung", "label": "Khách vãng lai chung", "fieldtype": "Check", "insert_after": "customer_type",
@@ -667,6 +695,7 @@ def setup():
     create_custom_fields(VAT_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(HKD_CUSTOM_FIELDS, ignore_validate=True, update=True)
     create_custom_fields(cp_khl_custom_fields(), ignore_validate=True, update=True)
+    create_custom_fields(thu_ho_custom_fields(), ignore_validate=True, update=True)
     ensure_frozen_party_modifier()
     from aphvh.vat import setup_defaults
 
