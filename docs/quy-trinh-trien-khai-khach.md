@@ -41,6 +41,31 @@ Chung cho cả hai: ngày chốt (`ngay_chot`, trước = số dư, sau = phiế
 ## Quay lui bằng tay
 `./quay-lui.sh <thư-mục-sao-lưu>`: đổi lại phiên bản cũ, khôi phục CSDL + tệp (hỏi gõ `CO`; dữ liệu phát sinh sau nâng cấp sẽ mất). `--tu-dong` bỏ hỏi (do `nang-cap.sh` dùng).
 
+## Quy tắc tùy biến giao diện (để nâng cấp không lỗi)
+Trên hệ thống của khách (UAT và production) chỉ can thiệp giao diện theo đúng hai nhóm dưới đây. Cả hai lưu trong cơ sở dữ liệu, không sửa mã nguồn, nên `migrate` giữ nguyên và bản sao lưu mang theo.
+
+**Nhóm 1: Không lập trình (No-Code), an toàn nhất**
+| Công cụ | Dùng để |
+|---|---|
+| Customize Form | ẩn/hiện trường, đổi nhãn, đổi vị trí, bắt buộc nhập / chỉ đọc |
+| Workspace và Dashboard | đổi trang chủ phân hệ: biểu đồ, thẻ báo cáo, lối tắt |
+| Giao diện (màu, logo, font, CSS nhỏ) | chủ đề giao diện cho cả hệ thống |
+
+**Nhóm 2: Lập trình nhẹ (Low-Code)**
+| Công cụ | Dùng để |
+|---|---|
+| Client Script (JavaScript, tạo trên giao diện) | nút tùy chỉnh, đổi màu trường, ẩn/hiện tab theo điều kiện, cảnh báo động |
+
+**Ngoài hai nhóm này thì không làm trên giao diện:** không sửa mã ERPNext hay Frappe, không tạo Server Script, không tạo DocType mới. Nhu cầu cần mã phía máy chủ do mình làm trong app (`aphvh` hoặc `kh_<khach>`), đi qua phát hành image và Cổng 2.
+
+**Ghi chú về "Frappe Theme":** bản ERPNext/Frappe v16 mà mình dùng không có DocType tên "Frappe Theme". Phần giao diện có sẵn là Website Theme (chỉ trang web công khai) và chọn sáng/tối cho từng người dùng. Muốn đổi màu, logo, font cho toàn bộ giao diện làm việc thì cần một app giao diện bổ sung hoặc CSS qua mã app; việc này cần thống nhất riêng, chưa đưa vào quy trình.
+
+**Đưa tùy biến vào quy trình**
+1. Khách (hoặc mình, khi khách cho phép) tùy biến trên **UAT** trước, khách thử rồi ký.
+2. Tùy biến thuộc phạm vi mình giao cho khách (không phải tinh chỉnh riêng của khách) thì xuất thành fixtures vào app khách (`kh_<khach>`: Custom Field, Property Setter, Client Script, Workspace), commit và phát hành bằng image. Như vậy production, UAT và máy dựng mới đều có cùng một bộ, kiểm tra được ở Cổng 2.
+3. Tinh chỉnh riêng của khách làm trực tiếp trên production được phép, không cần phát hành; chỉ nằm trong CSDL và sao lưu.
+4. Trước mỗi nâng cấp, chạy trên UAT của khách để xem tùy biến có vỡ không (Client Script gọi trường bị đổi tên là nguyên nhân hay gặp nhất).
+
 ## Quy tắc an toàn
 - Một khách một máy, một `.env` (quyền 600, không đưa vào Git). `site_config_backup.json` có `encryption_key`: giữ bucket sao lưu riêng tư.
 - Không chạy lệnh dọn Docker tổng quát trên máy có khách.
@@ -49,7 +74,7 @@ Chung cho cả hai: ngày chốt (`ngay_chot`, trước = số dư, sau = phiế
 ## Trạng thái kiểm chứng (06/10/2026)
 - **Đã chạy thật** (sandbox, site trắng): cấu hình khách -> `ap_dung` -> `kiem_trien_khai` 30/30; kiểm cấu hình có chế độ dữ liệu và ngày chốt (unit test).
 - **Chưa chạy thật**: Cổng 2 và workflow phát hành trên GitHub Actions, `dung.sh`, `nang-cap.sh` (kể cả tự quay lui), `quay-lui.sh`, HTTPS Caddy (không có Docker daemon). Diễn tập trước khi dùng cho khách thật.
-- **Chưa xây**: bộ file mẫu nhập, công cụ import có chế độ thử + báo cáo đối chiếu, công cụ "Kiểm tra dữ liệu" cho khách, bộ sinh dữ liệu giả cho UAT, lệnh `khach-moi`, restore thử hằng tuần, cảnh báo.
+- **Chưa xây**: bộ kiểm tùy biến chỉ đọc (liệt kê Server Script, DocType mới, Client Script của khách để phát hiện vượt quy tắc), bộ file mẫu nhập, công cụ import có chế độ thử + báo cáo đối chiếu, công cụ "Kiểm tra dữ liệu" cho khách, bộ sinh dữ liệu giả cho UAT, lệnh `khach-moi`, restore thử hằng tuần, cảnh báo.
 - **Cần anh chốt cho khách đầu tiên**: `che_do_du_lieu` (hiện đặt `tu_nhap`), `ngay_chot`, tên miền, nhà cung cấp cloud.
 
 ## Diễn tập (làm một lần, trên MacBook hoặc máy thử)
