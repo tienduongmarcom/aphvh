@@ -66,6 +66,15 @@ Trên hệ thống của khách (UAT và production) chỉ can thiệp giao di�
 3. Tinh chỉnh riêng của khách làm trực tiếp trên production được phép, không cần phát hành; chỉ nằm trong CSDL và sao lưu.
 4. Trước mỗi nâng cấp, chạy trên UAT của khách để xem tùy biến có vỡ không (Client Script gọi trường bị đổi tên là nguyên nhân hay gặp nhất).
 
+## Quyết định giao diện (06/10/2026)
+- **Giữ kiểu Frappe**, không bắt chước bố cục MISA AMIS. Nhận diện bằng **bản sắc riêng** của công ty tư vấn.
+- **Theme = app riêng `aphvh_theme`**, chỉ ghi đè biến CSS (màu, font, bo góc, mật độ). Không đè bộ chọn, không ghi đè hàm JS nội bộ của Frappe. Logo, tên, trang đăng nhập, mẫu in đặt bằng cấu hình trên giao diện.
+- Hai tầng nhận diện: bản sắc chung của mình + lớp riêng từng khách (logo, màu nhấn) khai trong `khach.json`.
+- **Cổng 2 kiểm theme:** mọi biến CSS theme dùng phải còn tồn tại trong bản Frappe đang đóng gói; chụp màn hình vài trang chính để so sánh. Lệch thì chặn phát hành.
+- Theme là code trong app (đi qua phát hành image), là ngoại lệ có kiểm soát so với hai nhóm No-Code / Low-Code trên giao diện.
+- Workspace theo vai trò (trang Tổng quan, lối tắt) làm theo nhu cầu từng khách, không áp thứ tự menu của phần mềm khác.
+- **Chưa làm:** app theme, bước kiểm biến + chụp màn hình trong Cổng 2. Cần từ anh: màu chính, font, logo.
+
 ## Quy tắc an toàn
 - Một khách một máy, một `.env` (quyền 600, không đưa vào Git). `site_config_backup.json` có `encryption_key`: giữ bucket sao lưu riêng tư.
 - Không chạy lệnh dọn Docker tổng quát trên máy có khách.
