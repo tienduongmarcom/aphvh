@@ -42,7 +42,17 @@ LOAI = {"APH": "aph", "VH": "vh", "VHT": "vh", "MK": "mk", "MKT": "mk", "TL": "t
 
 
 def loai_don_vi(abbr):
-    return LOAI.get((abbr or "").upper())
+    """Loại đơn vị theo viết tắt. Khách mới khai trong cấu hình (site_config 'aphvh_loai': {viết tắt: loại}) thì ưu tiên."""
+    a = (abbr or "").upper()
+    try:
+        import frappe
+
+        extra = (frappe.conf or {}).get("aphvh_loai") or {}
+        if a in extra:
+            return extra[a]
+    except Exception:
+        pass
+    return LOAI.get(a)
 
 
 def thieu(so_hieu_co: set, can: list) -> list:

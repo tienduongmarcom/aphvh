@@ -41,21 +41,35 @@ def kiem_mac_dinh(loai: str) -> list:
     return loi
 
 
-# Cây kho nhà máy (chỉ APH): (tên, cha | None = ngay dưới gốc "Nhà máy", là nhóm)
-NHA_MAY = "Nhà máy An Phú Hưng"
-CAY_NHA_MAY = [
-    (NHA_MAY, None, 1),
-    ("Nguyên liệu, vật liệu nhà máy", NHA_MAY, 1), ("Thành phẩm nhà máy", NHA_MAY, 1),
-    ("Kho hàng hóa nhà máy", NHA_MAY, 0), ("Kho CCDC và phụ tùng", NHA_MAY, 0), ("Kho sản phẩm dở dang", NHA_MAY, 0),
-    ("Thành phẩm chờ xử lý nhà máy", NHA_MAY, 0), ("Hàng khách gửi gia công", NHA_MAY, 1),
-    ("Kho nguyên liệu đỗ", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên liệu bột", "Nguyên liệu, vật liệu nhà máy", 0),
-    ("Kho nguyên liệu dầu", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên vật liệu phồng tôm", "Nguyên liệu, vật liệu nhà máy", 0),
-    ("Kho NVL đậu gói", "Nguyên liệu, vật liệu nhà máy", 0), ("Kho nguyên vật liệu hàng hóa", "Nguyên liệu, vật liệu nhà máy", 0),
-    ("Kho bao bì các loại", "Nguyên liệu, vật liệu nhà máy", 0),
-    ("Kho thành phẩm đỗ", "Thành phẩm nhà máy", 0), ("Kho thành phẩm phồng tôm", "Thành phẩm nhà máy", 0),
-    ("Kho thành phẩm bột", "Thành phẩm nhà máy", 0), ("Kho thành phẩm dầu", "Thành phẩm nhà máy", 0),
-    ("Kho thành phẩm đậu gói", "Thành phẩm nhà máy", 0),
+# Cây kho nhà máy chung (chỉ khi cấu hình khách bật nhà máy): (tên, cha | None = ngay dưới gốc, là nhóm). Kho riêng theo sản phẩm của khách khai ở "kho_them" trong cấu hình.
+TEN_NHA_MAY_MAC_DINH = "Nhà máy"
+NL_NM, TP_NM = "Nguyên liệu, vật liệu nhà máy", "Thành phẩm nhà máy"
+CAY_NHA_MAY_CHUNG = [
+    (None, 1), (NL_NM, 1), (TP_NM, 1),
+    ("Kho hàng hóa nhà máy", 0), ("Kho CCDC và phụ tùng", 0), ("Kho sản phẩm dở dang", 0),
+    ("Thành phẩm chờ xử lý nhà máy", 0), ("Hàng khách gửi gia công", 1),
 ]
+
+
+def cay_nha_may(ten_goc: str = TEN_NHA_MAY_MAC_DINH, kho_them: list = ()) -> list:
+    """Cây kho nhà máy [(tên, cha, là nhóm)], cha trước con (thuần). kho_them: [{"ten","cha","nhom"}], cha là tên kho đã có trong cây (mặc định nhóm NL / TP nếu ghi 'NL' / 'TP')."""
+    cay = [(ten_goc, None, 1)]
+    for ten, nhom in CAY_NHA_MAY_CHUNG[1:]:
+        cay.append((ten, ten_goc, nhom))
+    alias = {"NL": NL_NM, "TP": TP_NM, "": ten_goc, None: ten_goc}
+    for k in kho_them or []:
+        cay.append((k["ten"], alias.get(k.get("cha"), k.get("cha")), int(k.get("nhom") or 0)))
+    return cay
+
+
+def kiem_cay_nha_may(cay: list = None) -> list:
+    cay = cay or cay_nha_may()
+    ten = [t for t, _, _ in cay]
+    loi = [f"{t}: thiếu cha {c}" for t, c, _ in cay if c and c not in ten]
+    loi += [f"trùng tên kho: {t}" for t in set(ten) if ten.count(t) > 1]
+    return loi
+
+
 KHO_MAC_DINH_ERPNEXT = ("Stores", "Work In Progress", "Finished Goods", "Goods In Transit")
 NHOM_MAC_DINH_ERPNEXT = ("Products", "Raw Material", "Services", "Sub Assemblies", "Consumable")
 
@@ -78,12 +92,7 @@ def kiem_nhom_hang(loai: str) -> list:
     return loi
 
 
-def kiem_cay_nha_may() -> list:
-    ten = {t for t, _, _ in CAY_NHA_MAY}
-    return [f"{t}: thiếu cha {c}" for t, c, _ in CAY_NHA_MAY if c and c not in ten]
-
-
-def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
+def cai_kho_nhom_hang(company: str, co: dict, loai: str, cay_nm: list = None, nhom_hang: list = None) -> dict:
     """Kho (cây địa điểm dùng chung; nhà máy chỉ APH), nhóm hàng cấp 1 gắn tài khoản kho, bật tồn kho theo mặt hàng, bỏ kho/nhóm mẫu."""
     import frappe
 
@@ -98,9 +107,9 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
         kho_chung.setup(company)
     except Exception as e:
         kq["canh_bao"].append(f"kho dùng chung: {str(e)[:120]}")
-    if loai == "aph":
+    if cay_nm:
         goc = f"All Warehouses - {abbr}"
-        for ten, cha, nhom in CAY_NHA_MAY:
+        for ten, cha, nhom in cay_nm:
             if frappe.db.exists("Warehouse", f"{ten} - {abbr}"):
                 continue
             frappe.get_doc({"doctype": "Warehouse", "warehouse_name": ten, "company": company, "is_group": nhom,
@@ -123,7 +132,7 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str) -> dict:
                 frappe.delete_doc("Item Group", ten, ignore_permissions=True)
             except Exception:
                 frappe.db.rollback(save_point="xoa_nhom")
-    for ten, so in NHOM_HANG[loai]:
+    for ten, so in (nhom_hang or NHOM_HANG[loai]):
         if not frappe.db.exists("Item Group", ten):
             frappe.get_doc({"doctype": "Item Group", "item_group_name": ten, "parent_item_group": "All Item Groups",
                             "is_group": 1}).insert(ignore_permissions=True)
@@ -180,11 +189,12 @@ def _don_mau_thue_va_thanh_toan(company: str, co: dict):
             frappe.db.set_value("Mode of Payment Account", r.name, "default_account", co[so])
 
 
-def cai(company: str) -> dict:
+def cai(company: str, loai: str = None, cay_nm: list = None, nhom_hang: list = None) -> dict:
+    """loai: 'aph' (TT133) hoặc 'vh' (TT99); bỏ trống thì suy từ viết tắt công ty. cay_nm: cây kho nhà máy (cay_nha_may) hoặc None = không có nhà máy."""
     import frappe
 
     abbr = frappe.db.get_value("Company", company, "abbr")
-    loai = loai_don_vi(abbr)
+    loai = loai or loai_don_vi(abbr)
     kq = {"company": company, "loai": loai, "tao": 0, "bo": 0, "canh_bao": []}
     if loai not in ("aph", "vh"):
         return kq
@@ -241,7 +251,7 @@ def cai(company: str) -> dict:
         if not cur.get(truong) and so in co:
             frappe.db.set_value("Company", company, truong, co[so])
     frappe.db.commit()
-    kq["kho_nhom"] = cai_kho_nhom_hang(company, co, loai)
+    kq["kho_nhom"] = cai_kho_nhom_hang(company, co, loai, cay_nm, nhom_hang)
     try:
         from aphvh.vat import ensure_vat_templates
 
