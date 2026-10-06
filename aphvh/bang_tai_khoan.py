@@ -49,7 +49,7 @@ RIENG_99 = [
 ]
 # tên 112 khác nhau
 TEN_KHAC = {"tt99": {"112": "Tiền gửi không kỳ hạn", "211": "Tài sản cố định hữu hình", "138": "Phải thu khác",
-                     "228": "Đầu tư khác", "242": "Chi phí chờ phân bổ", "632": "Giá vốn hàng bán"}}
+                     "228": "Đầu tư khác", "155": "Sản phẩm", "6425": "Thuế, phí và lệ phí", "242": "Chi phí chờ phân bổ", "632": "Giá vốn hàng bán"}}
 
 # ---------- cấp 2: (cha, số, tên, nguồn, loại tài khoản) ----------
 _TAX = "Tax"
@@ -144,6 +144,17 @@ CAP2_99 = [
     ("642", "6424", "Chi phí khấu hao TSCĐ", "TT", ""), ("642", "6425", "Thuế, phí và lệ phí", "TT", ""), ("642", "6426", "Chi phí dự phòng", "TT", ""),
     ("642", "6427", "Chi phí dịch vụ mua ngoài", "TT", ""), ("642", "6428", "Chi phí bằng tiền khác", "TT", ""),
     ("821", "8211", "Chi phí thuế TNDN hiện hành", "TT", "Tax"), ("821", "8212", "Chi phí thuế TNDN hoãn lại", "TT", "Tax"),
+    # bổ sung theo Phụ lục II TT99 bản chính thức (06/10/2026)
+    ("215", "2151", "Súc vật nuôi cho sản phẩm định kỳ", "TT", ""), ("2151", "21511", "Súc vật nuôi cho sản phẩm định kỳ chưa đạt đến giai đoạn trưởng thành", "TT", ""),
+    ("2151", "21512", "Súc vật nuôi cho sản phẩm định kỳ đạt đến giai đoạn trưởng thành", "TT", ""), ("21512", "215121", "Nguyên giá", "TT", ""),
+    ("21512", "215122", "Giá trị khấu hao lũy kế", "TT", ""), ("215", "2152", "Súc vật nuôi lấy sản phẩm một lần", "TT", ""),
+    ("215", "2153", "Cây trồng theo mùa vụ hoặc lấy sản phẩm một lần", "TT", ""),
+    ("343", "3431", "Trái phiếu thường", "TT", ""), ("343", "3432", "Trái phiếu chuyển đổi", "TT", ""),
+    ("4111", "41111", "Cổ phiếu phổ thông có quyền biểu quyết", "TT", ""), ("4111", "41112", "Cổ phiếu ưu đãi", "TT", ""),
+    ("623", "6231", "Chi phí nhân công", "TT", ""), ("623", "6232", "Chi phí vật liệu", "TT", ""), ("623", "6233", "Chi phí dụng cụ sản xuất", "TT", ""),
+    ("623", "6234", "Chi phí khấu hao máy thi công", "TT", ""), ("623", "6237", "Chi phí dịch vụ mua ngoài", "TT", ""), ("623", "6238", "Chi phí bằng tiền khác", "TT", ""),
+    ("8211", "82111", "Chi phí thuế thu nhập doanh nghiệp hiện hành theo quy định của Luật thuế thu nhập doanh nghiệp", "TT", "Tax"),
+    ("8211", "82112", "Chi phí thuế thu nhập doanh nghiệp bổ sung theo quy định về thuế tối thiểu toàn cầu", "TT", "Tax"),
 ]
 # ---------- chi tiết doanh nghiệp mở thêm cho nghiệp vụ của app (cả hai đơn vị) ----------
 CAP_DN_CHUNG = [

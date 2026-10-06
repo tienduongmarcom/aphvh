@@ -17,3 +17,10 @@
 - **911 (Xác định kết quả kinh doanh)** có trong thông tư nhưng cố ý không tạo: ERPNext xác định kết quả qua báo cáo và Period Closing Voucher (kết chuyển vào 4212), tài khoản 911 sẽ không dùng đến. Ghi nhận, thêm lại nếu kế toán muốn kết chuyển tay.
 - Có test cố định danh mục chính thức (test_bang_tai_khoan.TestKhopBanChinhThucTT133) để sau này sửa bảng không lệch thông tư.
 - Còn thiếu: bản chính thức TT99 cho VH (hiện dựa nguồn thứ cấp).
+
+## Đối chiếu với văn bản chính thức TT99 (Phụ lục II Thông tư 99/2025/TT-BTC, PDF anh Tiến cung cấp) — bản 0.5.4
+- 71 tài khoản cấp 1 chính thức; số hiệu của VH khớp **100%** (206 tài khoản trong thông tư, trừ 911 cố ý không tạo). Bản trước thiếu 20 tài khoản cấp 2–4 và đã bổ sung: 2151–2153 và 21511/21512/215121/215122 (tài sản sinh học), 3431/3432, 41111/41112, 6231–6238 (623), 82111/82112.
+- Văn bản gốc xác nhận: 111, 112, 113, 154, 155, 156, 511 không có cấp 2 (vì vậy 1111/1112/1121/1122, 1551…, 1561, 5111–5113 là chi tiết do DN mở, đánh dấu "DN"); 338 gồm 3381–3384, 3386 (bảo hiểm thất nghiệp), 3387 (doanh thu chờ phân bổ), 3388 — không có 3385 và 3389; 155 tên chính thức là "Sản phẩm"; 242 "Chi phí chờ phân bổ"; có thêm 158, 171, 211–213 (cấp 1), 215, 221, 222, 243, 244, 332, 337, 343, 344, 347, 357, 412, 414, 521, 621–623, 627, 641.
+- Văn bản chính thức viết "Chi phí thuế TNDN hoàn lại" cho 8212 (lỗi chính tả trong thông tư); bảng giữ "hoãn lại".
+- Có test cố định danh mục TT99 chính thức (TestKhopBanChinhThucTT99).
+- Kiểm trên site trắng thật: 36/36 đạt.
