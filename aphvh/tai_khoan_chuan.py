@@ -20,6 +20,21 @@ CAN = {
     "mk": ["1111", "1121", "131", "1561", "331", "3339", "5111", "711", "632", "642"],
     "tl": ["1111", "131", "1561", "331", "5111", "632"],
 }
+# Tên và loại gốc của tài khoản chuẩn (theo TT133/TT99) để app tự tạo khi thiếu: số hiệu -> (tên, loại gốc, loại tài khoản)
+TEN_CHUAN = {
+    "153": ("Công cụ, dụng cụ", "Asset", "Stock"),
+    "242": ("Chi phí trả trước", "Asset", ""),
+    "1381": ("Tài sản thiếu chờ xử lý", "Asset", ""),
+    "3381": ("Tài sản thừa chờ giải quyết", "Liability", ""),
+    "641": ("Chi phí bán hàng", "Expense", ""),
+    "642": ("Chi phí quản lý doanh nghiệp", "Expense", ""),
+    "627": ("Chi phí sản xuất chung", "Expense", ""),
+    "632": ("Giá vốn hàng bán", "Expense", "Cost of Goods Sold"),
+    "711": ("Thu nhập khác", "Income", ""),
+    "811": ("Chi phí khác", "Expense", ""),
+    "1388": ("Phải thu khác", "Asset", ""),
+    "3388": ("Phải trả, phải nộp khác", "Liability", ""),
+}
 CO_THU_HO = ("aph", "vh")
 LOAI = {"APH": "aph", "VH": "vh", "VHT": "vh", "MK": "mk", "MKT": "mk", "TL": "tl", "TLT": "tl"}
 
@@ -31,6 +46,15 @@ def loai_don_vi(abbr):
 def thieu(so_hieu_co: set, can: list) -> list:
     """Số hiệu cần mà chưa có tài khoản nào trùng hoặc bắt đầu bằng số hiệu đó (thuần)."""
     return [c for c in can if not any(s == c or s.startswith(c) for s in so_hieu_co)]
+
+
+def chon_cha(so_moi: str, ds: list, root_type: str):
+    """Tài khoản nhóm có số hiệu dài nhất là tiền tố của so_moi; không có thì tài khoản gốc cùng loại. ds: list dict (name, account_number, is_group, parent_account, root_type) (thuần)."""
+    ung = [d for d in ds if d.get("is_group") and d.get("account_number") and so_moi.startswith(d["account_number"]) and d["account_number"] != so_moi]
+    if ung:
+        return max(ung, key=lambda d: len(d["account_number"]))["name"]
+    goc = [d for d in ds if d.get("is_group") and not d.get("parent_account") and d.get("root_type") == root_type]
+    return goc[0]["name"] if goc else None
 
 
 def chon_so_thu_ho(so_hieu_co: set):
@@ -50,7 +74,29 @@ def setup(company: str) -> dict:
     if not loai:
         kq["canh_bao"].append(f"Chưa biết đơn vị {abbr}: bỏ qua")
         return kq
-    ds = frappe.get_all("Account", {"company": company}, ["name", "account_number", "account_name", "parent_account", "is_group"])
+    campos = ["name", "account_number", "account_name", "parent_account", "is_group", "root_type"]
+    ds = frappe.get_all("Account", {"company": company}, campos)
+    so = {d.account_number for d in ds if d.account_number}
+    for c in thieu(so, CAN[loai]):
+        if c not in TEN_CHUAN:
+            continue
+        ten, rt, at = TEN_CHUAN[c]
+        cha = chon_cha(c, [dict(d) for d in ds], rt)
+        if not cha:
+            kq["canh_bao"].append(f"Không thấy nhóm cha cho {c}")
+            continue
+        try:
+            v = {"doctype": "Account", "account_name": ten, "account_number": c, "company": company,
+                 "parent_account": cha, "root_type": rt, "is_group": 0}
+            if at:
+                v["account_type"] = at
+            frappe.get_doc(v).insert(ignore_permissions=True)
+            frappe.db.commit()
+            kq["viec"].append(f"tạo {c} - {ten}")
+        except Exception as e:
+            frappe.db.rollback()
+            kq["canh_bao"].append(f"Không tạo được {c}: {str(e)[:120]}")
+    ds = frappe.get_all("Account", {"company": company}, campos)
     so = {d.account_number for d in ds if d.account_number}
     kq["thieu"] = thieu(so, CAN[loai])
     if loai not in CO_THU_HO:
