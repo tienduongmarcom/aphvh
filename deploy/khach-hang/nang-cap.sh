@@ -31,7 +31,11 @@ done
 printf '%s\n' "$CU" > "sao-luu/$NGAY/phien-ban-truoc.txt"
 echo "2/5 Đổi phiên bản $CU -> $MOI"
 sed -i "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$MOI/" .env
-./erpctl pull
+# Kéo image mới lỗi (tag không có, mạng, quyền ghi ghcr) thì CHƯA migrate gì: chỉ trả phiên bản về như cũ, không cần khôi phục dữ liệu.
+if ! ./erpctl pull; then
+  sed -i "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$CU/" .env; ./erpctl up -d
+  echo "KÉO IMAGE $MOI LỖI. Đã giữ nguyên phiên bản $CU, dữ liệu không bị đổi."; exit 2
+fi
 ./erpctl up -d
 sleep 20
 echo "3/5 Migrate"
