@@ -1,7 +1,7 @@
 """Tồn kho theo tài khoản × địa điểm (0.4.18) — quy tắc thuần."""
 import unittest
 
-from aphvh import ton_kho_tk_rules as t
+from lab9x import ton_kho_tk_rules as t
 
 CHA = {"Kho bán hàng Hà Nội - APH": "Hà Nội - APH", "Hà Nội - APH": "All Warehouses - APH", "Kho Đà Nẵng - APH": "Đà Nẵng - APH",
        "Đà Nẵng - APH": "All Warehouses - APH", "Kho NL dầu - APH": "Nhà máy - APH", "Nhà máy - APH": "All Warehouses - APH",

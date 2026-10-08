@@ -5,7 +5,7 @@ app_description = "Tùy biến nghiệp vụ ERPNext cho An Phú Hưng và Vĩnh
 app_email = "tienduongmarcom@gmail.com"
 app_license = "Proprietary"
 
-required_apps = ["erpnext"]
+required_apps = ["erpnext", "lab9x"]  # 0.7.0: lõi dùng chung 9xLab
 
 # Cài đặt cấu hình (custom field, loại phiếu kho) — chạy lại được nhiều lần
 after_install = "aphvh.install.after_install"

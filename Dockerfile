@@ -7,14 +7,21 @@ FROM ${ERPNEXT_IMAGE}
 USER frappe
 WORKDIR /home/frappe/frappe-bench
 
+# 0.7.0: hai app: lõi 9xLab (lab9x, nằm ở apps/lab9x của repo) và app riêng của khách (aphvh).
+COPY --chown=frappe:frappe apps/lab9x apps/lab9x
 COPY --chown=frappe:frappe . apps/aphvh
 
 # Tệp JS của app nạp qua hook doctype_js (đọc thẳng từ thư mục app), không cần build asset: chỉ cần đưa thư mục app vào đường dẫn
 # import của môi trường Python của bench (tương đương cài "editable"), không cần mạng.
 # Ghi aphvh vào sites/apps.txt của bản dựng để `bench version` và site mới trên ổ trống đều thấy app
 # (site đang chạy đọc apps.txt trong ổ dữ liệu sites của nó).
-RUN SITE_PACKAGES="$(./env/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+RUN rm -rf apps/aphvh/apps \
+ && SITE_PACKAGES="$(./env/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+ && echo "/home/frappe/frappe-bench/apps/lab9x" > "${SITE_PACKAGES}/lab9x.pth" \
  && echo "/home/frappe/frappe-bench/apps/aphvh" > "${SITE_PACKAGES}/aphvh.pth" \
- && (grep -qx aphvh sites/apps.txt || { sed -i -e '$a\' sites/apps.txt && echo aphvh >> sites/apps.txt; }) \
- && ./env/bin/python -c "import aphvh, aphvh.hooks, aphvh.costing_rules; print('aphvh', aphvh.__version__)" \
- && ./env/bin/python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations aphvh.tests.test_sales_rules aphvh.tests.test_control_rules aphvh.tests.test_vat_rules aphvh.tests.test_print_rules aphvh.tests.test_tong_hop_khach aphvh.tests.test_so_hkd aphvh.tests.test_hkd_accounts aphvh.tests.test_ben_thu_ba aphvh.tests.test_don_vi_chuyen_tiep aphvh.tests.test_kho_chung aphvh.tests.test_ton_kho_tk aphvh.tests.test_thu_ho aphvh.tests.test_tai_khoan_chuan aphvh.tests.test_bang_tai_khoan aphvh.tests.test_cai_ban_trang aphvh.tests.test_khach_hang aphvh.tests.test_report_paths -v
+ && sed -i -e '$a\' sites/apps.txt \
+ && (grep -qx lab9x sites/apps.txt || echo lab9x >> sites/apps.txt) \
+ && (grep -qx aphvh sites/apps.txt || echo aphvh >> sites/apps.txt) \
+ && ./env/bin/python -c "import lab9x, lab9x.hooks, aphvh, aphvh.hooks, aphvh.costing_rules; print('lab9x', lab9x.__version__, 'aphvh', aphvh.__version__)" \
+ && (cd apps/lab9x && ../../env/bin/python -m unittest discover -s lab9x/tests -t . -v) \
+ && (cd apps/aphvh && ../../env/bin/python -m unittest discover -s aphvh/tests -t . -v)

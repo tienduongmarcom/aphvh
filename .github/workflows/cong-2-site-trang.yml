@@ -6,7 +6,7 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   pull_request:
-    paths: ["aphvh/**", "khach/**", "Dockerfile", ".github/workflows/cong-2-site-trang.yml"]
+    paths: ["aphvh/**", "apps/**", "khach/**", "Dockerfile", ".github/workflows/cong-2-site-trang.yml"]
 permissions:
   contents: read
 env:
@@ -53,7 +53,7 @@ jobs:
             bench set-config -g redis_cache redis://127.0.0.1:16379
             bench set-config -g redis_queue redis://127.0.0.1:16379
             bench set-config -g redis_socketio redis://127.0.0.1:16379
-            bench new-site test.localhost --db-root-username root --db-root-password root --admin-password admin --install-app erpnext --install-app aphvh --mariadb-user-host-login-scope="%"
+            bench new-site test.localhost --db-root-username root --db-root-password root --admin-password admin --install-app erpnext --install-app lab9x --install-app aphvh --mariadb-user-host-login-scope="%"
             bench --site test.localhost execute aphvh.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}"
             bench --site test.localhost execute aphvh.kiem_trien_khai.chay --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}" | tee /tmp/kiem.txt
             grep -q "KHÔNG ĐẠT: 0" /tmp/kiem.txt

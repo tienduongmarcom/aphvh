@@ -1,6 +1,6 @@
 import unittest
 
-from aphvh import ben_thu_ba_rules as B
+from lab9x import ben_thu_ba_rules as B
 
 
 class TestBenThuBa(unittest.TestCase):

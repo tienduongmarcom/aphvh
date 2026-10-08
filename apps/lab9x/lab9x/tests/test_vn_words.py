@@ -1,6 +1,6 @@
 import unittest
 
-from aphvh.vn_words import so_thanh_chu, so_tien_bang_chu
+from lab9x.vn_words import so_thanh_chu, so_tien_bang_chu
 
 
 class TestSoThanhChu(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestSoThanhChu(unittest.TestCase):
 
 class TestSoVn(unittest.TestCase):
     def test_format(self):
-        from aphvh.vn_words import so_vn
+        from lab9x.vn_words import so_vn
 
         self.assertEqual(so_vn(1234567.5), "1.234.567,5")
         self.assertEqual(so_vn(1000), "1.000")

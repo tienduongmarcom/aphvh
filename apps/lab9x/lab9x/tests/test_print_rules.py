@@ -2,7 +2,7 @@
 
 import unittest
 
-from aphvh import print_rules as P
+from lab9x import print_rules as P
 
 
 class TestPrintRules(unittest.TestCase):

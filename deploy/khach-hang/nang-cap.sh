@@ -39,6 +39,10 @@ fi
 ./erpctl up -d
 sleep 20
 echo "3/5 Migrate"
+# Từ 0.7.0 lõi 9xLab (lab9x) là app riêng: site cũ chưa cài thì cài trước khi migrate (chạy lại được).
+if ! ./erpctl exec -T backend bench --site frontend list-apps </dev/null | grep -q '^lab9x'; then
+  ./erpctl exec -T backend bench --site frontend install-app lab9x </dev/null || { quay_lui "CÀI LÕI lab9x LỖI."; exit 3; }
+fi
 if ! ./erpctl exec -T backend bench --site frontend migrate; then
   quay_lui "MIGRATE LỖI."; exit 3
 fi

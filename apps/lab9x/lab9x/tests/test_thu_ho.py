@@ -1,7 +1,7 @@
 import datetime
 import unittest
 
-from aphvh import thu_ho_rules as T
+from lab9x import thu_ho_rules as T
 
 
 class TestThuHo(unittest.TestCase):

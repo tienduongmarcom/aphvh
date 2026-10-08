@@ -48,7 +48,7 @@ for i in $(seq 1 60); do
   sleep 5
 done
 set -a; source .env; set +a
-AP="$AP" ./erpctl exec -T -e AP backend bash -c 'bench new-site frontend --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password "$AP" --install-app erpnext --install-app aphvh'
+AP="$AP" ./erpctl exec -T -e AP backend bash -c 'bench new-site frontend --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password "$AP" --install-app erpnext --install-app lab9x --install-app aphvh'
 unset AP AP2
 ./erpctl exec -T backend bench --site frontend enable-scheduler
 # hostname -I chỉ có trên Linux: máy khác (macOS khi diễn tập) dùng localhost kèm cổng
