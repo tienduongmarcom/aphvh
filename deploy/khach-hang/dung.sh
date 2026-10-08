@@ -59,7 +59,7 @@ else
 fi
 ./erpctl exec -T backend bench --site frontend set-config host_name "$HOST"
 # nạp cấu hình khách rồi kiểm
-./erpctl cp khach.json backend:/tmp/khach.json
+./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
 ./erpctl exec -T backend bench --site frontend execute aphvh.khach_hang.ap_dung --kwargs '{"duong_dan": "/tmp/khach.json"}'
 ./erpctl exec -T backend bench --site frontend execute aphvh.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json", "ra": "/tmp/kq-trien-khai.json"}' | tee "sao-luu/kiem-trien-khai.txt"
 ./erpctl cp backend:/tmp/kq-trien-khai.json sao-luu/kq-trien-khai.json || true

@@ -43,7 +43,7 @@ if ! ./erpctl exec -T backend bench --site frontend migrate; then
   quay_lui "MIGRATE LỖI."; exit 3
 fi
 echo "4/5 Kiểm sau nâng cấp"
-./erpctl cp khach.json backend:/tmp/khach.json
+./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
 if ! ./erpctl exec -T backend bench --site frontend execute aphvh.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "sao-luu/$NGAY/kiem-sau-nang-cap.txt" | grep -q "KHÔNG ĐẠT: 0"; then
   quay_lui "KIỂM KHÔNG ĐẠT. Xem sao-luu/$NGAY/kiem-sau-nang-cap.txt."; exit 4
 fi
