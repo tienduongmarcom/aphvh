@@ -64,7 +64,7 @@ def _env(an):
 class TestPrintFormats(unittest.TestCase):
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_purchase_receipt_renders(self):
-        html = (ROOT / "phieu_nhap_kho_aph" / "phieu_nhap_kho_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_nhap_kho" / "phieu_nhap_kho.html").read_text(encoding="utf-8")
         doc = Row(
             doctype="Purchase Receipt", name="MAT-PRE-2026-00010", company="APH", posting_date="2026-09-15",
             supplier="NCC A", supplier_name="Nhà cung cấp A", supplier_delivery_note="GH-01", owner="dung@x",
@@ -91,7 +91,7 @@ class TestPrintFormats(unittest.TestCase):
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_stock_entry_renders_each_purpose(self):
-        html = (ROOT / "phieu_kho_aph" / "phieu_kho_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_kho" / "phieu_kho.html").read_text(encoding="utf-8")
 
         def se(purpose, items):
             return Row(doctype="Stock Entry", name="MAT-STE-2026-00004", company="APH", posting_date="2026-09-15",
@@ -156,7 +156,7 @@ def _dn(**kw):
 class TestDeliveryNotePrints(unittest.TestCase):
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_phieu_xuat_kho(self):
-        html = (ROOT / "phieu_xuat_kho_ban_hang_aph" / "phieu_xuat_kho_ban_hang_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_xuat_kho_ban_hang" / "phieu_xuat_kho_ban_hang.html").read_text(encoding="utf-8")
         out = _env(False).from_string(html).render(doc=_dn())
         self.assertIn("PHIẾU XUẤT KHO", out)
         self.assertIn("Mẫu số 02 - VT", out)
@@ -180,7 +180,7 @@ class TestDeliveryNotePrints(unittest.TestCase):
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_phieu_nhap_hang_tra_lai(self):
-        html = (ROOT / "phieu_xuat_kho_ban_hang_aph" / "phieu_xuat_kho_ban_hang_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_xuat_kho_ban_hang" / "phieu_xuat_kho_ban_hang.html").read_text(encoding="utf-8")
         items = [Row(item_code="HH.DXA", item_name="Đậu xanh hạt loại A", uom="Kg", qty=-50, base_net_rate=32000,
                      base_net_amount=-1_600_000, warehouse="Kho Hà Nội - APH")]
         out = _env(False).from_string(html).render(
@@ -196,7 +196,7 @@ class TestDeliveryNotePrints(unittest.TestCase):
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_bien_ban_giao_nhan_hai_lien(self):
-        html = (ROOT / "bien_ban_giao_nhan_aph" / "bien_ban_giao_nhan_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "bien_ban_giao_nhan" / "bien_ban_giao_nhan.html").read_text(encoding="utf-8")
         out = _env(False).from_string(html).render(doc=_dn())
         self.assertEqual(out.count("BIÊN BẢN GIAO NHẬN HÀNG HÓA"), 2)
         self.assertIn("Liên 1: Giao khách hàng", out)
@@ -264,7 +264,7 @@ def _thu_chi(kieu, tien_mat=True, **kw):
 
 class TestPaymentPrints(unittest.TestCase):
     def render(self, p):
-        html = (ROOT / "phieu_thu_chi_aph" / "phieu_thu_chi_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_thu_chi" / "phieu_thu_chi.html").read_text(encoding="utf-8")
         env = _env(False)
         env.globals["aphvh_thu_chi"] = lambda doc: p
         return env.from_string(html).render(doc=Row(doctype="Payment Entry", name="ACC-PAY-2026-00010", company="APH",
@@ -325,7 +325,7 @@ def _si(**kw):
 
 class TestSalesInvoicePrint(unittest.TestCase):
     def render(self, doc, bh):
-        html = (ROOT / "phieu_ban_hang_aph" / "phieu_ban_hang_aph.html").read_text(encoding="utf-8")
+        html = (ROOT / "phieu_ban_hang" / "phieu_ban_hang.html").read_text(encoding="utf-8")
         env = _env(False)
         env.globals["aphvh_ban_hang"] = lambda d: bh
         return env.from_string(html).render(doc=doc)

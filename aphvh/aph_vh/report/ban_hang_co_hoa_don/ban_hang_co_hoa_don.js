@@ -1,4 +1,4 @@
-frappe.query_reports["Ban hang co hoa don APH"] = {
+frappe.query_reports["Ban hang co hoa don"] = {
 	filters: [
 		{
 			fieldname: "company",

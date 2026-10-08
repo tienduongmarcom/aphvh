@@ -472,7 +472,7 @@ DEFAULT_PRINT_FORMATS = {
 TRANSLATIONS = {
     REPORT_QTY: REPORT_QTY_LABEL,
     REPORT_INVOICED: REPORT_INVOICED_LABEL,
-    "Tong hop ban hang theo khach APH": "Tổng hợp bán hàng theo khách (3 đơn vị)",
+    "Tong hop ban hang theo khach": "Tổng hợp bán hàng theo khách (3 đơn vị)",
     # 0.4.3: hộp Cài đặt in — bản dịch sẵn có của ERPNext dịch máy ("Phong cảnh", "Định hướng").
     "So doanh thu HKD": "Sổ doanh thu hộ kinh doanh (S1a, S2a, S2b)",
     "So ke toan HKD": "Sổ kế toán hộ kinh doanh (S2c, S2d, S2e)",

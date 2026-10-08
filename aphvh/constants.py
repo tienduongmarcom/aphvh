@@ -28,7 +28,7 @@ KG_UOM = "Kg"
 
 # Vai trò của kế toán nhà máy: nhận hàng, cấp liệu, sản xuất, chuyển kho; không xem giá
 # nguyên phụ liệu, giá trị tồn kho và giá thành.
-ROLE_FACTORY = "Kế toán nhà máy APH"
+ROLE_FACTORY = "Kế toán nhà máy"
 
 # Người có một trong các vai trò này luôn xem được giá, kể cả khi có thêm ROLE_FACTORY.
 PRICE_ROLES = (
@@ -51,17 +51,17 @@ DEFAULT_FACTORY_PRICE_GROUPS = ("Vật tư tiêu hao",)
 PR_OPEX = "aphvh_vat_tu_van_hanh"
 
 # Mẫu in (tên hiển thị) và báo cáo tồn kho số lượng.
-PRINT_PURCHASE_RECEIPT = "Phiếu nhập kho APH"
-PRINT_STOCK_ENTRY = "Phiếu kho APH"
-REPORT_QTY = "Ton kho so luong APH"
-REPORT_QTY_LABEL = "Tồn kho số lượng APH"
+PRINT_PURCHASE_RECEIPT = "Phiếu nhập kho"
+PRINT_STOCK_ENTRY = "Phiếu kho"
+REPORT_QTY = "Ton kho so luong"
+REPORT_QTY_LABEL = "Tồn kho số lượng"
 
 # --- Bán hàng kho Hà Nội (0.3) ------------------------------------------------------------
 
 # Vai trò: nhân viên bán hàng lập đơn; thủ kho Hà Nội lập phiếu giao hàng. Cả hai thấy giá bán,
 # không thấy giá vốn (xem price_visibility.is_cost_restricted). Kế toán dùng vai trò chuẩn.
-ROLE_SALES = "Nhân viên bán hàng APH"
-ROLE_HN_STOCK = "Thủ kho Hà Nội APH"
+ROLE_SALES = "Nhân viên bán hàng"
+ROLE_HN_STOCK = "Thủ kho bán hàng"
 COST_HIDDEN_ROLES = (ROLE_SALES, ROLE_HN_STOCK, ROLE_FACTORY)
 
 # Cài đặt bán hàng (Selling Settings): bật/tắt từng phần của luồng bán hàng APH.
@@ -91,10 +91,10 @@ DN_DRIVER = "aphvh_lai_xe"
 DN_PLATE = "aphvh_bien_so_xe"
 DN_DRIVER_PHONE = "aphvh_sdt_lai_xe"
 
-PRINT_DN_ISSUE = "Phiếu xuất kho bán hàng APH"
-PRINT_DN_HANDOVER = "Biên bản giao nhận APH"
-PRINT_PAYMENT = "Phiếu thu chi APH"
-PRINT_SALES_INVOICE = "Phiếu bán hàng APH"
+PRINT_DN_ISSUE = "Phiếu xuất kho bán hàng"
+PRINT_DN_HANDOVER = "Biên bản giao nhận"
+PRINT_PAYMENT = "Phiếu thu chi"
+PRINT_SALES_INVOICE = "Phiếu bán hàng"
 PE_PERSON = "aphvh_nguoi_nop_nhan"
 # 0.4.11: thanh toán qua bên thứ ba
 PE_BTB = "aphvh_ben_thu_ba"
@@ -119,5 +119,5 @@ SI_EINV_NO = "aphvh_hd_so"
 SI_EINV_DATE = "aphvh_hd_ngay"
 EINV_FIELDS = (SI_EINV_SERIES, SI_EINV_NO, SI_EINV_DATE)
 
-REPORT_INVOICED = "Ban hang co hoa don APH"
-REPORT_INVOICED_LABEL = "Bán hàng có hóa đơn APH"
+REPORT_INVOICED = "Ban hang co hoa don"
+REPORT_INVOICED_LABEL = "Bán hàng có hóa đơn"

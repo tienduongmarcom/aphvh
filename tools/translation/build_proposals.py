@@ -11,7 +11,7 @@ def po(p):
 cur = {**po(H + 'frappe/frappe/locale/vi.po'), **po(H + 'erpnext/erpnext/locale/vi.po')}
 don = {**po(H + 'e2v/frappe_vi_v2.po'), **po(H + 'e2v/erpnext_vi_v2.po')}
 # 3 bản dịch riêng đang có trên cloud
-cur.update({'Ton kho so luong APH': 'Tồn kho số lượng APH', 'Lo nhap khau': 'Lô nhập khẩu', 'Lo Nhap Khau': 'Lô nhập khẩu'})
+cur.update({'Ton kho so luong': 'Tồn kho số lượng', 'Lo nhap khau': 'Lô nhập khẩu', 'Lo Nhap Khau': 'Lô nhập khẩu'})
 
 wb = openpyxl.load_workbook(WB, read_only=True)
 canon, ctx_only = {}, {}

@@ -93,7 +93,7 @@ override_whitelisted_methods = {
         "aphvh.price_visibility.show_stock_ledger_preview",
 }
 
-# Ẩn cột giá trên màn hình với vai trò "Kế toán nhà máy APH" (không cần build asset).
+# Ẩn cột giá trên màn hình với vai trò "Kế toán nhà máy" (không cần build asset).
 doctype_js = {
     "Purchase Receipt": "public/js/purchase_receipt.js",
     "Purchase Order": "public/js/purchase_order.js",
@@ -110,7 +110,7 @@ doctype_list_js = {
     "Purchase Order": "public/js/purchase_order_list.js",
 }
 
-# Hàm dùng trong mẫu in Phiếu nhập kho APH / Phiếu kho APH / phiếu xuất kho bán hàng, biên bản giao nhận.
+# Hàm dùng trong mẫu in Phiếu nhập kho / Phiếu kho / phiếu xuất kho bán hàng, biên bản giao nhận.
 jinja = {
     "methods": [
         "aphvh.print_utils.aphvh_an_gia",

@@ -1,4 +1,4 @@
-frappe.query_reports["Ton kho so luong APH"] = {
+frappe.query_reports["Ton kho so luong"] = {
 	filters: [
 		{
 			fieldname: "company",

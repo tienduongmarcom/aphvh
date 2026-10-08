@@ -9,15 +9,15 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
 # Frappe chỉ nạp lại mẫu in khi "modified" mới hơn bản trên site: sửa mẫu nào thì tăng mốc này.
-MODIFIED = "2026-10-02 22:00:00.000000"
+MODIFIED = "2026-10-08 14:00:00.000000"
 
 FORMATS = {
-    "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),
-    "phieu_kho_aph": ("Phiếu kho APH", "Stock Entry"),
-    "phieu_xuat_kho_ban_hang_aph": ("Phiếu xuất kho bán hàng APH", "Delivery Note"),
-    "bien_ban_giao_nhan_aph": ("Biên bản giao nhận APH", "Delivery Note"),
-    "phieu_thu_chi_aph": ("Phiếu thu chi APH", "Payment Entry"),
-    "phieu_ban_hang_aph": ("Phiếu bán hàng APH", "Sales Invoice"),
+    "phieu_nhap_kho": ("Phiếu nhập kho", "Purchase Receipt"),
+    "phieu_kho": ("Phiếu kho", "Stock Entry"),
+    "phieu_xuat_kho_ban_hang": ("Phiếu xuất kho bán hàng", "Delivery Note"),
+    "bien_ban_giao_nhan": ("Biên bản giao nhận", "Delivery Note"),
+    "phieu_thu_chi": ("Phiếu thu chi", "Payment Entry"),
+    "phieu_ban_hang": ("Phiếu bán hàng", "Sales Invoice"),
 }
 
 
@@ -27,7 +27,7 @@ def build_doc(folder: str) -> dict:
         "absolute_value": 0,
         "align_labels_right": 0,
         "creation": MODIFIED,
-        "css": (ROOT / "phieu_in_aph.css").read_text(encoding="utf-8"),
+        "css": (ROOT / "phieu_in.css").read_text(encoding="utf-8"),
         "custom_format": 1,
         "default_print_language": "vi",
         "disabled": 0,

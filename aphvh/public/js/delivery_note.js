@@ -57,8 +57,8 @@ aphvh.price.hn_storekeeper =
 		"selling_price_list", "ignore_pricing_rule", "taxes_and_charges", "tax_category", "apply_discount_on",
 		"additional_discount_percentage", "discount_amount", "coupon_code", "aphvh_xuat_hoa_don",
 	];
-	const FORMAT_ISSUE = "Phiếu xuất kho bán hàng APH";
-	const FORMAT_HANDOVER = "Biên bản giao nhận APH";
+	const FORMAT_ISSUE = "Phiếu xuất kho bán hàng";
+	const FORMAT_HANDOVER = "Biên bản giao nhận";
 
 	const print = (frm, format) => {
 		if (frm.is_dirty()) {

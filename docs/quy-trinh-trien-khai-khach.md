@@ -13,6 +13,13 @@ Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên 
 Lộ trình: tuần 1 Cổng 2b + workflow triển khai + dựng UAT khách đầu tiên; tuần 2 công cụ import/kiểm dữ liệu + dữ liệu giả, khách UAT và ký, mở production; sau đó theme, `khach-moi`, cảnh báo.
 Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu` và `ngay_chot`, tên miền; anh tự thêm khóa SSH triển khai vào GitHub Secrets.
 
+## Cấu trúc app từ 0.7.0
+- **`lab9x` (9xLab)**: lõi dùng chung, nằm ở `apps/lab9x` của repo. Hiện chứa các quy tắc thuần: hệ thống tài khoản TT133/TT99, thuế GTGT, hộ kinh doanh TT152, mẫu in (quy tắc), kiểm soát kế toán, cảnh báo bán hàng, bên thứ ba, thu hộ, tồn kho theo tài khoản, đọc số bằng chữ.
+- **`aphvh`**: app riêng của khách An Phú Hưng - Vĩnh Hưng (đóng vai trò `kh_aph`), phụ thuộc `lab9x`. Giữ tên `aphvh` vì đổi tên app đã cài trên site đang chạy rủi ro cao. Các đường dẫn cũ (`aphvh.vn_words`...) trỏ sang lõi nên site cũ không vỡ.
+- **0.7.0 bỏ chữ "APH"** khỏi vai trò (Kế toán nhà máy, Nhân viên bán hàng, Thủ kho bán hàng), 6 mẫu in và 3 báo cáo. Patch `aphvh.patches.v0_7.doi_ten_bo_chu_aph` tự đổi trên site đang chạy khi migrate: người dùng giữ vai trò, quyền, mẫu in mặc định đi theo. Đã chạy thật trên site có dữ liệu cũ.
+- **Đợt sau:** chuyển phần gắn vào ERPNext (doc_events, custom field, mẫu in, báo cáo) từ `aphvh` sang `lab9x`; đưa cây kho, nhóm hàng, viết tắt công ty vào `khach.json`; tách luồng chỉ APH có (đơn vị chuyển tiếp TL).
+- Nâng cấp site cũ lên 0.7.0: `nang-cap.sh` tự cài `lab9x` vào site trước khi migrate.
+
 ## Vai trò từng phần
 | Phần | Ở đâu | Việc |
 |---|---|---|

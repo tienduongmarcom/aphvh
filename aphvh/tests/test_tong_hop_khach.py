@@ -40,9 +40,9 @@ class TestTongHop(unittest.TestCase):
 
     def test_wired(self):
         self.assertIn('"Customer": "public/js/customer.js"', (APP / "hooks.py").read_text())
-        rep = APP / "aph_vh" / "report" / "tong_hop_ban_hang_theo_khach_aph"
+        rep = APP / "aph_vh" / "report" / "tong_hop_ban_hang_theo_khach"
         for ext in ("json", "py", "js", "html"):
-            self.assertTrue((rep / f"tong_hop_ban_hang_theo_khach_aph.{ext}").exists(), ext)
+            self.assertTrue((rep / f"tong_hop_ban_hang_theo_khach.{ext}").exists(), ext)
         self.assertFalse((APP / "aph_vh" / "doctype").exists())  # Đơn tổng đã bỏ
         self.assertIn("aphvh.patches.v0_4.remove_don_tong", (APP / "patches.txt").read_text())
 

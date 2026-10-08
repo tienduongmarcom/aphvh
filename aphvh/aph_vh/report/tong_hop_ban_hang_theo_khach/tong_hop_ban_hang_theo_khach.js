@@ -1,4 +1,4 @@
-frappe.query_reports["Tong hop ban hang theo khach APH"] = {
+frappe.query_reports["Tong hop ban hang theo khach"] = {
 	filters: [
 		{ fieldname: "customer", label: "Khách hàng", fieldtype: "Link", options: "Customer", reqd: 1 },
 		{ fieldname: "from_date", label: "Từ ngày", fieldtype: "Date", reqd: 1, default: frappe.datetime.month_start() },
