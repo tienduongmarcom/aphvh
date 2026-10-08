@@ -14,8 +14,10 @@ env:
 jobs:
   cong-2:
     uses: ./.github/workflows/cong-2-site-trang.yml
+  cong-2b:
+    uses: ./.github/workflows/cong-2b-dien-tap.yml
   phat-hanh:
-    needs: cong-2
+    needs: [cong-2, cong-2b]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

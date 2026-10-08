@@ -13,6 +13,15 @@ Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên 
 Lộ trình: tuần 1 Cổng 2b + workflow triển khai + dựng UAT khách đầu tiên; tuần 2 công cụ import/kiểm dữ liệu + dữ liệu giả, khách UAT và ký, mở production; sau đó theme, `khach-moi`, cảnh báo.
 Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu` và `ngay_chot`, tên miền; anh tự thêm khóa SSH triển khai vào GitHub Secrets.
 
+## Quyết định khách đầu tiên (08/10/2026)
+- Đơn vị: APH (TT133, MST 2601002157), VH (TT99, MST 0500470349, tên "CÔNG TY CỔ PHẦN THƯƠNG MẠI VĨNH HƯNG"), HKD Minh Khang (`thong_tu: 152`), TL (`noi_bo: true`, không MST, không VAT). Tên đầy đủ của Minh Khang và TL cần xác nhận.
+- **Ngày chốt 30/09/2026**: số dư đến hết 30/09 mang sang; chứng từ từ 01/10 nhập từng phiếu (các phiếu 01/10 đến ngày đi vào sử dụng phải nhập bù).
+- Máy chủ: dùng lại `erpnext-prod` trên GCloud (chưa có dữ liệu thật, được xóa để dựng lại bằng quy trình mới).
+- Ô "Khách lấy hóa đơn" mở cho khách dùng trước, đóng khi khách hoàn thiện. Hóa đơn điện tử vẫn lập trên MISA.
+- Thuế GTGT mua vào: mẫu thuế mặt hàng có dòng 1331 cùng thuế suất; phiếu mua tự lấy thuế suất như khi bán cho doanh nghiệp (kế toán sửa được theo hóa đơn thực tế).
+- Nhóm hàng (lõi `lab9x`): nhóm con tự lấy tài khoản kho của cha; cảnh báo nhóm chưa có tài khoản; cho đổi nhóm cùng tài khoản; chặn đổi tài khoản của nhóm đã có phát sinh; `loai_hinh: thuong_mai` chỉ tạo Hàng hóa, CCDC, Dịch vụ, Tài sản; mã hàng mới mặc định nhóm Hàng hóa.
+- Phát hành phải qua Cổng 1 (unit test), Cổng 2 (site trắng), **Cổng 2b** (diễn tập dung.sh, nang-cap.sh, ca lỗi, quay-lui.sh trên Linux amd64).
+
 ## Cấu trúc app (từ 0.8.0)
 - **`lab9x` (9xLab)**: lõi dùng chung, ở `apps/lab9x` của repo: hệ thống tài khoản TT133/TT99, thuế GTGT, hộ kinh doanh TT152, quy tắc mẫu in, kiểm soát kế toán, cảnh báo bán hàng, bên thứ ba, thu hộ, tồn kho theo tài khoản, đọc số bằng chữ.
 - **`kh_aph`**: app riêng của khách An Phú Hưng - Vĩnh Hưng (đổi tên từ `aphvh`), phụ thuộc `lab9x`. Khách sau đặt tên `kh_<ten>`.

@@ -57,4 +57,8 @@ jobs:
             bench --site test.localhost execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}"
             bench --site test.localhost execute kh_aph.kiem_trien_khai.chay --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}" | tee /tmp/kiem.txt
             grep -q "KHÔNG ĐẠT: 0" /tmp/kiem.txt
-          '
+          ' 2>&1 | tee "$RUNNER_TEMP/log-cong2.txt"
+      - name: Nhật ký khi lỗi
+        if: failure()
+        run: |
+          [ -f "$RUNNER_TEMP/log-cong2.txt" ] && echo "::error title=cong-2::$(tail -c 1500 "$RUNNER_TEMP/log-cong2.txt" | tr '\n\r' '  ' | sed 's/%/%25/g')" || true
