@@ -134,26 +134,57 @@ def _vat_account(company: str) -> str | None:
     )
 
 
+def _vat_in_account(company: str) -> str | None:
+    if not company:
+        return None
+    return frappe.db.get_value(
+        "Account", {"company": company, "account_number": V.VAT_IN_ACCOUNT_NUMBER, "is_group": 0}, "name"
+    )
+
+
 def ensure_vat_templates() -> list:
-    """Mẫu thuế mặt hàng và mẫu thuế bán hàng cho công ty có TK 33311 (hộ KD không có: bỏ qua)."""
+    """Mẫu thuế mặt hàng (dòng 33311 bán ra + dòng 1331 mua vào cùng thuế suất), mẫu thuế bán hàng và mẫu thuế mua hàng
+    cho công ty có TK 33311 (hộ KD, đơn vị nội bộ không có: bỏ qua). Chạy lại an toàn, mẫu đã có thì chỉ bổ sung dòng 1331."""
     ensure_tax_categories()
     made = []
     for co, abbr in frappe.get_all("Company", fields=["name", "abbr"], as_list=True):
         acc = _vat_account(co)
         if not acc:
             continue
+        acc_in = _vat_in_account(co)
         for title, rate in V.VAT_TEMPLATES:
-            if frappe.db.exists("Item Tax Template", f"{title} - {abbr}"):
+            name = f"{title} - {abbr}"
+            if frappe.db.exists("Item Tax Template", name):
+                if acc_in and not frappe.db.exists("Item Tax Template Detail", {"parent": name, "tax_type": acc_in}):
+                    t = frappe.get_doc("Item Tax Template", name)
+                    t.append("taxes", {"tax_type": acc_in, "tax_rate": rate})
+                    t.save(ignore_permissions=True)
+                    made.append(f"{name} (+1331)")
                 continue
+            rows = [{"tax_type": acc, "tax_rate": rate}] + ([{"tax_type": acc_in, "tax_rate": rate}] if acc_in else [])
             frappe.get_doc(
                 {
                     "doctype": "Item Tax Template",
                     "title": title,
                     "company": co,
-                    "taxes": [{"tax_type": acc, "tax_rate": rate}],
+                    "taxes": rows,
                 }
             ).insert(ignore_permissions=True)
-            made.append(f"{title} - {abbr}")
+            made.append(name)
+        pname = f"{V.PURCHASE_TAX_TEMPLATE} - {abbr}"
+        if acc_in and not frappe.db.exists("Purchase Taxes and Charges Template", pname):
+            has_default = frappe.db.exists("Purchase Taxes and Charges Template", {"company": co, "is_default": 1})
+            frappe.get_doc(
+                {
+                    "doctype": "Purchase Taxes and Charges Template",
+                    "title": V.PURCHASE_TAX_TEMPLATE,
+                    "company": co,
+                    "is_default": 0 if has_default else 1,
+                    "taxes": [{"category": "Total", "add_deduct_tax": "Add", "charge_type": "On Net Total",
+                               "account_head": acc_in, "description": "Thuế GTGT đầu vào được khấu trừ", "rate": 0}],
+                }
+            ).insert(ignore_permissions=True)
+            made.append(pname)
         name = f"{V.SALES_TAX_TEMPLATE} - {abbr}"
         if not frappe.db.exists("Sales Taxes and Charges Template", name):
             has_default = frappe.db.exists("Sales Taxes and Charges Template", {"company": co, "is_default": 1})
@@ -278,3 +309,42 @@ def default_root_rules() -> list:
     """Quy tắc mặc định: gắn ở nhóm gốc — nông sản chưa chế biến / sơ chế thông thường."""
     root = frappe.db.get_value("Item Group", {"parent_item_group": ("is", "not set"), "is_group": 1}, "name")
     return [{"item_group": root, "nhan": V.T_KKKTN}] if root else []
+
+
+def before_validate_purchase(doc, method=None):
+    """Đơn mua / phiếu nhập / hóa đơn mua: thuế GTGT đầu vào 1331 theo thuế suất của mặt hàng (bán thế nào mua thế ấy).
+
+    - Chưa có dòng thuế 1331 thì gắn mẫu "Thuế GTGT mua vào".
+    - Dòng hàng chưa chọn mẫu thuế mặt hàng thì lấy mẫu dùng khi bán cho doanh nghiệp/HTX. Kế toán đã chọn thì giữ nguyên
+      (nhà cung cấp xuất thuế suất khác, hoặc không có hóa đơn GTGT thì kế toán chọn "Không chịu thuế GTGT" / xóa dòng thuế).
+    """
+    if doc.get("is_return") or doc.get("is_opening") == "Yes" or doc.get("is_internal_supplier"):
+        return
+    acc_in = _vat_in_account(doc.get("company"))
+    if not acc_in:
+        return  # hộ kinh doanh, đơn vị nội bộ: không khấu trừ thuế GTGT đầu vào
+    if not any(t.get("account_head") == acc_in for t in doc.get("taxes") or []) and doc.meta.has_field("taxes_and_charges"):
+        abbr = frappe.get_cached_value("Company", doc.company, "abbr")
+        tpl = f"{V.PURCHASE_TAX_TEMPLATE} - {abbr}"
+        if frappe.db.exists("Purchase Taxes and Charges Template", tpl) and not doc.get("taxes"):
+            doc.taxes_and_charges = tpl
+            doc.append_taxes_from_master("Purchase Taxes and Charges Template")
+    from erpnext.stock.get_item_details import get_item_tax_map
+
+    abbr = frappe.get_cached_value("Company", doc.company, "abbr")
+    for row in doc.get("items") or []:
+        if not row.get("item_code") or row.get("item_tax_template"):
+            continue
+        mau = {}
+        for r in frappe.get_all("Item Tax", {"parent": row.item_code, "parenttype": "Item"}, ["item_tax_template", "tax_category"]):
+            if r.item_tax_template and r.item_tax_template.endswith(f" - {abbr}"):
+                mau[r.tax_category or ""] = r.item_tax_template
+        if not mau:
+            g = frappe.get_cached_value("Item", row.item_code, "item_group")
+            for r in frappe.get_all("Item Tax", {"parent": g, "parenttype": "Item Group"}, ["item_tax_template", "tax_category"]):
+                if r.item_tax_template and r.item_tax_template.endswith(f" - {abbr}"):
+                    mau[r.tax_category or ""] = r.item_tax_template
+        tpl = V.mau_thue_mua_mac_dinh(mau)
+        if tpl:
+            row.item_tax_template = tpl
+            row.item_tax_rate = get_item_tax_map(doc=doc, tax_template=tpl, as_json=True)

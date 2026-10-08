@@ -33,10 +33,11 @@ _VAT = "kh_aph.vat.before_validate_sales"
 
 doc_events = {
     "Purchase Receipt": {
+        "before_validate": "kh_aph.vat.before_validate_purchase",
         "validate": ["kh_aph.price_visibility.validate_purchase_receipt", _PD],
         "before_print": _BLANK,
     },
-    "Purchase Order": {"before_print": _BLANK},
+    "Purchase Order": {"before_validate": "kh_aph.vat.before_validate_purchase", "before_print": _BLANK},
     "Stock Entry": {"validate": _PD, "before_print": _BLANK},
     "Stock Reconciliation": {"validate": _PD},
     "Serial and Batch Bundle": {"before_print": _BLANK},
@@ -74,7 +75,7 @@ doc_events = {
     "Journal Entry": {"validate": ["kh_aph.controls.validate_journal_entry", "kh_aph.thu_ho.validate", _PD],
                       "before_update_after_submit": "kh_aph.thu_ho.before_update_after_submit"},
     "Payment Entry": {"validate": "kh_aph.controls.validate_payment_entry", "before_update_after_submit": "kh_aph.controls.before_update_after_submit_payment_entry"},
-    "Purchase Invoice": {"validate": "kh_aph.controls.validate_purchase_invoice"},
+    "Purchase Invoice": {"before_validate": "kh_aph.vat.before_validate_purchase", "validate": "kh_aph.controls.validate_purchase_invoice"},
 }
 
 # 0.3: nhân viên bán hàng chỉ thấy giá của bảng giá bán.
