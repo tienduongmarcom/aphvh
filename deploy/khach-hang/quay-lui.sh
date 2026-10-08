@@ -11,7 +11,7 @@ TRUOC="$(cat "$S/phien-ban-truoc.txt")"
 echo "Sẽ quay về phiên bản $TRUOC và GHI ĐÈ dữ liệu hiện tại bằng bản sao lưu $N."
 if [ "${2:-}" != "--tu-dong" ]; then read -r -p "Gõ CO để tiếp tục: " X; [ "$X" = CO ] || { echo "Hủy"; exit 1; }; fi
 set -a; source .env; set +a
-sed -i "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$TRUOC/" .env
+sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$TRUOC/" .env \&\& rm -f .env.bak
 ./erpctl pull; ./erpctl up -d; sleep 20
 DB="$(ls "$S"/*-database.sql.gz | head -1)"; PUB="$(ls "$S"/*-files.tar | grep -v private | head -1 || true)"; PRI="$(ls "$S"/*-private-files.tar | head -1 || true)"
 ./erpctl cp "$DB" backend:/tmp/db.sql.gz

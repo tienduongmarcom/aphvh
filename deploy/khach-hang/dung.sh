@@ -51,7 +51,12 @@ set -a; source .env; set +a
 AP="$AP" ./erpctl exec -T -e AP backend bash -c 'bench new-site frontend --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password "$AP" --install-app erpnext --install-app aphvh'
 unset AP AP2
 ./erpctl exec -T backend bench --site frontend enable-scheduler
-HOST="${DOMAIN:+https://$DOMAIN}"; HOST="${HOST:-http://$(hostname -I | awk '{print $1}')}"
+# hostname -I chỉ có trên Linux: máy khác (macOS khi diễn tập) dùng localhost kèm cổng
+if [ -n "$DOMAIN" ]; then HOST="https://$DOMAIN"
+else
+  IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"; [ -n "$IP" ] || IP=localhost
+  HOST="http://$IP"; [ "${HTTP_PORT:-80}" = 80 ] || HOST="$HOST:${HTTP_PORT}"
+fi
 ./erpctl exec -T backend bench --site frontend set-config host_name "$HOST"
 # nạp cấu hình khách rồi kiểm
 ./erpctl cp khach.json backend:/tmp/khach.json
