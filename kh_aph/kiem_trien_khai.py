@@ -21,14 +21,16 @@ def kiem_cong_ty(c: dict, ok):
     ok(f"{ab} có công ty", bool(co), co)
     if not co:
         return
-    chuan = bang(loai)
+    chuan = C.bang_cua(loai)
+    hkd = loai in C.HKD
+    ten_tt = "nội bộ (bộ gọn)" if loai == "tl" else f"thông tư {c['thong_tu']}"
     so = {d.account_number: d for d in frappe.get_all("Account", {"company": co, "account_number": ["is", "set"]}, ["name", "account_number"])}
-    ok(f"{ab}: đủ tài khoản chuẩn thông tư {c['thong_tu']}", all(d["so"] in so for d in chuan), [d["so"] for d in chuan if d["so"] not in so][:10])
+    ok(f"{ab}: đủ tài khoản chuẩn {ten_tt}", all(d["so"] in so for d in chuan), [d["so"] for d in chuan if d["so"] not in so][:10])
     khong_so = [d.name for d in frappe.get_all("Account", {"company": co, "parent_account": ["is", "set"]}, ["name", "account_number"]) if not d.account_number]
     ok(f"{ab}: không còn tài khoản mẫu không số hiệu", not khong_so, khong_so[:8])
     thua = sorted(set(so) - {d["so"] for d in chuan} - {C.TK_TAM[0]} - set(CAN[loai]))
     ok(f"{ab}: không có tài khoản ngoài bảng chuẩn", not thua, thua[:10])
-    cam = ["621", "622", "623", "627", "641", "3389"] if loai == "aph" else ["3389", "3385"]
+    cam = ["621", "622", "623", "627", "641", "3389"] if loai == "aph" else ["3389", "3385"] if loai == "vh" else ["33311", "1331"]
     ok(f"{ab}: không có tài khoản cấm theo thông tư", not [k for k in cam if k in so], [k for k in cam if k in so])
     mdk = {k: s for k, s in C.mac_dinh(loai).items() if frappe.get_meta("Company").has_field(k)}
     md = frappe.db.get_value("Company", co, list(mdk), as_dict=True)
@@ -50,6 +52,8 @@ def kiem_cong_ty(c: dict, ok):
             sai.append(ten)
     ok(f"{ab}: nhóm hàng gắn đúng tài khoản kho", not sai, sai)
     ok(f"{ab}: không còn nhóm hàng mẫu ERPNext", not [g for g in C.NHOM_MAC_DINH_ERPNEXT if frappe.db.exists("Item Group", g)], "")
+    if hkd:
+        return  # hộ kinh doanh / đơn vị nội bộ: không có thu hộ 3388, không có thuế GTGT khấu trừ
     ok(f"{ab}: có tài khoản thu hộ dưới 3388", bool(frappe.db.exists("Account", {"company": co, "account_name": "Tiền thu hộ đơn vị khác"})))
     from lab9x import vat_rules as V
 

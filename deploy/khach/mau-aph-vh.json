@@ -1,16 +1,30 @@
 {
   "khach_hang": "An Phú Hưng - Vĩnh Hưng",
+  "che_do_du_lieu": "tu_nhap",
+  "ngay_chot": "2026-09-30",
   "nam_tai_chinh_bat_dau": "01-01",
   "cong_ty": [
     {
       "ten": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI VÀ XUẤT NHẬP KHẨU AN PHÚ HƯNG",
       "abbr": "APH",
-      "thong_tu": 133
+      "thong_tu": 133,
+      "mst": "2601002157"
     },
     {
-      "ten": "CÔNG TY VĨNH HƯNG",
+      "ten": "CÔNG TY CỔ PHẦN THƯƠNG MẠI VĨNH HƯNG",
       "abbr": "VH",
-      "thong_tu": 99
+      "thong_tu": 99,
+      "mst": "0500470349"
+    },
+    {
+      "ten": "HỘ KINH DOANH MINH KHANG",
+      "abbr": "MK",
+      "thong_tu": 152
+    },
+    {
+      "ten": "TL",
+      "abbr": "TL",
+      "noi_bo": true
     }
   ]
 }

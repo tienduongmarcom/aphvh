@@ -7,7 +7,8 @@ Chạy lại an toàn (chỉ bổ sung phần thiếu). Mẫu cấu hình: deplo
 import json
 import re
 
-THONG_TU = {"133": "aph", "99": "vh"}  # TT133 -> bộ tài khoản 'aph'; TT99 -> 'vh'
+THONG_TU = {"133": "aph", "99": "vh", "152": "mk"}  # TT133 -> bộ tài khoản 'aph'; TT99 -> 'vh'; TT152 (hộ kinh doanh) -> 'mk'
+# Đơn vị theo dõi nội bộ (không MST, không VAT, vd TL): khai "noi_bo": true thay cho "thong_tu" -> bộ tài khoản 'tl'.
 ABBR_RE = re.compile(r"^[A-Z0-9]{2,6}$")
 NAM_TC_RE = re.compile(r"^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$")
 # Cách đưa dữ liệu vào hệ thống của khách:
@@ -53,15 +54,18 @@ def kiem_cau_hinh(cfg: dict) -> list:
         elif ab in thay_abbr:
             loi.append(f"công ty #{i}: trùng viết tắt {ab}")
         thay_abbr.add(ab)
-        if str(c.get("thong_tu")) not in THONG_TU:
-            loi.append(f"công ty #{i}: 'thong_tu' phải là 133 hoặc 99")
+        if c.get("noi_bo"):
+            if c.get("thong_tu") or c.get("mst"):
+                loi.append(f"công ty #{i}: đơn vị nội bộ không khai 'thong_tu' và 'mst'")
+        elif str(c.get("thong_tu")) not in THONG_TU:
+            loi.append(f"công ty #{i}: 'thong_tu' phải là 133, 99 hoặc 152 (hoặc khai \"noi_bo\": true)")
         if any(k in c for k in ("nha_may", "kho_them", "ten_nha_may")):
             loi.append(f"công ty #{i}: từ 0.8.0 không khai kho trong cấu hình (khách tự tạo kho trên giao diện)")
     return loi
 
 
 def loai_cua(c: dict) -> str:
-    return THONG_TU[str(c["thong_tu"])]
+    return "tl" if c.get("noi_bo") else THONG_TU[str(c["thong_tu"])]
 
 
 def doc_cau_hinh(duong_dan: str) -> dict:
@@ -120,6 +124,8 @@ def ap_dung(duong_dan: str = None, cfg: dict = None) -> list:
             ten = c["ten"]
         if c.get("mst"):
             frappe.db.set_value("Company", ten, "tax_id", c["mst"])
+        if c.get("noi_bo") and frappe.get_meta("Company").has_field("kh_aph_noi_bo"):
+            frappe.db.set_value("Company", ten, "kh_aph_noi_bo", 1)  # đơn vị theo dõi nội bộ: không VAT, ô "Khách lấy hóa đơn" luôn Không
         nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else None
         # nhóm hàng khai theo tài khoản số hiệu: chuyển tk (số hiệu) giữ nguyên, bộ cài tra tài khoản theo số hiệu
         ket_qua.append(C.cai(ten, loai_cua(c), nhom))

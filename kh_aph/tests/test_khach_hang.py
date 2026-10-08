@@ -12,7 +12,7 @@ class TestKhachHang(unittest.TestCase):
     def test_mau_hop_le(self):
         cfg = json.load(open(MAU, encoding="utf-8"))
         self.assertEqual(K.kiem_cau_hinh(cfg), [])
-        self.assertEqual([K.loai_cua(c) for c in cfg["cong_ty"]], ["aph", "vh"])
+        self.assertEqual([K.loai_cua(c) for c in cfg["cong_ty"]], ["aph", "vh", "mk", "tl"])
 
     def test_khong_khai_kho(self):
         loi = K.kiem_cau_hinh({"khach_hang": "k", "cong_ty": [{"ten": "A", "abbr": "AB", "thong_tu": 99, "nha_may": True}]})
@@ -22,7 +22,7 @@ class TestKhachHang(unittest.TestCase):
         loi = K.kiem_cau_hinh({"cong_ty": [{"ten": "A", "abbr": "a", "thong_tu": 200, "kho_them": [{"ten": "x"}]}, {"ten": "A", "abbr": "A1", "thong_tu": 99}]})
         self.assertTrue(any("khach_hang" in x for x in loi))
         self.assertTrue(any("abbr" in x for x in loi))
-        self.assertTrue(any("133 hoặc 99" in x for x in loi))
+        self.assertTrue(any("133, 99 hoặc 152" in x for x in loi))
         self.assertTrue(any("không khai kho" in x for x in loi))
         self.assertTrue(any("trùng tên" in x for x in loi))
 
@@ -52,3 +52,20 @@ class TestKhachHang(unittest.TestCase):
                 thay += 1
                 self.assertEqual(K.kiem_cau_hinh(json.load(open(f, encoding="utf-8"))), [], ten)
         self.assertGreaterEqual(thay, 1)
+
+
+class TestHkdNoiBo(unittest.TestCase):
+    def test_noi_bo_va_hkd(self):
+        co = {"khach_hang": "k", "cong_ty": [{"ten": "H", "abbr": "MK", "thong_tu": 152}, {"ten": "T", "abbr": "TL", "noi_bo": True}]}
+        self.assertEqual(K.kiem_cau_hinh(co), [])
+        self.assertEqual([K.loai_cua(c) for c in co["cong_ty"]], ["mk", "tl"])
+        sai = {"khach_hang": "k", "cong_ty": [{"ten": "T", "abbr": "TL", "noi_bo": True, "mst": "123"}]}
+        self.assertTrue(any("nội bộ" in x for x in K.kiem_cau_hinh(sai)))
+
+    def test_bang_va_mac_dinh_hkd(self):
+        for loai in ("mk", "tl"):
+            self.assertEqual(C.kiem_mac_dinh(loai), [], loai)
+            self.assertEqual(C.kiem_nhom_hang(loai), [], loai)
+            so = {d["so"] for d in C.bang_cua(loai)}
+            self.assertIn("3318", so)
+            self.assertNotIn("33311", so)  # hộ kinh doanh / nội bộ không có thuế GTGT khấu trừ

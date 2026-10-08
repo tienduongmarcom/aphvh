@@ -21,9 +21,30 @@ MAC_DINH_CHUNG = {
 }
 MAC_DINH_KHO = {"aph": "156", "vh": "1561"}
 
+# Hộ kinh doanh (TT152) và đơn vị nội bộ: bộ tài khoản gọn của lõi (lab9x.hkd_accounts) + tài khoản app cần thêm.
+HKD = ("mk", "tl")
+# Hàng về chưa có hóa đơn: ERPNext bắt buộc khi bật tồn kho vĩnh viễn (phiếu nhập trước hóa đơn mua).
+HKD_THEM = [{"so": "3318", "ten": "Hàng về chưa có hóa đơn", "cha": None, "nhom": 0, "root": "Liability", "loai_tk": "Stock Received But Not Billed"}]
+MAC_DINH_HKD_THEM = {"stock_received_but_not_billed": "3318", "exchange_gain_loss_account": "6428",
+                     "write_off_account": "6428", "round_off_account": "6428"}
+
+
+def bang_cua(loai: str) -> list:
+    """Bảng tài khoản chuẩn của loại đơn vị (thuần): aph/vh theo thông tư; mk/tl theo bộ gọn hộ kinh doanh."""
+    if loai not in HKD:
+        return bang(loai)
+    from lab9x.hkd_accounts import ACCOUNTS
+
+    return [{"so": so, "ten": ten, "cha": cha, "nhom": nhom, "root": root, "loai_tk": typ, "nguon": "DN"}
+            for so, ten, root, typ, cha, nhom in ACCOUNTS] + HKD_THEM
+
 
 def mac_dinh(loai: str) -> dict:
     """Trường mặc định công ty -> số hiệu (thuần). Tồn kho mặc định: APH 156, VH 1561 (hàng cụ thể lấy theo nhóm hàng)."""
+    if loai in HKD:
+        from lab9x.hkd_accounts import DEFAULTS
+
+        return {**DEFAULTS, **MAC_DINH_HKD_THEM}
     d = dict(MAC_DINH_CHUNG)
     d["default_inventory_account"] = MAC_DINH_KHO[loai]
     return d
@@ -31,7 +52,7 @@ def mac_dinh(loai: str) -> dict:
 
 def kiem_mac_dinh(loai: str) -> list:
     """Thuần: mọi số hiệu mặc định phải có trong bảng chuẩn và là tài khoản chi tiết."""
-    ds = {x["so"]: x for x in bang(loai)}
+    ds = {x["so"]: x for x in bang_cua(loai)}
     loi = []
     for truong, so in mac_dinh(loai).items():
         if so not in ds:
@@ -53,12 +74,14 @@ NHOM_HANG = {
             ("DD - Sản phẩm dở dang", "15411"), ("PTSC - Phụ tùng, vật tư thay thế", "1524"), ("CCDC - Công cụ, dụng cụ", "153"),
             ("DV - Dịch vụ", None), ("TS - Tài sản cố định", None)],
     "vh": [("HH - Hàng hóa", "1561"), ("CCDC - Công cụ, dụng cụ", "153"), ("DV - Dịch vụ", None), ("TS - Tài sản cố định", None)],
+    "mk": [("HH - Hàng hóa", "1561"), ("DV - Dịch vụ", None)],
+    "tl": [("HH - Hàng hóa", "1561"), ("DV - Dịch vụ", None)],
 }
 
 
 def kiem_nhom_hang(loai: str) -> list:
     """Thuần: tài khoản kho của nhóm hàng phải là tài khoản chi tiết loại Stock trong bảng chuẩn."""
-    ds = {x["so"]: x for x in bang(loai)}
+    ds = {x["so"]: x for x in bang_cua(loai)}
     loi = []
     for ten, so in NHOM_HANG[loai]:
         if so and (so not in ds or ds[so]["nhom"] or ds[so]["loai_tk"] != "Stock"):
@@ -169,19 +192,19 @@ def _don_mau_thue_va_thanh_toan(company: str, co: dict):
 
 
 def cai(company: str, loai: str = None, nhom_hang: list = None) -> dict:
-    """loai: 'aph' (TT133) hoặc 'vh' (TT99); bỏ trống thì suy từ viết tắt công ty."""
+    """loai: 'aph' (TT133), 'vh' (TT99), 'mk' (hộ kinh doanh TT152), 'tl' (đơn vị nội bộ); bỏ trống thì suy từ viết tắt công ty."""
     import frappe
 
     abbr = frappe.db.get_value("Company", company, "abbr")
     loai = loai or loai_don_vi(abbr)
     kq = {"company": company, "loai": loai, "tao": 0, "bo": 0, "canh_bao": []}
-    if loai not in ("aph", "vh"):
+    if loai not in ("aph", "vh") + HKD:
         return kq
     co = {d.account_number: d.name for d in frappe.get_all("Account", {"company": company, "account_number": ["is", "set"]},
                                                            ["name", "account_number"])}
     goc = {d.root_type: d.name for d in frappe.get_all("Account", {"company": company, "parent_account": ["is", "not set"]},
                                                       ["name", "root_type"])}
-    chuan = bang(loai) + [{"so": TK_TAM[0], "ten": TK_TAM[1], "cha": None, "nhom": 0, "root": TK_TAM[2], "loai_tk": TK_TAM[3]}]
+    chuan = bang_cua(loai) + [{"so": TK_TAM[0], "ten": TK_TAM[1], "cha": None, "nhom": 0, "root": TK_TAM[2], "loai_tk": TK_TAM[3]}]
     # 1) tạo tài khoản chuẩn còn thiếu
     for d in chuan:
         if d["so"] in co:
