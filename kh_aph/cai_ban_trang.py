@@ -79,6 +79,17 @@ NHOM_HANG = {
 }
 
 
+LOAI_HINH = ("thuong_mai", "san_xuat")
+TK_THUONG_MAI = ("156", "1561", "153", None)  # khách thuần thương mại chỉ cần Hàng hóa, Công cụ dụng cụ, Dịch vụ, Tài sản
+NHOM_MAC_DINH = "HH - Hàng hóa"  # nhóm điền sẵn khi tạo mã hàng mới
+
+
+def nhom_theo_loai_hinh(loai: str, loai_hinh: str = None) -> list:
+    """Nhóm hàng cấp 1 app tạo cho công ty (thuần). Thương mại: bỏ Nguyên liệu, Thành phẩm, Dở dang... cho đỡ rối."""
+    ds = NHOM_HANG[loai]
+    return [(t, so) for t, so in ds if so in TK_THUONG_MAI] if loai_hinh == "thuong_mai" else list(ds)
+
+
 def kiem_nhom_hang(loai: str) -> list:
     """Thuần: tài khoản kho của nhóm hàng phải là tài khoản chi tiết loại Stock trong bảng chuẩn."""
     ds = {x["so"]: x for x in bang_cua(loai)}
@@ -116,6 +127,9 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str, nhom_hang: list = None)
                 frappe.get_doc({"doctype": "Item Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
                                 "parent": ten, "company": company, "default_inventory_account": co[so]}).insert(ignore_permissions=True)
     _bo_kho_mau(company, abbr)
+    if frappe.db.exists("Item Group", NHOM_MAC_DINH) and not frappe.db.get_single_value("Stock Settings", "item_group"):
+        frappe.db.set_single_value("Stock Settings", "item_group", NHOM_MAC_DINH)
+        frappe.db.set_default("item_group", NHOM_MAC_DINH)  # mã hàng mới điền sẵn nhóm Hàng hóa
     frappe.db.commit()
     return kq
 
@@ -138,6 +152,10 @@ def _bo_kho_mau(company: str, abbr: str):
             frappe.db.set_value("Company", company, f.fieldname, None)
     for r in frappe.get_all("Item Default", {"default_warehouse": ["in", list(mau)]}, ["name"]):
         frappe.db.set_value("Item Default", r.name, "default_warehouse", None)
+    # giá trị mặc định hệ thống (ERPNext dùng để điền sẵn kho trên form): bỏ nếu trỏ vào kho mẫu
+    for d in frappe.get_all("DefaultValue", {"defvalue": ["in", list(mau)]}, ["name", "parent", "defkey"]):
+        frappe.db.delete("DefaultValue", {"name": d.name})
+    frappe.clear_cache()
     for n in sorted(mau):
         if frappe.db.exists("Warehouse", n):
             frappe.db.savepoint("xoa_kho")

@@ -30,19 +30,6 @@ def validate_journal_entry(doc, method=None):
         frappe.throw(R.stock_account_message(bad), title="Không ghi tay vào tài khoản kho")
 
 
-def validate_item(doc, method=None):
-    if doc.is_new() or not doc.has_value_changed("item_group"):
-        return
-    if frappe.db.exists("Stock Ledger Entry", {"item_code": doc.name, "is_cancelled": 0}):
-        old = doc.get_doc_before_save().item_group if doc.get_doc_before_save() else ""
-        frappe.throw(
-            f"Mã {frappe.bold(doc.name)} đã có giao dịch kho nên không đổi nhóm hàng ({old} → {doc.item_group}). "
-            "Tài khoản kho lấy theo nhóm hàng: đổi nhóm sẽ làm số dư nằm ở tài khoản cũ. "
-            "Muốn đổi: tạo mã mới ở nhóm đúng và chuyển tồn bằng Phiếu kho (đổi mã).",
-            title="Không đổi nhóm hàng",
-        )
-
-
 def validate_posting_date(doc, method=None):
     if doc.doctype not in R.POSTING_DATE_DOCTYPES:
         return

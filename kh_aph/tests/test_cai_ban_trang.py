@@ -20,3 +20,13 @@ class TestCaiBanTrang(unittest.TestCase):
         for loai in ("aph", "vh"):
             self.assertEqual(c.kiem_nhom_hang(loai), [], loai)
         self.assertFalse(hasattr(c, "cay_nha_may"))  # 0.8.0: không tạo cây kho, khách tự tạo
+
+
+class TestLoaiHinh(unittest.TestCase):
+    def test_thuong_mai_gon(self):
+        tm = [t for t, _ in c.nhom_theo_loai_hinh("aph", "thuong_mai")]
+        self.assertIn("HH - Hàng hóa", tm)
+        self.assertNotIn("TP - Thành phẩm", tm)
+        self.assertNotIn("NL - Nguyên liệu", tm)
+        self.assertEqual(len(c.nhom_theo_loai_hinh("aph")), len(c.NHOM_HANG["aph"]))
+        self.assertEqual(c.NHOM_MAC_DINH, c.NHOM_HANG["aph"][0][0])

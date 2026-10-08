@@ -44,7 +44,7 @@ def kiem_cong_ty(c: dict, ok):
     tro = sorted({r.default_warehouse for r in frappe.get_all("Item Default", {"company": co, "default_warehouse": ["is", "set"]}, ["default_warehouse"])
                   if frappe.db.get_value("Warehouse", r.default_warehouse, "disabled") or frappe.db.get_value("Warehouse", r.default_warehouse, "company") != co})
     ok(f"{ab}: kho mặc định của nhóm hàng / mã hàng không trỏ vào kho ngừng dùng hoặc của công ty khác", not tro, tro)
-    nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else C.NHOM_HANG[loai]
+    nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else C.nhom_theo_loai_hinh(loai, c.get("loai_hinh"))
     sai = []
     for ten, s in nhom:
         g = frappe.db.get_value("Item Default", {"parent": ten, "company": co}, "default_inventory_account")
@@ -78,6 +78,9 @@ def chay(duong_dan: str = None, ra: str = None, cfg: dict = None) -> list:
     ok("Bước thiết lập ban đầu xong", frappe.is_setup_complete())
     kmd = frappe.db.get_single_value("Stock Settings", "default_warehouse")
     ok("Cài đặt kho: kho mặc định trống hoặc là kho đang dùng", not kmd or not frappe.db.get_value("Warehouse", kmd, "disabled"), kmd or "")
+    hong = [f"{d.defkey}={d.defvalue}" for d in frappe.get_all("DefaultValue", {"defkey": ["like", "%warehouse%"]}, ["defkey", "defvalue"])
+            if d.defvalue and (not frappe.db.exists("Warehouse", d.defvalue) or frappe.db.get_value("Warehouse", d.defvalue, "disabled"))]
+    ok("Giá trị mặc định hệ thống không trỏ vào kho đã xóa / ngừng dùng", not hong, hong)
     for c in cfg["cong_ty"]:
         kiem_cong_ty(c, ok)
     if ra:

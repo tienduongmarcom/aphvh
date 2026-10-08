@@ -68,7 +68,6 @@ class TestHooks(unittest.TestCase):
 
     def test_wired(self):
         self.assertTrue(self._has("Journal Entry", "validate", "kh_aph.controls.validate_journal_entry"))
-        self.assertTrue(self._has("Item", "validate", "kh_aph.controls.validate_item"))
         self.assertTrue(self._has("Sales Invoice", "validate", "kh_aph.controls.validate_sales_invoice"))
         self.assertTrue(self._has("Sales Invoice", "on_submit", "kh_aph.controls.sales_invoice_on_submit"))
         self.assertTrue(self._has("Payment Entry", "validate", "kh_aph.controls.validate_payment_entry"))

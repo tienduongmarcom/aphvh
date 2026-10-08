@@ -54,6 +54,8 @@ def kiem_cau_hinh(cfg: dict) -> list:
         elif ab in thay_abbr:
             loi.append(f"công ty #{i}: trùng viết tắt {ab}")
         thay_abbr.add(ab)
+        if c.get("loai_hinh") and c["loai_hinh"] not in ("thuong_mai", "san_xuat"):
+            loi.append(f"công ty #{i}: 'loai_hinh' phải là thuong_mai hoặc san_xuat")
         if c.get("noi_bo"):
             if c.get("thong_tu") or c.get("mst"):
                 loi.append(f"công ty #{i}: đơn vị nội bộ không khai 'thong_tu' và 'mst'")
@@ -126,7 +128,7 @@ def ap_dung(duong_dan: str = None, cfg: dict = None) -> list:
             frappe.db.set_value("Company", ten, "tax_id", c["mst"])
         if c.get("noi_bo") and frappe.get_meta("Company").has_field("kh_aph_noi_bo"):
             frappe.db.set_value("Company", ten, "kh_aph_noi_bo", 1)  # đơn vị theo dõi nội bộ: không VAT, ô "Khách lấy hóa đơn" luôn Không
-        nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else None
+        nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else C.nhom_theo_loai_hinh(loai_cua(c), c.get("loai_hinh"))
         # nhóm hàng khai theo tài khoản số hiệu: chuyển tk (số hiệu) giữ nguyên, bộ cài tra tài khoản theo số hiệu
         ket_qua.append(C.cai(ten, loai_cua(c), nhom))
     frappe.db.commit()

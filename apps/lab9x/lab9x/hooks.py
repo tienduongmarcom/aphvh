@@ -7,5 +7,12 @@ app_license = "Proprietary"
 
 required_apps = ["erpnext"]
 
-# 0.1.0: lõi mới chỉ chứa quy tắc thuần (không móc vào ERPNext). Các hook (doc_events, mẫu in,
-# báo cáo, custom field) sẽ chuyển dần từ app khách sang đây ở các đợt sau, kèm patch chuyển dữ liệu.
+# Hook dùng chung cho mọi khách. Các hook còn ở app khách (kh_*) sẽ chuyển dần về đây.
+doc_events = {
+    # Nhóm hàng và tài khoản kho (lab9x/nhom_hang.py)
+    "Item Group": {
+        "after_insert": "lab9x.nhom_hang.item_group_after_insert",
+        "validate": "lab9x.nhom_hang.item_group_validate",
+    },
+    "Item": {"validate": "lab9x.nhom_hang.item_validate"},
+}

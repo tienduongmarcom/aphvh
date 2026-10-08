@@ -41,8 +41,8 @@ doc_events = {
     "Stock Entry": {"validate": _PD, "before_print": _BLANK},
     "Stock Reconciliation": {"validate": _PD},
     "Serial and Batch Bundle": {"before_print": _BLANK},
-    # 0.3.4: không đổi nhóm hàng khi mã đã có giao dịch kho (tài khoản kho theo nhóm hàng).
-    "Item": {"validate": "kh_aph.controls.validate_item", "before_print": _BLANK},
+    # Đổi nhóm hàng / tài khoản kho của nhóm: quy tắc ở lõi lab9x (lab9x/nhom_hang.py).
+    "Item": {"before_print": _BLANK},
     # 0.3: cảnh báo công nợ/giá khi lưu và xác nhận đơn; hóa đơn nháp tự tạo từ phiếu giao hàng;
     # thủ kho chỉ giao theo đơn; ẩn giá vốn trên bản in với nhân viên bán hàng, thủ kho.
     # 0.3.1: có/không xuất hóa đơn GTGT (Không = bỏ thuế) chạy trước cảnh báo công nợ.
