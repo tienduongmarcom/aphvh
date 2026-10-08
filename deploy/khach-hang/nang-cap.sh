@@ -30,10 +30,10 @@ for f in database.sql.gz files.tar private-files.tar site_config_backup.json; do
 done
 printf '%s\n' "$CU" > "sao-luu/$NGAY/phien-ban-truoc.txt"
 echo "2/5 Đổi phiên bản $CU -> $MOI"
-sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$MOI/" .env \&\& rm -f .env.bak
+sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$MOI/" .env && rm -f .env.bak
 # Kéo image mới lỗi (tag không có, mạng, quyền ghi ghcr) thì CHƯA migrate gì: chỉ trả phiên bản về như cũ, không cần khôi phục dữ liệu.
 if ! ./erpctl pull; then
-  sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$CU/" .env \&\& rm -f .env.bak; ./erpctl up -d
+  sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$CU/" .env && rm -f .env.bak; ./erpctl up -d
   echo "KÉO IMAGE $MOI LỖI. Đã giữ nguyên phiên bản $CU, dữ liệu không bị đổi."; exit 2
 fi
 ./erpctl up -d
