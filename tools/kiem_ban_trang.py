@@ -46,10 +46,12 @@ for ab, co in cty.items():
     sai = {k: (md.get(k), so[s].name) for k, s in mdk.items() if s in so and md.get(k) != so[s].name}
     ok(f"B5 {ab}: tài khoản mặc định đúng", not sai, sai)
     ok(f"B6 {ab}: tồn kho vĩnh viễn + theo mặt hàng", bool(frappe.db.get_value("Company", co, "enable_perpetual_inventory")) and bool(frappe.db.get_value("Company", co, "enable_item_wise_inventory_account")))
-    kho = {w.warehouse_name for w in frappe.get_all("Warehouse", {"company": co, "disabled": 0}, ["warehouse_name"])}
-    ok(f"B7 {ab}: có kho địa điểm + Hàng đang vận chuyển", {"Hà Nội", "Kho bán hàng Hà Nội", "Kho Đà Nẵng", "Kho Hồ Chí Minh", "Hàng đang vận chuyển"} <= kho)
-    ok(f"B8 {ab}: nhà máy {'có' if loai == 'aph' else 'không có'}", (C.NHA_MAY in kho) == (loai == "aph") and ({"Kho nguyên liệu đỗ", "Kho thành phẩm đỗ"} <= kho) == (loai == "aph"))
-    ok(f"B9 {ab}: không còn kho mẫu ERPNext", not (kho & set(C.KHO_MAC_DINH_ERPNEXT)), kho & set(C.KHO_MAC_DINH_ERPNEXT))
+    tro = sorted({r.default_warehouse for r in frappe.get_all("Item Default", {"company": co, "default_warehouse": ["is", "set"]}, ["default_warehouse"])
+                  if frappe.db.get_value("Warehouse", r.default_warehouse, "disabled") or frappe.db.get_value("Warehouse", r.default_warehouse, "company") != co})
+    ok(f"B7 {ab}: kho mặc định nhóm hàng không trỏ vào kho ngừng dùng / khác công ty", not tro, tro)
+    ok(f"B8 {ab}: Cài đặt kho không trỏ vào kho mẫu", frappe.db.get_single_value("Stock Settings", "default_warehouse") not in {f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT}, frappe.db.get_single_value("Stock Settings", "default_warehouse"))
+    con = [f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT if frappe.db.exists("Warehouse", f"{t} - {ab}")]
+    ok(f"B9 {ab}: không còn kho mẫu ERPNext (kể cả kho đã ngừng dùng)", not con, con)
     nh = {}
     for ten, s in C.NHOM_HANG[loai]:
         g = frappe.db.get_value("Item Default", {"parent": ten, "company": co}, "default_inventory_account")

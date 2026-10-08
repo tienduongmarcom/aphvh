@@ -36,7 +36,12 @@ def kiem_cong_ty(c: dict, ok):
     ok(f"{ab}: tài khoản mặc định đúng", not sai, sai)
     ok(f"{ab}: tồn kho vĩnh viễn + theo mặt hàng", bool(frappe.db.get_value("Company", co, "enable_perpetual_inventory")) and bool(frappe.db.get_value("Company", co, "enable_item_wise_inventory_account")))
     kho = {w.warehouse_name for w in frappe.get_all("Warehouse", {"company": co, "disabled": 0}, ["warehouse_name"])}
-    ok(f"{ab}: không còn kho mẫu ERPNext", not (kho & set(C.KHO_MAC_DINH_ERPNEXT)), kho & set(C.KHO_MAC_DINH_ERPNEXT))
+    mau = {f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT}
+    con = [w for w in mau if frappe.db.exists("Warehouse", w)]
+    ok(f"{ab}: không còn kho mẫu ERPNext (kể cả kho đã ngừng dùng)", not con, con)
+    tro = sorted({r.default_warehouse for r in frappe.get_all("Item Default", {"company": co, "default_warehouse": ["is", "set"]}, ["default_warehouse"])
+                  if frappe.db.get_value("Warehouse", r.default_warehouse, "disabled") or frappe.db.get_value("Warehouse", r.default_warehouse, "company") != co})
+    ok(f"{ab}: kho mặc định của nhóm hàng / mã hàng không trỏ vào kho ngừng dùng hoặc của công ty khác", not tro, tro)
     nhom = [(n["ten"], n.get("tk")) for n in c["nhom_hang"]] if c.get("nhom_hang") else C.NHOM_HANG[loai]
     sai = []
     for ten, s in nhom:
@@ -67,6 +72,8 @@ def chay(duong_dan: str = None, ra: str = None, cfg: dict = None) -> list:
 
     ok("Đã cài app kh_aph", "kh_aph" in frappe.get_installed_apps(), kh_aph.__version__)
     ok("Bước thiết lập ban đầu xong", frappe.is_setup_complete())
+    kmd = frappe.db.get_single_value("Stock Settings", "default_warehouse")
+    ok("Cài đặt kho: kho mặc định trống hoặc là kho đang dùng", not kmd or not frappe.db.get_value("Warehouse", kmd, "disabled"), kmd or "")
     for c in cfg["cong_ty"]:
         kiem_cong_ty(c, ok)
     if ra:

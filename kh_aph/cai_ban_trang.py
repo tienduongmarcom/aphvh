@@ -75,16 +75,6 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str, nhom_hang: list = None)
     for f in ("enable_perpetual_inventory", "enable_item_wise_inventory_account"):
         if frappe.get_meta("Company").has_field(f):
             frappe.db.set_value("Company", company, f, 1)
-    for ten in KHO_MAC_DINH_ERPNEXT:  # kho mẫu của ERPNext, bỏ nếu chưa dùng
-        n = f"{ten} - {abbr}"
-        if frappe.db.exists("Warehouse", n):
-            frappe.db.savepoint("xoa_kho")
-            try:
-                frappe.db.set_value("Company", company, "default_in_transit_warehouse", None) if n.startswith("Goods In") else None
-                frappe.delete_doc("Warehouse", n, ignore_permissions=True)
-            except Exception:
-                frappe.db.rollback(save_point="xoa_kho")
-                frappe.db.set_value("Warehouse", n, "disabled", 1)  # đã có liên kết: ngừng sử dụng thay vì xóa
     for ten in NHOM_MAC_DINH_ERPNEXT:
         if frappe.db.exists("Item Group", ten) and not frappe.db.exists("Item", {"item_group": ten}):
             frappe.db.savepoint("xoa_nhom")
@@ -102,8 +92,37 @@ def cai_kho_nhom_hang(company: str, co: dict, loai: str, nhom_hang: list = None)
             if not any(r.company == company for r in g.get("item_group_defaults") or []):
                 frappe.get_doc({"doctype": "Item Default", "parenttype": "Item Group", "parentfield": "item_group_defaults",
                                 "parent": ten, "company": company, "default_inventory_account": co[so]}).insert(ignore_permissions=True)
+    _bo_kho_mau(company, abbr)
     frappe.db.commit()
     return kq
+
+
+def _bo_kho_mau(company: str, abbr: str):
+    """Bỏ kho mẫu ERPNext (Stores, Work In Progress...) của công ty. Trước khi xóa, gỡ mọi chỗ ERPNext tự trỏ vào chúng
+    (Cài đặt kho, kho mặc định của công ty, kho mặc định của nhóm hàng) để xóa được hẳn; nếu không, mã hàng mới sẽ tự
+    nhận kho đã ngừng dùng và phiếu kho báo lỗi. Khách tự tạo cây kho và tự chọn kho mặc định sau."""
+    import frappe
+
+    mau = {f"{ten} - {abbr}" for ten in KHO_MAC_DINH_ERPNEXT}
+    for dt in ("Stock Settings", "Manufacturing Settings", "Selling Settings", "Buying Settings"):
+        if not frappe.db.exists("DocType", dt):
+            continue
+        for f in frappe.get_meta(dt).fields:
+            if f.options == "Warehouse" and frappe.db.get_single_value(dt, f.fieldname) in mau:
+                frappe.db.set_single_value(dt, f.fieldname, None)
+    for f in frappe.get_meta("Company").fields:
+        if f.options == "Warehouse" and frappe.db.get_value("Company", company, f.fieldname) in mau:
+            frappe.db.set_value("Company", company, f.fieldname, None)
+    for r in frappe.get_all("Item Default", {"default_warehouse": ["in", list(mau)]}, ["name"]):
+        frappe.db.set_value("Item Default", r.name, "default_warehouse", None)
+    for n in sorted(mau):
+        if frappe.db.exists("Warehouse", n):
+            frappe.db.savepoint("xoa_kho")
+            try:
+                frappe.delete_doc("Warehouse", n, ignore_permissions=True)
+            except Exception:
+                frappe.db.rollback(save_point="xoa_kho")
+                frappe.db.set_value("Warehouse", n, "disabled", 1)  # đã có giao dịch: ngừng sử dụng thay vì xóa
 
 
 def gan_tk_cho_nhom_con(company: str) -> int:
