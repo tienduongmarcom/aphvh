@@ -24,7 +24,8 @@ T_5, T_8, T_10 = "GTGT 5%", "GTGT 8%", "GTGT 10%"
 VAT_TEMPLATES = ((T_KKKTN, 0.0), (T_KCT, 0.0), (T_5, 5.0), (T_8, 8.0), (T_10, 10.0))
 SALES_TAX_TEMPLATE = "Thuế GTGT bán ra"  # mẫu thuế bán hàng (Sales Taxes and Charges Template)
 VAT_ACCOUNT_NUMBER = "33311"
-# Mua vào (bán thế nào mua thế ấy): mỗi mẫu thuế mặt hàng có thêm dòng 1331 cùng thuế suất; mẫu thuế mua hàng ghi 1331.
+# Mua vào: mỗi mẫu thuế mặt hàng có thêm dòng 1331 cùng thuế suất để kế toán CHỌN trên phiếu mua (app không tự điền);
+# mẫu thuế mua hàng "Thuế GTGT mua vào" (mặc định) ghi 1331.
 VAT_IN_ACCOUNT_NUMBER = "1331"
 PURCHASE_TAX_TEMPLATE = "Thuế GTGT mua vào"
 
@@ -136,14 +137,3 @@ def choose_category(doc_choice, customer_category) -> str | None:
     """Loại thuế áp cho chứng từ: kế toán chọn trên chứng từ thắng; trống thì lấy theo hồ sơ khách."""
     return (doc_choice or "").strip() or (customer_category or "").strip() or None
 
-
-def mau_thue_mua_mac_dinh(mau_theo_loai: dict) -> str | None:
-    """Mẫu thuế mặt hàng dùng cho phiếu mua khi kế toán chưa chọn (thuần).
-
-    mau_theo_loai: {loại khách: tiêu đề mẫu} lấy từ bảng thuế của mặt hàng. Mua từ nhà cung cấp lấy theo
-    thuế suất khi BÁN cho doanh nghiệp/HTX (bán thế nào mua thế ấy); không có thì lấy mẫu duy nhất nếu chỉ có một.
-    """
-    if mau_theo_loai.get(CAT_DN):
-        return mau_theo_loai[CAT_DN]
-    khac = {v for v in mau_theo_loai.values() if v}
-    return khac.pop() if len(khac) == 1 else None

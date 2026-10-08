@@ -30,14 +30,16 @@ boot_session = ["kh_aph.price_visibility.boot_session"]
 _BLANK = "kh_aph.price_visibility.blank_prices_for_print"
 _PD = "kh_aph.controls.validate_posting_date"
 _VAT = "kh_aph.vat.before_validate_sales"
+_VAT_MUA = "kh_aph.vat.before_validate_purchase"  # chỉ gắn dòng thuế 1331, không chọn thuế suất
+_TK_THUE = "kh_aph.vat.validate_tai_khoan_thue"  # chặn nhầm 33311 trên phiếu mua / 1331 trên phiếu bán
 
 doc_events = {
     "Purchase Receipt": {
-        "before_validate": "kh_aph.vat.before_validate_purchase",
-        "validate": ["kh_aph.price_visibility.validate_purchase_receipt", _PD],
+        "before_validate": _VAT_MUA,
+        "validate": ["kh_aph.price_visibility.validate_purchase_receipt", _PD, _TK_THUE],
         "before_print": _BLANK,
     },
-    "Purchase Order": {"before_validate": "kh_aph.vat.before_validate_purchase", "before_print": _BLANK},
+    "Purchase Order": {"before_validate": _VAT_MUA, "validate": _TK_THUE, "before_print": _BLANK},
     "Stock Entry": {"validate": _PD, "before_print": _BLANK},
     "Stock Reconciliation": {"validate": _PD},
     "Serial and Batch Bundle": {"before_print": _BLANK},
@@ -50,12 +52,12 @@ doc_events = {
     "Customer": {"validate": "kh_aph.vat.validate_customer"},
     "Sales Order": {
         "before_validate": _VAT,
-        "validate": ["kh_aph.invoice_flag.apply_invoice_flag", "kh_aph.sales_warnings.validate_sales_order"],
+        "validate": ["kh_aph.invoice_flag.apply_invoice_flag", "kh_aph.sales_warnings.validate_sales_order", _TK_THUE],
         "before_print": _BLANK,
     },
     "Delivery Note": {
         "before_validate": _VAT,
-        "validate": ["kh_aph.invoice_flag.apply_invoice_flag", "kh_aph.sales_flow.validate_delivery_note", _PD],
+        "validate": ["kh_aph.invoice_flag.apply_invoice_flag", "kh_aph.sales_flow.validate_delivery_note", _PD, _TK_THUE],
         "on_submit": "kh_aph.sales_flow.make_draft_invoice",
         "on_cancel": "kh_aph.sales_flow.remove_draft_invoices",
         "before_print": _BLANK,
@@ -67,6 +69,7 @@ doc_events = {
             "kh_aph.invoice_flag.apply_invoice_flag",
             "kh_aph.invoice_flag.validate_einvoice",
             "kh_aph.controls.validate_sales_invoice",
+            _TK_THUE,
         ],
         "on_submit": "kh_aph.controls.sales_invoice_on_submit",
         "before_update_after_submit": "kh_aph.invoice_flag.validate_einvoice",
@@ -75,7 +78,7 @@ doc_events = {
     "Journal Entry": {"validate": ["kh_aph.controls.validate_journal_entry", "kh_aph.thu_ho.validate", _PD],
                       "before_update_after_submit": "kh_aph.thu_ho.before_update_after_submit"},
     "Payment Entry": {"validate": "kh_aph.controls.validate_payment_entry", "before_update_after_submit": "kh_aph.controls.before_update_after_submit_payment_entry"},
-    "Purchase Invoice": {"before_validate": "kh_aph.vat.before_validate_purchase", "validate": "kh_aph.controls.validate_purchase_invoice"},
+    "Purchase Invoice": {"before_validate": _VAT_MUA, "validate": ["kh_aph.controls.validate_purchase_invoice", _TK_THUE]},
 }
 
 # 0.3: nhân viên bán hàng chỉ thấy giá của bảng giá bán.

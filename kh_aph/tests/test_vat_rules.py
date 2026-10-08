@@ -93,7 +93,7 @@ class TestHooks(unittest.TestCase):
         tree = ast.parse((APP / "hooks.py").read_text())
         env = {}
         for node in tree.body:
-            if isinstance(node, ast.Assign) and node.targets[0].id in ("_BLANK", "_PD", "_VAT", "doc_events"):
+            if isinstance(node, ast.Assign) and node.targets[0].id in ("_BLANK", "_PD", "_VAT", "_VAT_MUA", "_TK_THUE", "doc_events"):
                 exec(compile(ast.Module([node], []), "hooks", "exec"), env)
         ev = env["doc_events"]
         for dt in ("Sales Order", "Delivery Note", "Sales Invoice"):
@@ -103,3 +103,11 @@ class TestHooks(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestThueMuaKhongTuChon(unittest.TestCase):
+    def test_khong_tu_chon_thue_suat(self):
+        src = (pathlib.Path(__file__).resolve().parents[1] / "vat.py").read_text(encoding="utf-8")
+        ham = src[src.index("def before_validate_purchase"):src.index("def validate_tai_khoan_thue")]
+        self.assertNotIn("item_tax_template =", ham)  # chỉ gắn dòng 1331, kế toán tự chọn thuế suất
+        self.assertIn('set_single_value("Accounts Settings", "add_taxes_from_item_tax_template", 0)', src)

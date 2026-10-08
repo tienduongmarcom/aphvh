@@ -18,7 +18,7 @@ Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu`
 - **Ngày chốt 30/09/2026**: số dư đến hết 30/09 mang sang; chứng từ từ 01/10 nhập từng phiếu (các phiếu 01/10 đến ngày đi vào sử dụng phải nhập bù).
 - Máy chủ: dùng lại `erpnext-prod` trên GCloud (chưa có dữ liệu thật, được xóa để dựng lại bằng quy trình mới).
 - Ô "Khách lấy hóa đơn" mở cho khách dùng trước, đóng khi khách hoàn thiện. Hóa đơn điện tử vẫn lập trên MISA.
-- Thuế GTGT mua vào: mẫu thuế mặt hàng có dòng 1331 cùng thuế suất; phiếu mua tự lấy thuế suất như khi bán cho doanh nghiệp (kế toán sửa được theo hóa đơn thực tế).
+- Thuế GTGT mua vào: phiếu mua tự có dòng "Thuế GTGT mua vào" (1331) nhưng **kế toán tự chọn thuế suất** từng dòng theo hóa đơn nhà cung cấp (chưa chọn thì thuế = 0). App chặn nhầm chiều: 33311 trên phiếu mua, 1331 trên phiếu bán. Tắt "tự thêm dòng thuế theo mẫu thuế mặt hàng" của ERPNext để không tính thuế hai lần.
 - Nhóm hàng (lõi `lab9x`): nhóm con tự lấy tài khoản kho của cha; cảnh báo nhóm chưa có tài khoản; cho đổi nhóm cùng tài khoản; chặn đổi tài khoản của nhóm đã có phát sinh; `loai_hinh: thuong_mai` chỉ tạo Hàng hóa, CCDC, Dịch vụ, Tài sản; mã hàng mới mặc định nhóm Hàng hóa.
 - Phát hành phải qua Cổng 1 (unit test), Cổng 2 (site trắng), **Cổng 2b** (diễn tập dung.sh, nang-cap.sh, ca lỗi, quay-lui.sh trên Linux amd64).
 

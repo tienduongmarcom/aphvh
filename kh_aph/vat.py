@@ -146,6 +146,10 @@ def ensure_vat_templates() -> list:
     """Mẫu thuế mặt hàng (dòng 33311 bán ra + dòng 1331 mua vào cùng thuế suất), mẫu thuế bán hàng và mẫu thuế mua hàng
     cho công ty có TK 33311 (hộ KD, đơn vị nội bộ không có: bỏ qua). Chạy lại an toàn, mẫu đã có thì chỉ bổ sung dòng 1331."""
     ensure_tax_categories()
+    # Mẫu thuế mặt hàng có 2 dòng (33311 bán ra, 1331 mua vào): tắt "tự thêm dòng thuế theo mẫu thuế mặt hàng" của ERPNext,
+    # nếu không phiếu chưa có bảng thuế sẽ bị thêm CẢ HAI dòng (thuế tính hai lần). Thuế suất chỉ áp vào dòng đã có trên phiếu.
+    if frappe.db.get_single_value("Accounts Settings", "add_taxes_from_item_tax_template"):
+        frappe.db.set_single_value("Accounts Settings", "add_taxes_from_item_tax_template", 0)
     made = []
     for co, abbr in frappe.get_all("Company", fields=["name", "abbr"], as_list=True):
         acc = _vat_account(co)
@@ -312,39 +316,31 @@ def default_root_rules() -> list:
 
 
 def before_validate_purchase(doc, method=None):
-    """Đơn mua / phiếu nhập / hóa đơn mua: thuế GTGT đầu vào 1331 theo thuế suất của mặt hàng (bán thế nào mua thế ấy).
+    """Đơn mua / phiếu nhập / hóa đơn mua: chỉ bảo đảm phiếu có dòng thuế "Thuế GTGT mua vào" (1331).
 
-    - Chưa có dòng thuế 1331 thì gắn mẫu "Thuế GTGT mua vào".
-    - Dòng hàng chưa chọn mẫu thuế mặt hàng thì lấy mẫu dùng khi bán cho doanh nghiệp/HTX. Kế toán đã chọn thì giữ nguyên
-      (nhà cung cấp xuất thuế suất khác, hoặc không có hóa đơn GTGT thì kế toán chọn "Không chịu thuế GTGT" / xóa dòng thuế).
+    KHÔNG tự chọn thuế suất: kế toán chọn "Mẫu thuế mặt hàng" từng dòng theo hóa đơn của nhà cung cấp
+    (thuế suất đổi theo năm, theo nhà cung cấp, có hóa đơn hay không). Chưa chọn thì thuế = 0.
     """
-    if doc.get("is_return") or doc.get("is_opening") == "Yes" or doc.get("is_internal_supplier"):
+    if doc.get("is_return") or doc.get("is_opening") == "Yes" or doc.get("is_internal_supplier") or doc.get("taxes"):
         return
     acc_in = _vat_in_account(doc.get("company"))
-    if not acc_in:
+    if not acc_in or not doc.meta.has_field("taxes_and_charges"):
         return  # hộ kinh doanh, đơn vị nội bộ: không khấu trừ thuế GTGT đầu vào
-    if not any(t.get("account_head") == acc_in for t in doc.get("taxes") or []) and doc.meta.has_field("taxes_and_charges"):
-        abbr = frappe.get_cached_value("Company", doc.company, "abbr")
-        tpl = f"{V.PURCHASE_TAX_TEMPLATE} - {abbr}"
-        if frappe.db.exists("Purchase Taxes and Charges Template", tpl) and not doc.get("taxes"):
-            doc.taxes_and_charges = tpl
-            doc.append_taxes_from_master("Purchase Taxes and Charges Template")
-    from erpnext.stock.get_item_details import get_item_tax_map
-
     abbr = frappe.get_cached_value("Company", doc.company, "abbr")
-    for row in doc.get("items") or []:
-        if not row.get("item_code") or row.get("item_tax_template"):
-            continue
-        mau = {}
-        for r in frappe.get_all("Item Tax", {"parent": row.item_code, "parenttype": "Item"}, ["item_tax_template", "tax_category"]):
-            if r.item_tax_template and r.item_tax_template.endswith(f" - {abbr}"):
-                mau[r.tax_category or ""] = r.item_tax_template
-        if not mau:
-            g = frappe.get_cached_value("Item", row.item_code, "item_group")
-            for r in frappe.get_all("Item Tax", {"parent": g, "parenttype": "Item Group"}, ["item_tax_template", "tax_category"]):
-                if r.item_tax_template and r.item_tax_template.endswith(f" - {abbr}"):
-                    mau[r.tax_category or ""] = r.item_tax_template
-        tpl = V.mau_thue_mua_mac_dinh(mau)
-        if tpl:
-            row.item_tax_template = tpl
-            row.item_tax_rate = get_item_tax_map(doc=doc, tax_template=tpl, as_json=True)
+    tpl = f"{V.PURCHASE_TAX_TEMPLATE} - {abbr}"
+    if frappe.db.exists("Purchase Taxes and Charges Template", tpl):
+        doc.taxes_and_charges = tpl
+        doc.append_taxes_from_master("Purchase Taxes and Charges Template")
+
+
+def validate_tai_khoan_thue(doc, method=None):
+    """Chặn nhầm chiều thuế: phiếu mua không ghi thuế đầu ra 33311, phiếu bán không ghi thuế đầu vào 1331."""
+    ban = doc.doctype in ("Sales Order", "Delivery Note", "Sales Invoice", "Quotation")
+    so_cam = V.VAT_IN_ACCOUNT_NUMBER if ban else V.VAT_ACCOUNT_NUMBER
+    for t in doc.get("taxes") or []:
+        if t.get("account_head") and frappe.db.get_value("Account", t.account_head, "account_number") == so_cam:
+            frappe.throw(
+                f"Dòng thuế {t.idx}: {frappe.bold(t.account_head)} là thuế GTGT {'đầu vào' if ban else 'đầu ra'}, "
+                f"không dùng trên {'phiếu bán' if ban else 'phiếu mua'}. Xóa dòng này; thuế {'bán ra ghi 33311' if ban else 'mua vào ghi 1331'}.",
+                title="Nhầm tài khoản thuế GTGT",
+            )

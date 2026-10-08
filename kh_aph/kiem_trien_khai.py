@@ -81,6 +81,7 @@ def chay(duong_dan: str = None, ra: str = None, cfg: dict = None) -> list:
     hong = [f"{d.defkey}={d.defvalue}" for d in frappe.get_all("DefaultValue", {"defkey": ["like", "%warehouse%"]}, ["defkey", "defvalue"])
             if d.defvalue and (not frappe.db.exists("Warehouse", d.defvalue) or frappe.db.get_value("Warehouse", d.defvalue, "disabled"))]
     ok("Giá trị mặc định hệ thống không trỏ vào kho đã xóa / ngừng dùng", not hong, hong)
+    ok("Không tự thêm dòng thuế theo mẫu thuế mặt hàng (tránh tính thuế hai lần)", not frappe.db.get_single_value("Accounts Settings", "add_taxes_from_item_tax_template"))
     for c in cfg["cong_ty"]:
         kiem_cong_ty(c, ok)
     if ra:
