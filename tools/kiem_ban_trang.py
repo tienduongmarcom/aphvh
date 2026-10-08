@@ -5,10 +5,10 @@ frappe.init(site=site, sites_path="."); frappe.connect(); frappe.set_user("Admin
 R = []
 def ok(ma, dat, ghi=""):
     R.append((ma, "ĐẠT" if dat else "KHÔNG ĐẠT", str(ghi))); print(ma, "ĐẠT" if dat else "KHÔNG ĐẠT", ghi)
-import aphvh
-from aphvh import cai_ban_trang as C, tai_khoan_chuan as T
-from aphvh.bang_tai_khoan import bang
-print("   phiên bản aphvh", aphvh.__version__)
+import kh_aph
+from kh_aph import cai_ban_trang as C, tai_khoan_chuan as T
+from lab9x.bang_tai_khoan import bang
+print("   phiên bản kh_aph", kh_aph.__version__)
 print("   số công ty có sẵn:", frappe.db.count("Company"))
 if not frappe.is_setup_complete():
     from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
@@ -62,7 +62,7 @@ for ab, co in cty.items():
     t = T.setup(co)
     ok(f"B13 {ab}: bộ kiểm tài khoản chuẩn cũ vẫn đạt", not t["thieu"], t["thieu"] or t["viec"])
     ok(f"B14 {ab}: có tài khoản thu hộ dưới 3388", bool(frappe.db.exists("Account", {"company": co, "account_name": T.TEN_TK_THU_HO})), t["canh_bao"])
-    from aphvh import vat_rules as V
+    from lab9x import vat_rules as V
     ok(f"B14b {ab}: có mẫu thuế GTGT theo thuế suất", all(frappe.db.exists("Item Tax Template", f"{ti} - {ab}") for ti, _ in V.VAT_TEMPLATES) and bool(frappe.db.exists("Sales Taxes and Charges Template", f"{V.SALES_TAX_TEMPLATE} - {ab}")))
     ok(f"B15 {ab}: nhận diện công ty theo viết tắt", T.loai_don_vi(frappe.db.get_value("Company", co, "abbr")) == loai)
 # nhóm con thừa kế tài khoản kho

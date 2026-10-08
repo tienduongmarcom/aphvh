@@ -1,4 +1,4 @@
-# aphvh — tùy biến ERPNext cho An Phú Hưng và Vĩnh Hưng
+# kh_aph — tùy biến ERPNext cho An Phú Hưng và Vĩnh Hưng
 
 App riêng chạy trên ERPNext v16.
 
@@ -91,7 +91,7 @@ quyền xuất Excel và đọc Tài khoản/Trung tâm chi phí/Dự án. Bản
 ## Cấu trúc
 
 ```
-aphvh/
+kh_aph/
   hooks.py            khai báo extend_doctype_class, after_install, after_migrate
   constants.py        tên loại phiếu, mã quy tắc, đơn vị Kg
   costing_rules.py    phép chia thuần (kiểm thử không cần Frappe)
@@ -104,8 +104,8 @@ aphvh/
   sales_flow.py       0.3: hóa đơn nháp tự tạo từ phiếu giao hàng, thủ kho chỉ giao theo đơn
   vn_words.py         đọc số tiền bằng chữ, định dạng số kiểu Việt Nam (thuần Python)
   public/js/          ẩn cột giá trên màn hình (nạp qua doctype_js, không cần build)
-  aph_vh/print_format mẫu in 01-VT, 02-VT, phiếu sản xuất, phiếu xuất kho bán hàng, biên bản giao nhận
-  aph_vh/report       báo cáo Tồn kho số lượng APH
+  kh_aph/print_format mẫu in 01-VT, 02-VT, phiếu sản xuất, phiếu xuất kho bán hàng, biên bản giao nhận
+  kh_aph/report       báo cáo Tồn kho số lượng APH
   tests/              kiểm thử đơn vị
 tools/build_print_formats.py   ghép .html/.css vào .json mẫu in
 Dockerfile            dựng bản cài ERPNext kèm app
@@ -115,25 +115,25 @@ Dockerfile            dựng bản cài ERPNext kèm app
 
 ```bash
 # 1. Lấy mã nguồn đúng phiên bản đã nghiệm thu
-git clone git@github.com:<chu-so-huu>/aphvh.git && cd aphvh && git checkout v0.1.0
+git clone git@github.com:<chu-so-huu>/kh_aph.git && cd kh_aph && git checkout v0.1.0
 
 # 2. Dựng bản cài (tự chạy kiểm thử đơn vị trong lúc dựng)
-docker build -t aphvh-erpnext:0.1.0 .
+docker build -t kh-aph-erpnext:0.1.0 .
 
 # 3. Trong tệp compose, đổi mọi dòng "image: frappe/erpnext:v16.36.1" thành
-#    "image: aphvh-erpnext:0.1.0", rồi khởi động lại (configurator tự cập nhật apps.txt)
+#    "image: kh-aph-erpnext:0.1.0", rồi khởi động lại (configurator tự cập nhật apps.txt)
 docker compose -p <du-an> -f <tep-compose> up -d
 
 # 4. Cài app vào site
-docker exec <du-an>-backend-1 bench --site frontend install-app aphvh
+docker exec <du-an>-backend-1 bench --site frontend install-app kh_aph
 ```
 
-Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app aphvh`
+Sao lưu site trước bước 3. Gỡ app: `bench --site frontend uninstall-app kh_aph`
 (phiếu đã gửi vẫn giữ nguyên giá trị trên sổ).
 
 ## 0.2.2–0.2.3 – bản dịch chốt cho màn hình kế toán trưởng
 
-- `aphvh/translations/vi.csv`: 686 chuỗi (0.2.3 thêm 7 nút bấm, trong đó "Update Rate and Availability" đang dịch sai là tỷ giá) (Frappe nạp sau ERPNext nên đè bản dịch chính thức), sinh từ
+- `kh_aph/translations/vi.csv`: 686 chuỗi (0.2.3 thêm 7 nút bấm, trong đó "Update Rate and Availability" đang dịch sai là tỷ giá) (Frappe nạp sau ERPNext nên đè bản dịch chính thức), sinh từ
   `tools/translation/export_csv.py` theo bảng đã rà 3 vòng và anh Tiến chốt 29/09. Không ghi bản ghi Translation vào CSDL;
   gỡ app là về bản dịch gốc.
 - Sau khi cài: migrate (xóa bộ nhớ đệm bản dịch), mỗi người bấm Ctrl+Shift+R.
@@ -234,7 +234,7 @@ ERPNext ghi mọi lần bán thật; MISA chỉ ghi lần bán có hóa đơn đ
 # Sao lưu site trước
 docker exec <du-an>-backend-1 bench --site frontend backup
 # Dựng bản mới (tự chạy kiểm thử đơn vị)
-docker build -t aphvh-erpnext:0.2.1 .
+docker build -t kh-aph-erpnext:0.2.1 .
 # Đổi image trong tệp compose sang bản mới, khởi động lại, rồi migrate để nạp mẫu in,
 # báo cáo, vai trò, quyền và custom field
 docker compose -p <du-an> -f <tep-compose> up -d
@@ -244,5 +244,5 @@ docker exec <du-an>-backend-1 bench --site frontend migrate
 ## Kiểm thử
 
 ```bash
-python -m unittest aphvh.tests.test_costing_rules aphvh.tests.test_vn_words aphvh.tests.test_print_formats aphvh.tests.test_translations aphvh.tests.test_sales_rules -v
+python -m unittest kh_aph.tests.test_costing_rules kh_aph.tests.test_vn_words kh_aph.tests.test_print_formats kh_aph.tests.test_translations kh_aph.tests.test_sales_rules -v
 ```

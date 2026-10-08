@@ -1,4 +1,4 @@
 # Phiên bản image đang chạy cho khách này (đổi file này bằng pull request = nâng cấp).
 khach: aph-vh
-image_tag: "0.7.0"
+image_tag: "0.8.0"
 moi_truong: uat   # uat | production

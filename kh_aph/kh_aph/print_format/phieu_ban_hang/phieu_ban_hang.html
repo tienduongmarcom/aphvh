@@ -1,0 +1,93 @@
+{#- Phiếu bán hàng in từ Hóa đơn bán hàng (Sales Invoice) — giao khách kèm hàng, KHÔNG thay hóa đơn GTGT
+    (hóa đơn điện tử xuất trên MISA). Có xuất hóa đơn: cột thuế suất (KKKNT / 5% / 8%…) và tiền thuế từng dòng.
+    Không xuất hóa đơn: không có thuế. Có công nợ của khách tại lúc in (trừ khách vãng lai chung, phiếu trả hàng). -#}
+{%- set cty = kh_aph_cong_ty(doc.company) -%}
+{%- set bh = kh_aph_ban_hang(doc) -%}
+{%- set tra = doc.is_return -%}
+{%- set cham = ".............................." -%}
+{%- set tong = (doc.rounded_total or doc.grand_total) -%}
+<div class="aph-vt">
+<table class="aph-head"><tr>
+  <td><b>{{ cty.ten }}</b>{% if cty.dia_chi %}<br>{{ cty.dia_chi }}{% endif %}{% if cty.mst %}<br>MST: {{ cty.mst }}{% endif %}</td>
+  <td class="aph-mau"></td>
+</tr></table>
+<table class="aph-title"><tr>
+  <td class="aph-center">
+    <div class="aph-name">{{ "PHIẾU NHẬN LẠI HÀNG BÁN" if tra else "PHIẾU BÁN HÀNG" }}</div>
+    <div>Số: {{ doc.name }} &nbsp;–&nbsp; <span class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</span></div>
+    {%- if doc.kh_aph_hd_so %}
+    <div>Hóa đơn điện tử: ký hiệu {{ doc.kh_aph_hd_ky_hieu or "" }}, số {{ doc.kh_aph_hd_so }}</div>
+    {%- endif %}
+  </td>
+</tr></table>
+
+<div class="aph-info">
+  <div>Khách hàng: <b>{{ doc.customer_name }}</b>{% if doc.tax_id %} &nbsp; MST: {{ doc.tax_id }}{% endif %}</div>
+  {%- if doc.kh_aph_ten_nguoi_mua or doc.kh_aph_sdt_nguoi_mua %}
+  <div>Người mua: {{ doc.kh_aph_ten_nguoi_mua or "" }}{% if doc.kh_aph_sdt_nguoi_mua %} &nbsp; Điện thoại: {{ doc.kh_aph_sdt_nguoi_mua }}{% endif %}</div>
+  {%- endif %}
+  <div>Địa chỉ: {{ kh_aph_dia_chi(doc.shipping_address or doc.address_display) or cham }}</div>
+  {%- if tra and doc.return_against %}<div>Nhận lại hàng của hóa đơn số {{ doc.return_against }}</div>{% endif %}
+</div>
+
+<table class="aph-tbl">
+  <thead>
+    <tr>
+      <th class="c-stt">STT</th>
+      <th>Tên hàng hóa</th>
+      <th class="c-dvt">ĐVT</th>
+      <th class="c-sl">Số lượng</th>
+      <th class="c-tien">Đơn giá</th>
+      <th class="c-tien">Thành tiền</th>
+      {%- if bh.co_thue %}
+      <th class="c-dvt">Thuế suất</th>
+      <th class="c-tien">Tiền thuế</th>
+      {%- endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {%- for row in doc.items %}
+    {%- set t = bh.dong[loop.index0] %}
+    <tr>
+      <td class="c">{{ loop.index }}</td>
+      <td>{{ row.item_name }}{% if row.batch_no %}<br><small>Lô: {{ row.batch_no }}</small>{% endif %}</td>
+      <td class="c">{{ row.uom }}</td>
+      <td class="r">{{ kh_aph_so(row.qty | abs) }}</td>
+      <td class="r">{{ kh_aph_so(t.don_gia, 0) }}</td>
+      <td class="r">{{ kh_aph_so(t.thanh_tien | abs, 0) }}</td>
+      {%- if bh.co_thue %}
+      <td class="c">{{ t.nhan }}</td>
+      <td class="r">{{ kh_aph_so(t.thue | abs, 0) }}</td>
+      {%- endif %}
+    </tr>
+  {%- endfor %}
+  </tbody>
+</table>
+<table class="aph-tbl aph-tong">
+  {%- if bh.co_thue %}
+  <tr><td class="l">Cộng tiền hàng</td><td class="r">{{ kh_aph_so(doc.net_total | abs, 0) }}</td></tr>
+  <tr><td class="l">Tiền thuế GTGT</td><td class="r">{{ kh_aph_so(doc.total_taxes_and_charges | abs, 0) }}</td></tr>
+  {%- endif %}
+  {%- if doc.discount_amount %}
+  <tr><td class="l">Chiết khấu</td><td class="r">{{ kh_aph_so(doc.discount_amount | abs, 0) }}</td></tr>
+  {%- endif %}
+  <tr class="aph-sum"><td class="l">Tổng cộng {{ "tiền trả lại" if tra else "thanh toán" }}</td><td class="r">{{ kh_aph_so(tong | abs, 0) }}</td></tr>
+</table>
+<div class="aph-info">
+  <div>Số tiền viết bằng chữ: <i>{{ kh_aph_bang_chu(tong | abs) }}</i></div>
+  {%- if bh.no %}
+  <div class="aph-sec">Công nợ tại thời điểm in</div>
+  <div>- Nợ trước phiếu này: {{ kh_aph_so(bh.no.cu, 0) }} đ</div>
+  <div>- Phiếu này còn nợ: {{ kh_aph_so(bh.no.con_no_hd, 0) }} đ</div>
+  <div>- <b>Tổng nợ: {{ kh_aph_so(bh.no.tong, 0) }} đ</b></div>
+  {%- endif %}
+  <div><i>Phiếu này không thay thế hóa đơn giá trị gia tăng.</i></div>
+</div>
+
+<div class="aph-sign-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
+<table class="aph-sign"><tr>
+  <td><b>{{ "Người trả hàng" if tra else "Người mua hàng" }}</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ "Người nhận hàng" if tra else "Người giao hàng" }}</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ kh_aph_ten_nguoi(doc.owner) }}</div></td>
+</tr></table>
+</div>

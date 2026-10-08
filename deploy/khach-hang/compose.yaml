@@ -1,5 +1,5 @@
 # Khuôn Docker Compose cho một khách (mỗi khách một máy / một thư mục). Gốc: frappe/frappe_docker commit 654c067add9d39191ac174d75525bc537c7602ce,
-# đã dùng cho máy erpnext-prod. Image app lấy từ CUSTOM_IMAGE:CUSTOM_TAG (ghcr.io/.../aphvh-erpnext:<phiên bản>).
+# đã dùng cho máy erpnext-prod. Image app lấy từ CUSTOM_IMAGE:CUSTOM_TAG (ghcr.io/.../kh-aph-erpnext:<phiên bản>).
 x-customizable-image: &customizable_image
   image: ${CUSTOM_IMAGE:-frappe/erpnext}:${CUSTOM_TAG:-$ERPNEXT_VERSION}
   pull_policy: ${PULL_POLICY:-always}

@@ -6,7 +6,7 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   pull_request:
-    paths: ["aphvh/**", "apps/**", "khach/**", "Dockerfile", ".github/workflows/cong-2-site-trang.yml"]
+    paths: ["kh_aph/**", "apps/**", "khach/**", "Dockerfile", ".github/workflows/cong-2-site-trang.yml"]
 permissions:
   contents: read
 env:
@@ -38,7 +38,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: aphvh-erpnext:cong2
+          tags: kh-aph-erpnext:cong2
           build-args: ERPNEXT_IMAGE=${{ env.ERPNEXT_IMAGE }}
       - name: Khởi động MariaDB và Redis
         run: |
@@ -47,14 +47,14 @@ jobs:
           for i in $(seq 1 40); do docker exec db mariadb -uroot -proot -P13306 -h127.0.0.1 -e 'select 1' >/dev/null 2>&1 && break; sleep 3; done
       - name: Tạo site trắng, nạp cấu hình khách, kiểm
         run: |
-          docker run --rm --network host -v "$PWD/khach/${{ matrix.khach }}/khach.json:/tmp/khach.json:ro" aphvh-erpnext:cong2 bash -ec '
+          docker run --rm --network host -v "$PWD/khach/${{ matrix.khach }}/khach.json:/tmp/khach.json:ro" kh-aph-erpnext:cong2 bash -ec '
             bench set-config -g db_host 127.0.0.1
             bench set-config -g db_port 13306
             bench set-config -g redis_cache redis://127.0.0.1:16379
             bench set-config -g redis_queue redis://127.0.0.1:16379
             bench set-config -g redis_socketio redis://127.0.0.1:16379
-            bench new-site test.localhost --db-root-username root --db-root-password root --admin-password admin --install-app erpnext --install-app lab9x --install-app aphvh --mariadb-user-host-login-scope="%"
-            bench --site test.localhost execute aphvh.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}"
-            bench --site test.localhost execute aphvh.kiem_trien_khai.chay --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}" | tee /tmp/kiem.txt
+            bench new-site test.localhost --db-root-username root --db-root-password root --admin-password admin --install-app erpnext --install-app lab9x --install-app kh_aph --mariadb-user-host-login-scope="%"
+            bench --site test.localhost execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}"
+            bench --site test.localhost execute kh_aph.kiem_trien_khai.chay --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}" | tee /tmp/kiem.txt
             grep -q "KHÔNG ĐẠT: 0" /tmp/kiem.txt
           '

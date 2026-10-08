@@ -13,18 +13,19 @@ Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên 
 Lộ trình: tuần 1 Cổng 2b + workflow triển khai + dựng UAT khách đầu tiên; tuần 2 công cụ import/kiểm dữ liệu + dữ liệu giả, khách UAT và ký, mở production; sau đó theme, `khach-moi`, cảnh báo.
 Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu` và `ngay_chot`, tên miền; anh tự thêm khóa SSH triển khai vào GitHub Secrets.
 
-## Cấu trúc app từ 0.7.0
-- **`lab9x` (9xLab)**: lõi dùng chung, nằm ở `apps/lab9x` của repo. Hiện chứa các quy tắc thuần: hệ thống tài khoản TT133/TT99, thuế GTGT, hộ kinh doanh TT152, mẫu in (quy tắc), kiểm soát kế toán, cảnh báo bán hàng, bên thứ ba, thu hộ, tồn kho theo tài khoản, đọc số bằng chữ.
-- **`aphvh`**: app riêng của khách An Phú Hưng - Vĩnh Hưng (đóng vai trò `kh_aph`), phụ thuộc `lab9x`. Giữ tên `aphvh` vì đổi tên app đã cài trên site đang chạy rủi ro cao. Các đường dẫn cũ (`aphvh.vn_words`...) trỏ sang lõi nên site cũ không vỡ.
-- **0.7.0 bỏ chữ "APH"** khỏi vai trò (Kế toán nhà máy, Nhân viên bán hàng, Thủ kho bán hàng), 6 mẫu in và 3 báo cáo. Patch `aphvh.patches.v0_7.doi_ten_bo_chu_aph` tự đổi trên site đang chạy khi migrate: người dùng giữ vai trò, quyền, mẫu in mặc định đi theo. Đã chạy thật trên site có dữ liệu cũ.
-- **Đợt sau:** chuyển phần gắn vào ERPNext (doc_events, custom field, mẫu in, báo cáo) từ `aphvh` sang `lab9x`; đưa cây kho, nhóm hàng, viết tắt công ty vào `khach.json`; tách luồng chỉ APH có (đơn vị chuyển tiếp TL).
-- Nâng cấp site cũ lên 0.7.0: `nang-cap.sh` tự cài `lab9x` vào site trước khi migrate.
+## Cấu trúc app (từ 0.8.0)
+- **`lab9x` (9xLab)**: lõi dùng chung, ở `apps/lab9x` của repo: hệ thống tài khoản TT133/TT99, thuế GTGT, hộ kinh doanh TT152, quy tắc mẫu in, kiểm soát kế toán, cảnh báo bán hàng, bên thứ ba, thu hộ, tồn kho theo tài khoản, đọc số bằng chữ.
+- **`kh_aph`**: app riêng của khách An Phú Hưng - Vĩnh Hưng (đổi tên từ `aphvh`), phụ thuộc `lab9x`. Khách sau đặt tên `kh_<ten>`.
+- **Dữ liệu trắng:** app không tạo kho; khách tự tạo cây kho trên giao diện. Cấu hình khách không còn mục kho (`nha_may`, `kho_them`). App vẫn dựng hệ thống tài khoản chuẩn, nhóm hàng cấp 1 gắn tài khoản kho, mẫu thuế, tài khoản mặc định, bỏ kho/nhóm/tài khoản mẫu của ERPNext.
+- Vai trò, mẫu in, báo cáo không còn chữ "APH": Kế toán nhà máy, Nhân viên bán hàng, Thủ kho bán hàng; Phiếu nhập kho, Phiếu kho, Phiếu xuất kho bán hàng, Biên bản giao nhận, Phiếu thu chi, Phiếu bán hàng; Tồn kho số lượng, Bán hàng có hóa đơn, Tổng hợp bán hàng theo khách.
+- **`kh_aph` chỉ cài mới trên site trắng.** Site cũ chạy `aphvh` (8086, 8081, máy chủ erpnext-prod) giữ nguyên image cũ, không nâng cấp lên `kh_aph`. Image mới tên `kh-aph-erpnext`.
+- Đợt sau: chuyển phần gắn vào ERPNext dùng chung (doc_events, custom field, mẫu in, báo cáo) từ `kh_aph` sang `lab9x`; tách phần chỉ APH có (đơn vị chuyển tiếp TL).
 
 ## Vai trò từng phần
 | Phần | Ở đâu | Việc |
 |---|---|---|
 | App `aphvh` + bộ cài | repo GitHub | chuẩn thông tư, kho, thu hộ, in ấn, bộ cài bản trắng |
-| Cấu hình + phiên bản của khách | `khach/<khach>/khach.json`, `phien-ban.yaml` | công ty, thông tư 133/99, kho, `che_do_du_lieu`, `ngay_chot`; image tag đang chạy |
+| Cấu hình + phiên bản của khách | `khach/<khach>/khach.json`, `phien-ban.yaml` | công ty, thông tư 133/99, `che_do_du_lieu`, `ngay_chot`; image tag đang chạy |
 | Cổng 2 | `.github/workflows/cong-2-site-trang.yml` | với MỌI thư mục khách: dựng site trắng theo config rồi chạy bộ kiểm |
 | Phát hành image | `.github/workflows/phat-hanh.yml` | tag `v0.6.2` -> unit test -> **Cổng 2 phải đạt** -> image `ghcr.io/<chủ>/aphvh-erpnext:0.6.2` |
 | Khuôn máy chủ | `deploy/khach-hang/` | compose, `dung.sh`, `nang-cap.sh` (tự quay lui), `quay-lui.sh`, `erpctl` |
@@ -40,7 +41,7 @@ Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu`
 Chung cho cả hai: ngày chốt (`ngay_chot`, trước = số dư, sau = phiếu; bắt buộc ở chế độ import), khách tự chạy bộ "Kiểm tra dữ liệu" chỉ đọc, môi trường **UAT** (dữ liệu giả, khách thử và ký biên bản) rồi mới mở **production trắng**. Tài khoản của mình trên production tắt, chỉ bật khi khách cho phép. Dữ liệu gốc khách gửi (chế độ import) xóa theo thời hạn thỏa thuận, giữ báo cáo đối chiếu.
 
 ## Khách mới (khoảng 20–30 phút phần dựng, phần lớn là chờ)
-1. Sao `khach/aph-vh/` thành `khach/<khach>/`, sửa `khach.json` (tên, viết tắt, `thong_tu`, `nha_may`, `kho_them`, `che_do_du_lieu`, `ngay_chot`) và `phien-ban.yaml`. Mở pull request: Cổng 2 tự chạy cho khách mới.
+1. Sao `khach/aph-vh/` thành `khach/<khach>/`, sửa `khach.json` (tên, viết tắt, `thong_tu`, `che_do_du_lieu`, `ngay_chot`) và `phien-ban.yaml`. Mở pull request: Cổng 2 tự chạy cho khách mới.
 2. Tạo máy ảo (Ubuntu 22.04/24.04, amd64, 4 GB RAM+, ổ 50 GB, mở cổng 80/443), cài Docker, `docker login ghcr.io` bằng token chỉ đọc gói.
 3. Chép `deploy/khach-hang/` và `khach.json` lên máy, chạy `./dung.sh <khach> <phien-ban> ./khach.json [ten-mien]` (tạo `.env` mật khẩu ngẫu nhiên, dựng dịch vụ, tạo site, cài `erpnext` + `aphvh`, nạp cấu hình, chạy bộ kiểm). Dựng **UAT** trước, production sau khi khách ký.
 4. Cài sao lưu tự động (`deploy/cloud/README.md`), thêm tên miền (HTTPS tự động).

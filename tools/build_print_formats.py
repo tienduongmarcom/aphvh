@@ -7,7 +7,7 @@ Kiểm thử tests/test_print_formats.py báo lỗi nếu .json lệch với ngu
 import json
 import pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
+ROOT = pathlib.Path(__file__).resolve().parents[1] / "kh_aph" / "kh_aph" / "print_format"
 # Frappe chỉ nạp lại mẫu in khi "modified" mới hơn bản trên site: sửa mẫu nào thì tăng mốc này.
 MODIFIED = "2026-10-08 14:00:00.000000"
 
@@ -44,7 +44,7 @@ def build_doc(folder: str) -> dict:
         "margin_top": 12.0,
         "modified": MODIFIED,
         "modified_by": "Administrator",
-        "module": "APH VH",
+        "module": "Kh Aph",
         "name": name,
         "owner": "Administrator",
         "page_number": "Hide",

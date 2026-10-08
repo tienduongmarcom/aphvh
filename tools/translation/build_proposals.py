@@ -3,7 +3,7 @@
 import json, re, polib, openpyxl
 from collections import OrderedDict
 
-H = '/tmp/claude-0/-home-claude-aphvh/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
+H = '/tmp/claude-0/-home-claude-kh_aph/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
 WB = '/root/.claude/uploads/d2acb522-ba05-58f5-8225-01c43da2a258/219ec697-ERPNext2VI_Cumulative_Translation_Step2.9_FULL_AUDIT_2026-09-29.xlsx'
 
 def po(p):

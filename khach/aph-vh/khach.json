@@ -6,65 +6,12 @@
     {
       "ten": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI VÀ XUẤT NHẬP KHẨU AN PHÚ HƯNG",
       "abbr": "APH",
-      "thong_tu": 133,
-      "nha_may": true,
-      "ten_nha_may": "Nhà máy An Phú Hưng",
-      "kho_them": [
-        {
-          "ten": "Kho nguyên liệu đỗ",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho nguyên liệu bột",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho nguyên liệu dầu",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho nguyên vật liệu phồng tôm",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho NVL đậu gói",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho nguyên vật liệu hàng hóa",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho bao bì các loại",
-          "cha": "NL"
-        },
-        {
-          "ten": "Kho thành phẩm đỗ",
-          "cha": "TP"
-        },
-        {
-          "ten": "Kho thành phẩm phồng tôm",
-          "cha": "TP"
-        },
-        {
-          "ten": "Kho thành phẩm bột",
-          "cha": "TP"
-        },
-        {
-          "ten": "Kho thành phẩm dầu",
-          "cha": "TP"
-        },
-        {
-          "ten": "Kho thành phẩm đậu gói",
-          "cha": "TP"
-        }
-      ]
+      "thong_tu": 133
     },
     {
       "ten": "CÔNG TY VĨNH HƯNG",
       "abbr": "VH",
-      "thong_tu": 99,
-      "nha_may": false
+      "thong_tu": 99
     }
   ]
 }

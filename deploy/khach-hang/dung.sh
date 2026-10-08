@@ -2,7 +2,7 @@
 # Dựng hệ thống cho MỘT khách trên máy này (Docker đã cài, đã docker login ghcr.io nếu image riêng tư).
 # Dùng:  ./dung.sh <ten-khach-viet-lien> <phien-ban-image> <duong-dan-cau-hinh.json> [ten-mien]
 # Ví dụ: ./dung.sh aph-vh 0.6.2 ./khach.json erp.congty.vn
-# Biến môi trường tùy chọn: CUSTOM_IMAGE (mặc định ghcr.io/tienduongmarcom/aphvh-erpnext), HTTP_PORT (mặc định 80), HTTP_BIND (mặc định 0.0.0.0)
+# Biến môi trường tùy chọn: CUSTOM_IMAGE (mặc định ghcr.io/tienduongmarcom/kh-aph-erpnext), HTTP_PORT (mặc định 80), HTTP_BIND (mặc định 0.0.0.0)
 set -euo pipefail
 umask 077
 KHACH="${1:?tên khách}"; TAG="${2:?phiên bản image}"; CFG="${3:?file cấu hình khách}"; DOMAIN="${4:-}"
@@ -17,7 +17,7 @@ cp "$CFG" "$DIR/khach.json"
 DBPASS="$(python3 -c 'import secrets;print(secrets.token_hex(24))')"
 cat > "$DIR/.env" <<EOF
 PROJECT=erp-$KHACH
-CUSTOM_IMAGE=${CUSTOM_IMAGE:-ghcr.io/tienduongmarcom/aphvh-erpnext}
+CUSTOM_IMAGE=${CUSTOM_IMAGE:-ghcr.io/tienduongmarcom/kh-aph-erpnext}
 CUSTOM_TAG=$TAG
 MARIADB_IMAGE=mariadb:11.8
 REDIS_IMAGE=redis:8.6-alpine
@@ -48,7 +48,7 @@ for i in $(seq 1 60); do
   sleep 5
 done
 set -a; source .env; set +a
-AP="$AP" ./erpctl exec -T -e AP backend bash -c 'bench new-site frontend --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password "$AP" --install-app erpnext --install-app lab9x --install-app aphvh'
+AP="$AP" ./erpctl exec -T -e AP backend bash -c 'bench new-site frontend --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password "$AP" --install-app erpnext --install-app lab9x --install-app kh_aph'
 unset AP AP2
 ./erpctl exec -T backend bench --site frontend enable-scheduler
 # hostname -I chỉ có trên Linux: máy khác (macOS khi diễn tập) dùng localhost kèm cổng
@@ -60,7 +60,7 @@ fi
 ./erpctl exec -T backend bench --site frontend set-config host_name "$HOST"
 # nạp cấu hình khách rồi kiểm
 ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
-./erpctl exec -T backend bench --site frontend execute aphvh.khach_hang.ap_dung --kwargs '{"duong_dan": "/tmp/khach.json"}'
-./erpctl exec -T backend bench --site frontend execute aphvh.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json", "ra": "/tmp/kq-trien-khai.json"}' | tee "sao-luu/kiem-trien-khai.txt"
+./erpctl exec -T backend bench --site frontend execute kh_aph.khach_hang.ap_dung --kwargs '{"duong_dan": "/tmp/khach.json"}'
+./erpctl exec -T backend bench --site frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json", "ra": "/tmp/kq-trien-khai.json"}' | tee "sao-luu/kiem-trien-khai.txt"
 ./erpctl cp backend:/tmp/kq-trien-khai.json sao-luu/kq-trien-khai.json || true
 grep -q "KHÔNG ĐẠT: 0" sao-luu/kiem-trien-khai.txt && echo "== XONG: $KHACH tại $HOST (kiểm đạt toàn bộ)" || { echo "== CHƯA ĐẠT: xem sao-luu/kiem-trien-khai.txt"; exit 2; }
