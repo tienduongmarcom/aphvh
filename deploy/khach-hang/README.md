@@ -2,6 +2,17 @@
 
 Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên tắc: **mình không bao giờ chạm dữ liệu thật của khách**; mình giao hệ thống đúng cùng công cụ để khách tự nhập và tự kiểm.
 
+## PHƯƠNG ÁN FINAL (08/10/2026)
+1. **Một nguồn sự thật:** repo GitHub giữ app, `khach/<ten>/khach.json` và `phien-ban.yaml`.
+2. **Kiểm chứng tự động trên Linux amd64 của GitHub** (giống máy chủ khách): Cổng 1 unit test, Cổng 2 site trắng theo từng khách, **Cổng 2b diễn tập** `dung.sh` + `nang-cap.sh` (cả ca lỗi) + `quay-lui.sh`. Không đạt thì không gắn tag, không ra image.
+3. **Triển khai một lệnh:** workflow "Triển khai khách" chọn một khách hoặc tất cả, chờ duyệt, SSH vào VM chạy `nang-cap.sh` (tự giữ bản cũ / tự quay lui khi lỗi).
+4. **Mỗi khách hai máy Docker:** UAT (dữ liệu giả, nâng cấp trước, khách ký) và production (dữ liệu thật, nâng cấp sau, sao lưu 2 lần/ngày, mình không truy cập).
+5. **Dữ liệu:** `tu_nhap` hoặc `import_mot_phan` + `ngay_chot` (như mục Hai chế độ dữ liệu).
+6. **MacBook chỉ để xem giao diện**, không phải nơi kiểm chứng (khác kiến trúc chip và lệnh hệ thống so với máy chủ).
+
+Lộ trình: tuần 1 Cổng 2b + workflow triển khai + dựng UAT khách đầu tiên; tuần 2 công cụ import/kiểm dữ liệu + dữ liệu giả, khách UAT và ký, mở production; sau đó theme, `khach-moi`, cảnh báo.
+Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu` và `ngay_chot`, tên miền; anh tự thêm khóa SSH triển khai vào GitHub Secrets.
+
 ## Vai trò từng phần
 | Phần | Ở đâu | Việc |
 |---|---|---|
