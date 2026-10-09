@@ -1,5 +1,8 @@
 # kh_aph — tùy biến ERPNext cho An Phú Hưng và Vĩnh Hưng
 
+> **Người/tác tử mới tiếp nhận:** đọc `AGENTS.md` rồi `docs/ban-giao.md` (trạng thái, việc còn mở).
+> Phần dưới là lịch sử các bản 0.1–0.3; tên vai trò/mẫu in có chữ "APH" đã đổi từ 0.7.0, app `aphvh` đổi thành `kh_aph` từ 0.8.0.
+
 App riêng chạy trên ERPNext v16.
 
 - **0.1** — chia giá thành phẩm theo kg cho phiếu sản xuất có nhiều đầu ra.
