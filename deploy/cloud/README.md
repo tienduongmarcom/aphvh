@@ -1,6 +1,6 @@
 # Máy chủ chính thức (Google Cloud) — sao lưu tự động
 
-Máy ảo `erpnext-prod` (asia-southeast1-a), frappe_docker, compose project `erpnext-clean`, site `frontend`.
+Máy ảo `erpnext-prod` (asia-southeast1-a). Từ 09/10/2026 chạy khách `aph-vh` dựng bằng `deploy/khach-hang/dung.sh` (compose project `erp-aph-vh`, site `frontend`); bộ cũ `erpnext-clean` đã xóa.
 
 ## Thành phần
 
@@ -8,7 +8,7 @@ Máy ảo `erpnext-prod` (asia-southeast1-a), frappe_docker, compose project `er
 |---|---|---|
 | `erpnext-backup.sh` | `/usr/local/bin/erpnext-backup.sh` | `bench backup --with-files` rồi chép 4 tệp (CSDL, tệp công khai, tệp riêng, cấu hình site) lên bucket, thư mục `frontend/<ngày>_<giờ>/` giờ Việt Nam |
 | `erpnext-backup.service`, `.timer` | `/etc/systemd/system/` | Chạy 02:30 và 12:30 giờ Việt Nam; máy tắt lúc đến giờ thì chạy bù khi bật |
-| — | `/etc/erpnext-backup.conf` | `BUCKET=gs://<project-id>-erpnext-backup` |
+| — | `/etc/erpnext-backup.conf` | `BUCKET=gs://<project-id>-erpnext-backup`; máy dựng bằng `dung.sh` thêm `CONTAINER=erp-<khach>-backend-1`, `VOLUME=erp-<khach>_sites`, `PREFIX=<khach>` (bản sao lưu nằm ở thư mục `<khach>/` trên bucket) |
 
 Bucket: riêng tư (uniform access, chặn công khai), cùng vùng asia-southeast1, tự xóa bản cũ hơn 90 ngày.
 Tài khoản dịch vụ của máy ảo chỉ có quyền thêm và đọc trên bucket (objectCreator + objectViewer), cần phạm vi
