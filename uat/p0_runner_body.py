@@ -284,11 +284,23 @@ try:
     def cancel_with_posted_invoice():
         # DN cannot be cancelled while its posted SI exists: verify framework link guard.
         baseline = debt_and_qty()
+        linked = set(frappe.get_all("Sales Invoice Item", filters={"delivery_note": dn.name}, pluck="parent"))
+        assert len(linked) == 1, "Expected exactly one linked invoice"
+        invoice_name = next(iter(linked))
+        assert frappe.db.get_value("Sales Invoice", invoice_name, "docstatus") == 1
+        expected = frappe._("Sales Invoice {0} has already been submitted").format(invoice_name)
+        frappe.db.savepoint("cancel_guard")
         try:
             frappe.get_doc("Delivery Note", dn.name).cancel()
-        except frappe.LinkExistsError:
+        except (frappe.LinkExistsError, frappe.ValidationError) as exc:
+            # v16.36.1 check_next_docstatus uses ValidationError with this exact message.
+            if isinstance(exc, frappe.ValidationError) and not isinstance(exc, frappe.LinkExistsError):
+                assert expected in str(exc), "Unexpected cancellation validation: " + str(exc)
+            frappe.db.rollback(save_point="cancel_guard")
             assert debt_and_qty() == baseline, "Rejected cancellation changed stock/debt"
-            return "DN cancel rejected while posted SI exists; baseline unchanged"
+            assert frappe.db.get_value("Delivery Note", dn.name, "docstatus") == 1
+            assert frappe.db.get_value("Sales Invoice", invoice_name, "docstatus") == 1
+            return "Correct submitted-invoice guard; DN/SI remain submitted and stock/debt unchanged after rollback"
         raise AssertionError("DN cancellation allowed despite active posted SI")
     test("P0_CANCEL_LINK_GUARD", isolated(cancel_with_posted_invoice))
 
