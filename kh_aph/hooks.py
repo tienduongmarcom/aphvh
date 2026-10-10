@@ -97,6 +97,8 @@ has_permission = {
 
 # Xem trước sổ cái / sổ kho trên phiếu nháp lộ giá vốn: chặn với người bị ẩn giá vốn.
 override_whitelisted_methods = {
+    "frappe.client.get_list": "kh_aph.cost_query_api.get_list",
+    "frappe.client.get_value": "kh_aph.cost_query_api.get_value",
     "erpnext.controllers.stock_controller.show_accounting_ledger_preview":
         "kh_aph.price_visibility.show_accounting_ledger_preview",
     "erpnext.controllers.stock_controller.show_stock_ledger_preview":
