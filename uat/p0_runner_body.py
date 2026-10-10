@@ -141,14 +141,18 @@ try:
         from frappe.client import get_list
         frappe.set_user(user.name)
         try:
+            qty_rows = get_list("Stock Entry Detail", parent="Stock Entry",
+                                filters={"parent": se.name}, fields=["name", "qty"])
+            assert len(qty_rows) == 1 and flt(qty_rows[0].get("qty")) == 100, "Quantity query returned no valid fixture row"
             try:
                 rows = get_list("Stock Entry Detail", parent="Stock Entry",
                                 filters={"parent": se.name}, fields=["qty", "basic_rate"])
             except frappe.PermissionError:
-                return "Cost query rejected by native field permissions"
+                return "Quantity fixture row verified; cost query rejected by native field permissions"
+            assert rows, "Cost query empty: cannot assert masking from an empty result"
             for row in rows:
                 assert row.get("basic_rate") in (None, "", 0), "Child query exposed basic_rate"
-            return "Child query did not return cost"
+            return {"quantity_rows": len(qty_rows), "cost_query_rows": len(rows), "cost_visible": False}
         finally:
             frappe.set_user("Administrator")
     test("P0_COST_CHILD_QUERY", restricted_child_query)
@@ -218,6 +222,118 @@ try:
         assert actual_qty == baseline_qty, "Failed dispatch changed stock after transaction rollback"
         return "Failure propagated; dispatch stock rolled back"
     test("P0_DISPATCH_FAILURE", posting_failure)
+
+    # Each additional workflow trial is rolled back to its own baseline so cases
+    # do not rely on successful earlier return/cancel operations.
+    def isolated(fn):
+        def wrapped():
+            frappe.db.savepoint("p0_isolated")
+            try:
+                return fn()
+            finally:
+                frappe.set_user("Administrator")
+                frappe.db.rollback(save_point="p0_isolated")
+        return wrapped
+
+    def debt_and_qty():
+        debt = flt(frappe.db.sql("SELECT COALESCE(SUM(debit-credit),0) FROM `tabGL Entry` "
+                                "WHERE party_type='Customer' AND party=%s AND company=%s AND is_cancelled=0",
+                                (customer.name, co.name))[0][0])
+        qty = flt(frappe.db.get_value("Bin", {"item_code": item.name, "warehouse": wh}, "actual_qty"))
+        return debt, qty
+
+    def second_dispatch():
+        baseline_debt, baseline_qty = debt_and_qty()
+        later = make_delivery_note(so.name)
+        later.posting_date = today()
+        for row in later.items:
+            row.qty = 2
+        later.insert()
+        later.submit()
+        debt, qty = debt_and_qty()
+        assert qty == baseline_qty-2, f"Second dispatch quantity wrong: {qty}"
+        assert abs(debt-baseline_debt-flt(later.grand_total)) < .01, f"Second dispatch debt wrong: {debt}"
+        assert frappe.db.count("Sales Invoice", {"docstatus": 1}) == 2, "Expected one posted SI per dispatch"
+        return {"dispatch_2": later.name, "debt": debt, "stock_kg": qty}
+    test("P0_DISPATCH_SECOND_BATCH", isolated(second_dispatch))
+
+    def partial_return():
+        from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
+        baseline_debt, baseline_qty = debt_and_qty()
+        ret = make_sales_return(dn.name)
+        ret.posting_date = today()
+        ret.issue_credit_note = 0  # Exercise candidate hook, not native auto-credit branch.
+        for row in ret.items:
+            row.qty = -1
+            row.warehouse = wh
+        ret.insert()
+        ret.submit()
+        debt, qty = debt_and_qty()
+        assert qty == baseline_qty+1, f"Return stock wrong: {qty}"
+        assert abs(debt-baseline_debt-flt(ret.grand_total)) < .01, f"Return debt wrong: {debt}"
+        linked = set(frappe.get_all("Sales Invoice Item", filters={"delivery_note": ret.name}, pluck="parent"))
+        assert len(linked) == 1, "Expected one credit invoice"
+        credit = frappe.get_doc("Sales Invoice", next(iter(linked)))
+        assert credit.docstatus == 1 and credit.is_return and credit.return_against, "Credit must be posted and linked to original"
+        count = frappe.db.count("Sales Invoice")
+        post_receivable(frappe.get_doc("Delivery Note", ret.name))
+        assert frappe.db.count("Sales Invoice") == count, "Return retry duplicated credit"
+        return {"return_debt": debt, "stock_kg": qty, "credit_status": credit.docstatus}
+    test("P0_PARTIAL_RETURN", isolated(partial_return))
+
+    def cancel_with_posted_invoice():
+        # DN cannot be cancelled while its posted SI exists: verify framework link guard.
+        baseline = debt_and_qty()
+        try:
+            frappe.get_doc("Delivery Note", dn.name).cancel()
+        except frappe.LinkExistsError:
+            assert debt_and_qty() == baseline, "Rejected cancellation changed stock/debt"
+            return "DN cancel rejected while posted SI exists; baseline unchanged"
+        raise AssertionError("DN cancellation allowed despite active posted SI")
+    test("P0_CANCEL_LINK_GUARD", isolated(cancel_with_posted_invoice))
+
+    def authorised_cancel_sequence():
+        linked = set(frappe.get_all("Sales Invoice Item", filters={"delivery_note": dn.name}, pluck="parent"))
+        assert len(linked) == 1
+        invoice = frappe.get_doc("Sales Invoice", next(iter(linked)))
+        invoice.flags.ignore_permissions = True
+        invoice.cancel()
+        frappe.get_doc("Delivery Note", dn.name).cancel()
+        debt, qty = debt_and_qty()
+        assert abs(debt) < .01 and qty == 100, f"Cancel sequence did not reverse debt/stock: {debt}/{qty}"
+        return {"debt": debt, "stock_kg": qty}
+    test("P0_CANCEL_REVERSE", isolated(authorised_cancel_sequence))
+
+    def reject_financial_report():
+        from frappe.desk.query_report import run
+        frappe.set_user(user.name)
+        try:
+            try:
+                run("Stock Ledger", filters={"company": co.name, "from_date": today(),
+                                             "to_date": today(), "item_code": item.name})
+            except frappe.PermissionError:
+                return "Stock Ledger report rejected for factory-only test user"
+            raise AssertionError("Cost-bearing Stock Ledger report not denied")
+        finally:
+            frappe.set_user("Administrator")
+    test("P0_COST_REPORT_FACTORY", isolated(reject_financial_report))
+
+    def reject_export():
+        from frappe.desk.reportview import export_query
+        original_form = frappe.local.form_dict
+        frappe.set_user(user.name)
+        frappe.local.form_dict = frappe._dict(doctype="Stock Entry", fields=json.dumps(["name", "total_amount"]),
+            filters=json.dumps([["name", "=", se.name]]), file_format_type="CSV", export_in_background=0)
+        try:
+            try:
+                export_query()
+            except frappe.PermissionError:
+                return "Export denied for factory-only test user"
+            raise AssertionError("Factory export not denied; inspect field-level export output before approval")
+        finally:
+            frappe.local.form_dict = original_form
+            frappe.set_user("Administrator")
+    test("P0_COST_EXPORT_FACTORY", isolated(reject_export))
 
 except Exception as exc:
     record("RUNNER", "BLOCKED", {"type": type(exc).__name__, "error": str(exc)[:1600]})
