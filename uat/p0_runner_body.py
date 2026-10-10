@@ -72,6 +72,14 @@ try:
     changed = apply_query_field_permissions()
     record("SETUP_COST_FIELDS", "DONE", {"field_count": len(changed)})
     from frappe.model.base_document import get_controller
+    # Never cache transaction-local candidate Documents in shared Redis. This also
+    # prevents phantom fixture documents surviving SQL rollback. Reads still use
+    # native DB/controller behaviour; only document-cache writes are skipped here.
+    import frappe.model.document as document_module
+    def no_document_cache_write(key, doc):
+        return None
+    document_module._set_document_in_cache = no_document_cache_write
+    frappe._set_document_in_cache = no_document_cache_write
     for dt in ("Stock Entry", "Purchase Receipt", "Purchase Order", "Serial and Batch Bundle",
                "Item", "Sales Order", "Delivery Note"):
         base = get_controller(dt)
