@@ -253,6 +253,11 @@ def _return_into_draft(ret) -> bool:
 
 def make_draft_invoice(doc, method=None):
     """Delivery Note on_submit."""
+    from kh_aph.delivery_receivable import enabled, post_receivable
+
+    if enabled():
+        post_receivable(doc)
+        return
     if not setting_on(SS_AUTO_INVOICE) or not frappe.get_meta("Sales Invoice").has_field(SI_AUTO):
         return
     if cint(doc.get("is_internal_customer")):

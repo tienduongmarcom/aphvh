@@ -16,7 +16,13 @@ after_migrate = ["kh_aph.install.after_migrate"]
 # Cơ chế extend_doctype_class của Frappe v16 ghép lớp này TRƯỚC lớp chuẩn trong MRO;
 # repost nạp phiếu qua cùng lớp đã ghép nên quy tắc vẫn chạy khi tính lại giá.
 extend_doctype_class = {
-    "Stock Entry": ["kh_aph.stock_entry_kg.StockEntryKgCosting"],
+    "Stock Entry": ["kh_aph.stock_entry_kg.StockEntryKgCosting", "kh_aph.server_cost_guard.CostReadGuard"],
+    "Purchase Receipt": ["kh_aph.server_cost_guard.CostReadGuard"],
+    "Purchase Order": ["kh_aph.server_cost_guard.CostReadGuard"],
+    "Serial and Batch Bundle": ["kh_aph.server_cost_guard.CostReadGuard"],
+    "Item": ["kh_aph.server_cost_guard.CostReadGuard"],
+    "Sales Order": ["kh_aph.server_cost_guard.CostReadGuard"],
+    "Delivery Note": ["kh_aph.server_cost_guard.CostReadGuard"],
 }
 
 # --- 0.2: phân quyền nhà máy, ẩn giá (mức màn hình + báo cáo), mẫu in Việt Nam ------------
