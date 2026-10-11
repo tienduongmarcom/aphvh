@@ -166,6 +166,7 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     desk=json.loads(next(line for line in desk_raw.splitlines() if line.startswith('{"case":')))
     assert desk['status']=='PASS',desk
     pr1=desk['receipt']
+    admin=session('Administrator',state['admin_password'])
     emit('NATIVE_DESK_FINALIZE_AND_BAG_PREVIEW','PASS',desk['quantity'])
     stock('APH','trade',100,4,10000)
     same=oracle();assert rpc('kh_aph.pending_valuation.finalize',args)==pr1 and oracle()==same

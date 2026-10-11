@@ -93,7 +93,7 @@ jobs:
         run: |
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
-          sudo env HOME="$HOME" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
+          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
           test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 21
           ! grep -q '"status": "FAIL"' http-inventory-evidence.txt
       - name: Render four-company quantity slip to PDF
