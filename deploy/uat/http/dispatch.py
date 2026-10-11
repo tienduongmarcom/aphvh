@@ -141,6 +141,18 @@ finally:frappe.destroy()
     assert receipt['kh_aph_delivery_state']=='Khách đã nhận'
     check(80000,96,1)
     emit('HTTP_DELIVERY_RECEIPT_NO_REPOST','PASS','Receipt leaves stock/debt unchanged')
+    history_code="""import json,sys,frappe
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
+frappe.connect()
+try:
+ name=json.load(sys.stdin)['name']
+ versions=frappe.get_all('Version',filters={'ref_doctype':'Delivery Note','docname':name},fields=['owner','data'])
+ assert any(v.owner=='Administrator' and any(c[0]=='kh_aph_delivery_state' and c[1]=='Đang giao' and c[2]=='Khách đã nhận' for c in json.loads(v.data).get('changed',[])) for v in versions), 'Receipt transition missing from Version history'
+ print('HISTORY_VERIFIED')
+finally:frappe.destroy()
+"""
+    assert 'HISTORY_VERIFIED' in inner(history_code,json.dumps({'name':fixture['dn1']}))
+    emit('HTTP_DELIVERY_RECEIPT_HISTORY','PASS','Version records previous/new state and actor')
     again=admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn1'],'action':'receive'})['message']
     assert again['kh_aph_delivery_at']==receipt['kh_aph_delivery_at']
     check(80000,96,1)
