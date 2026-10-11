@@ -26,14 +26,14 @@ def validate(doc, method=None):
         if doc.get(STATE) not in (None, '', WAITING) or doc.get(ACTOR) or doc.get(TIME):
             frappe.throw('Trạng thái giao hàng phải được xác nhận bằng thao tác giao/nhận')
         stamp(doc, WAITING)
-    elif not doc.flags.kh_aph_delivery_transition:
+    elif frappe.flags.get('kh_aph_delivery_transition') != doc.name:
         if any(str(doc.get(f) or '') != str(old.get(f) or '') for f in FIELDS):
             frappe.throw('Không được sửa trực tiếp trạng thái hoặc lịch sử giao hàng')
 
 
 def before_submit(doc, method=None):
     if enabled() and not cint(doc.is_return):
-        stamp(doc, RECEIVED if doc.flags.kh_aph_pickup else TRANSIT)
+        stamp(doc, RECEIVED if frappe.flags.get('kh_aph_delivery_pickup') == doc.name else TRANSIT)
 
 
 def before_update_after_submit(doc, method=None):
@@ -57,9 +57,13 @@ def confirm(name, action):
             frappe.throw('Chỉ xác nhận nhận hàng sau khi xuất hàng')
         if current == RECEIVED:
             return doc.as_dict()
-        doc.flags.kh_aph_delivery_transition = True
-        stamp(doc, RECEIVED)
-        doc.save()
+        previous = frappe.flags.get('kh_aph_delivery_transition')
+        frappe.flags.kh_aph_delivery_transition = doc.name
+        try:
+            stamp(doc, RECEIVED)
+            doc.save()
+        finally:
+            frappe.flags.kh_aph_delivery_transition = previous
     else:
         target = RECEIVED if action == 'pickup' else TRANSIT
         if cint(doc.docstatus) == 1 and current == target:
@@ -67,7 +71,11 @@ def confirm(name, action):
         if cint(doc.docstatus) != 0 or current != WAITING:
             frappe.throw('Phiếu không còn ở trạng thái chờ xuất')
         doc.check_permission('submit')
-        doc.flags.kh_aph_pickup = action == 'pickup'
-        doc.submit()
+        previous = frappe.flags.get('kh_aph_delivery_pickup')
+        frappe.flags.kh_aph_delivery_pickup = doc.name if action == 'pickup' else None
+        try:
+            doc.submit()
+        finally:
+            frappe.flags.kh_aph_delivery_pickup = previous
     # Frappe commits the request only after all native stock/credit hooks succeed.
     return doc.as_dict()
