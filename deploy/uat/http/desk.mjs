@@ -39,8 +39,8 @@ try {
     const receipt=await evaluate('cur_frm.doc.purchase_receipt');
     await evaluate('frappe.new_doc("APH Shared Sales Order");true');
     await until('!!window.cur_frm && cur_frm.doctype === "APH Shared Sales Order" && cur_frm.doc.docstatus === 0 && !!cur_frm.fields_dict.items');
-    const quantity=await evaluate('(async()=>{const r=cur_frm.add_child("items");await frappe.model.set_value(r.doctype,r.name,"item_code",'+JSON.stringify(item)+');await frappe.model.set_value(r.doctype,r.name,"rate",20000);await frappe.model.set_value(r.doctype,r.name,"kh_aph_bags",3);cur_frm.refresh_field("items");return {qty:r.qty,bags:r.kh_aph_bags,weight:r.kh_aph_kg_per_bag,rate_bag:r.kh_aph_bag_rate,grid:cur_frm.fields_dict.items.$wrapper.text().includes("75")};})()');
-    if(quantity.qty!==75 || quantity.rate_bag!==500000 || quantity.weight!==25 || !quantity.grid)throw Error('Desk bag conversion failed: '+JSON.stringify(quantity));
+    const quantity=await evaluate('(async()=>{const r=cur_frm.add_child("items");await frappe.model.set_value(r.doctype,r.name,"item_code",'+JSON.stringify(item)+');await frappe.model.set_value(r.doctype,r.name,"rate",20000);await frappe.model.set_value(r.doctype,r.name,"kh_aph_bags",3);cur_frm.refresh_field("items");return {qty:r.qty,bags:r.kh_aph_bags,weight:r.kh_aph_kg_per_bag,rate_bag:r.kh_aph_bag_rate,amount:r.amount,total:cur_frm.doc.net_total,grid:cur_frm.fields_dict.items.$wrapper.text().includes("75")||cur_frm.fields_dict.items.$wrapper.find("input[data-fieldname=qty]").toArray().some(e=>Number(e.value)===75)};})()');
+    if(quantity.qty!==75 || quantity.rate_bag!==500000 || quantity.weight!==25 || quantity.amount!==1500000 || quantity.total!==1500000 || !quantity.grid)throw Error('Desk bag conversion failed: '+JSON.stringify(quantity));
     console.log(JSON.stringify({case:'NATIVE_DESK_FINALIZE_AND_BAG_PREVIEW',status:'PASS',receipt,quantity}));
 } finally {
     if(ws)ws.close();
