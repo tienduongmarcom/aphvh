@@ -171,3 +171,11 @@ for _dt,_event,_handler in (
     _handlers=[_handlers] if isinstance(_handlers,str) else list(_handlers)
     if _handler not in _handlers: _handlers.append(_handler)
     _events[_event]=_handlers
+
+# UAT_SI_BYPASS_GUARD_V1
+_si_events=doc_events.setdefault("Sales Invoice",{})
+_si_handlers=_si_events.get("before_submit",[])
+_si_handlers=[_si_handlers] if isinstance(_si_handlers,str) else list(_si_handlers)
+if "kh_aph.credit_release.before_submit_invoice" not in _si_handlers:
+    _si_handlers.append("kh_aph.credit_release.before_submit_invoice")
+_si_events["before_submit"]=_si_handlers
