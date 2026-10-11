@@ -468,11 +468,15 @@ finally:frappe.destroy()
     baseline=oracle()
     denied(scoped,'/api/method/kh_aph.delivery_status.confirm',{'name':vh['notes'][0],'action':'receive'},('PermissionError',))
     denied(scoped,'/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(vh['notes'])},('PermissionError',))
-    allowed=scoped('/api/method/kh_aph.delivery_slip.deliveries?'+urllib.parse.urlencode({'shared_order':slip['shared']}))['message']
-    assert {n['name'] for n in allowed}==set(aph['notes']),allowed
-    scoped('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(aph['notes'])})
+    # Native read of the mixed-company coordinator is intentionally denied.
+    # Do not bypass that permission merely to provide a filtered print view.
+    denied(scoped,'/api/method/kh_aph.delivery_slip.deliveries?'+urllib.parse.urlencode({'shared_order':slip['shared']}),None,('PermissionError',))
+    denied(scoped,'/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(aph['notes'])},('PermissionError',))
+    own=scoped('/api/method/frappe.client.get?'+urllib.parse.urlencode({'doctype':'Delivery Note','name':aph['notes'][0]}))['message']
+    assert own['company']==aph['company']
+    scoped('/api/method/kh_aph.delivery_status.confirm',{'name':aph['notes'][0],'action':'receive'})
     assert oracle()==baseline
-    emit('HTTP_COMPANY_SCOPE_RECEIPT_PRINT','PASS','APH-only user cannot confirm/print VH; listing limited to APH; ledgers unchanged')
+    emit('HTTP_COMPANY_SCOPE_RECEIPT_PRINT','PASS','APH-only user reads/confirms native APH DN; VH and mixed-company shared print denied; ledgers unchanged')
     stock_report=scoped('/api/method/frappe.desk.query_report.run?'+urllib.parse.urlencode({'report_name':'Ton kho so luong','filters':json.dumps({})}))['message']['result']
     assert stock_report and {row['warehouse'] for row in stock_report}=={aph['warehouse']},stock_report
     assert all(not any(k in row for k in ('valuation_rate','stock_value','basic_rate')) for row in stock_report)
