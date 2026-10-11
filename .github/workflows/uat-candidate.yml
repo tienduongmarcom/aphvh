@@ -1,0 +1,36 @@
+name: UAT candidate image verification
+on:
+  push:
+    branches: ["fix/p0-uat-v091-20261010"]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build candidate locally without publishing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: aphvh-uat:verification
+          build-args: ERPNEXT_IMAGE=frappe/erpnext:v16.36.1
+      - name: Record versions and verified source hashes
+        run: |
+          docker run --rm --entrypoint bash aphvh-uat:verification -ec '
+            cd /home/frappe/frappe-bench
+            bench version
+            sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
+            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0e428e762eb6f393a8ae5a9ea5553120bd800961cc593f2d122fccbb72f36e80"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "dc5dd72b0211c6198e49d88da2e864f1f0fc0b22c57acc387e0becb333e19675"
+          ' > candidate-image-evidence.txt
+          cat candidate-image-evidence.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-image-evidence
+          path: candidate-image-evidence.txt
