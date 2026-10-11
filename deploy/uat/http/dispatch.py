@@ -133,7 +133,41 @@ finally:frappe.destroy()
     assert getdoc("Delivery Note",fixture["dn1"])["docstatus"]==1
     emit("HTTP_CONCURRENT_SAME_DN","PASS",{"requests":outcomes,"ledger":ledger})
     emit("HTTP_DISPATCH_DEBT","PASS",ledger)
-    second=submit("Delivery Note",fixture["dn2"])
+    dispatched=getdoc("Delivery Note",fixture["dn1"])
+    assert dispatched['kh_aph_delivery_state']=='Đang giao'
+    assert dispatched['kh_aph_delivery_actor']=='Administrator' and dispatched['kh_aph_delivery_at']
+    emit('HTTP_DELIVERY_HANDOFF_STATE','PASS','Submitted dispatch stamped actor/time')
+    receipt=admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn1'],'action':'receive'})['message']
+    assert receipt['kh_aph_delivery_state']=='Khách đã nhận'
+    check(80000,96,1)
+    emit('HTTP_DELIVERY_RECEIPT_NO_REPOST','PASS','Receipt leaves stock/debt unchanged')
+    again=admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn1'],'action':'receive'})['message']
+    assert again['kh_aph_delivery_at']==receipt['kh_aph_delivery_at']
+    check(80000,96,1)
+    emit('HTTP_DELIVERY_RECEIPT_REPEAT','PASS','Repeated receipt preserves timestamp and ledger')
+    forged=dict(receipt);forged['kh_aph_delivery_state']='Chờ xuất'
+    try:
+        admin('/api/method/frappe.client.save',{'doc':json.dumps(forged)})
+        raise AssertionError('Direct status edit accepted')
+    except urllib.error.HTTPError as exc:
+        error=json.loads(exc.read());assert error.get('exc_type')=='ValidationError',error
+    assert getdoc('Delivery Note',fixture['dn1'])['kh_aph_delivery_state']=='Khách đã nhận'
+    emit('HTTP_DELIVERY_STATE_EDIT_DENIED','PASS','Direct status rollback rejected')
+    assert getdoc('Delivery Note',fixture['dn2'])['kh_aph_delivery_state']=='Chờ xuất'
+    try:
+        admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn2'],'action':'receive'})
+        raise AssertionError('Draft receipt accepted')
+    except urllib.error.HTTPError as exc:
+        error=json.loads(exc.read());assert error.get('exc_type')=='ValidationError',error
+    check(80000,96,1)
+    emit('HTTP_DELIVERY_DRAFT_RECEIPT_DENIED','PASS','Cannot receive before dispatch')
+    second=admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn2'],'action':'pickup'})['message']
+    assert second['kh_aph_delivery_state']=='Khách đã nhận'
+    emit('HTTP_DELIVERY_PICKUP_STATE','PASS','Pickup goes directly from waiting to received')
+    repeated=admin('/api/method/kh_aph.delivery_status.confirm',{'name':fixture['dn2'],'action':'pickup'})['message']
+    assert repeated['kh_aph_delivery_at']==second['kh_aph_delivery_at']
+    check(120000,94,2)
+    emit('HTTP_DELIVERY_PICKUP_REPEAT','PASS','Pickup repeat creates no additional invoice')
     assert second["docstatus"]==1
     emit("HTTP_DISPATCH_SECOND_BATCH","PASS",check(120000,94,2))
     return_code='import json,sys,frappe\nfrom frappe.utils import today\nfrom erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return\nfrappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")\nfrappe.connect();frappe.set_user("Administrator")\ntry:\n f=json.load(sys.stdin)\n ret=make_sales_return(f["dn1"])\n ret.posting_date=today();ret.issue_credit_note=0\n for row in ret.items:\n  row.qty=-1;row.warehouse=f["warehouse"]\n ret.insert();frappe.db.commit()\n print("RETURN_JSON:"+json.dumps({"name":ret.name}))\nfinally:frappe.destroy()\n'
