@@ -51,9 +51,10 @@
     },
     {
       "fieldname": "net_total",
-      "label": "Giá trị hàng chưa thuế",
+      "label": "Tổng giá trị hàng",
       "fieldtype": "Currency",
-      "read_only": 1
+      "read_only": 1,
+      "description": "Tổng số lượng kg × giá bán/kg. Thuế được tính trên đơn bán của từng đơn vị."
     }
   ],
   "field_order": [
