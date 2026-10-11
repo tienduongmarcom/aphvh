@@ -43,7 +43,10 @@ class TestTongHop(unittest.TestCase):
         rep = APP / "kh_aph" / "report" / "tong_hop_ban_hang_theo_khach"
         for ext in ("json", "py", "js", "html"):
             self.assertTrue((rep / f"tong_hop_ban_hang_theo_khach.{ext}").exists(), ext)
-        self.assertFalse((APP / "kh_aph" / "doctype").exists())  # Đơn tổng đã bỏ
+        # Legacy aggregate order stays removed; only the new agreed coordinator is introduced.
+        root = APP / "kh_aph" / "doctype"
+        names = {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")}
+        self.assertEqual(names, {"aph_shared_sales_order", "aph_shared_sales_order_item"})
 
 
 if __name__ == "__main__":
