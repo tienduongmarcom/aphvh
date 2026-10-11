@@ -40,7 +40,7 @@ frappe.ui.form.on("APH Shared Sales Order", {
             }
             const dialog = new frappe.ui.Dialog({title: "Chọn các phiếu giao cùng đợt",
                 fields: [{fieldname: "notes", label: "Phiếu giao", fieldtype: "MultiCheck",
-                    options: notes.map(n => ({label: `${n.name} · ${n.company} · ${n.state}`, value: n.name}))}],
+                    options: notes.map((n, i) => ({label: frappe.utils.escape_html(`${n.name} · ${n.company} · ${n.state}`), value: String(i)}))}],
                 primary_action_label: "In tổng hợp",
                 async primary_action(values) {
                     if (!values.notes?.length) return frappe.msgprint("Chọn ít nhất một phiếu giao.");
@@ -49,7 +49,7 @@ frappe.ui.form.on("APH Shared Sales Order", {
                     preview.opener = null;
                     try {
                         const result = await frappe.call({method: "kh_aph.delivery_slip.consolidated",
-                            args: {shared_order: frm.doc.name, delivery_notes: JSON.stringify(values.notes)}, freeze: true});
+                            args: {shared_order: frm.doc.name, delivery_notes: JSON.stringify(values.notes.map(i => notes[Number(i)].name))}, freeze: true});
                         preview.document.open();
                         preview.document.write(result.message.html);
                         preview.document.close();
