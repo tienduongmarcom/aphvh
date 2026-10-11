@@ -10,7 +10,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","APH Credit Release","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","APH Credit Release","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version","User Permission"]
 root_secret=""
 factory_password=secrets.token_urlsafe(32)
 def run(args,input=None):
@@ -453,6 +453,26 @@ finally:frappe.destroy()
     assert all(source['company'] in printed['html'] and source['warehouse'] in printed['html'] for source in slip['sources'])
     emit('HTTP_SLIP_FOUR_COMPANY_EMPLOYEE','PASS','Warehouse role prints all four company sources without cost')
     Path('shared-four-company-slip.html').write_text(printed['html'])
+    scope_code="""import json,sys,frappe
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')
+try:
+ f=json.load(sys.stdin)
+ frappe.get_doc({'doctype':'User Permission','user':f['user'],'allow':'Company','for_value':f['company'],'apply_to_all_doctypes':1}).insert()
+ frappe.db.commit();frappe.clear_cache(user=f['user'])
+finally:frappe.destroy()
+"""
+    aph=next(x for x in slip['sources'] if x['abbr']=='APH')
+    vh=next(x for x in slip['sources'] if x['abbr']=='VH')
+    inner(scope_code,json.dumps({'user':slip['warehouse'],'company':aph['company']}))
+    scoped=session(slip['warehouse'],factory_password)
+    baseline=oracle()
+    denied(scoped,'/api/method/kh_aph.delivery_status.confirm',{'name':vh['notes'][0],'action':'receive'},('PermissionError',))
+    denied(scoped,'/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(vh['notes'])},('PermissionError',))
+    allowed=scoped('/api/method/kh_aph.delivery_slip.deliveries?'+urllib.parse.urlencode({'shared_order':slip['shared']}))['message']
+    assert {n['name'] for n in allowed}==set(aph['notes']),allowed
+    scoped('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(aph['notes'])})
+    assert oracle()==baseline
+    emit('HTTP_COMPANY_SCOPE_RECEIPT_PRINT','PASS','APH-only user cannot confirm/print VH; listing limited to APH; ledgers unchanged')
     multi_code="""import json,sys,frappe
 frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect()
 try:
