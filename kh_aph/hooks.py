@@ -179,3 +179,13 @@ _si_handlers=[_si_handlers] if isinstance(_si_handlers,str) else list(_si_handle
 if "kh_aph.credit_release.before_submit_invoice" not in _si_handlers:
     _si_handlers.append("kh_aph.credit_release.before_submit_invoice")
 _si_events["before_submit"]=_si_handlers
+
+# Opt-in delivery states share the atomic dispatch flag.
+for _event in ('validate', 'before_submit', 'before_update_after_submit'):
+    _events = doc_events.setdefault('Delivery Note', {})
+    _handlers = _events.get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    _handler = 'kh_aph.delivery_status.' + _event
+    if _handler not in _handlers:
+        _handlers.append(_handler)
+    _events[_event] = _handlers
