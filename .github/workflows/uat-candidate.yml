@@ -31,7 +31,7 @@ jobs:
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
             test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0e428e762eb6f393a8ae5a9ea5553120bd800961cc593f2d122fccbb72f36e80"
-            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "dc5dd72b0211c6198e49d88da2e864f1f0fc0b22c57acc387e0becb333e19675"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "8dd0c17630db26165ad4d31101670f68d8d7c00ed3594f85fff7be4c9a8ebe57"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
@@ -82,7 +82,7 @@ jobs:
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 24
+          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 31
           ! grep -q '"status": "FAIL"' http-dispatch-evidence.txt
       - name: Stop disposable CI containers
         if: always()
@@ -96,3 +96,4 @@ jobs:
             candidate-image-evidence.txt
             fresh-site-evidence.txt
             http-*-evidence.txt
+
