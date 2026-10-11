@@ -16,8 +16,9 @@ def _chief():
 def validate_customer(doc,method=None):
     if not _enabled():return
     old=doc.get_doc_before_save()
-    if cint(doc.get(HIGH_RISK)) != cint(old.get(HIGH_RISK) if old else 0):
-        _chief()
+    for field in (HIGH_RISK, 'kh_aph_global_credit_limit'):
+        if float(doc.get(field) or 0) != float(old.get(field) or 0 if old else 0):
+            _chief()
 
 def validate_release(doc,method=None):
     _chief()
@@ -71,3 +72,28 @@ def revoke(approval, reason):
     frappe.db.set_value(APPROVAL,release.name,{
         'revoked_by':frappe.session.user,'revoked_at':when,'revocation_reason':reason.strip()})
     return {'name':release.name,'revoked_by':frappe.session.user,'revoked_at':when}
+
+
+def before_submit_invoice(doc, method=None):
+    """Direct invoices must not bypass a high-risk shipment approval.
+
+    Generated invoices retain the approved DN path. Covered prepaid shipments
+    and credit notes do not increase net debt, so need no extra credit release.
+    """
+    if not _enabled() or float(doc.grand_total or 0) <= 0:return
+    frappe.db.sql('SELECT name FROM `tabCustomer` WHERE name=%s FOR UPDATE',doc.customer)
+    if not cint(frappe.db.get_value('Customer',doc.customer,HIGH_RISK)):return
+    if credit_increase(balance_for(doc.customer),doc.grand_total)<=0:return
+    sources={row.delivery_note for row in doc.items if row.delivery_note}
+    if not sources or any(not row.delivery_note for row in doc.items):
+        frappe.throw('Khách rủi ro cao: hóa đơn tăng công nợ phải gắn phiếu giao đã được duyệt; không tạo trực tiếp để bỏ qua phê duyệt',title='Chặn bán chịu')
+    for name in sources:
+        dn=frappe.get_doc('Delivery Note',name)
+        if dn.docstatus!=1 or dn.customer!=doc.customer or dn.company!=doc.company:
+            frappe.throw('Khách rủi ro cao: phiếu giao trên hóa đơn không khớp khách/company hoặc chưa xác nhận')
+        matched=frappe.db.sql("""SELECT name FROM `tabAPH Credit Release`
+            WHERE delivery_note=%s AND customer=%s AND company=%s
+              AND fingerprint=%s AND revoked_at IS NULL FOR UPDATE""",
+            (name,doc.customer,doc.company,shipment_fingerprint(dn.as_dict())))
+        if not matched:
+            frappe.throw('Khách rủi ro cao: hóa đơn chưa có phê duyệt còn hiệu lực cho phiếu giao')
