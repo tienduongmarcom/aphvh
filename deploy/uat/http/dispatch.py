@@ -473,6 +473,15 @@ finally:frappe.destroy()
     scoped('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(aph['notes'])})
     assert oracle()==baseline
     emit('HTTP_COMPANY_SCOPE_RECEIPT_PRINT','PASS','APH-only user cannot confirm/print VH; listing limited to APH; ledgers unchanged')
+    inner(scope_code,json.dumps({'user':risk['accounts'],'company':aph['company']}))
+    report_user=session(risk['accounts'],factory_password)
+    filters={'customer':fixture['customer'],'from_date':'2000-01-01','to_date':'2099-12-31'}
+    report=report_user('/api/method/frappe.desk.query_report.run?'+urllib.parse.urlencode({'report_name':'Tong hop ban hang theo khach','filters':json.dumps(filters)}))['message']
+    rows=report['result']
+    assert rows and any(r.get('don_vi')=='APH' for r in rows),rows
+    assert not any(r.get('don_vi') in ('VH','MK','TL') for r in rows),rows
+    assert oracle()==baseline
+    emit('HTTP_COMPANY_SCOPE_DEBT_REPORT','PASS','APH-only Accounts User sees APH report rows and no VH/MK/TL; ledger unchanged')
     multi_code="""import json,sys,frappe
 frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect()
 try:
