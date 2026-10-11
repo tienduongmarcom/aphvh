@@ -137,6 +137,9 @@ finally:frappe.destroy()
         assert float(buying['items'][0]['qty'])==1 and buying['items'][0].get('rate') in (None,'',0),"Buying price exposed via role union"
         buying_control=admin('/api/method/frappe.client.get',{'doctype':'Purchase Order','name':fixture['purchase_order']})['message']
         assert float(buying_control['items'][0]['rate'])==12345
+        denied(actor,'/api/method/frappe.client.get_list',{'doctype':'Purchase Order Item','parent':'Purchase Order','fields':json.dumps(['qty','rate']),'filters':json.dumps({'parent':fixture['purchase_order']})})
+        denied(actor,'/api/method/frappe.client.get_value',{'doctype':'Purchase Order Item','parent':'Purchase Order','fieldname':json.dumps(['qty','rate']),'filters':json.dumps({'parent':fixture['purchase_order']})})
+        denied(actor,'/api/method/frappe.client.get',{'doctype':'Purchase Order Item','name':buying_control['items'][0]['name']})
         q={"doctype":"Stock Entry Detail","parent":"Stock Entry","filters":json.dumps({"parent":fixture["stock_entry"]}),"fieldname":json.dumps(["qty","basic_rate"])}
         values=actor("/api/method/frappe.client.get_value",q)["message"]
         assert float(values['qty'])==100 and values.get('basic_rate') in (None,'',0)

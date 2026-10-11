@@ -53,14 +53,28 @@ def before_request():
                 deny = deny or bool(set(filters) - {"name", "parent", "parenttype", "parentfield", "item_code", "qty"})
             elif filters is not None and not isinstance(filters, str):
                 deny = True
+        elif dt and frappe.get_meta(dt).istable:
+            deny = True
         elif dt in SENSITIVE or dt in ("Stock Entry", "Item", "Purchase Receipt", "Purchase Order",
                                       "Sales Order Item", "Delivery Note Item", "Serial and Batch Bundle"):
+            deny = True
+    # A child read has no parent print/price mask. Read the permitted parent
+    # document instead; its quantity rows survive the document mask.
+    if cmd in ("frappe.client.get", "frappe.desk.form.load.getdoc"):
+        dt = frappe.form_dict.get("doctype")
+        if dt and frappe.get_meta(dt).istable:
+            deny = True
+    if cmd in ("run_doc_method", "frappe.handler.run_doc_method"):
+        if frappe.form_dict.get("dt") in ("Purchase Order", "Purchase Receipt"):
             deny = True
     # Generic REST list endpoints do not pass through the child RPC wrapper.
     if path.startswith("/api/resource/") or path.startswith("/api/v2/document/"):
         from urllib.parse import unquote
         prefix = "/api/resource/" if path.startswith("/api/resource/") else "/api/v2/document/"
         tail = unquote(path[len(prefix):])
+        dt = tail.split("/", 1)[0]
+        if dt and frappe.get_meta(dt).istable:
+            deny = True
         if "/" not in tail and frappe.request.method == "GET":
             deny = True
     if deny:
