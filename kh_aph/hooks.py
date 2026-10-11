@@ -165,6 +165,7 @@ for _dt,_event,_handler in (
     ("Customer","validate","kh_aph.credit_release.validate_customer"),
     ("Delivery Note","before_submit","kh_aph.credit_release.before_submit_delivery"),
     ("APH Credit Release","validate","kh_aph.credit_release.validate_release"),
+    ("APH Credit Release","on_trash","kh_aph.credit_release.prevent_release_delete"),
 ):
     _events=doc_events.setdefault(_dt,{})
     _handlers=_events.get(_event,[])
