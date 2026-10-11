@@ -53,6 +53,20 @@ class StockEntryKgCosting:
             return rows, "kh_aph_kg", sum(flt(d.kh_aph_kg) for d in rows)
         return super().get_additional_cost_allocation()
 
+    def distribute_additional_costs(self):
+        super().distribute_additional_costs()
+        if self.get("kh_aph_costing_rule") != "kg-v3":
+            return
+        rows = kg_rows(self)
+        if not rows:
+            return
+        amounts = split_by_weight(self.total_additional_costs,
+            [flt(r.kh_aph_kg) for r in rows], rows[0].precision("additional_cost"), rounder=flt)
+        for row in self.items:
+            row.additional_cost = 0
+        for row, amount in zip(rows, amounts, strict=True):
+            row.additional_cost = amount
+
 
 def uses_kg_rule(doc):
     """Phiếu có dùng quy tắc chia theo kg không — đọc mã quy tắc ĐÃ LƯU trên phiếu."""

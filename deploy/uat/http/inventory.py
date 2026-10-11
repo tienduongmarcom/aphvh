@@ -157,6 +157,11 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     emit('HTTP_PENDING_PRICE_AND_ROLE_GUARDS','PASS','Factory and zero price rejected; no ledger written')
     deny(lambda:receipt('trade',100,4,0));assert oracle()==initial
     emit('HTTP_ZERO_VALUED_RECEIPT_REJECTED','PASS','Native receipt with zero price denied; pending stock remains outside SLE')
+    forged_pr={'doctype':'Purchase Receipt','company':f['companies']['APH'],'supplier':f['supplier'],
+        'posting_date':f['date'],'currency':'VND','conversion_rate':1,
+        'kh_aph_pending_receipt':pending['name'],'items':[row('trade',100,4,10000)]}
+    deny(lambda:insert(forged_pr));assert oracle()==initial
+    emit('HTTP_PENDING_NATIVE_LINK_BYPASS_DENIED','PASS','Native PR cannot be manually linked to pending receipt')
     pr1=rpc('kh_aph.pending_valuation.finalize',args)
     stock('APH','trade',100,4,10000)
     same=oracle();assert rpc('kh_aph.pending_valuation.finalize',args)==pr1 and oracle()==same
@@ -203,6 +208,19 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     repost();stock('APH','trade',150,6,14333.3333333333);stock('VH','trade',50,2,5000)
     emit('HTTP_LANDED_COST_KG_AND_REPOST','PASS',{'charges':charges,'APH_ma':14333.3333333333,'VH_ma':5000})
     raw_pr=receipt('raw',100,4,10000)
+    abnormal=submit(insert({'doctype':'Stock Entry','stock_entry_type':'Material Issue',
+        'company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt bất thường',
+        'kh_aph_loss_reason':'UAT một bao hỏng, ghi chi phí riêng','items':[{
+            'item_code':f['items']['raw'],'qty':25,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+            's_warehouse':f['wh']['APH'],'expense_account':f['expense'],'cost_center':f['cc']}]}))
+    stock('APH','raw',75,3,10000)
+    expense_rows=rpc('frappe.client.get_list',{'doctype':'GL Entry','filters':json.dumps({
+        'voucher_type':'Stock Entry','voucher_no':abnormal['name'],'account':f['expense'],'is_cancelled':0}),
+        'fields':json.dumps(['debit','credit'])})
+    near(sum(float(r['debit'])-float(r['credit']) for r in expense_rows),250000)
+    cancel('Stock Entry',abnormal['name']);stock('APH','raw',100,4,10000)
+    emit('HTTP_ABNORMAL_LOSS_EXPENSE_SEPARATE','PASS',{'lost_kg':25,'lost_bags':1,'expense':250000,'cancel_restored':True})
+
     def production():
         rows=[]
         for label,qty,bags,source in [('raw',100,4,True),('fg',70,7,False),('by',20,4,False),('fixed',5,1,False)]:

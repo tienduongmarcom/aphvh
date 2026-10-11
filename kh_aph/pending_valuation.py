@@ -11,6 +11,9 @@ def finalize(name, rates, reason):
         frappe.throw("Chưa bật nhập chờ định giá")
     if frappe.session.user != "Administrator" and "Accounts Manager" not in frappe.get_roles():
         frappe.throw("Kế toán trưởng mới được chốt giá", frappe.PermissionError)
+    from kh_aph.price_visibility import is_cost_restricted
+    if is_cost_restricted():
+        frappe.throw("Hồ sơ không xem giá vốn không được chốt giá nhập", frappe.PermissionError)
     doc = frappe.get_doc("APH Pending Receipt", name)
     doc.check_permission("write")
     frappe.db.sql("SELECT name FROM `tabAPH Pending Receipt` WHERE name=%s FOR UPDATE", name)
@@ -42,9 +45,18 @@ def finalize(name, rates, reason):
     receipt = frappe.get_doc({"doctype": "Purchase Receipt", "company": doc.company,
         "supplier": doc.supplier, "posting_date": today(), "currency": "VND", "conversion_rate": 1,
         "kh_aph_pending_receipt": doc.name, "items": rows})
-    receipt.insert()
-    receipt.submit()
+    frappe.flags.pending_internal_process = True
+    try:
+        receipt.insert()
+        receipt.submit()
+    finally:
+        frappe.flags.pending_internal_process = False
     doc.db_set({"purchase_receipt": receipt.name, "status": "Đã định giá",
         "valued_by": frappe.session.user, "valued_at": now_datetime(), "valuation_reason": reason},
         update_modified=True)
     return receipt.name
+
+
+def validate_link(doc, method=None):
+    if enabled() and doc.get("kh_aph_pending_receipt") and not frappe.flags.pending_internal_process:
+        frappe.throw("Phiếu chờ định giá phải được chốt qua thao tác định giá; không gán liên kết tay")

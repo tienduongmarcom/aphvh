@@ -40,3 +40,13 @@ class ProductionKgV3(unittest.TestCase):
         self.assertTrue(self.api.uses_kg_rule(self.doc))
         self.doc.purpose='Repack';self.assertTrue(self.api.uses_kg_rule(self.doc))
         self.doc.purpose='Material Receipt';self.assertFalse(self.api.uses_kg_rule(self.doc))
+
+    def test_additional_cost_rounding_conserves_total(self):
+        class Native(Row):
+            def distribute_additional_costs(self):
+                self.total_additional_costs=100
+        doc=type('Extended',(self.api.StockEntryKgCosting,Native),{})(self.doc)
+        for r in doc.items[1:3]:r.kh_aph_kg=1
+        doc.distribute_additional_costs()
+        self.assertEqual(sum(r.additional_cost for r in doc.items),100)
+        self.assertEqual(doc.items[3].additional_cost,0)

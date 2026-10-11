@@ -51,13 +51,17 @@ def validate_item(doc, method=None):
     if enabled() and not doc.is_new():
         old = doc.get_doc_before_save()
         if old and flt(old.get("kh_aph_kg_per_bag")) != flt(doc.get("kh_aph_kg_per_bag")):
-            if frappe.db.exists("APH Bag Movement", {"item_code": doc.name, "inactive": 0}):
+            if (frappe.db.exists("APH Bag Movement", {"item_code": doc.name, "inactive": 0}) or
+                    frappe.db.exists("APH Pending Receipt Item", {"item_code": doc.name, "docstatus": ["!=", 2]})):
                 frappe.throw("Mã đã có sổ bao: không đổi/xóa quy cách; dùng mã quy cách khác")
 
 
 def validate_valued_receipt(doc, method=None):
     if not enabled():
         return
+    if doc.doctype == "Stock Entry" and doc.get("kh_aph_loss_type") == "Hao hụt bất thường":
+        if not doc.get("kh_aph_loss_reason") or doc.purpose != "Material Issue":
+            frappe.throw("Hao hụt bất thường: dùng phiếu xuất chi phí riêng và lưu lý do")
     if doc.doctype == "Purchase Invoice" and not doc.get("update_stock"):
         return
     for row in doc.get("items") or []:

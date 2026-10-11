@@ -227,3 +227,5 @@ for _dt in ("Stock Entry", "Purchase Receipt", "Purchase Invoice"):
     _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
     _handlers.append("kh_aph.bag_stock.validate_valued_receipt")
     doc_events[_dt]["validate"] = _handlers
+
+doc_events["Purchase Receipt"]["validate"].append("kh_aph.pending_valuation.validate_link")
