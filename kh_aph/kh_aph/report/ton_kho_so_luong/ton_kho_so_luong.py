@@ -21,6 +21,8 @@ def get_columns():
         {"label": _("ĐVT"), "fieldname": "stock_uom", "fieldtype": "Link", "options": "UOM", "width": 70},
         {"label": _("Tồn thực tế"), "fieldname": "actual_qty", "fieldtype": "Float", "width": 120},
         {"label": _("Đặt mua chưa nhận"), "fieldname": "ordered_qty", "fieldtype": "Float", "width": 140},
+        {"label": _("Số bao thực tế"), "fieldname": "actual_bags", "fieldtype": "Float", "width": 120},
+        {"label": _("Kg chờ định giá (chưa khả dụng)"), "fieldname": "pending_kg", "fieldtype": "Float", "width": 170},
     ]
 
 
@@ -61,4 +63,39 @@ def get_data(filters):
     if not filters.show_zero:
         q = q.where((b.actual_qty != 0) | (b.ordered_qty != 0))
 
-    return q.run(as_dict=True)
+    rows = q.run(as_dict=True)
+    from kh_aph.bag_stock import enabled, balance
+    if not enabled():
+        return rows
+    indexed = {(r.item_code, r.warehouse): r for r in rows}
+    for row in rows:
+        row.actual_bags = balance(row.item_code, row.warehouse)
+        row.pending_kg = 0
+    if frappe.has_permission("APH Pending Receipt", "read"):
+        pending = frappe.get_list("APH Pending Receipt", filters={"docstatus": 1,
+            "status": "Chờ định giá"}, pluck="name", limit_page_length=0)
+        for name in pending:
+            doc = frappe.get_doc("APH Pending Receipt", name)
+            for line in doc.items:
+                if line.warehouse not in warehouses or line.item_code not in items:
+                    continue
+                if filters.company and doc.company != filters.company:
+                    continue
+                if filters.item_code and line.item_code != filters.item_code:
+                    continue
+                item = frappe.get_cached_doc("Item", line.item_code)
+                if filters.item_group and item.item_group not in groups:
+                    continue
+                if filters.warehouse:
+                    bounds = frappe.db.get_value("Warehouse", line.warehouse, ["lft", "rgt"])
+                    if not (lft <= bounds[0] and bounds[1] <= rgt):
+                        continue
+                key = (line.item_code, line.warehouse)
+                if key not in indexed:
+                    row = frappe._dict(item_code=line.item_code, warehouse=line.warehouse,
+                        item_name=item.item_name, item_group=item.item_group, stock_uom="Kg",
+                        actual_qty=0, ordered_qty=0, actual_bags=0, pending_kg=0)
+                    rows.append(row)
+                    indexed[key] = row
+                indexed[key].pending_kg += line.qty
+    return rows

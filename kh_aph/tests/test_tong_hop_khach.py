@@ -46,7 +46,7 @@ class TestTongHop(unittest.TestCase):
         # Legacy aggregate order stays removed; only the new agreed coordinator is introduced.
         root = APP / "kh_aph" / "doctype"
         names = {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")}
-        self.assertEqual(names, {"aph_shared_sales_order", "aph_shared_sales_order_item"})
+        self.assertEqual(names, {"aph_shared_sales_order", "aph_shared_sales_order_item", "aph_pending_receipt", "aph_pending_receipt_item", "aph_bag_movement"})
 
 
 if __name__ == "__main__":

@@ -30,7 +30,8 @@ class StockEntryKgCosting:
 
     def validate_repack_entry(self):
         if self.purpose == "Repack" and self.stock_entry_type == KG_ENTRY_TYPE:
-            self.kh_aph_costing_rule = RULE_KG_V2
+            from kh_aph.bag_stock import enabled
+            self.kh_aph_costing_rule = "kg-v3" if enabled() else RULE_KG_V2
             snapshot_kg(self)
             validate_kg_entry(self)
             return
@@ -45,15 +46,21 @@ class StockEntryKgCosting:
         if uses_kg_rule(self):
             allocate_finished_cost_by_kg(self)
 
+    def get_additional_cost_allocation(self):
+        if self.get("kh_aph_costing_rule") == "kg-v3":
+            rows = kg_rows(self)
+            return rows, "kh_aph_kg", sum(flt(d.kh_aph_kg) for d in rows)
+        return super().get_additional_cost_allocation()
+
 
 def uses_kg_rule(doc):
     """Phiếu có dùng quy tắc chia theo kg không — đọc mã quy tắc ĐÃ LƯU trên phiếu."""
-    return doc.purpose == "Repack" and doc.get("kh_aph_costing_rule") in (RULE_KG_V1, RULE_KG_V2)
+    return doc.purpose == "Repack" and doc.get("kh_aph_costing_rule") in (RULE_KG_V1, RULE_KG_V2, "kg-v3")
 
 
 def is_fixed_rate_row(doc, d):
     """Dòng giá cố định (kg-v2): đọc cờ ĐÃ LƯU trên dòng, chỉ với phiếu quy tắc kg-v2."""
-    return doc.get("kh_aph_costing_rule") == RULE_KG_V2 and bool(d.get(SED_FIXED_RATE)) and d.t_warehouse and not d.s_warehouse
+    return doc.get("kh_aph_costing_rule") in (RULE_KG_V2, "kg-v3") and bool(d.get(SED_FIXED_RATE)) and d.t_warehouse and not d.s_warehouse
 
 
 def fixed_rows(doc):
@@ -150,11 +157,15 @@ def validate_kg_entry(doc):
             title=_("Chưa hỗ trợ"),
         )
 
-    if doc.get("additional_costs"):
+    if doc.get("additional_costs") and doc.get("kh_aph_costing_rule") != "kg-v3":
         frappe.throw(
             _("Bản hiện tại chưa hỗ trợ chi phí cộng thêm trên phiếu {0}.").format(KG_ENTRY_TYPE),
             title=_("Chưa hỗ trợ"),
         )
+
+    if doc.get("kh_aph_costing_rule") == "kg-v3":
+        if any(flt(row.amount) < 0 for row in doc.get("additional_costs") or []):
+            frappe.throw("Chi phí sản xuất cộng thêm không được âm")
 
     for d in fixed_rows(doc):
         if flt(d.basic_rate) <= 0:

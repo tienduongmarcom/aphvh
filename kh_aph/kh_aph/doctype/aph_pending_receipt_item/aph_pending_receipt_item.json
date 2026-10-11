@@ -1,0 +1,58 @@
+{
+  "doctype": "DocType",
+  "name": "APH Pending Receipt Item",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "item_code",
+      "label": "item_code",
+      "fieldtype": "Link",
+      "options": "Item",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "warehouse",
+      "label": "warehouse",
+      "fieldtype": "Link",
+      "options": "Warehouse",
+      "reqd": 1
+    },
+    {
+      "fieldname": "qty",
+      "label": "qty",
+      "fieldtype": "Float",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "kh_aph_bags",
+      "label": "kh_aph_bags",
+      "fieldtype": "Float"
+    },
+    {
+      "fieldname": "kh_aph_kg_per_bag",
+      "label": "kh_aph_kg_per_bag",
+      "fieldtype": "Float",
+      "read_only": 1
+    },
+    {
+      "fieldname": "kh_aph_bag_rate",
+      "label": "kh_aph_bag_rate",
+      "fieldtype": "Currency",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "item_code",
+    "warehouse",
+    "qty",
+    "kh_aph_bags",
+    "kh_aph_kg_per_bag",
+    "kh_aph_bag_rate"
+  ],
+  "istable": 1,
+  "permissions": []
+}

@@ -32,7 +32,9 @@ class APHSharedSalesOrder(Document):
                                    "disabled": wh.disabled, "is_group": wh.is_group}
             rows.append({"line_id": line.line_id, "item_code": line.item_code,
                          "warehouse": line.warehouse, "company": line.company,
-                         "qty": line.qty, "rate": line.rate})
+                         "qty": line.qty, "rate": line.rate,
+                         "kh_aph_bags": line.get("kh_aph_bags"),
+                         "kh_aph_kg_per_bag": line.get("kh_aph_kg_per_bag")})
         try:
             return plan_orders(rows, warehouses)
         except ValueError as exc:
@@ -44,6 +46,8 @@ class APHSharedSalesOrder(Document):
             frappe.throw("Ngày giao không được trước ngày đặt hàng")
         if self.currency != "VND":
             frappe.throw("MVP đơn chung sử dụng VND")
+        from kh_aph.bag_stock import validate as validate_bags
+        validate_bags(self)
         plan = self._plan()
         company_by_line = {r["line_id"]: company for company, rows in plan["companies"].items() for r in rows}
         for row in self.items:
@@ -82,6 +86,8 @@ class APHSharedSalesOrder(Document):
                       "items": [{"item_code": r["item_code"], "warehouse": r["warehouse"],
                                  "qty": float(r["qty"]), "rate": float(r["rate"]), "uom": "Kg",
                                  "conversion_factor": 1, "delivery_date": self.delivery_date,
+                                 "kh_aph_bags": r.get("kh_aph_bags"),
+                                 "kh_aph_kg_per_bag": r.get("kh_aph_kg_per_bag"),
                                  "kh_aph_shared_line": r["line_id"]} for r in rows]}
             customer = frappe.get_doc("Customer", self.customer)
             if customer.get(INV_FLAG):

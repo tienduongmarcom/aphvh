@@ -4,8 +4,8 @@ class CandidateHooks(unittest.TestCase):
  def setUp(self):self.h=runpy.run_path(str(Path(__file__).resolve().parents[1]/'hooks.py'))
  def test_native_vat_and_dispatch_preserved(self):
   dn=self.h['doc_events']['Delivery Note']
-  self.assertEqual(dn['before_validate'],'kh_aph.vat.before_validate_sales')
-  self.assertEqual(dn['on_submit'],'kh_aph.sales_flow.make_draft_invoice')
+  self.assertIn('kh_aph.vat.before_validate_sales',dn['before_validate'])
+  self.assertIn('kh_aph.sales_flow.make_draft_invoice',dn['on_submit'])
   self.assertIn('kh_aph.invoice_flag.apply_invoice_flag',dn['validate'])
  def test_warning_and_risk_guards_are_wired_once(self):
   ev=self.h['doc_events']

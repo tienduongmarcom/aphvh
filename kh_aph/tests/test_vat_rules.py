@@ -97,7 +97,7 @@ class TestHooks(unittest.TestCase):
                 exec(compile(ast.Module([node], []), "hooks", "exec"), env)
         ev = env["doc_events"]
         for dt in ("Sales Order", "Delivery Note", "Sales Invoice"):
-            self.assertEqual(ev[dt]["before_validate"], "kh_aph.vat.before_validate_sales", dt)
+            self.assertIn("kh_aph.vat.before_validate_sales", ev[dt]["before_validate"] if isinstance(ev[dt]["before_validate"], list) else [ev[dt]["before_validate"]], dt)
         self.assertEqual(ev["Customer"]["validate"], "kh_aph.vat.validate_customer")
 
 

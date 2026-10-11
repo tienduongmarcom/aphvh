@@ -199,3 +199,25 @@ for _dt in ("Bin", "Stock Ledger Entry", "GL Entry", "Purchase Invoice",
     has_permission[_dt] = "kh_aph.dung_cost_policy.has_permission"
     permission_query_conditions[_dt] = "kh_aph.dung_cost_policy.query_conditions"
 after_request = ["kh_aph.dung_cost_policy.after_request"]
+
+# Opt-in quantity/pending-valuation MVP; same native transaction owns all ledgers.
+extend_doctype_class["Landed Cost Voucher"] = ["kh_aph.landed_cost_kg.LandedCostKg"]
+for _dt in ("Stock Entry", "Purchase Receipt", "Delivery Note", "Sales Invoice", "Purchase Invoice"):
+    for _event, _handler in (("before_validate", "kh_aph.bag_stock.validate"),
+                             ("on_submit", "kh_aph.bag_stock.post"),
+                             ("on_cancel", "kh_aph.bag_stock.reverse")):
+        _events = doc_events.setdefault(_dt, {})
+        _handlers = _events.get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        if _handler not in _handlers:
+            _handlers.append(_handler)
+        _events[_event] = _handlers
+for _dt, _handler in (("Item", "kh_aph.bag_stock.validate_item"),
+                       ("Sales Order", "kh_aph.bag_stock.validate"),
+                       ("Stock Reconciliation", "kh_aph.bag_stock.validate")):
+    _events = doc_events.setdefault(_dt, {})
+    _handlers = _events.get("before_validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    _handlers.append(_handler)
+    _events["before_validate"] = _handlers
+doc_events["APH Bag Movement"] = {"validate": "kh_aph.bag_stock.protect", "on_trash": "kh_aph.bag_stock.protect"}
