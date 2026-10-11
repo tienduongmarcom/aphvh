@@ -28,6 +28,17 @@ def setup_uat():
         frappe.get_doc(APPROVAL_DOCTYPE).insert()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
+    create_custom_fields({'Delivery Note': [
+        {'fieldname': 'kh_aph_delivery_state', 'label': 'Trạng thái giao hàng',
+         'fieldtype': 'Select', 'options': 'Chờ xuất\nĐang giao\nKhách đã nhận',
+         'insert_after': 'customer', 'read_only': 1, 'allow_on_submit': 1, 'no_copy': 1},
+        {'fieldname': 'kh_aph_delivery_actor', 'label': 'Người xác nhận giao/nhận',
+         'fieldtype': 'Link', 'options': 'User', 'insert_after': 'kh_aph_delivery_state',
+         'read_only': 1, 'allow_on_submit': 1, 'no_copy': 1},
+        {'fieldname': 'kh_aph_delivery_at', 'label': 'Thời điểm xác nhận giao/nhận',
+         'fieldtype': 'Datetime', 'insert_after': 'kh_aph_delivery_actor',
+         'read_only': 1, 'allow_on_submit': 1, 'no_copy': 1},
+    ]})
     filters = {"parent": "Delivery Note", "role": "Accounts Manager",
                "permlevel": 0, "if_owner": 0}
     rows = frappe.get_all("Custom DocPerm", filters=filters, fields=["name"])
