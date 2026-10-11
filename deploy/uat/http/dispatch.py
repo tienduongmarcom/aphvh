@@ -10,7 +10,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","APH Credit Release"]
 root_secret=""
 factory_password=secrets.token_urlsafe(32)
 def run(args,input=None):
@@ -166,6 +166,151 @@ finally:frappe.destroy()
     cancel("Delivery Note",fixture["dn2"])
     cancel("Delivery Note",fixture["dn1"])
     emit("HTTP_CANCEL_REVERSE","PASS",check(0,100,0))
+    # Independent high-risk HTTP regression after the ordinary dispatch reversal.
+    risk_code = '''import json,sys,frappe
+from frappe.utils.password import update_password
+from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
+frappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")
+frappe.connect();frappe.set_user("Administrator")
+f=json.load(sys.stdin)
+try:
+ c=frappe.get_doc("Customer",f["customer"])
+ c.kh_aph_credit_high_risk=1;c.kh_aph_global_credit_limit=70000;c.save()
+ names={}
+ for label,role in (("accounts","Accounts User"),("chief","Accounts Manager")):
+  email=f["user"].replace("@","-"+label+"@")
+  u=frappe.get_doc({"doctype":"User","email":email,"first_name":"CI "+label,"enabled":1,"user_type":"System User","send_welcome_email":0,"roles":[{"role":role}]}).insert()
+  update_password(u.name,f["password"]);names[label]=u.name
+ so=frappe.db.get_value("Sales Order Item",{"item_code":f["item"]},"parent")
+ dn=make_delivery_note(so)
+ for row in dn.items:row.qty=.75
+ dn.insert();frappe.db.commit()
+ names.update(dn=dn.name,so=so)
+ print("RISK_JSON:"+json.dumps(names))
+finally:frappe.destroy()
+'''
+    raw=inner(risk_code,json.dumps({**fixture,"password":factory_password}))
+    risk=json.loads(next(x[10:] for x in raw.splitlines() if x.startswith("RISK_JSON:")))
+    accounts=session(risk["accounts"],factory_password)
+    chief=session(risk["chief"],factory_password)
+    def denied(call, method, args, expected=("PermissionError","ValidationError")):
+        try:
+            call(method,args)
+        except urllib.error.HTTPError as exc:
+            error=json.loads(exc.read())
+            assert error.get("exc_type") in expected,error
+            return error
+        raise AssertionError("Request unexpectedly succeeded: "+method)
+    def reject_submit(label):
+        base=oracle();snap=snapshot()
+        denied(admin,"/api/method/frappe.client.submit",{"doc":json.dumps(getdoc("Delivery Note",risk["dn"]))},("ValidationError",))
+        assert oracle()==base and snapshot()==snap
+        assert getdoc("Delivery Note",risk["dn"])["docstatus"]==0
+        emit(label,"PASS","Draft retained; stock/debt/counts/series unchanged")
+    reject_submit("HTTP_HIGH_RISK_NO_APPROVAL")
+    direct_code='''import sys,json,frappe
+from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
+frappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")
+frappe.connect();frappe.set_user("Administrator")
+try:
+ f=json.load(sys.stdin);si=make_sales_invoice(f["so"])
+ for row in si.items:row.qty=.25;row.delivery_note=None;row.dn_detail=None
+ si.update_stock=0;si.insert();frappe.db.commit()
+ print("DIRECT_JSON:"+json.dumps({"name":si.name}))
+finally:frappe.destroy()
+'''
+    raw=inner(direct_code,json.dumps(risk))
+    direct=json.loads(next(x[12:] for x in raw.splitlines() if x.startswith("DIRECT_JSON:")))["name"]
+    base=oracle();snap=snapshot()
+    err=denied(admin,"/api/method/frappe.client.submit",{"doc":json.dumps(getdoc("Sales Invoice",direct))},("ValidationError",))
+    assert "hóa đơn tăng công nợ phải gắn phiếu giao" in (err.get("exception","")+err.get("_server_messages","")),err
+    assert oracle()==base and snapshot()==snap
+    emit("HTTP_SECURITY_DIRECT_SI_BLOCKED","PASS","No debt/stock/counts/series change")
+    admin("/api/method/frappe.client.delete",{"doctype":"Sales Invoice","name":direct})
+    for field,value in (("kh_aph_credit_high_risk",1),("kh_aph_global_credit_limit",70000)):
+        base=oracle();snap=snapshot()
+        denied(accounts,"/api/method/frappe.client.set_value",{"doctype":"Customer","name":fixture["customer"],"fieldname":field,"value":0})
+        assert float(getdoc("Customer",fixture["customer"])[field])==value
+        assert oracle()==base and snapshot()==snap
+        emit("HTTP_SECURITY_CUSTOMER_"+field,"PASS","Unauthorized control edit denied")
+    snap=snapshot()
+    denied(accounts,"/api/method/frappe.client.insert",{"doc":json.dumps({"doctype":"APH Credit Release","delivery_note":risk["dn"],"reason":"forged","approved_by":"Administrator","fingerprint":"forged"})})
+    assert snapshot()==snap
+    emit("HTTP_SECURITY_GENERIC_APPROVAL_FORGERY_DENIED","PASS","No forged record")
+    snap=snapshot()
+    denied(accounts,"/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"unauthorized"})
+    assert snapshot()==snap
+    emit("HTTP_HIGH_RISK_UNAUTHORIZED_APPROVAL","PASS","No approval created")
+    def approve():
+        return chief("/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"CI chief verified approval"})["message"]
+    approval=approve()
+    assert approval["approved_by"]==risk["chief"]
+    emit("HTTP_HIGH_RISK_CHIEF_APPROVAL","PASS",{"approved_by":approval["approved_by"]})
+    dn=getdoc("Delivery Note",risk["dn"])
+    dn["items"][0]["qty"]=.5
+    admin("/api/method/frappe.client.save",{"doc":json.dumps(dn)})
+    reject_submit("HTTP_HIGH_RISK_CHANGED_QTY_INVALIDATES_APPROVAL")
+    snap=snapshot()
+    denied(accounts,"/api/method/kh_aph.credit_release.revoke",{"approval":approval["name"],"reason":"unauthorized"})
+    assert snapshot()==snap
+    emit("HTTP_HIGH_RISK_UNAUTHORIZED_REVOKE","PASS","No audit edit")
+    approval=approve()
+    chief("/api/method/kh_aph.credit_release.revoke",{"approval":approval["name"],"reason":"CI revoked before dispatch"})
+    assert getdoc("APH Credit Release",approval["name"])["revoked_at"]
+    emit("HTTP_HIGH_RISK_CHIEF_REVOKE","PASS","Chief revocation stamped")
+    reject_submit("HTTP_HIGH_RISK_REVOKED_APPROVAL_BLOCKS")
+    approval=approve()
+    emit("HTTP_HIGH_RISK_CHIEF_REAPPROVAL","PASS",{"approved_by":approval["approved_by"]})
+    submit("Delivery Note",risk["dn"])
+    emit("HTTP_HIGH_RISK_APPROVED_DISPATCH","PASS",check(10000,99.5,1))
+    base=oracle();snap=snapshot()
+    denied(chief,"/api/method/kh_aph.credit_release.revoke",{"approval":approval["name"],"reason":"too late"},("ValidationError",))
+    assert oracle()==base and snapshot()==snap
+    emit("HTTP_HIGH_RISK_REVOKE_AFTER_DISPATCH_DENIED","PASS","Audit/stock/debt unchanged")
+    for inv in oracle()["invoices"]:
+        if inv["docstatus"]==1:cancel("Sales Invoice",inv["name"])
+    cancel("Delivery Note",risk["dn"])
+    emit("HTTP_HIGH_RISK_DISPATCH_REVERSE","PASS",check(0,100,0))
+    race_code='''import json,sys,frappe
+from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
+frappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")
+frappe.connect();frappe.set_user("Administrator")
+try:
+ f=json.load(sys.stdin);dn=make_delivery_note(f["so"])
+ for row in dn.items:row.qty=.5
+ dn.insert();frappe.db.commit();print("RACE_JSON:"+json.dumps({"name":dn.name}))
+finally:frappe.destroy()
+'''
+    raw=inner(race_code,json.dumps(risk))
+    risk["dn"]=json.loads(next(x[10:] for x in raw.splitlines() if x.startswith("RACE_JSON:")))["name"]
+    approval=approve();race_doc=getdoc("Delivery Note",risk["dn"])
+    gate=threading.Barrier(2)
+    def race(action):
+        gate.wait(timeout=20)
+        try:
+            if action=="submit":admin("/api/method/frappe.client.submit",{"doc":json.dumps(race_doc)})
+            else:chief("/api/method/kh_aph.credit_release.revoke",{"approval":approval["name"],"reason":"Concurrent CI revoke"})
+            return {"action":action,"status":"ok"}
+        except urllib.error.HTTPError as exc:
+            err=json.loads(exc.read());kind=err.get("exc_type")
+            assert kind in ("ValidationError","QueryDeadlockError","DeadlockError"),err
+            return {"action":action,"status":"rejected","type":kind}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes=list(pool.map(race,("submit","revoke")))
+    assert any(o["status"]=="ok" for o in outcomes),outcomes
+    posted=getdoc("Delivery Note",risk["dn"])["docstatus"]==1
+    revoked=bool(getdoc("APH Credit Release",approval["name"]).get("revoked_at"))
+    assert not (posted and revoked),"Dispatch and revocation both took effect"
+    if posted:
+        assert not revoked;result=check(10000,99.5,1)
+    else:
+        assert revoked;result=check(0,100,0)
+    emit("HTTP_CONCURRENT_REVOKE_DISPATCH","PASS",{"requests":outcomes,"posted":posted,"revoked":revoked,"ledger":result})
+    if posted:
+        for inv in oracle()["invoices"]:
+            if inv["docstatus"]==1:cancel("Sales Invoice",inv["name"])
+        cancel("Delivery Note",risk["dn"])
+        check(0,100,0)
 except Exception as exc:
     emit("HTTP_DISPATCH_RUNNER","FAIL",{"type":type(exc).__name__,"error":str(exc)[:1000]})
 finally:
