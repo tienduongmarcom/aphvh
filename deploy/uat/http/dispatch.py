@@ -292,6 +292,11 @@ finally:frappe.destroy()
         return chief("/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"CI chief verified approval"})["message"]
     approval=approve()
     assert approval["approved_by"]==risk["chief"]
+    baseline=snapshot();saved_release=getdoc("APH Credit Release",approval["name"])
+    for label,client in (("CHIEF",chief),("ADMIN",admin)):
+        denied(client,"/api/method/frappe.client.delete",{"doctype":"APH Credit Release","name":approval["name"]},("PermissionError",))
+        assert snapshot()==baseline and getdoc("APH Credit Release",approval["name"])==saved_release
+        emit("HTTP_APPROVAL_DELETE_"+label+"_DENIED","PASS","Approval retained; counts and series unchanged")
     emit("HTTP_HIGH_RISK_CHIEF_APPROVAL","PASS",{"approved_by":approval["approved_by"]})
     dn=getdoc("Delivery Note",risk["dn"])
     dn["items"][0]["qty"]=.5
