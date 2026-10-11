@@ -82,8 +82,14 @@ jobs:
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 37
+          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 43
           ! grep -q '"status": "FAIL"' http-dispatch-evidence.txt
+      - name: Render four-company quantity slip to PDF
+        run: |
+          google-chrome --version
+          google-chrome --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/shared-four-company-slip.pdf" "file://$PWD/shared-four-company-slip.html"
+          test -s shared-four-company-slip.pdf
+          head -c 4 shared-four-company-slip.pdf | grep -q '%PDF'
       - name: Stop disposable CI containers
         if: always()
         run: |
@@ -96,4 +102,6 @@ jobs:
             candidate-image-evidence.txt
             fresh-site-evidence.txt
             http-*-evidence.txt
+            shared-four-company-slip.html
+            shared-four-company-slip.pdf
 
