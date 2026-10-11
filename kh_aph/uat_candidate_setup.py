@@ -22,6 +22,9 @@ def setup_uat():
                "Stock Entry", "Payment Entry", "GL Entry", "Stock Ledger Entry"):
         if frappe.db.count(dt):
             frappe.throw("UAT phải là bản sao chưa có dữ liệu nghiệp vụ: " + dt)
+    from kh_aph.constants import ROLE_NO_COST
+    if not frappe.db.exists("Role", ROLE_NO_COST):
+        frappe.get_doc({"doctype": "Role", "role_name": ROLE_NO_COST, "desk_access": 1}).insert()
     apply_query_field_permissions()
     setup_shared()
     if not frappe.db.exists("DocType", "APH Credit Release"):

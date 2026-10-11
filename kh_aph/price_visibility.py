@@ -21,6 +21,7 @@ from frappe.utils import cint
 
 from kh_aph.constants import (
     COST_HIDDEN_ROLES,
+    ROLE_NO_COST,
     IG_FACTORY_CAN_PRICE,
     PR_OPEX,
     PRICE_ROLES,
@@ -50,7 +51,7 @@ def is_cost_restricted(user: str | None = None) -> bool:
     if user == "Administrator":
         return False
     roles = _roles(user)
-    return bool(roles.intersection(COST_HIDDEN_ROLES)) and not roles.intersection(COST_ROLES)
+    return ROLE_NO_COST in roles or (bool(roles.intersection(COST_HIDDEN_ROLES)) and not roles.intersection(COST_ROLES))
 
 
 def is_hn_storekeeper(user: str | None = None) -> bool:

@@ -1,4 +1,4 @@
-FIXTURE_CODE = 'import json,sys,frappe\nfrom frappe.utils import today\nfrom frappe.utils.password import update_password\nfrom kh_aph.constants import INV_FLAG, INV_NO, ROLE_FACTORY\nfrappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")\nfrappe.connect();frappe.set_user("Administrator")\nimport uuid\npayload=json.load(sys.stdin)\nco = frappe.get_doc("Company", frappe.db.get_value("Company", {"abbr": "APH"}, "name"))\np = "UAT-P0-" + uuid.uuid4().hex[:8]\nwh = frappe.get_doc({"doctype": "Warehouse", "warehouse_name": p, "company": co.name,\n                    "is_group": 0, "parent_warehouse": frappe.db.get_value("Warehouse", {\n                        "company": co.name, "is_group": 1, "parent_warehouse": ["is", "not set"]}, "name"),\n                    "account": co.default_inventory_account}).insert().name\ngroup = frappe.get_doc({"doctype": "Item Group", "item_group_name": p,\n                       "parent_item_group": "HH - Hàng hóa", "is_group": 0}).insert().name\ncustomer = frappe.get_doc({"doctype": "Customer", "customer_name": p, "customer_type": "Company",\n                           "customer_group": frappe.db.get_value("Customer Group", {"is_group": 0}, "name"),\n                           "territory": frappe.db.get_value("Territory", {"is_group": 0}, "name"),\n                           INV_FLAG: INV_NO}).insert()\nvat_account = frappe.db.get_value("Account", {"company": co.name, "account_number": "33311", "is_group": 0}, "name")\ntax = frappe.get_doc({"doctype": "Item Tax Template", "title": p + "-TEST10", "company": co.name,\n                     "taxes": [{"tax_type": vat_account, "tax_rate": 10}]}).insert()\nitem = frappe.get_doc({"doctype": "Item", "item_code": p, "item_name": p, "item_group": group,\n                      "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",\n                      "taxes": [{"item_tax_template": tax.name, "tax_category": customer.tax_category}],\n                      "item_defaults": [{"company": co.name, "default_warehouse": wh,\n                                         "income_account": co.default_income_account,\n                                         "expense_account": co.default_expense_account,\n                                         "buying_cost_center": co.cost_center,\n                                         "selling_cost_center": co.cost_center}]}).insert()\nse = frappe.get_doc({"doctype": "Stock Entry", "stock_entry_type": "Material Receipt", "company": co.name,\n                    "posting_date": today(), "items": [{"item_code": item.name, "qty": 100,\n                        "uom": "Kg", "stock_uom": "Kg", "conversion_factor": 1, "t_warehouse": wh,\n                        "basic_rate": 10000, "set_basic_rate_manually": 1,\n                        "expense_account": co.stock_adjustment_account, "cost_center": co.cost_center}]}).insert()\nse.submit()\nuser = frappe.get_doc({"doctype": "User", "email": p.lower() + "@example.invalid", "first_name": p,\n                      "enabled": 1, "user_type": "System User", "send_welcome_email": 0,\n                      "roles": [{"role": ROLE_FACTORY}]})\nuser.flags.no_welcome_mail = True\nuser.insert()\n\nupdate_password(user.name,payload["password"])\nfrappe.db.commit()\nprint("FIXTURE_JSON:"+json.dumps({"user":user.name,"stock_entry":se.name}))\nfrappe.destroy()\n'
+FIXTURE_CODE = 'import json,sys,frappe\nfrom frappe.utils import today\nfrom frappe.utils.password import update_password\nfrom kh_aph.constants import INV_FLAG, INV_NO, ROLE_FACTORY, ROLE_NO_COST\nfrappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")\nfrappe.connect();frappe.set_user("Administrator")\nimport uuid\npayload=json.load(sys.stdin)\nco = frappe.get_doc("Company", frappe.db.get_value("Company", {"abbr": "APH"}, "name"))\np = "UAT-P0-" + uuid.uuid4().hex[:8]\nwh = frappe.get_doc({"doctype": "Warehouse", "warehouse_name": p, "company": co.name,\n                    "is_group": 0, "parent_warehouse": frappe.db.get_value("Warehouse", {\n                        "company": co.name, "is_group": 1, "parent_warehouse": ["is", "not set"]}, "name"),\n                    "account": co.default_inventory_account}).insert().name\ngroup = frappe.get_doc({"doctype": "Item Group", "item_group_name": p,\n                       "parent_item_group": "HH - Hàng hóa", "is_group": 0}).insert().name\ncustomer = frappe.get_doc({"doctype": "Customer", "customer_name": p, "customer_type": "Company",\n                           "customer_group": frappe.db.get_value("Customer Group", {"is_group": 0}, "name"),\n                           "territory": frappe.db.get_value("Territory", {"is_group": 0}, "name"),\n                           INV_FLAG: INV_NO}).insert()\nvat_account = frappe.db.get_value("Account", {"company": co.name, "account_number": "33311", "is_group": 0}, "name")\ntax = frappe.get_doc({"doctype": "Item Tax Template", "title": p + "-TEST10", "company": co.name,\n                     "taxes": [{"tax_type": vat_account, "tax_rate": 10}]}).insert()\nitem = frappe.get_doc({"doctype": "Item", "item_code": p, "item_name": p, "item_group": group,\n                      "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",\n                      "taxes": [{"item_tax_template": tax.name, "tax_category": customer.tax_category}],\n                      "item_defaults": [{"company": co.name, "default_warehouse": wh,\n                                         "income_account": co.default_income_account,\n                                         "expense_account": co.default_expense_account,\n                                         "buying_cost_center": co.cost_center,\n                                         "selling_cost_center": co.cost_center}]}).insert()\nse = frappe.get_doc({"doctype": "Stock Entry", "stock_entry_type": "Material Receipt", "company": co.name,\n                    "posting_date": today(), "items": [{"item_code": item.name, "qty": 100,\n                        "uom": "Kg", "stock_uom": "Kg", "conversion_factor": 1, "t_warehouse": wh,\n                        "basic_rate": 10000, "set_basic_rate_manually": 1,\n                        "expense_account": co.stock_adjustment_account, "cost_center": co.cost_center}]}).insert()\nse.submit()\nuser = frappe.get_doc({"doctype": "User", "email": p.lower() + "@example.invalid", "first_name": "Dũng giả lập UAT",\n                      "enabled": 1, "user_type": "System User", "send_welcome_email": 0,\n                      "roles": [{"role": ROLE_FACTORY}, {"role": ROLE_NO_COST}]})\nuser.flags.no_welcome_mail = True\nuser.insert()\n\nupdate_password(user.name,payload["password"])\nfrappe.db.commit()\nprint("FIXTURE_JSON:"+json.dumps({"user":user.name,"stock_entry":se.name,"item":item.name,"warehouse":wh,"company":co.name}))\nfrappe.destroy()\n'
 """HTTP cost-security test on a disposable clone, with mandatory database restoration."""
 import json, os, secrets, subprocess, uuid
 import http.cookiejar, urllib.request, urllib.parse, urllib.error
@@ -8,7 +8,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format"]
 root_secret=""
 factory_password=secrets.token_urlsafe(32)
 def run(args,input=None):
@@ -102,6 +102,75 @@ try:
     data=admin("/api/method/frappe.client.get?"+urllib.parse.urlencode({"doctype":"Stock Entry","name":fixture["stock_entry"]}))["message"]
     assert float(data["items"][0]["basic_rate"])==10000
     emit("HTTP_COST_ADMIN","PASS",{"basic_rate":10000})
+    # Named Dũng simulation: explicit deny survives ordinary operational role unions.
+    def denied(call, method, args):
+        try:
+            call(method,args)
+        except urllib.error.HTTPError as exc:
+            error=json.loads(exc.read())
+            assert exc.code==403 and error.get("exc_type")=="PermissionError",str(error)[:400]
+        else:
+            raise AssertionError("Cost endpoint did not deny: "+method)
+    role_code = """import json,sys,frappe
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
+try:
+ frappe.connect();frappe.set_user('Administrator')
+ from kh_aph.constants import ROLE_FACTORY,ROLE_NO_COST
+ payload=json.load(sys.stdin);u=frappe.get_doc('User',payload['user'])
+ u.set('roles',[{'role':r} for r in [ROLE_FACTORY,ROLE_NO_COST]+payload['roles']])
+ u.save();frappe.db.commit();frappe.clear_cache(user=u.name)
+ print('PROFILE:'+json.dumps({'user':u.name,'roles':frappe.get_roles(u.name)}))
+finally:frappe.destroy()
+"""
+    for label,roles in (("factory",[]),("sales_manager",["Sales Manager"]),
+                        ("accounts_user",["Accounts User"]),("accounts_manager",["Accounts Manager"]),
+                        ("stock_manager",["Stock Manager"])):
+        raw=inner(role_code,json.dumps({"user":fixture["user"],"roles":roles}))
+        measured=json.loads(next(x[8:] for x in raw.splitlines() if x.startswith("PROFILE:")))
+        actor=session(fixture["user"],factory_password)
+        for path in ("/api/method/frappe.client.get?"+urllib.parse.urlencode({"doctype":"Stock Entry","name":fixture["stock_entry"]}),
+                     "/api/v2/document/Stock%20Entry/"+urllib.parse.quote(fixture["stock_entry"],safe="")):
+            data=actor(path);doc=data.get("message",data.get("data"));row=doc["items"][0]
+            assert float(row["qty"])==100 and row.get("basic_rate") in (None,"",0),str(row)[:400]
+        q={"doctype":"Stock Entry Detail","parent":"Stock Entry","filters":json.dumps({"parent":fixture["stock_entry"]}),"fieldname":json.dumps(["qty","basic_rate"])}
+        values=actor("/api/method/frappe.client.get_value",q)["message"]
+        assert float(values['qty'])==100 and values.get('basic_rate') in (None,'',0)
+        for dt in ("Bin","Stock Ledger Entry","GL Entry"):
+            denied(actor,"/api/method/frappe.client.get_list",{"doctype":dt,"fields":json.dumps(["name"])})
+        for report in ("Stock Ledger","Stock Balance","Ton kho theo tai khoan va dia diem"):
+            denied(actor,"/api/method/frappe.desk.query_report.run",{"report_name":report,"filters":json.dumps({"company":fixture["company"]})})
+        denied(actor,"/api/method/frappe.core.doctype.data_export.exporter.export_data",{"doctype":"Stock Entry","file_type":"CSV"})
+        denied(actor,"/api/method/erpnext.controllers.stock_controller.show_stock_ledger_preview",{"company":fixture["company"],"doctype":"Stock Entry","docname":fixture["stock_entry"]})
+        emit("HTTP_DUNG_PROFILE_"+label.upper(),"PASS",{"user":fixture["user"],"roles":measured["roles"],"quantity":100,"cost_visible":False,"query_report_export_preview":"denied or masked"})
+    # Stock operation under the base Dũng profile, not Administrator.
+    inner(role_code,json.dumps({"user":fixture["user"],"roles":[]}))
+    actor=session(fixture["user"],factory_password)
+    issue={"doctype":"Stock Entry","stock_entry_type":"Material Issue","company":fixture["company"],
+           "items":[{"item_code":fixture["item"],"qty":2,"uom":"Kg","stock_uom":"Kg","conversion_factor":1,"s_warehouse":fixture["warehouse"]}]}
+    created=actor("/api/method/frappe.client.insert",{"doc":json.dumps(issue)})["message"]
+    assert created["items"][0].get("basic_rate") in (None,"",0),"Insert response exposed cost"
+    submitted=actor("/api/method/frappe.client.submit",{"doc":json.dumps(created)})["message"]
+    assert submitted['docstatus']==1 and submitted['items'][0].get('basic_rate') in (None,'',0)
+    control=admin("/api/method/frappe.client.get",{"doctype":"Stock Entry","name":created["name"]})['message']
+    assert float(control['items'][0]['basic_rate'])==10000 and float(control['items'][0]['qty'])==2
+    qty=admin("/api/method/frappe.client.get_value",{"doctype":"Bin","filters":json.dumps({"item_code":fixture["item"],"warehouse":fixture["warehouse"]}),"fieldname":"actual_qty"})['message']
+    assert float(qty['actual_qty'])==98,str(qty)
+    emit("HTTP_DUNG_QUANTITY_OPERATION","PASS",{"actor":fixture['user'],"submitted_qty":2,"remaining_kg":98,"admin_rate":10000,"insert_submit_cost_visible":False})
+    # Probe template prints cost explicitly; before_print must mask it for Dũng.
+    print_code="""import json,sys,frappe
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
+try:
+ frappe.connect();frappe.set_user('Administrator');p=json.load(sys.stdin)
+ f=frappe.get_doc({'doctype':'Print Format','name':'UAT Dung Cost Probe','doc_type':'Stock Entry','custom_format':1,'print_format_type':'Jinja','html':'<div>PROBE_QTY={{ doc.items[0].qty }};PROBE_COST={{ doc.items[0].basic_rate }}</div>'}).insert()
+ frappe.db.commit();print('FORMAT:'+f.name)
+finally:frappe.destroy()
+"""
+    raw=inner(print_code,'{}');fmt=next(x[7:] for x in raw.splitlines() if x.startswith('FORMAT:'))
+    args={"doctype":"Stock Entry","name":fixture['stock_entry'],"print_format":fmt,"no_letterhead":1}
+    a=admin('/api/method/frappe.www.printview.get_html_and_style',args)['message']['html']
+    d=actor('/api/method/frappe.www.printview.get_html_and_style',args)['message']['html']
+    assert 'PROBE_COST=10000' in a and 'PROBE_COST=10000' not in d and 'PROBE_QTY=100' in d
+    emit('HTTP_DUNG_PRINT','PASS',{'admin_probe_cost':10000,'dung_cost_visible':False,'quantity':100})
 except Exception as exc:
     emit("HTTP_COST_RUNNER","FAIL",{"type":type(exc).__name__,"error":str(exc)[:1000]})
 finally:

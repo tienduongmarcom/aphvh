@@ -172,3 +172,26 @@ class TestCostRead(unittest.TestCase):
         self.assertIsNone(doc.items[0].valuation_rate)
         self.assertIsNone(doc.items[0].gross_profit)
 
+
+    def test_explicit_cost_deny_wins_over_privileged_role_union(self):
+        from kh_aph.constants import ROLE_FACTORY, ROLE_NO_COST
+        for role in ("Accounts User", "Accounts Manager", "Stock Manager", "Sales Manager"):
+            self.frappe.get_roles.return_value = [ROLE_FACTORY, ROLE_NO_COST, role]
+            doc = self.doc()
+            doc.apply_fieldlevel_read_permissions()
+            self.assertEqual(doc.items[0].qty, 100)
+            self.assertIsNone(doc.items[0].basic_rate)
+
+    def test_response_mask_does_not_mutate_source_transaction(self):
+        from kh_aph.constants import ROLE_NO_COST
+        self.frappe.get_roles.return_value = [ROLE_NO_COST, "Accounts User"]
+        policy = module("test_dung_policy", "dung_cost_policy.py")
+        source = {"doctype": "Stock Entry", "items": [{"qty": 2, "basic_rate": 10000}],
+                  "additional_costs": [{"amount": 100}], "total_amount": 20000}
+        import copy
+        response = copy.deepcopy(source)
+        policy.mask_response(response)
+        self.assertEqual(source["items"][0]["basic_rate"], 10000)
+        self.assertEqual(response["items"][0]["qty"], 2)
+        self.assertIsNone(response["items"][0]["basic_rate"])
+        self.assertEqual(response["additional_costs"], [])

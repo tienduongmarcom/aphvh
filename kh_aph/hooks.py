@@ -190,3 +190,12 @@ for _event in ('validate', 'before_submit', 'before_update_after_submit'):
     if _handler not in _handlers:
         _handlers.append(_handler)
     _events[_event] = _handlers
+
+# Explicit Dũng deny profile. Native permissions remain required on allowed paths.
+before_request = ["kh_aph.dung_cost_policy.before_request"]
+for _dt in ("Bin", "Stock Ledger Entry", "GL Entry", "Purchase Invoice",
+            "Landed Cost Voucher", "Stock Reconciliation", "BOM", "Work Order",
+            "Repost Item Valuation"):
+    has_permission[_dt] = "kh_aph.dung_cost_policy.has_permission"
+    permission_query_conditions[_dt] = "kh_aph.dung_cost_policy.query_conditions"
+after_request = ["kh_aph.dung_cost_policy.after_request"]

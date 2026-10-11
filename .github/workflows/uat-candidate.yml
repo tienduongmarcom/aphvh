@@ -31,7 +31,7 @@ jobs:
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
             test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
-            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "2fb7958790a508d876fed5595ad0c1fabfaca46de2cbc9f44a50320fcaf2c958"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "b510ecce2ff72baa7635896ad85a4bc7361f7e4314bf3e0cf6fb7e7a40226edd"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
@@ -78,7 +78,7 @@ jobs:
           set -o pipefail
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 5
+          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 12
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt

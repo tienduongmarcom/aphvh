@@ -121,3 +121,6 @@ EINV_FIELDS = (SI_EINV_SERIES, SI_EINV_NO, SI_EINV_DATE)
 
 REPORT_INVOICED = "Ban hang co hoa don"
 REPORT_INVOICED_LABEL = "Bán hàng có hóa đơn"
+
+# Explicit deny profile: operational roles cannot re-enable cost visibility.
+ROLE_NO_COST = "APH Không xem giá vốn"
