@@ -1,6 +1,6 @@
 # APH–VH–MK–TL candidate UAT
 
-This branch is an opt-in candidate, not a production release. Source hooks/coordinator/credit modules are byte-for-byte copies of the verified UAT export recorded in candidate-20261011.json. Native ERPNext/Frappe DocType dumps are evidence only and must not overwrite core schemas.
+This branch is an opt-in candidate, not a production release. Base source was verified against the UAT export recorded in candidate-20261011.json. The later credit bypass patch has separately verified runtime SHA256 values recorded there. Native ERPNext/Frappe DocType dumps are evidence only and must not overwrite core schemas.
 
 The approved new coordinator creates company-specific Sales Orders. Dispatch posts a submitted receivable SI without a second stock posting. Global warnings use receivable GL across APH/VH/MK/TL and already include verified-customer unallocated receipts. High-risk customer shipments require a matching, unrevoked chief approval.
 
@@ -23,8 +23,8 @@ bench --site aphvh-web-uat clear-cache
 
 Reload only the isolated UAT workers. The explicit setup preserves native permissions, installs 10 new custom fields and the approval audit DocType, and adds only Delivery Note read at level0 for Accounts Manager. The production frontend is explicitly rejected.
 
-The exported existing UAT candidate passed 23 business cases plus data/series restoration. This new consolidated setup has not yet been exercised in a fresh image/site; do not label clean-image reproduction PASS until that test runs.
+The exported existing UAT candidate passed 27 business cases plus data/series restoration. This new consolidated setup has not yet been exercised in a fresh image/site; do not label clean-image reproduction PASS until that test runs.
 
 ## Remaining gates before release
 
-Direct Sales Invoice/other credit paths and unauthorized customer-control edits must be tested. Actual Dung and chief-accountant identities, concurrent approve/revoke/dispatch behavior, and the user interface remain unverified. Shared-order bag conversion, delivery workflow/slips, pending valuation, manufacturing/byproducts and deposit allocation are not fully accepted. The complete 202 numbered decisions were not available for full reconciliation. Do not merge, tag or deploy automatically.
+Direct Sales Invoice bypass and unauthorized customer-control edits passed the specified HTTP cases. Other credit paths still require review. Actual Dung and chief-accountant identities, concurrent approve/revoke/dispatch behavior, and the user interface remain unverified. Shared-order bag conversion, delivery workflow/slips, pending valuation, manufacturing/byproducts and deposit allocation are not fully accepted. The complete 202 numbered decisions were not available for full reconciliation. Do not merge, tag or deploy automatically.
