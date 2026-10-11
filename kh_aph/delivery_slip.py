@@ -46,9 +46,9 @@ def render(shared, documents):
             rows.append('<tr>' + ''.join('<td>' + escape(value) + '</td>' for value in cells) + '</tr>')
     headers = ('Phiếu giao', 'Đơn vị sở hữu', 'Kho xuất', 'Mã hàng', 'Tên hàng', 'Số lượng', 'ĐVT', 'Trạng thái')
     return ('<!doctype html><html lang="vi"><meta charset="utf-8"><title>Phiếu giao hàng tổng hợp</title>'
-            '<style>body{font:13px Arial;margin:24px}table{width:100%;border-collapse:collapse}'
+            '<style>@page{size:A4;margin:12mm}body{font:13px Arial;margin:24px}table{width:100%;border-collapse:collapse}'
             'td,th{border:1px solid #444;padding:6px;text-align:left}h1{font-size:20px;text-align:center}'
-            '@media print{tr{break-inside:avoid}thead{display:table-header-group}}</style>'
+            '@media print{body{margin:0}tr{break-inside:avoid}thead{display:table-header-group}}</style>'
             '<h1>PHIẾU GIAO HÀNG TỔNG HỢP</h1><p>Đơn chung: ' + escape(shared.name)
             + '<br>Khách hàng: ' + escape(shared.customer) + '</p><table><thead><tr>'
             + ''.join('<th>' + escape(h) + '</th>' for h in headers) + '</tr></thead><tbody>'
