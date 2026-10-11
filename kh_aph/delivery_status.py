@@ -48,7 +48,11 @@ def confirm(name, action):
         frappe.throw('Thao tác giao hàng không hợp lệ')
     frappe.db.sql('SELECT name FROM `tabDelivery Note` WHERE name=%s FOR UPDATE', name)
     doc = frappe.get_doc('Delivery Note', name)
-    doc.check_permission('write')
+    doc.check_permission('read')
+    receipt_only = (action == 'receive' and not frappe.has_permission('Delivery Note', 'write', doc=doc)
+                    and bool(set(frappe.get_roles()) & {'Nhân viên bán hàng', 'Thủ kho bán hàng'}))
+    if not receipt_only:
+        doc.check_permission('write')
     if cint(doc.is_return) or cint(doc.docstatus) == 2:
         frappe.throw('Không xác nhận giao hàng trên phiếu trả lại hoặc phiếu đã hủy')
     current = doc.get(STATE)
@@ -61,7 +65,9 @@ def confirm(name, action):
         frappe.flags.kh_aph_delivery_transition = doc.name
         try:
             stamp(doc, RECEIVED)
-            doc.save()
+            # Server-loaded document; this endpoint accepts no document content.
+            # Read scope is checked above; only the three receipt fields are changed.
+            doc.save(ignore_permissions=receipt_only)
         finally:
             frappe.flags.kh_aph_delivery_transition = previous
     else:
