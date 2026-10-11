@@ -21,9 +21,17 @@ bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
 bench --site aphvh-web-uat clear-cache
 ```
 
-Reload only the isolated UAT workers. The explicit setup preserves native permissions, installs 10 new custom fields and the approval audit DocType, and adds only Delivery Note read at level0 for Accounts Manager. The production frontend is explicitly rejected.
+Reload only the isolated UAT workers. The explicit setup preserves native permissions, installs 13 candidate custom fields and the approval audit DocType, and adds only Delivery Note read at level0 for Accounts Manager. The production frontend is explicitly rejected.
 
-The exported existing UAT candidate passed 27 business cases plus data/series restoration. This new consolidated setup has not yet been exercised in a fresh image/site; do not label clean-image reproduction PASS until that test runs.
+Fresh-image/site verification succeeded: 152 kh_aph + 48 lab9x tests, candidate setup with idempotent repeat, 46 HTTP business cases and database/series restoration. Evidence: https://github.com/tienduongmarcom/aphvh/actions/runs/38134304280 . This run also generated a four-company PDF; the later A4 style refinement is checked separately.
+
+## Delivery and quantity slips
+
+Warehouse users confirm handoff or pickup through the Delivery Note buttons. Handoff submits the native company DN and its accounting-only SI in the same request; pickup goes straight to received. Native submit defaults to in transit. Sales users who can read that DN may confirm receipt through the dedicated endpoint; this does not grant native write/submit permissions. The endpoint accepts only a name/action, loads the trusted document, stamps the three delivery fields, and preserves native read scope. Version history records state changes.
+
+On a submitted shared order, select company delivery batches under Print to generate a quantity-only consolidated slip. Individual Delivery Notes retain their existing print formats. Consolidation checks permissions and shared-order membership for every selected DN, preserves source company/warehouse and makes no stock/accounting writes. A4 is specified by the print CSS.
+
+HTTP evidence includes eight deliveries for APH/VH/MK/TL under the warehouse role, receipt by the read-only sales role, generic-write and unrelated-role denial, four-company stock/debt checks and consolidation under the warehouse role. Restore verification includes shared order/child tables, custom fields and Version counts. These are simulated UAT users, not actual Dung/chief identities.
 
 ## Remaining gates before release
 
