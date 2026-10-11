@@ -473,6 +473,11 @@ finally:frappe.destroy()
     scoped('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(aph['notes'])})
     assert oracle()==baseline
     emit('HTTP_COMPANY_SCOPE_RECEIPT_PRINT','PASS','APH-only user cannot confirm/print VH; listing limited to APH; ledgers unchanged')
+    stock_report=scoped('/api/method/frappe.desk.query_report.run?'+urllib.parse.urlencode({'report_name':'Ton kho so luong','filters':json.dumps({})}))['message']['result']
+    assert stock_report and {row['warehouse'] for row in stock_report}=={aph['warehouse']},stock_report
+    assert all(not any(k in row for k in ('valuation_rate','stock_value','basic_rate')) for row in stock_report)
+    assert oracle()==baseline
+    emit('HTTP_COMPANY_SCOPE_QUANTITY_REPORT','PASS','APH-only warehouse user sees APH quantities without cost; no VH/MK/TL')
     inner(scope_code,json.dumps({'user':risk['accounts'],'company':aph['company']}))
     report_user=session(risk['accounts'],factory_password)
     filters={'customer':fixture['customer'],'from_date':'2000-01-01','to_date':'2099-12-31'}
