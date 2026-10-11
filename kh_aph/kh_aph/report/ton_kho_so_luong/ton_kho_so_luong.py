@@ -25,6 +25,11 @@ def get_columns():
 
 
 def get_data(filters):
+    # Query Builder does not apply user permissions automatically.
+    warehouses = frappe.get_list("Warehouse", pluck="name", limit_page_length=0)
+    items = frappe.get_list("Item", pluck="name", limit_page_length=0)
+    if not warehouses or not items:
+        return []
     b = frappe.qb.DocType("Bin")
     i = frappe.qb.DocType("Item")
     w = frappe.qb.DocType("Warehouse")
@@ -40,6 +45,8 @@ def get_data(filters):
         .orderby(b.item_code)
         .orderby(b.warehouse)
     )
+
+    q = q.where(w.name.isin(warehouses)).where(i.name.isin(items))
 
     if filters.company:
         q = q.where(w.company == filters.company)
