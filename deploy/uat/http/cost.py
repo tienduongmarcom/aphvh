@@ -142,6 +142,11 @@ finally:frappe.destroy()
         assert float(values['qty'])==100 and values.get('basic_rate') in (None,'',0)
         denied(actor,"/api/method/frappe.client.get_list",{"doctype":"Stock Entry Detail","parent":"Stock Entry","fields":json.dumps(["qty","basic_rate"]),"group_by":"basic_rate"})
         denied(actor,"/api/method/frappe.client.get_list",{"doctype":"Stock Entry Detail","parent":"Stock Entry","fields":json.dumps(["qty"]),"filters":json.dumps({"basic_rate":10000})})
+        rate_args={'item_code':fixture['item'],'warehouse':fixture['warehouse'],'with_valuation_rate':1}
+        balance=admin('/api/method/erpnext.stock.utils.get_stock_balance',rate_args)['message']
+        assert float(balance[0])==100 and float(balance[1])==10000,str(balance)
+        denied(actor,'/api/method/erpnext.stock.utils.get_stock_balance',rate_args)
+        denied(actor,'/api/method/erpnext.stock.utils.get_incoming_rate',{'args':json.dumps({'item_code':fixture['item'],'warehouse':fixture['warehouse'],'qty':1})})
         for dt in ("Bin","Stock Ledger Entry","GL Entry"):
             denied(actor,"/api/method/frappe.client.get_list",{"doctype":dt,"fields":json.dumps(["name"])})
         for report in ("Stock Ledger","Stock Balance","Ton kho theo tai khoan va dia diem"):

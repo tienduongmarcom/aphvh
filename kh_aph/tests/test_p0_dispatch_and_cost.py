@@ -199,3 +199,16 @@ class TestCostRead(unittest.TestCase):
         self.assertEqual(response["additional_costs"], [])
         self.assertIsNone(response["helper"]["basic_rate"])
         self.assertEqual(response["helper"]["qty"], 2)
+
+    def test_explicit_profile_denies_scalar_and_tuple_cost_rpc(self):
+        from kh_aph.constants import ROLE_NO_COST
+        self.frappe.get_roles.return_value = [ROLE_NO_COST, "Stock Manager"]
+        self.frappe.throw = Mock(side_effect=Rejected)
+        self.frappe.PermissionError = Rejected
+        self.frappe.form_dict = Row()
+        self.frappe.request = Row(method="POST")
+        policy = module("test_dung_rpc", "dung_cost_policy.py")
+        for method in ("get_stock_balance", "get_incoming_rate"):
+            self.frappe.request.path = "/api/method/erpnext.stock.utils." + method
+            with self.assertRaises(Rejected):
+                policy.before_request()

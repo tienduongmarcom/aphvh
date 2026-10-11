@@ -35,7 +35,8 @@ def before_request():
     deny = (bool(cint(frappe.form_dict.get("as_csv"))) or "export" in cmd.lower() or "download_template" in cmd.lower()
             or cmd.startswith("frappe.desk.reportview.")
             or cmd.startswith("erpnext.stock.get_item_details.")
-            or cmd.endswith(".get_item_details"))
+            or cmd.endswith(".get_item_details")
+            or cmd.endswith((".get_stock_balance", ".get_incoming_rate", ".get_stock_value")))
     if cmd.startswith("frappe.desk.query_report."):
         deny = frappe.form_dict.get("report_name") != REPORT_QTY
     if cmd in ("frappe.client.get_list", "frappe.client.get_value", "frappe.client.get_count"):
