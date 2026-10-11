@@ -7,6 +7,10 @@ ROOT='/home/frappe/frappe-bench';SITE='aphvh-web-uat';WEB='aphvh-p0-web-uat'
 source=Path(os.environ['UAT_SITE_ROOT'])/'sites'
 assert source.parent.name.startswith('aphvh-http-uat-')
 assert (source/SITE/'site_config.json').exists() and not (source/'frontend').exists()
+# Disposable site only: print native Desk tracebacks to container logs.
+config_path=source/SITE/'site_config.json'
+config=json.loads(config_path.read_text());config['developer_mode']=1
+config_path.write_text(json.dumps(config))
 mount=str(source)+':'+ROOT+'/sites'
 subprocess.run(['docker','run','-d','--name','erp-aph-vh-backend-1','--network','aphvh-uat-net','-v',mount,'--entrypoint','bash','aphvh-uat:verification','-ec','exec sleep infinity'],check=True)
 subprocess.run(['docker','run','-d','--name',WEB,'--network','aphvh-uat-net','-v',mount,'-p','127.0.0.1:18091:8000','--workdir',ROOT+'/sites','--entrypoint',ROOT+'/env/bin/gunicorn','aphvh-uat:verification','--bind','0.0.0.0:8000','--workers','1','--threads','2','--timeout','120','kh_aph.uat_wsgi:application'],check=True)
@@ -24,3 +28,14 @@ for attempt in range(60):
  except Exception:
   if attempt==59:raise
   time.sleep(1)
+
+# Fail early on native Desk boot before the longer business suites.
+try:
+ with op.open(urllib.request.Request('http://127.0.0.1:18091/desk',headers={'Host':SITE}),timeout=60) as response:
+  html=response.read().decode()
+  assert response.status==200 and 'frappe' in html,'Native Desk HTML missing'
+ print(json.dumps({'case':'NATIVE_DESK_BOOT','status':'PASS'}))
+except Exception:
+ result=subprocess.run(['docker','logs',WEB],text=True,capture_output=True)
+ print((result.stdout+result.stderr)[-18000:].replace('uat-fixture-only','[REDACTED]'),flush=True)
+ raise
