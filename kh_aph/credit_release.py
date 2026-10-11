@@ -97,3 +97,8 @@ def before_submit_invoice(doc, method=None):
             (name,doc.customer,doc.company,shipment_fingerprint(dn.as_dict())))
         if not matched:
             frappe.throw('Khách rủi ro cao: hóa đơn chưa có phê duyệt còn hiệu lực cho phiếu giao')
+
+
+def prevent_release_delete(doc, method=None):
+    """Approval history survives revocation and linked-document cancellation."""
+    frappe.throw('Không được xóa lịch sử phê duyệt; dùng thu hồi và lưu lý do', frappe.PermissionError)
