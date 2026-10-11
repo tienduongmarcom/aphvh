@@ -357,6 +357,51 @@ finally:frappe.destroy()
             if inv["docstatus"]==1:cancel("Sales Invoice",inv["name"])
         cancel("Delivery Note",risk["dn"])
         check(0,100,0)
+    slip_fixture_code="""import json,sys,frappe
+from frappe.utils import today,add_days
+from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
+frappe.connect();frappe.set_user('Administrator')
+try:
+ f=json.load(sys.stdin)
+ customer=frappe.get_doc('Customer',f['customer']);customer.kh_aph_credit_high_risk=0;customer.save()
+ shared=frappe.get_doc({'doctype':'APH Shared Sales Order','customer':f['customer'],
+  'transaction_date':today(),'delivery_date':add_days(today(),1),'currency':'VND',
+  'selling_price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name'),
+  'items':[{'item_code':f['item'],'warehouse':f['warehouse'],'qty':1,'rate':20000}]}).insert()
+ shared.submit()
+ so=frappe.db.get_value('Sales Order',{'kh_aph_shared_order':shared.name},'name')
+ notes=[]
+ for i in range(2):
+  dn=make_delivery_note(so)
+  for row in dn.items:row.qty=.25
+  dn.insert();notes.append(dn.name)
+ frappe.db.commit();print('SLIP_JSON:'+json.dumps({'shared':shared.name,'notes':notes}))
+finally:frappe.destroy()
+"""
+    raw=inner(slip_fixture_code,json.dumps(fixture))
+    slip=json.loads(next(x[10:] for x in raw.splitlines() if x.startswith('SLIP_JSON:')))
+    for name,action in zip(slip['notes'],('handoff','pickup')):
+        admin('/api/method/kh_aph.delivery_status.confirm',{'name':name,'action':action})
+    before_print=check(10000,99.5,2)
+    available=admin('/api/method/kh_aph.delivery_slip.deliveries?'+urllib.parse.urlencode({'shared_order':slip['shared']}))['message']
+    assert {n['name'] for n in available}==set(slip['notes']),available
+    emit('HTTP_SLIP_SELECT_BATCHES','PASS','Only submitted deliveries of selected shared order listed')
+    printed=admin('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(slip['notes'])})['message']
+    assert all(n in printed['html'] for n in slip['notes']) and fixture['warehouse'] in printed['html']
+    assert 'basic_rate' not in printed['html'] and 'valuation_rate' not in printed['html']
+    emit('HTTP_SLIP_CONSOLIDATED','PASS','Two batches include company/source/quantity; no cost fields')
+    single=admin('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(slip['notes'][:1])})['message']
+    assert slip['notes'][0] in single['html'] and slip['notes'][1] not in single['html']
+    emit('HTTP_SLIP_SINGLE_SELECTION','PASS','Selected batch only printed')
+    try:
+        admin('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps([fixture['dn1']])})
+        raise AssertionError('Unrelated canceled delivery accepted')
+    except urllib.error.HTTPError as exc:
+        error=json.loads(exc.read());assert error.get('exc_type')=='ValidationError',error
+    emit('HTTP_SLIP_UNRELATED_DENIED','PASS','Unrelated/canceled delivery rejected')
+    assert oracle()==before_print,'Printing changed accounting or stock'
+    emit('HTTP_SLIP_READ_ONLY','PASS','All print/list requests left stock/debt unchanged')
 except Exception as exc:
     emit("HTTP_DISPATCH_RUNNER","FAIL",{"type":type(exc).__name__,"error":str(exc)[:1000]})
 finally:
