@@ -30,8 +30,8 @@ jobs:
             cd /home/frappe/frappe-bench
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
-            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0e428e762eb6f393a8ae5a9ea5553120bd800961cc593f2d122fccbb72f36e80"
-            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "8dd0c17630db26165ad4d31101670f68d8d7c00ed3594f85fff7be4c9a8ebe57"
+            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "2fb7958790a508d876fed5595ad0c1fabfaca46de2cbc9f44a50320fcaf2c958"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
