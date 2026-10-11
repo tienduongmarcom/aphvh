@@ -194,7 +194,8 @@ frappe.ui.form.on("Delivery Note", {
             frm.add_custom_button("Bàn giao cho người vận chuyển", () => confirm("handoff"), "Giao hàng");
             frm.add_custom_button("Khách đến lấy", () => confirm("pickup"), "Giao hàng");
         } else if (frm.doc.docstatus === 1 && frm.doc.kh_aph_delivery_state === "Đang giao"
-            && frm.perm.some(p => p.write)) {
+            && (frm.perm.some(p => p.write) || (frappe.user_roles || []).some(r =>
+                ["Nhân viên bán hàng", "Thủ kho bán hàng"].includes(r)))) {
             frm.add_custom_button("Khách đã nhận", () => confirm("receive"), "Giao hàng");
         }
     },
