@@ -10,7 +10,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","APH Credit Release"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","APH Credit Release","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version"]
 root_secret=""
 factory_password=secrets.token_urlsafe(32)
 def run(args,input=None):
@@ -358,40 +358,80 @@ finally:frappe.destroy()
             if inv["docstatus"]==1:cancel("Sales Invoice",inv["name"])
         cancel("Delivery Note",risk["dn"])
         check(0,100,0)
-    slip_fixture_code="""import json,sys,frappe
+    slip_fixture_code="""import json,sys,frappe,uuid
 from frappe.utils import today,add_days
+from frappe.utils.password import update_password
+from kh_aph.constants import INV_FLAG,INV_NO
 from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
 frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
 frappe.connect();frappe.set_user('Administrator')
 try:
  f=json.load(sys.stdin)
  customer=frappe.get_doc('Customer',f['customer']);customer.kh_aph_credit_high_risk=0;customer.save()
+ rows=[];sources=[];names={};prefix='CI-4CO-'+uuid.uuid4().hex[:8]
+ for label,role in [('warehouse','Thủ kho bán hàng'),('sales','Nhân viên bán hàng')]:
+  email=prefix.lower()+'-'+label+'@example.invalid'
+  user=frappe.get_doc({'doctype':'User','email':email,'first_name':label,'enabled':1,'user_type':'System User','send_welcome_email':0,'roles':[{'role':role}]}).insert()
+  update_password(user.name,f['password']);names[label]=user.name
+ for abbr in ['APH','VH','MK','TL']:
+  co=frappe.get_doc('Company',frappe.db.get_value('Company',{'abbr':abbr},'name'))
+  if abbr=='APH':wh=f['warehouse'];item=f['item']
+  else:
+   wh=frappe.get_doc({'doctype':'Warehouse','warehouse_name':prefix+'-'+abbr,'company':co.name,'is_group':0,
+    'parent_warehouse':frappe.db.get_value('Warehouse',{'company':co.name,'is_group':1},'name'),'account':co.default_inventory_account}).insert().name
+   taxes=[]
+   if abbr=='VH':
+    account=frappe.db.get_value('Account',{'company':co.name,'account_number':'33311','is_group':0},'name')
+    tax=frappe.get_doc({'doctype':'Item Tax Template','title':prefix+'-VH10','company':co.name,'taxes':[{'tax_type':account,'tax_rate':10}]}).insert()
+    taxes=[{'item_tax_template':tax.name,'tax_category':customer.tax_category}]
+   item=frappe.get_doc({'doctype':'Item','item_code':prefix+'-'+abbr,'item_name':prefix+'-'+abbr,'item_group':frappe.db.get_value('Item',f['item'],'item_group'),
+    'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','taxes':taxes,
+    'item_defaults':[{'company':co.name,'default_warehouse':wh,'income_account':co.default_income_account,'expense_account':co.default_expense_account,'buying_cost_center':co.cost_center,'selling_cost_center':co.cost_center}]}).insert().name
+   stock=frappe.get_doc({'doctype':'Stock Entry','stock_entry_type':'Material Receipt','company':co.name,'posting_date':today(),
+    'items':[{'item_code':item,'qty':10,'uom':'Kg','stock_uom':'Kg','conversion_factor':1,'t_warehouse':wh,'basic_rate':10000,'set_basic_rate_manually':1,'expense_account':co.stock_adjustment_account,'cost_center':co.cost_center}]}).insert();stock.submit()
+  rows.append({'item_code':item,'warehouse':wh,'qty':1,'rate':20000})
+  sources.append({'abbr':abbr,'company':co.name,'item':item,'warehouse':wh})
  shared=frappe.get_doc({'doctype':'APH Shared Sales Order','customer':f['customer'],
   'transaction_date':today(),'delivery_date':add_days(today(),1),'currency':'VND',
-  'selling_price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name'),
-  'items':[{'item_code':f['item'],'warehouse':f['warehouse'],'qty':1,'rate':20000}]}).insert()
- shared.submit()
- so=frappe.db.get_value('Sales Order',{'kh_aph_shared_order':shared.name},'name')
- notes=[]
- for i in range(2):
-  dn=make_delivery_note(so)
-  for row in dn.items:row.qty=.25
-  dn.insert();notes.append(dn.name)
- frappe.db.commit();print('SLIP_JSON:'+json.dumps({'shared':shared.name,'notes':notes}))
+  'selling_price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name'),'items':rows}).insert()
+ shared.submit();notes=[]
+ for source in sources:
+  so=frappe.db.get_value('Sales Order',{'kh_aph_shared_order':shared.name,'company':source['company']},'name')
+  source['notes']=[]
+  for i in range(2):
+   dn=make_delivery_note(so)
+   for row in dn.items:row.qty=.25
+   dn.insert();notes.append(dn.name);source['notes'].append(dn.name)
+ names.update(shared=shared.name,notes=notes,sources=sources)
+ frappe.db.commit();print('SLIP_JSON:'+json.dumps(names))
 finally:frappe.destroy()
 """
-    raw=inner(slip_fixture_code,json.dumps(fixture))
+    raw=inner(slip_fixture_code,json.dumps({**fixture,"password":factory_password}))
     slip=json.loads(next(x[10:] for x in raw.splitlines() if x.startswith('SLIP_JSON:')))
-    for name,action in zip(slip['notes'],('handoff','pickup')):
-        admin('/api/method/kh_aph.delivery_status.confirm',{'name':name,'action':action})
-    before_print=check(10000,99.5,2)
+    warehouse=session(slip['warehouse'],factory_password)
+    sales=session(slip['sales'],factory_password)
+    for source in slip['sources']:
+        for name,action in zip(source['notes'],('handoff','pickup')):
+            result=warehouse('/api/method/kh_aph.delivery_status.confirm',{'name':name,'action':action})['message']
+            assert result['kh_aph_delivery_actor']==slip['warehouse']
+            assert result['kh_aph_delivery_state']==('Đang giao' if action=='handoff' else 'Khách đã nhận')
+        received=sales('/api/method/kh_aph.delivery_status.confirm',{'name':source['notes'][0],'action':'receive'})['message']
+        assert received['kh_aph_delivery_actor']==slip['sales'] and received['kh_aph_delivery_state']=='Khách đã nhận'
+    emit('HTTP_EMPLOYEE_FOUR_COMPANY_HANDOFF_PICKUP','PASS','Warehouse role submits all four company batches')
+    emit('HTTP_SALES_RECEIPT_ONLY','PASS','Read-only sales role confirms receipt with own actor stamp')
+    before_print=check(10000,99.5,8)
+    denied(sales,'/api/method/frappe.client.save',{'doc':json.dumps(getdoc('Delivery Note',slip['notes'][0]))},('PermissionError',))
+    assert oracle()==before_print
+    emit('HTTP_SALES_GENERIC_WRITE_DENIED','PASS','Receipt capability does not grant generic document write')
+    denied(accounts,'/api/method/kh_aph.delivery_status.confirm',{'name':slip['notes'][0],'action':'receive'},('PermissionError',))
+    emit('HTTP_UNAUTHORIZED_RECEIPT_DENIED','PASS','Unrelated read-only role cannot confirm receipt')
     available=admin('/api/method/kh_aph.delivery_slip.deliveries?'+urllib.parse.urlencode({'shared_order':slip['shared']}))['message']
     assert {n['name'] for n in available}==set(slip['notes']),available
     emit('HTTP_SLIP_SELECT_BATCHES','PASS','Only submitted deliveries of selected shared order listed')
     printed=admin('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(slip['notes'])})['message']
     assert all(n in printed['html'] for n in slip['notes']) and fixture['warehouse'] in printed['html']
     assert 'basic_rate' not in printed['html'] and 'valuation_rate' not in printed['html']
-    emit('HTTP_SLIP_CONSOLIDATED','PASS','Two batches include company/source/quantity; no cost fields')
+    emit('HTTP_SLIP_CONSOLIDATED','PASS','Eight batches from four companies include source/quantity; no cost fields')
     single=admin('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(slip['notes'][:1])})['message']
     assert slip['notes'][0] in single['html'] and slip['notes'][1] not in single['html']
     emit('HTTP_SLIP_SINGLE_SELECTION','PASS','Selected batch only printed')
@@ -403,6 +443,25 @@ finally:frappe.destroy()
     emit('HTTP_SLIP_UNRELATED_DENIED','PASS','Unrelated/canceled delivery rejected')
     assert oracle()==before_print,'Printing changed accounting or stock'
     emit('HTTP_SLIP_READ_ONLY','PASS','All print/list requests left stock/debt unchanged')
+    employee_print=warehouse('/api/method/kh_aph.delivery_slip.consolidated',{'shared_order':slip['shared'],'delivery_notes':json.dumps(slip['notes'])})['message']
+    assert employee_print['html']==printed['html']
+    assert all(source['company'] in printed['html'] and source['warehouse'] in printed['html'] for source in slip['sources'])
+    emit('HTTP_SLIP_FOUR_COMPANY_EMPLOYEE','PASS','Warehouse role prints all four company sources without cost')
+    Path('shared-four-company-slip.html').write_text(printed['html'])
+    multi_code="""import json,sys,frappe
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect()
+try:
+ f=json.load(sys.stdin);rows=[]
+ for source in f['sources']:
+  qty=frappe.db.get_value('Bin',{'item_code':source['item'],'warehouse':source['warehouse']},'actual_qty')
+  debt=frappe.db.sql("SELECT COALESCE(SUM(debit-credit),0) FROM `tabGL Entry` WHERE party_type='Customer' AND party=%s AND company=%s AND is_cancelled=0",(f['customer'],source['company']))[0][0]
+  assert float(qty)==(99.5 if source['abbr']=='APH' else 9.5) and float(debt)==10000,(source,qty,debt)
+  rows.append({'abbr':source['abbr'],'stock_kg':float(qty),'debt':float(debt)})
+ print('MULTI:'+json.dumps(rows))
+finally:frappe.destroy()
+"""
+    raw=inner(multi_code,json.dumps({**slip,'customer':fixture['customer']}))
+    emit('HTTP_FOUR_COMPANY_EMPLOYEE_STOCK_DEBT','PASS',json.loads(next(l[6:] for l in raw.splitlines() if l.startswith('MULTI:'))))
 except Exception as exc:
     emit("HTTP_DISPATCH_RUNNER","FAIL",{"type":type(exc).__name__,"error":str(exc)[:1000]})
 finally:
