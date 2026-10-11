@@ -91,8 +91,8 @@
     }
   },
   "latest_http_log": {
-    "runner": "CHIEF-DELIVERY-READ-FIX",
-    "business_pass": 23,
+    "runner": "CREDIT-BYPASS-SECURITY-V1",
+    "business_pass": 27,
     "restore_pass": 1,
     "info": 1,
     "fail": 0,
@@ -102,10 +102,17 @@
   },
   "unverified": [
     "fresh-image schema setup",
-    "direct Sales Invoice credit bypass",
     "actual Dung/chief identities",
     "multiworker/concurrent credit approval stress",
     "UI and complete MVP",
     "all 202 original decisions"
-  ]
+  ],
+  "post_export_verified_patch": {
+    "evidence": "Văn bản đã dán (1)(5).txt",
+    "source_sha256": {
+      "kh_aph/credit_release.py": "0e428e762eb6f393a8ae5a9ea5553120bd800961cc593f2d122fccbb72f36e80",
+      "kh_aph/hooks.py": "dc5dd72b0211c6198e49d88da2e864f1f0fc0b22c57acc387e0becb333e19675"
+    },
+    "scope": "UAT only; original zip predates this patch"
+  }
 }
