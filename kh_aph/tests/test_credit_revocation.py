@@ -39,3 +39,35 @@ class RevocationTests(TestCase):
   result=self.m.revoke('AUDIT','new reason')
   self.assertEqual(result['revoked_by'],'original')
   self.f.db.set_value.assert_not_called()
+
+ def invoice(self,source='DN'):
+  return SimpleNamespace(customer='C',company='APH',grand_total=15000,items=[SimpleNamespace(delivery_note=source)])
+ def test_direct_invoice_cannot_bypass_release(self):
+  self.f.db.get_value.return_value=1
+  with self.assertRaises(RuntimeError):self.m.before_submit_invoice(self.invoice(None))
+ def test_approved_delivery_invoice_allowed(self):
+  self.f.db.get_value.return_value=1
+  self.f.db.sql.side_effect=[[],[('APPROVAL',)]]
+  self.f.get_doc.return_value=SimpleNamespace(docstatus=1,customer='C',company='APH',as_dict=lambda:{'customer':'C','company':'APH','items':[]})
+  self.m.before_submit_invoice(self.invoice())
+ def test_revoked_delivery_cannot_back_invoice(self):
+  self.f.db.get_value.return_value=1;self.f.db.sql.return_value=[]
+  self.f.get_doc.return_value=SimpleNamespace(docstatus=1,customer='C',company='APH',as_dict=lambda:{'customer':'C','company':'APH','items':[]})
+  with self.assertRaises(RuntimeError):self.m.before_submit_invoice(self.invoice())
+ def test_other_company_delivery_cannot_back_invoice(self):
+  self.f.db.get_value.return_value=1
+  self.f.get_doc.return_value=SimpleNamespace(docstatus=1,customer='C',company='VH')
+  with self.assertRaises(RuntimeError):self.m.before_submit_invoice(self.invoice())
+ def test_prepaid_invoice_does_not_increase_net_credit(self):
+  self.f.db.get_value.return_value=1;self.m.balance_for=lambda customer:-20000
+  self.m.before_submit_invoice(self.invoice(None))
+ def test_credit_note_does_not_need_credit_release(self):
+  doc=self.invoice(None);doc.grand_total=-15000
+  self.m.before_submit_invoice(doc)
+  self.f.db.sql.assert_not_called()
+ def test_accounts_user_cannot_change_global_limit(self):
+  self.f.get_roles.return_value=['Accounts User']
+  previous={'kh_aph_credit_high_risk':1,'kh_aph_global_credit_limit':70000}
+  current={'kh_aph_credit_high_risk':1,'kh_aph_global_credit_limit':80000}
+  doc=SimpleNamespace(get=current.get,get_doc_before_save=lambda:SimpleNamespace(get=previous.get))
+  with self.assertRaises(PermissionError):self.m.validate_customer(doc)
