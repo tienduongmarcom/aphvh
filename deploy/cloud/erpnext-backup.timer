@@ -1,0 +1,10 @@
+[Unit]
+Description=Lich sao luu ERPNext (02:30 va 12:30 gio Viet Nam)
+
+[Timer]
+OnCalendar=*-*-* 02,12:30:00 Asia/Ho_Chi_Minh
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

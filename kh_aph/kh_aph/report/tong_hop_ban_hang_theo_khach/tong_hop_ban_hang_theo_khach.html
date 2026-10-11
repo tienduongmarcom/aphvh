@@ -1,0 +1,59 @@
+{%
+var so = function (v) {
+	v = Math.round(flt(v));
+	var s = Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+	return (v < 0 ? "-" : "") + s;
+};
+var ngay = function (d) { return d ? frappe.datetime.str_to_user(d) : ""; };
+var cungNam = String(filters.from_date || "").slice(0, 4) === String(filters.to_date || "").slice(0, 4);
+var ngayGon = function (d) {
+	if (!d) return "";
+	var p = String(d).slice(0, 10).split("-");
+	return cungNam ? p[2] + "/" + p[1] : p[2] + "/" + p[1] + "/" + p[0].slice(2);
+};
+var tong = data.filter(function (r) { return r.kieu === "tong"; })[0];
+%}
+<style>
+	.thk { font-family: "Times New Roman", serif; font-size: 11px; color: #000; }
+	.thk table { width: 100%; border-collapse: collapse; }
+	.thk th, .thk td { border: 1px solid #000; padding: 2px 3px; }
+	.thk .n { white-space: nowrap; }
+	.thk th { text-align: center; }
+	.thk .r { text-align: right; white-space: nowrap; }
+	.thk .b td { font-weight: bold; }
+	.thk h3 { text-align: center; margin: 4px 0; }
+</style>
+<div class="thk">
+	<h3>BẢNG TỔNG HỢP MUA HÀNG VÀ CÔNG NỢ</h3>
+	<div style="text-align:center">Từ ngày {%= ngay(filters.from_date) %} đến ngày {%= ngay(filters.to_date) %}</div>
+	<p>Khách hàng: <b>{%= (tong && tong.ten_khach) || filters.customer %}</b>{% if (tong && tong.mst) { %} &nbsp; MST: {%= tong.mst %}{% } %} &nbsp; (mã {%= filters.customer %})</p>
+	<table>
+		<thead><tr>
+			<th style="width:7%">Ngày</th><th style="width:9%">Chứng từ</th><th>Diễn giải</th><th style="width:10%">Số HĐ</th>
+			<th style="width:13%">Tiền mua</th><th style="width:13%">Đã trả / trả hàng</th><th style="width:13%">Còn nợ</th>
+		</tr></thead>
+		<tbody>
+		{% for (var i = 0; i < data.length; i++) { var r = data[i]; %}
+			{% if (r.kieu === "chung_tu") { %}
+			<tr>
+				<td class="n">{%= ngayGon(r.ngay) %}</td><td class="n">{%= r.so_gon || (r.loai + " " + r.so) %}</td><td>{%= r.dien_giai_gon || r.dien_giai || "" %}</td>
+				<td class="n">{%= r.so_hd || (r.xuat_hd === "Không" ? "Không HĐ" : "") %}</td>
+				<td class="r">{%= r.no ? so(r.no) : "" %}</td><td class="r">{%= r.co ? so(r.co) : "" %}</td><td class="r">{%= so(r.so_du) %}</td>
+			</tr>
+			{% } else if (r.kieu !== "tong") { %}
+			<tr class="b"><td colspan="4">{%= r.dien_giai %}</td>
+				<td class="r">{%= r.kieu === "cong" ? so(r.no) : "" %}</td><td class="r">{%= r.kieu === "cong" ? so(r.co) : "" %}</td><td class="r">{%= so(r.so_du) %}</td></tr>
+			{% } %}
+		{% } %}
+		{% if (tong) { %}
+			<tr class="b"><td colspan="4">TỔNG CỘNG CÁC ĐƠN VỊ (nợ đầu kỳ {%= so(tong.dau_ky) %})</td>
+				<td class="r">{%= so(tong.no) %}</td><td class="r">{%= so(tong.co) %}</td><td class="r">{%= so(tong.so_du) %}</td></tr>
+		{% } %}
+		</tbody>
+	</table>
+	<p><i>Bảng này để khách theo dõi; hàng giao, hóa đơn và tiền thanh toán vẫn theo từng đơn vị bán.</i></p>
+	<table style="border:0;margin-top:16px"><tr>
+		<td style="border:0;text-align:center"><b>Khách hàng</b><br><i>(Ký, họ tên)</i></td>
+		<td style="border:0;text-align:center"><b>Người lập</b><br><i>(Ký, họ tên)</i></td>
+	</tr></table>
+</div>

@@ -1,0 +1,94 @@
+{#- Phiếu xuất kho (Mẫu 02-VT, TT133) in từ Phiếu giao hàng. Thủ kho và người nhận hàng ký.
+    CHỈ CÓ SỐ LƯỢNG (chị Dung chốt 30/09): không in giá bán, không in giá vốn.
+    Phiếu nhận hàng trả lại (is_return) in thành Phiếu nhập kho (Mẫu 01-VT) hàng bán bị trả lại. -#}
+{%- set cty = kh_aph_cong_ty(doc.company) -%}
+{%- set tra = doc.is_return -%}
+{%- set dons = doc.items | map(attribute="against_sales_order") | select | unique | list -%}
+{%- set khos = doc.items | map(attribute="warehouse") | select | unique | list -%}
+{%- set uoms = doc.items | map(attribute="uom") | unique | list -%}
+{%- set thue = doc.kh_aph_hinh_thuc_giao == "Thuê xe, nhà xe" -%}
+{%- set cham = ".............................." -%}
+<div class="aph-vt">
+<table class="aph-head"><tr>
+  <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
+  <td class="aph-mau"><b>Mẫu số {{ "01 - VT" if tra else "02 - VT" }}</b>{% set cc = kh_aph_mau(doc.company) %}{% if cc %}<br><i>{{ cc }}</i>{% endif %}</td>
+</tr></table>
+<table class="aph-title"><tr>
+  <td class="aph-side"></td>
+  <td class="aph-center">
+    <div class="aph-name">{{ "PHIẾU NHẬP KHO" if tra else "PHIẾU XUẤT KHO" }}</div>
+    <div class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
+    <div>Số: {{ doc.name }}</div>
+  </td>
+  <td class="aph-side"></td>
+</tr></table>
+
+<div class="aph-info">
+{%- if tra %}
+  <div>- Họ và tên người giao hàng: {{ doc.kh_aph_nguoi_nhan or cham }} ({{ doc.customer_name }})</div>
+  <div>- Theo: hàng bán bị trả lại, phiếu giao hàng số {{ doc.return_against or cham }}</div>
+  <div>- Nhập tại kho: {% for k in khos %}{{ kh_aph_ten_kho(k) }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
+{%- else %}
+  <div>- Họ và tên người nhận hàng:
+    {%- if thue %} {{ doc.kh_aph_lai_xe or cham }} – lái xe{% if doc.kh_aph_nha_xe %} nhà xe {{ doc.kh_aph_nha_xe }}{% endif %}{% if doc.kh_aph_bien_so_xe %}, biển số {{ doc.kh_aph_bien_so_xe }}{% endif %}
+    {%- else %} {{ doc.kh_aph_nguoi_nhan or cham }}{% endif %}
+    &nbsp; Địa chỉ (bộ phận): {{ doc.customer_name }}</div>
+  <div>- Lý do xuất kho: xuất bán{% if dons %} theo đơn hàng số {{ dons | join(", ") }}{% endif %}</div>
+  <div>- Xuất tại kho: {% for k in khos %}{{ kh_aph_ten_kho(k) }}{% if not loop.last %}, {% endif %}{% endfor %}
+    {%- set dc = kh_aph_dia_chi(doc.shipping_address or doc.address_display) %}{% if dc %}. Giao đến: {{ dc }}{% endif %}</div>
+{%- endif %}
+</div>
+
+<table class="aph-tbl">
+  <thead>
+    <tr>
+      <th rowspan="2" class="c-stt">STT</th>
+      <th rowspan="2">Tên, nhãn hiệu, quy cách, phẩm chất vật tư, dụng cụ, sản phẩm, hàng hóa</th>
+      <th rowspan="2" class="c-ma">Mã số</th>
+      <th rowspan="2" class="c-dvt">Đơn vị tính</th>
+      <th colspan="2">Số lượng</th>
+    </tr>
+    <tr>
+      <th class="c-sl">{{ "Theo chứng từ" if tra else "Theo đơn hàng" }}</th>
+      <th class="c-sl">{{ "Thực nhập" if tra else "Thực xuất" }}</th>
+    </tr>
+    <tr class="aph-letter"><td>A</td><td>B</td><td>C</td><td>D</td><td>1</td><td>2</td></tr>
+  </thead>
+  <tbody>
+  {%- for row in doc.items %}
+    {%- set sl_don = none if tra else kh_aph_sl_don_ban(row) %}
+    {%- set lo = kh_aph_lo(row) %}
+    <tr>
+      <td class="c">{{ loop.index }}</td>
+      <td>{{ row.item_name }}{% if lo %}<br><small>Lô: {{ lo }}</small>{% endif %}</td>
+      <td class="c">{{ row.item_code }}</td>
+      <td class="c">{{ row.uom }}</td>
+      <td class="r">{{ kh_aph_so(sl_don) if sl_don is not none else "" }}</td>
+      <td class="r">{{ kh_aph_so((row.qty or 0) | abs) }}</td>
+    </tr>
+  {%- endfor %}
+    <tr>
+      <td></td><td class="c"><b>Cộng</b></td><td></td><td></td><td></td>
+      <td class="r"><b>{{ kh_aph_so((doc.total_qty or 0) | abs) if uoms | length == 1 else "" }}</b></td>
+    </tr>
+  </tbody>
+</table>
+<div class="aph-info">
+  <div>- Số chứng từ gốc kèm theo: {{ "biên bản nhận lại hàng" if tra else "biên bản giao nhận hàng hóa" }} số {{ doc.name }}</div>
+</div>
+
+<div class="aph-sign-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
+<table class="aph-sign"><tr>
+  <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ kh_aph_ten_nguoi(doc.owner) }}</div></td>
+  {%- if tra %}
+  <td><b>Người giao hàng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Kế toán trưởng</b><br><i>(Hoặc bộ phận có nhu cầu nhập)<br>(Ký, họ tên)</i></td>
+  {%- else %}
+  <td><b>Người nhận hàng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>Kế toán trưởng</b><br><i>(Hoặc bộ phận có nhu cầu nhập)<br>(Ký, họ tên)</i></td>
+  <td><b>Giám đốc</b><br><i>(Ký, họ tên)</i></td>
+  {%- endif %}
+</tr></table>
+</div>

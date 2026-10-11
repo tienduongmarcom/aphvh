@@ -1,0 +1,118 @@
+{
+  "zip": "APHVH_UAT_Candidate_20261011T071412Z.zip",
+  "zip_sha256": "2d39f8c862bb019424a7a0a4c68f2f21848914ebf5dda33e79d1b35aae7ffab2",
+  "manifest": {
+    "README.md": "620ab6c2bb0aeab34c27f93d53fd620c5b2e71222818a29d2d0a30ef2d460fcf",
+    "evidence/resolved_hooks.json": "db0d59b22ba71dbae46315065970b2db3102f6fdf834ac944db522d0c5ea7f4a",
+    "evidence/runtime.json": "766d758b8f4201009be0abb527e0055693d48d525b54e22f1a1a379f39e47946",
+    "schema/custom_docperms.json": "cf4e130b4395c31edf84a9e5cb429ab812c82189304b12b86161477e1ca1767c",
+    "schema/custom_fields.json": "cee19ac84ac1b502fa99137a242e762505e85bcf47a79d3153239ad7c2adf07c",
+    "schema/doctypes.json": "9b1eafaabf8d755b1e66b217429e5f5923ea6802030d6e4346e9100067af009c",
+    "schema/property_setters.json": "f174060383e64a163cc45911d231cff8fefeded313991f0a9d6026dafcf04fd1",
+    "source/kh_aph/constants.py": "5718263d63837fa15525b13e4453c5224ff3441d1fc53b48d7d1359d1aa0d3ba",
+    "source/kh_aph/controls.py": "1b70012fbfbef00c8aa4f34f1c88db7bd36e9b9cdd41993c7288abb9c6559188",
+    "source/kh_aph/cost_query_api.py": "60d1b335cdaba5b1db3dd772c7befd03f304d6a615447989430fff5fc2d22ada",
+    "source/kh_aph/credit_release.py": "23a0db133472de1765ecd071d1fd3e1a1262b3b240f86dc9448885cd2bb30f70",
+    "source/kh_aph/credit_release_rules.py": "b2939595abd54feb15ee67a76e8ca7e6aaab886faa6789023931091aace4f9fe",
+    "source/kh_aph/delivery_receivable.py": "a4ee894170cf02d592e04ab133a92de3ea41e039f78bcce799019228b2a42a69",
+    "source/kh_aph/global_credit.py": "04ed435071ceb8b55a5ca606c439c0b455b8ad06d7819a634c667372ad8c426d",
+    "source/kh_aph/global_credit_rules.py": "f49f8ccfc137b755f8ea9e540e7de734a5e0285cfb245a849615e1ccd4b4a71c",
+    "source/kh_aph/hooks.py": "2dab4c61a3d1169166ccc594dc607899b1c3f8b11f7c41471887a13d67097994",
+    "source/kh_aph/invoice_flag.py": "7ee2c03285cd630df62be291fc7a0c0ceb7c4b995df255e8078461d624c8a034",
+    "source/kh_aph/kh_aph/doctype/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order/aph_shared_sales_order.json": "63d9d6d5897892848336df9905fe196ab44c1b68b2a8227fd07761372883922a",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order/aph_shared_sales_order.py": "11d74cf125ddc700d586b4b2e822f1c2d313e31139de0a19b389664bfa29bf6f",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order_item/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order_item/aph_shared_sales_order_item.json": "6552d6bd53d84f13b1ba86df5ead7bf44575ad5628d0ad08b3cebded3edfe6e5",
+    "source/kh_aph/kh_aph/doctype/aph_shared_sales_order_item/aph_shared_sales_order_item.py": "6503a36090e7f0201b0de7432631c817359258f7dba5a1fec43362ebdbc22f26",
+    "source/kh_aph/price_visibility.py": "d2c812b01c026920c436235055df97c2271b64574c5a89a08d6b6e2e6bb08548",
+    "source/kh_aph/sales_flow.py": "7cbdbe3973e02ec99613fe15d524baccbc61f38404fa2b43b194799b3c9942e1",
+    "source/kh_aph/sales_warnings.py": "40bd1b40a68016af8edcbe23de2a96d0f50c850ef70c1de11fd21f1ca43a0da6",
+    "source/kh_aph/server_cost_guard.py": "33b590d26a8f68ca5884182c54c32ccc0acea2cf19b2368ed3581651a5a61dda",
+    "source/kh_aph/shared_order_rules.py": "46ffcef3a2ba9d8de628cd4fa91eb3fb6d8b9d13cc00df24c84504c9714927b5",
+    "source/kh_aph/shared_order_setup.py": "2113da61c7935791da38a599c8b7977a8df1a0a8d266b0c49eb8da23836e486c",
+    "source/kh_aph/stock_entry_kg.py": "73718d83287208a9ac827a8ade8aae026a9caf9f6b03ed25043ce755a86e3acc"
+  },
+  "runtime": {
+    "site": "aphvh-web-uat",
+    "python": "3.14.7 (main, Sep 19 2026, 01:04:59) [GCC 12.2.0]",
+    "versions": {
+      "frappe": "16.35.0",
+      "erpnext": "16.36.1",
+      "kh_aph": "0.9.1",
+      "lab9x": "0.2.0"
+    },
+    "installed_apps": [
+      "frappe",
+      "erpnext",
+      "lab9x",
+      "kh_aph"
+    ],
+    "counts": {
+      "User": 2,
+      "Customer": 0,
+      "Item": 0,
+      "Sales Order": 0,
+      "Delivery Note": 0,
+      "Sales Invoice": 0,
+      "Payment Entry": 0,
+      "Stock Entry": 0,
+      "GL Entry": 0,
+      "Stock Ledger Entry": 0,
+      "Payment Ledger Entry": 0,
+      "APH Shared Sales Order": 0,
+      "APH Credit Release": 0
+    },
+    "companies": [
+      {
+        "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI VÀ XUẤT NHẬP KHẨU AN PHÚ HƯNG",
+        "abbr": "APH"
+      },
+      {
+        "name": "HỘ KINH DOANH MINH KHANG",
+        "abbr": "MK"
+      },
+      {
+        "name": "TL",
+        "abbr": "TL"
+      },
+      {
+        "name": "CÔNG TY CỔ PHẦN THƯƠNG MẠI VĨNH HƯNG",
+        "abbr": "VH"
+      }
+    ],
+    "candidate_flags": {
+      "kh_aph_post_receivable_on_delivery": 1,
+      "kh_aph_server_cost_guard": 1,
+      "kh_aph_shared_sales_order": 1,
+      "kh_aph_global_credit_warning": 1,
+      "kh_aph_high_risk_credit_guard": 1
+    }
+  },
+  "latest_http_log": {
+    "runner": "CREDIT-BYPASS-SECURITY-V1",
+    "business_pass": 27,
+    "restore_pass": 1,
+    "info": 1,
+    "fail": 0,
+    "custom_fields": 93,
+    "custom_docperms": 492,
+    "property_setters": 214
+  },
+  "unverified": [
+    "fresh-image schema setup",
+    "actual Dung/chief identities",
+    "multiworker/concurrent credit approval stress",
+    "UI and complete MVP",
+    "all 202 original decisions"
+  ],
+  "post_export_verified_patch": {
+    "evidence": "Văn bản đã dán (1)(5).txt",
+    "source_sha256": {
+      "kh_aph/credit_release.py": "0e428e762eb6f393a8ae5a9ea5553120bd800961cc593f2d122fccbb72f36e80",
+      "kh_aph/hooks.py": "dc5dd72b0211c6198e49d88da2e864f1f0fc0b22c57acc387e0becb333e19675"
+    },
+    "scope": "UAT only; original zip predates this patch"
+  }
+}
