@@ -30,7 +30,10 @@ def validate(doc, method=None):
         for field, dt in (("so_detail", "Sales Order Item"), ("sales_order_item", "Sales Order Item"),
                           ("purchase_receipt_item", "Purchase Receipt Item"), ("dn_detail", "Delivery Note Item")):
             if row.get(field):
-                saved = flt(frappe.db.get_value(dt, row.get(field), "kh_aph_kg_per_bag")) or saved
+                source = frappe.db.get_value(dt, row.get(field), ["item_code", "kh_aph_kg_per_bag"], as_dict=True)
+                if not source or source.item_code != row.item_code:
+                    frappe.throw("Dòng chứng từ gốc không đúng mã hàng: " + row.item_code)
+                saved = flt(source.kh_aph_kg_per_bag) or saved
         try:
             result = bag_conversion(row.get("kh_aph_bags"), saved,
                 row.get("rate") if doc.doctype in ("Sales Order", "APH Shared Sales Order") else None)
@@ -62,6 +65,11 @@ def validate_valued_receipt(doc, method=None):
     if doc.doctype == "Stock Entry" and doc.get("kh_aph_loss_type") == "Hao hụt bất thường":
         if not doc.get("kh_aph_loss_reason") or doc.purpose != "Material Issue":
             frappe.throw("Hao hụt bất thường: dùng phiếu xuất chi phí riêng và lưu lý do")
+        for row in doc.get("items") or []:
+            account = frappe.db.get_value("Account", row.get("expense_account"),
+                ["root_type", "company", "is_group"], as_dict=True) if row.get("expense_account") else None
+            if not account or account.root_type != "Expense" or account.company != doc.company or account.is_group:
+                frappe.throw("Hao hụt bất thường cần tài khoản chi phí chi tiết đúng Company")
     if doc.doctype == "Purchase Invoice" and not doc.get("update_stock"):
         return
     for row in doc.get("items") or []:
@@ -139,3 +147,7 @@ def reverse(doc, method=None):
 def protect(doc, method=None):
     if not frappe.flags.bag_internal_process:
         frappe.throw("Sổ bao chỉ được ghi qua chứng từ kho")
+
+
+def boot_session(bootinfo):
+    bootinfo.setdefault("kh_aph", {})["quantity_valuation_mvp"] = enabled()

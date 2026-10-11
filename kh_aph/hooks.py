@@ -229,3 +229,12 @@ for _dt in ("Stock Entry", "Purchase Receipt", "Purchase Invoice"):
     doc_events[_dt]["validate"] = _handlers
 
 doc_events["Purchase Receipt"]["validate"].append("kh_aph.pending_valuation.validate_link")
+
+# Explicit quantity UI only when the UAT quantity flag is enabled.
+boot_session.append("kh_aph.bag_stock.boot_session")
+for _dt in ("Stock Entry", "Purchase Receipt", "Purchase Invoice", "Sales Order", "Delivery Note", "Sales Invoice", "APH Shared Sales Order", "APH Pending Receipt"):
+    _scripts = doctype_js.get(_dt, [])
+    if isinstance(_scripts, str):
+        _scripts = [_scripts]
+    doctype_js[_dt] = _scripts + ["public/js/bag_quantity.js"]
+doctype_js["APH Pending Receipt"].append("public/js/pending_receipt.js")

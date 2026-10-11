@@ -46,7 +46,8 @@ def validate(doc, method=None):
     kq = _kiem_tra(doc)
     if kq and kq["trang_thai"] == T.TT_CAN_XU_LY and doc.is_new():
         frappe.msgprint("Bút toán thu hộ được ghi nhận ở trạng thái <b>Cần xử lý</b>. Sau khi xử lý các nghiệp vụ phía sau "
-                        "trên MISA, đổi sang 'Đã xử lý' và ghi số chứng từ.", title="Bút toán thu hộ", indicator="orange")
+                        "theo kế hoạch phân bổ được duyệt trong ERP, đổi sang 'Đã xử lý' và ghi số chứng từ. "
+                        "MISA chỉ dùng cho hóa đơn thuế; không tự bù trừ công nợ khác đơn vị.", title="Bút toán thu hộ", indicator="orange")
 
 
 def before_update_after_submit(doc, method=None):

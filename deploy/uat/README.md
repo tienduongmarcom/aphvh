@@ -1,38 +1,27 @@
-# APH–VH–MK–TL candidate UAT
+# APH–VH–MK–TL — bàn giao ứng viên UAT
 
-This branch is an opt-in candidate, not a production release. Base source was verified against the UAT export recorded in candidate-20261011.json. The later credit bypass patch has separately verified runtime SHA256 values recorded there. Native ERPNext/Frappe DocType dumps are evidence only and must not overwrite core schemas.
+Đọc [HANDOFF_20261012.md](HANDOFF_20261012.md) trước. Báo cáo nghiệm thu: [ACCEPTANCE_20261011.md](ACCEPTANCE_20261011.md). Bằng chứng baseline hiện hành: [handoff-20261012.json](handoff-20261012.json). `candidate-20261011.json` và ZIP 07:14 là lịch sử ban đầu, không dùng làm gói release mới.
 
-The approved new coordinator creates company-specific Sales Orders. Dispatch posts a submitted receivable SI without a second stock posting. Global warnings use receivable GL across APH/VH/MK/TL and already include verified-customer unallocated receipts. High-risk customer shipments require a matching, unrevoked chief approval.
+Production mới là `frontend`, không dùng `erpnext.local`. TL = XB. Runtime kiểm được: Frappe 16.35.0, ERPNext 16.36.1, kh_aph 0.9.1, lab9x 0.2.0. Nhánh là draft UAT, không tự merge/publish/deploy.
 
-## Explicit setup in a fresh, isolated UAT clone
+Setup chỉ trên `aphvh-web-uat` trắng, Administrator, database/Redis và container riêng. Không chạy runner này trên VM production. Sáu flag cần bật rõ ràng trong UAT:
 
-Use only site aphvh-web-uat, Administrator, the exact candidate code, and a restored blank baseline. No after_install/after_migrate enables these features. No automatic production schema installer is added. Feature flags must be explicitly set in the UAT site's private config:
-
-- kh_aph_server_cost_guard = 1
-- kh_aph_post_receivable_on_delivery = 1
-- kh_aph_shared_sales_order = 1
-- kh_aph_global_credit_warning = 1
-- kh_aph_high_risk_credit_guard = 1
-
-Then run from the bench directory:
+- kh_aph_server_cost_guard
+- kh_aph_post_receivable_on_delivery
+- kh_aph_shared_sales_order
+- kh_aph_global_credit_warning
+- kh_aph_high_risk_credit_guard
+- kh_aph_quantity_valuation_mvp
 
 ```sh
 bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
 bench --site aphvh-web-uat clear-cache
 ```
 
-Reload only the isolated UAT workers. The explicit setup preserves native permissions, installs 13 candidate custom fields and the approval audit DocType, and adds only Delivery Note read at level0 for Accounts Manager. The production frontend is explicitly rejected.
+Setup lặp idempotent; bổ sung schema ứng viên và giữ native permissions. Số schema hiện hành xem log fresh-site-evidence, không dùng số 13 field của bản cũ. `uat_wsgi` chỉ dùng trong container cô lập, phục vụ assets cho test Chrome; production vẫn dùng nginx theo cấu hình hiện tại.
 
-Fresh-image/site verification succeeded: 152 kh_aph + 48 lab9x tests, candidate setup with idempotent repeat, 46 HTTP business cases and database/series restoration. Evidence: https://github.com/tienduongmarcom/aphvh/actions/runs/38134304280 . This run also generated a four-company PDF; the later A4 style refinement is checked separately.
+CI build image không publish, kiểm hash/runtime, cổng site trắng, 14 bản ghi cost, 48 dispatch và 21 inventory/Desk, mọi restore và cleanup. 21 gồm 20 ca nghiệp vụ + restore; chỉ PASS khi log có đủ và không FAIL. Native Desk test chốt giá qua nút/dialog và kiểm preview 3 bao thành 75 kg, giá bao 500.000. Không suy ra toàn bộ Desk đã nghiệm thu.
 
-## Delivery and quantity slips
+Vận hành: input giá theo VND/kg; bao nguyên × quy cách snapshot = kg; Item quản lý bao có stock UOM Kg. Hàng chờ giá dùng APH Pending Receipt, không PR giá 0; người được phép chốt bằng nút Chốt giá nhập. LCV theo kg dùng Distribute Manually + kh_aph_by_kg. Sản xuất dùng Đóng gói theo kg hoặc Sản xuất theo kg qua BOM/Work Order; hao hụt tự nhiên lưu lý do, hao hụt bất thường xuất chi phí riêng.
 
-Warehouse users confirm handoff or pickup through the Delivery Note buttons. Handoff submits the native company DN and its accounting-only SI in the same request; pickup goes straight to received. Native submit defaults to in transit. Sales users who can read that DN may confirm receipt through the dedicated endpoint; this does not grant native write/submit permissions. The endpoint accepts only a name/action, loads the trusted document, stamps the three delivery fields, and preserves native read scope. Version history records state changes.
-
-On a submitted shared order, select company delivery batches under Print to generate a quantity-only consolidated slip. Individual Delivery Notes retain their existing print formats. Consolidation checks permissions and shared-order membership for every selected DN, preserves source company/warehouse and makes no stock/accounting writes. A4 is specified by the print CSS.
-
-HTTP evidence includes eight deliveries for APH/VH/MK/TL under the warehouse role, receipt by the read-only sales role, generic-write and unrelated-role denial, four-company stock/debt checks and consolidation under the warehouse role. Restore verification includes shared order/child tables, custom fields and Version counts. These are simulated UAT users, not actual Dung/chief identities.
-
-## Remaining gates before release
-
-Direct Sales Invoice bypass and unauthorized customer-control edits passed the specified HTTP cases. Other credit paths still require review. Actual Dung and chief-accountant identities, concurrent approve/revoke/dispatch behavior, and the user interface remain unverified. Shared-order bag conversion, delivery workflow/slips, pending valuation, manufacturing/byproducts and deposit allocation are not fully accepted. The complete 202 numbered decisions were not available for full reconciliation. Do not merge, tag or deploy automatically.
+Tiền/cọc liên company theo kế hoạch, đổi nguồn sau giao, toàn bộ native Desk/role thật, COGS backdated và migration tồn bao vẫn có gate trong HANDOFF. MISA chỉ hóa đơn thuế. Không tự FIFO, tự đổi bank hoặc tự dùng cọc cho nợ cũ. Nghiệm thu toàn bộ 202 cần đối chiếu bản nguyên văn.

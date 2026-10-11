@@ -5,8 +5,8 @@ dòng đơn/phiếu giao hàng, lãi gộp, giá vào/ra của gói lô, đơn g
 bảng giá chỉ thấy bảng giá bán.
 
 Mức bảo vệ đã chốt (29/09/2026): ẩn cột giá trên phiếu và bản in, không cho mở báo cáo có giá
-trị, không có quyền xem dạng bảng/xuất Excel. Không phải khóa ở máy chủ: người rành kỹ thuật
-vẫn đọc được giá qua API. Muốn khóa hẳn thì dùng che trường (mask) của Frappe v16 — xem README.
+trị, không có quyền xem dạng bảng/xuất Excel. Bản ứng viên có thêm server_cost_guard và cost_query_api để che/chặn các đường đọc đã kiểm thử.
+Kết quả phụ thuộc feature flag và hồ sơ quyền; không suy ra mọi API đều đã được nghiệm thu.
 
 Quy tắc phiếu nhập mua hàng:
 - Phiếu tích "Phiếu nhập vật tư vận hành": chỉ nhận mã thuộc nhóm hàng được tích

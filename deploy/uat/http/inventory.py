@@ -162,7 +162,11 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
         'kh_aph_pending_receipt':pending['name'],'items':[row('trade',100,4,10000)]}
     deny(lambda:insert(forged_pr));assert oracle()==initial
     emit('HTTP_PENDING_NATIVE_LINK_BYPASS_DENIED','PASS','Native PR cannot be manually linked to pending receipt')
-    pr1=rpc('kh_aph.pending_valuation.finalize',args)
+    desk_raw=run(['node','--experimental-websocket',str(Path(__file__).with_name('desk.mjs')),pending['name'],f['items']['trade']])
+    desk=json.loads(next(line for line in desk_raw.splitlines() if line.startswith('{"case":')))
+    assert desk['status']=='PASS',desk
+    pr1=desk['receipt']
+    emit('NATIVE_DESK_FINALIZE_AND_BAG_PREVIEW','PASS',desk['quantity'])
     stock('APH','trade',100,4,10000)
     same=oracle();assert rpc('kh_aph.pending_valuation.finalize',args)==pr1 and oracle()==same
     emit('HTTP_PENDING_FINALIZE_ATOMIC_REPEAT','PASS',{'qty_kg':100,'bags':4,'ma':10000,'receipt':pr1})
@@ -208,18 +212,23 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     repost();stock('APH','trade',150,6,14333.3333333333);stock('VH','trade',50,2,5000)
     emit('HTTP_LANDED_COST_KG_AND_REPOST','PASS',{'charges':charges,'APH_ma':14333.3333333333,'VH_ma':5000})
     raw_pr=receipt('raw',100,4,10000)
-    abnormal=submit(insert({'doctype':'Stock Entry','stock_entry_type':'Material Issue',
+    abnormal_doc={'doctype':'Stock Entry','stock_entry_type':'Material Issue',
         'company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt bất thường',
         'kh_aph_loss_reason':'UAT một bao hỏng, ghi chi phí riêng','items':[{
             'item_code':f['items']['raw'],'qty':25,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
-            's_warehouse':f['wh']['APH'],'expense_account':f['expense'],'cost_center':f['cc']}]}))
+            's_warehouse':f['wh']['APH'],'expense_account':f['expense'],'cost_center':f['cc']}]}
+    import copy
+    bad_account=copy.deepcopy(abnormal_doc)
+    bad_account['items'][0]['expense_account']=get('Company',f['companies']['APH'])['default_inventory_account']
+    prior_loss=oracle();deny(lambda:submit(insert(bad_account)));assert oracle()==prior_loss
+    abnormal=submit(insert(abnormal_doc))
     stock('APH','raw',75,3,10000)
     expense_rows=rpc('frappe.client.get_list',{'doctype':'GL Entry','filters':json.dumps({
         'voucher_type':'Stock Entry','voucher_no':abnormal['name'],'account':f['expense'],'is_cancelled':0}),
         'fields':json.dumps(['debit','credit'])})
     near(sum(float(r['debit'])-float(r['credit']) for r in expense_rows),250000)
     cancel('Stock Entry',abnormal['name']);stock('APH','raw',100,4,10000)
-    emit('HTTP_ABNORMAL_LOSS_EXPENSE_SEPARATE','PASS',{'lost_kg':25,'lost_bags':1,'expense':250000,'cancel_restored':True})
+    emit('HTTP_ABNORMAL_LOSS_EXPENSE_SEPARATE','PASS',{'lost_kg':25,'lost_bags':1,'expense':250000,'cancel_restored':True,'asset_account_denied':True})
 
     def production():
         rows=[]
