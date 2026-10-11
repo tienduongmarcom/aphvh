@@ -80,6 +80,9 @@ jobs:
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
           test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 14
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
+          # Database restore leaves queued fixture contact jobs in disposable Redis.
+          # This Redis belongs only to this fresh CI site; no workers consume it.
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
           test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 48
