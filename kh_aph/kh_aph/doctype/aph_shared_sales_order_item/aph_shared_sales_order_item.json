@@ -19,39 +19,45 @@
       "label": "Mã hàng",
       "fieldtype": "Link",
       "options": "Item",
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "warehouse",
       "label": "Kho nguồn",
       "fieldtype": "Link",
       "options": "Warehouse",
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "company",
       "label": "Đơn vị sở hữu",
       "fieldtype": "Link",
       "options": "Company",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "qty",
       "label": "Số lượng kg",
       "fieldtype": "Float",
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "rate",
       "label": "Giá bán/kg",
       "fieldtype": "Currency",
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "amount",
       "label": "Thành tiền",
       "fieldtype": "Currency",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1
     }
   ],
   "field_order": [
