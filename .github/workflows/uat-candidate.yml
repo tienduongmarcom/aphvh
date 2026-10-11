@@ -31,7 +31,7 @@ jobs:
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
             test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
-            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "b510ecce2ff72baa7635896ad85a4bc7361f7e4314bf3e0cf6fb7e7a40226edd"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "58bcf376410a52ed0b77986618f1a9d5b7f94838f3172e78cc3a6c30bb10ec1d"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
