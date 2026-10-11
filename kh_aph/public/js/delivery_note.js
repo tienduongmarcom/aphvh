@@ -174,3 +174,28 @@ if (!kh_aph.vat.handlers) {
 	};
 }
 frappe.ui.form.on("Delivery Note", kh_aph.vat.handlers);
+
+// Atomic handoff/pickup and manual receipt confirmation.
+frappe.ui.form.on("Delivery Note", {
+    refresh(frm) {
+        if (!frm.meta.fields.some(f => f.fieldname === "kh_aph_delivery_state")
+            || frm.is_new() || frm.doc.is_return || frm.doc.docstatus === 2) return;
+        const confirm = async (action) => {
+            if (frm.is_dirty()) {
+                frappe.msgprint("Lưu phiếu trước khi xác nhận giao/nhận hàng.");
+                return;
+            }
+            await frappe.call({method: "kh_aph.delivery_status.confirm",
+                args: {name: frm.doc.name, action}, freeze: true,
+                freeze_message: "Đang xác nhận giao/nhận hàng…"});
+            await frm.reload_doc();
+        };
+        if (frm.doc.docstatus === 0 && frm.perm.some(p => p.submit)) {
+            frm.add_custom_button("Bàn giao cho người vận chuyển", () => confirm("handoff"), "Giao hàng");
+            frm.add_custom_button("Khách đến lấy", () => confirm("pickup"), "Giao hàng");
+        } else if (frm.doc.docstatus === 1 && frm.doc.kh_aph_delivery_state === "Đang giao"
+            && frm.perm.some(p => p.write)) {
+            frm.add_custom_button("Khách đã nhận", () => confirm("receive"), "Giao hàng");
+        }
+    },
+});
