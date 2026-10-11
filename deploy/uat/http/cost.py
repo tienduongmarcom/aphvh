@@ -1,6 +1,6 @@
 FIXTURE_CODE = 'import json,sys,frappe\nfrom frappe.utils import today\nfrom frappe.utils.password import update_password\nfrom kh_aph.constants import INV_FLAG, INV_NO, ROLE_FACTORY, ROLE_NO_COST\nfrappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")\nfrappe.connect();frappe.set_user("Administrator")\nimport uuid\npayload=json.load(sys.stdin)\nco = frappe.get_doc("Company", frappe.db.get_value("Company", {"abbr": "APH"}, "name"))\np = "UAT-P0-" + uuid.uuid4().hex[:8]\nwh = frappe.get_doc({"doctype": "Warehouse", "warehouse_name": p, "company": co.name,\n                    "is_group": 0, "parent_warehouse": frappe.db.get_value("Warehouse", {\n                        "company": co.name, "is_group": 1, "parent_warehouse": ["is", "not set"]}, "name"),\n                    "account": co.default_inventory_account}).insert().name\ngroup = frappe.get_doc({"doctype": "Item Group", "item_group_name": p,\n                       "parent_item_group": "HH - Hàng hóa", "is_group": 0}).insert().name\ncustomer = frappe.get_doc({"doctype": "Customer", "customer_name": p, "customer_type": "Company",\n                           "customer_group": frappe.db.get_value("Customer Group", {"is_group": 0}, "name"),\n                           "territory": frappe.db.get_value("Territory", {"is_group": 0}, "name"),\n                           INV_FLAG: INV_NO}).insert()\nvat_account = frappe.db.get_value("Account", {"company": co.name, "account_number": "33311", "is_group": 0}, "name")\ntax = frappe.get_doc({"doctype": "Item Tax Template", "title": p + "-TEST10", "company": co.name,\n                     "taxes": [{"tax_type": vat_account, "tax_rate": 10}]}).insert()\nitem = frappe.get_doc({"doctype": "Item", "item_code": p, "item_name": p, "item_group": group,\n                      "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",\n                      "taxes": [{"item_tax_template": tax.name, "tax_category": customer.tax_category}],\n                      "item_defaults": [{"company": co.name, "default_warehouse": wh,\n                                         "income_account": co.default_income_account,\n                                         "expense_account": co.default_expense_account,\n                                         "buying_cost_center": co.cost_center,\n                                         "selling_cost_center": co.cost_center}]}).insert()\nse = frappe.get_doc({"doctype": "Stock Entry", "stock_entry_type": "Material Receipt", "company": co.name,\n                    "posting_date": today(), "items": [{"item_code": item.name, "qty": 100,\n                        "uom": "Kg", "stock_uom": "Kg", "conversion_factor": 1, "t_warehouse": wh,\n                        "basic_rate": 10000, "set_basic_rate_manually": 1,\n                        "expense_account": co.stock_adjustment_account, "cost_center": co.cost_center}]}).insert()\nse.submit()\nuser = frappe.get_doc({"doctype": "User", "email": p.lower() + "@example.invalid", "first_name": "Dũng giả lập UAT",\n                      "enabled": 1, "user_type": "System User", "send_welcome_email": 0,\n                      "roles": [{"role": ROLE_FACTORY}, {"role": ROLE_NO_COST}]})\nuser.flags.no_welcome_mail = True\nuser.insert()\n\nuser.api_key = uuid.uuid4().hex[:15]\nuser.api_secret = payload["password"]\nuser.save()\nupdate_password(user.name,payload["password"])\nfrappe.db.commit()\nprint("FIXTURE_JSON:"+json.dumps({"user":user.name,"stock_entry":se.name,"item":item.name,"warehouse":wh,"company":co.name,"api_key":user.api_key}))\nfrappe.destroy()\n'
 """HTTP cost-security test on a disposable clone, with mandatory database restoration."""
-import json, os, secrets, subprocess, uuid
+import json, os, secrets, subprocess, uuid, time
 import http.cookiejar, urllib.request, urllib.parse, urllib.error
 from pathlib import Path
 WEB="aphvh-p0-web-uat"
@@ -155,12 +155,24 @@ try:
  keys=generate_keys(user);frappe.db.commit()
  assert frappe.db.get_value('User',user,'api_key')==keys['api_key']
  assert get_decrypted_password('User',user,'api_secret')==keys['api_secret']
+ frappe.clear_cache()
  print('KEYS:'+json.dumps(keys))
 finally:frappe.destroy()
 """
     raw=inner(token_code,json.dumps({'user':fixture['user']}))
     token_keys=json.loads(next(x[5:] for x in raw.splitlines() if x.startswith('KEYS:')))
     token_secret=token_keys['api_secret']
+    # The first encrypted fixture field can initialize encryption_key after the
+    # HTTP worker cached site_config. Reload only the disposable UAT worker.
+    run(['docker','restart',WEB])
+    for attempt in range(40):
+        try:
+            admin=session('Administrator',state['admin_password'])
+            actor=session(fixture['user'],factory_password)
+            break
+        except (urllib.error.URLError,ConnectionError):
+            if attempt==39:raise
+            time.sleep(0.5)
     def token_call(method,args):
         req=urllib.request.Request("http://127.0.0.1:18091"+method,data=urllib.parse.urlencode(args).encode(),
             headers={"Host":SITE,"X-Frappe-Site-Name":SITE,"Authorization":"token "+token_keys['api_key']+":"+token_secret})
