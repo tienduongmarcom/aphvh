@@ -1,9 +1,0 @@
-.git
-.github
-**/__pycache__
-**/*.pyc
-Dockerfile
-.dockerignore
-.ruff_cache
-deploy/khach-hang
-deploy/cloud

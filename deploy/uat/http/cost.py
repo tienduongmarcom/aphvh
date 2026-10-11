@@ -10,12 +10,13 @@ SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
 TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format"]
 root_secret=""
+token_secret=""
 factory_password=secrets.token_urlsafe(32)
 def run(args,input=None):
     p=subprocess.run(args,input=input,text=True,capture_output=True)
     if p.returncode:
         message=(p.stdout+p.stderr)[-3500:]
-        for secret in (root_secret,factory_password,state.get("admin_password","")):
+        for secret in (root_secret,factory_password,token_secret,state.get("admin_password","")):
             if secret: message=message.replace(secret,"[REDACTED]")
         raise RuntimeError(message)
     return p.stdout
@@ -145,14 +146,38 @@ finally:frappe.destroy()
         denied(actor,"/api/method/erpnext.controllers.stock_controller.show_stock_ledger_preview",{"company":fixture["company"],"doctype":"Stock Entry","docname":fixture["stock_entry"]})
         emit("HTTP_DUNG_PROFILE_"+label.upper(),"PASS",{"user":fixture["user"],"roles":measured["roles"],"quantity":100,"cost_visible":False,"query_report_export_preview":"denied or masked"})
     # API key authentication must enforce the same policy as cookie authentication.
+    token_code="""import json,sys,frappe
+from frappe.utils.password import get_decrypted_password
+from frappe.core.doctype.user.user import generate_keys
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites')
+try:
+ frappe.connect();frappe.set_user('Administrator');user=json.load(sys.stdin)['user']
+ keys=generate_keys(user);frappe.db.commit()
+ assert frappe.db.get_value('User',user,'api_key')==keys['api_key']
+ assert get_decrypted_password('User',user,'api_secret')==keys['api_secret']
+ print('KEYS:'+json.dumps(keys))
+finally:frappe.destroy()
+"""
+    raw=inner(token_code,json.dumps({'user':fixture['user']}))
+    token_keys=json.loads(next(x[5:] for x in raw.splitlines() if x.startswith('KEYS:')))
+    token_secret=token_keys['api_secret']
     def token_call(method,args):
         req=urllib.request.Request("http://127.0.0.1:18091"+method,data=urllib.parse.urlencode(args).encode(),
-            headers={"Host":SITE,"X-Frappe-Site-Name":SITE,"Authorization":"token "+fixture['api_key']+":"+factory_password})
+            headers={"Host":SITE,"X-Frappe-Site-Name":SITE,"Authorization":"token "+token_keys['api_key']+":"+token_secret})
         with urllib.request.urlopen(req,timeout=30) as response:return json.load(response)
     doc=token_call('/api/method/frappe.client.get',{"doctype":"Stock Entry","name":fixture['stock_entry']})['message']
     assert float(doc['items'][0]['qty'])==100 and doc['items'][0].get('basic_rate') in (None,'',0)
     denied(token_call,'/api/method/frappe.desk.query_report.run',{"report_name":"Stock Ledger","filters":json.dumps({"company":fixture['company']})})
     emit('HTTP_DUNG_API_TOKEN','PASS',{'quantity':100,'cost_visible':False,'stock_ledger_denied':True})
+    # Controller helper returns an untyped cost dict: mask it as well as docs.
+    helper_args={"dt":"Stock Entry","dn":fixture['stock_entry'],"method":"get_item_details",
+                 "args":json.dumps({"item_code":fixture['item'],"warehouse":fixture['warehouse'],"s_warehouse":fixture['warehouse'],"company":fixture['company'],"qty":1})}
+    helper_admin=admin('/api/method/run_doc_method',helper_args)['message']
+    helper_dung=actor('/api/method/run_doc_method',helper_args)['message']
+    assert float(helper_admin['basic_rate'])==10000,str(helper_admin)[:400]
+    assert helper_dung.get('basic_rate') in (None,'',0),"Controller helper exposed cost"
+    denied(actor,'/api/method/run_doc_method',{**helper_args,'as_csv':1})
+    emit('HTTP_DUNG_CONTROLLER_HELPER','PASS',{'admin_rate':10000,'dung_cost_visible':False,'csv_denied':True})
     # Stock operation under the base Dũng profile, not Administrator.
     inner(role_code,json.dumps({"user":fixture["user"],"roles":[]}))
     actor=session(fixture["user"],factory_password)
@@ -186,7 +211,15 @@ finally:frappe.destroy()
     assert 'PROBE_COST=10000' in a and 'PROBE_COST=10000' not in d and 'PROBE_QTY=100' in d
     emit('HTTP_DUNG_PRINT','PASS',{'admin_probe_cost':10000,'dung_cost_visible':False,'quantity':100})
 except Exception as exc:
-    emit("HTTP_COST_RUNNER","FAIL",{"type":type(exc).__name__,"error":str(exc)[:1000]})
+    detail={"type":type(exc).__name__,"error":str(exc)[:1000]}
+    if isinstance(exc,urllib.error.HTTPError):
+        body=exc.read().decode(errors='replace')
+        for secret in (factory_password,token_secret,state.get('admin_password','')):
+            if secret:body=body.replace(secret,'[REDACTED]')
+        try:
+            data=json.loads(body);detail['http_error']={k:data.get(k) for k in ('exc_type','exception','_server_messages')}
+        except ValueError:detail['http_error']=body[:1000]
+    emit("HTTP_COST_RUNNER","FAIL",detail)
 finally:
     # Stop only UAT web so no request can write during restoration.
     run(["docker","stop",WEB])

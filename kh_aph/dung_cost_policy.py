@@ -32,7 +32,7 @@ def before_request():
     path = frappe.request.path
     if not cmd and "/api/method/" in path:
         cmd = path.split("/api/method/", 1)[1]
-    deny = ("export" in cmd.lower() or "download_template" in cmd.lower()
+    deny = (bool(cint(frappe.form_dict.get("as_csv"))) or "export" in cmd.lower() or "download_template" in cmd.lower()
             or cmd.startswith("frappe.desk.reportview.")
             or cmd.startswith("erpnext.stock.get_item_details.")
             or cmd.endswith(".get_item_details"))
@@ -58,7 +58,8 @@ def before_request():
     # Generic REST list endpoints do not pass through the child RPC wrapper.
     if path.startswith("/api/resource/") or path.startswith("/api/v2/document/"):
         from urllib.parse import unquote
-        tail = unquote(path).split("/", 4)[-1]
+        prefix = "/api/resource/" if path.startswith("/api/resource/") else "/api/v2/document/"
+        tail = unquote(path[len(prefix):])
         if "/" not in tail and frappe.request.method == "GET":
             deny = True
     if deny:
@@ -72,6 +73,12 @@ def mask_response(value):
         for child in value:
             mask_response(child)
     elif isinstance(value, dict):
+        # Controller helpers can return untyped dicts alongside a masked document.
+        for field in ("basic_rate", "basic_amount", "valuation_rate", "incoming_rate",
+                      "outgoing_rate", "last_purchase_rate", "gross_profit",
+                      "stock_value", "stock_value_difference", "stock_value_change"):
+            if field in value:
+                value[field] = None
         if value.get("doctype") == "Stock Entry Detail":
             for field in COST_MASK["Stock Entry"]["tables"]["items"]:
                 if field in value:

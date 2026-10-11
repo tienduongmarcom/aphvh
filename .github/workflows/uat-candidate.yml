@@ -78,7 +78,7 @@ jobs:
           set -o pipefail
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 13
+          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 14
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
