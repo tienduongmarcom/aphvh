@@ -76,8 +76,9 @@ def execute(filters=None):
     ]
     if not f.customer:
         return cols, []
+    frappe.get_doc("Customer", f.customer).check_permission("read")
     don_vi = []
-    for c in frappe.get_all("Company", ["name", "abbr", "company_name"], order_by="creation"):
+    for c in frappe.get_list("Company", fields=["name", "abbr", "company_name"], order_by="creation", limit_page_length=0):
         if f.company and f.company != c.name:
             continue
         don_vi.append({"don_vi": c.abbr, "ten": c.company_name, "dau_ky": _so_du(f.customer, c.name, f.from_date),
