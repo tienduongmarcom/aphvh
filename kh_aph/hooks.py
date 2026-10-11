@@ -97,8 +97,6 @@ has_permission = {
 
 # Xem trước sổ cái / sổ kho trên phiếu nháp lộ giá vốn: chặn với người bị ẩn giá vốn.
 override_whitelisted_methods = {
-    "frappe.client.get_list": "kh_aph.cost_query_api.get_list",
-    "frappe.client.get_value": "kh_aph.cost_query_api.get_value",
     "erpnext.controllers.stock_controller.show_accounting_ledger_preview":
         "kh_aph.price_visibility.show_accounting_ledger_preview",
     "erpnext.controllers.stock_controller.show_stock_ledger_preview":
@@ -144,3 +142,32 @@ jinja = {
         "kh_aph.print_utils.kh_aph_gia_gom_thue",
     ],
 }
+
+# APHVH UAT child query correction v1
+override_whitelisted_methods.update({
+    "frappe.client.get_list": "kh_aph.cost_query_api.get_list",
+    "frappe.client.get_value": "kh_aph.cost_query_api.get_value",
+})
+
+# UAT_GLOBAL_CREDIT_WARNING_V1
+_credit_dn = doc_events.setdefault("Delivery Note", {})
+_credit_validate = _credit_dn.get("validate", [])
+if isinstance(_credit_validate, str):
+    _credit_validate = [_credit_validate]
+else:
+    _credit_validate = list(_credit_validate)
+if "kh_aph.global_credit.validate_delivery" not in _credit_validate:
+    _credit_validate.append("kh_aph.global_credit.validate_delivery")
+_credit_dn["validate"] = _credit_validate
+
+# UAT_HIGH_RISK_CREDIT_V1
+for _dt,_event,_handler in (
+    ("Customer","validate","kh_aph.credit_release.validate_customer"),
+    ("Delivery Note","before_submit","kh_aph.credit_release.before_submit_delivery"),
+    ("APH Credit Release","validate","kh_aph.credit_release.validate_release"),
+):
+    _events=doc_events.setdefault(_dt,{})
+    _handlers=_events.get(_event,[])
+    _handlers=[_handlers] if isinstance(_handlers,str) else list(_handlers)
+    if _handler not in _handlers: _handlers.append(_handler)
+    _events[_event]=_handlers
