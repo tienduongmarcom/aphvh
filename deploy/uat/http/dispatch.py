@@ -158,6 +158,7 @@ finally:frappe.destroy()
     check(80000,96,1)
     emit('HTTP_DELIVERY_RECEIPT_REPEAT','PASS','Repeated receipt preserves timestamp and ledger')
     forged=dict(receipt);forged['kh_aph_delivery_state']='Chờ xuất'
+    forged['flags']={'kh_aph_delivery_transition':True}
     try:
         admin('/api/method/frappe.client.save',{'doc':json.dumps(forged)})
         raise AssertionError('Direct status edit accepted')
