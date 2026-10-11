@@ -223,7 +223,7 @@ try:
 finally:frappe.destroy()
 """
     raw=inner(print_code,'{}');fmt=next(x[7:] for x in raw.splitlines() if x.startswith('FORMAT:'))
-    args={"doctype":"Stock Entry","name":fixture['stock_entry'],"print_format":fmt,"no_letterhead":1}
+    args={"doc":"Stock Entry","name":fixture['stock_entry'],"print_format":fmt,"no_letterhead":1}
     a=admin('/api/method/frappe.www.printview.get_html_and_style',args)['message']['html']
     d=actor('/api/method/frappe.www.printview.get_html_and_style',args)['message']['html']
     assert 'PROBE_COST=10000' in a and 'PROBE_COST=10000' not in d and 'PROBE_QTY=100' in d
