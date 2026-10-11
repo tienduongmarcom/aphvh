@@ -38,7 +38,7 @@ def is_price_restricted(user: str | None = None) -> bool:
     if user == "Administrator":
         return False
     roles = set(frappe.get_roles(user))
-    return ROLE_FACTORY in roles and not roles.intersection(PRICE_ROLES)
+    return ROLE_NO_COST in roles or (ROLE_FACTORY in roles and not roles.intersection(PRICE_ROLES))
 
 
 def _roles(user: str | None) -> set[str]:

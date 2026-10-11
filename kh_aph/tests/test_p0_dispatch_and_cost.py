@@ -181,6 +181,7 @@ class TestCostRead(unittest.TestCase):
             doc.apply_fieldlevel_read_permissions()
             self.assertEqual(doc.items[0].qty, 100)
             self.assertIsNone(doc.items[0].basic_rate)
+            self.assertTrue(self.visibility.is_price_restricted())
 
     def test_response_mask_does_not_mutate_source_transaction(self):
         from kh_aph.constants import ROLE_NO_COST

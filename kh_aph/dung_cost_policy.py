@@ -68,7 +68,8 @@ def before_request():
 
 def mask_response(value):
     """Mask typed document responses without mutating transaction documents."""
-    from kh_aph.price_visibility import COST_MASK
+    from kh_aph.price_visibility import COST_MASK, PRINT_MASK
+    from kh_aph.constants import PR_OPEX
     if isinstance(value, list):
         for child in value:
             mask_response(child)
@@ -84,6 +85,11 @@ def mask_response(value):
                 if field in value:
                     value[field] = None
         spec = COST_MASK.get(value.get("doctype"))
+        # Explicit Dũng profile retains the factory buying-price mask across role
+        # unions. Existing operational-expense receipt exception stays intact.
+        if value.get("doctype") in PRINT_MASK and not (
+                value.get("doctype") == "Purchase Receipt" and cint(value.get(PR_OPEX))):
+            spec = PRINT_MASK[value["doctype"]]
         if spec:
             for field in spec["parent"]:
                 if field in value:
