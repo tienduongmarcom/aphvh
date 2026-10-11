@@ -29,7 +29,8 @@ class StockEntryKgCosting:
     """Lớp mở rộng cho DocType Stock Entry (khai báo trong hooks.extend_doctype_class)."""
 
     def validate_repack_entry(self):
-        if self.purpose == "Repack" and self.stock_entry_type == KG_ENTRY_TYPE:
+        if ((self.purpose == "Repack" and self.stock_entry_type == KG_ENTRY_TYPE)
+                or (self.purpose == "Manufacture" and self.stock_entry_type == "Sản xuất theo kg")):
             from kh_aph.bag_stock import enabled
             self.kh_aph_costing_rule = "kg-v3" if enabled() else RULE_KG_V2
             snapshot_kg(self)
@@ -55,7 +56,7 @@ class StockEntryKgCosting:
 
 def uses_kg_rule(doc):
     """Phiếu có dùng quy tắc chia theo kg không — đọc mã quy tắc ĐÃ LƯU trên phiếu."""
-    return doc.purpose == "Repack" and doc.get("kh_aph_costing_rule") in (RULE_KG_V1, RULE_KG_V2, "kg-v3")
+    return doc.purpose in ("Repack", "Manufacture") and doc.get("kh_aph_costing_rule") in (RULE_KG_V1, RULE_KG_V2, "kg-v3")
 
 
 def is_fixed_rate_row(doc, d):
@@ -85,7 +86,9 @@ def group_is_fixed_rate(item_group):
 
 
 def finished_rows(doc):
-    return [d for d in doc.get("items") if d.is_finished_item and d.t_warehouse and not d.s_warehouse]
+    return [d for d in doc.get("items") if (d.is_finished_item or
+            (doc.get("kh_aph_costing_rule") == "kg-v3" and d.get("secondary_item_type")))
+            and d.t_warehouse and not d.s_warehouse]
 
 
 def input_rows(doc):
@@ -149,7 +152,7 @@ def validate_kg_entry(doc):
         )
 
     secondary = [d.idx for d in doc.get("items") if d.get("secondary_item_type") or d.get("valuation_type")]
-    if secondary:
+    if secondary and doc.get("kh_aph_costing_rule") != "kg-v3":
         frappe.throw(
             _("Dòng {0}: bản hiện tại chưa hỗ trợ phụ phẩm định giá riêng trên phiếu {1}.").format(
                 ", ".join(str(i) for i in secondary), KG_ENTRY_TYPE
@@ -166,6 +169,12 @@ def validate_kg_entry(doc):
     if doc.get("kh_aph_costing_rule") == "kg-v3":
         if any(flt(row.amount) < 0 for row in doc.get("additional_costs") or []):
             frappe.throw("Chi phí sản xuất cộng thêm không được âm")
+        loss = flt(sum(flt(d.kh_aph_kg) for d in input_rows(doc)) -
+                   sum(flt(d.kh_aph_kg) for d in finished_rows(doc)), 6)
+        doc.kh_aph_process_loss_kg = loss
+        if loss > 0:
+            if doc.get("kh_aph_loss_type") != "Hao hụt tự nhiên" or not doc.get("kh_aph_loss_reason"):
+                frappe.throw("Hao hụt: cần loại tự nhiên và lý do; bất thường phải xuất chi phí riêng trước sản xuất")
 
     for d in fixed_rows(doc):
         if flt(d.basic_rate) <= 0:
@@ -212,7 +221,7 @@ def allocate_finished_cost_by_kg(doc):
     pool = sum(flt(d.basic_amount) for d in input_rows(doc))
     # Giá trị các dòng định giá riêng chuẩn của ERPNext (không dùng trên phiếu này) được trừ trước.
     costed_out = getattr(doc, "get_costed_out_items_cost", None)
-    if costed_out:
+    if costed_out and doc.get("kh_aph_costing_rule") != "kg-v3":
         pool -= flt(costed_out())
 
     precision = fg[0].precision("basic_amount")

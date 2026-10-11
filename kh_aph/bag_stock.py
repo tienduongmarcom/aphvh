@@ -55,6 +55,21 @@ def validate_item(doc, method=None):
                 frappe.throw("Mã đã có sổ bao: không đổi/xóa quy cách; dùng mã quy cách khác")
 
 
+def validate_valued_receipt(doc, method=None):
+    if not enabled():
+        return
+    if doc.doctype == "Purchase Invoice" and not doc.get("update_stock"):
+        return
+    for row in doc.get("items") or []:
+        item = frappe.get_cached_doc("Item", row.item_code)
+        if not item.is_stock_item or item.stock_uom != "Kg":
+            continue
+        incoming = row.get("t_warehouse") and not row.get("s_warehouse") if doc.doctype == "Stock Entry" else not doc.get("is_return")
+        rate = row.get("valuation_rate") if doc.doctype == "Stock Entry" else row.get("rate")
+        if incoming and flt(rate) <= 0:
+            frappe.throw("Hàng chưa chốt giá: dùng phiếu chờ định giá, không nhập tồn giá 0")
+
+
 def balance(item, warehouse):
     return flt(frappe.db.sql("""SELECT COALESCE(SUM(bags),0) FROM `tabAPH Bag Movement`
         WHERE item_code=%s AND warehouse=%s AND inactive=0""", (item, warehouse))[0][0])

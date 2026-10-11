@@ -7,7 +7,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Purchase Invoice","Landed Cost Voucher","Repost Item Valuation","APH Pending Receipt","APH Pending Receipt Item","APH Bag Movement","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Purchase Invoice","Landed Cost Voucher","Repost Item Valuation","APH Pending Receipt","APH Pending Receipt Item","APH Bag Movement","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version","BOM","Work Order"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)
@@ -100,7 +100,7 @@ for label,weight in [('trade',25),('raw',25),('fg',10),('by',5),('fixed',5)]:
  item=frappe.get_doc({'doctype':'Item','item_code':p+'-'+label,'item_name':p+'-'+label,'item_group':fixed if label=='fixed' else group,'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','kh_aph_kg_per_bag':weight,'taxes':taxes,'item_defaults':[{'company':co.name,'default_warehouse':warehouses[a],'income_account':co.default_income_account,'expense_account':co.default_expense_account,'buying_cost_center':co.cost_center,'selling_cost_center':co.cost_center} for a,co in companies.items()]}).insert()
  items[label]=item.name
 u=frappe.get_doc({'doctype':'User','email':p.lower()+'@example.invalid','first_name':'Dũng UAT kho','enabled':1,'user_type':'System User','send_welcome_email':0,'roles':[{'role':ROLE_FACTORY},{'role':ROLE_NO_COST}]});u.flags.no_welcome_mail=True;u.insert();update_password(u.name,payload['password'])
-frappe.db.commit();print('FIXTURE:'+json.dumps({'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
+frappe.db.commit();print('FIXTURE:'+json.dumps({'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
 '''
     raw=inner(fixture_code,json.dumps({'password':factory_password}))
     f=json.loads(next(l[8:] for l in raw.splitlines() if l.startswith('FIXTURE:')))
@@ -139,7 +139,7 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
         if rate is not None:near(result.get('valuation_rate'),rate)
         return result
     def row(label,qty,bags,rate=None,a='APH'):
-        d={'item_code':f['items'][label],'warehouse':f['wh'][a],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['cc']}
+        d={'item_code':f['items'][label],'warehouse':f['wh'][a],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['ccs'][a]}
         if rate is not None:d['rate']=rate
         return d
     def receipt(label,qty,bags,rate,a='APH'):
@@ -155,6 +155,8 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     zero={**args,'rates':json.dumps({pending['items'][0]['name']:0})}
     deny(lambda:rpc('kh_aph.pending_valuation.finalize',zero));assert oracle()==initial
     emit('HTTP_PENDING_PRICE_AND_ROLE_GUARDS','PASS','Factory and zero price rejected; no ledger written')
+    deny(lambda:receipt('trade',100,4,0));assert oracle()==initial
+    emit('HTTP_ZERO_VALUED_RECEIPT_REJECTED','PASS','Native receipt with zero price denied; pending stock remains outside SLE')
     pr1=rpc('kh_aph.pending_valuation.finalize',args)
     stock('APH','trade',100,4,10000)
     same=oracle();assert rpc('kh_aph.pending_valuation.finalize',args)==pr1 and oracle()==same
@@ -207,7 +209,7 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
             d={'item_code':f['items'][label],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['cc'],'expense_account':f['adjustment'],'s_warehouse' if source else 't_warehouse':f['wh']['APH']}
             if label=='fixed':d.update(basic_rate=5000,set_basic_rate_manually=1)
             rows.append(d)
-        return {'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg','company':f['companies']['APH'],'posting_date':f['date'],'items':rows,'additional_costs':[{'expense_account':f['expense'],'description':'UAT chi phí sản xuất','amount':90000}]}
+        return {'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg','company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt tự nhiên','kh_aph_loss_reason':'UAT giảm ẩm tự nhiên 5 kg','items':rows,'additional_costs':[{'expense_account':f['expense'],'description':'UAT chi phí sản xuất','amount':90000}]}
     prod=submit(insert(production()))
     assert prod['kh_aph_costing_rule']=='kg-v3',prod
     near(prod['total_incoming_value'],1090000);stock('APH','raw',0,0);stock('APH','fg',70,7);stock('APH','by',20,4);stock('APH','fixed',5,1,5000)
@@ -228,6 +230,51 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     cancel('Stock Entry',prod['name']);stock('APH','raw',100,4,10000)
     for label in ('fg','by','fixed'):stock('APH',label,0,0)
     emit('HTTP_PRODUCTION_CANCEL_REVERSE','PASS',{'raw_kg':100,'raw_bags':4,'output_kg':0,'output_bags':0})
+    bom=submit(insert({'doctype':'BOM','company':f['companies']['APH'],'item':f['items']['fg'],
+        'quantity':70,'uom':'Kg','is_active':1,'is_default':1,'currency':'VND','conversion_rate':1,
+        'items':[{'item_code':f['items']['raw'],'qty':100,'uom':'Kg','conversion_factor':1,'rate':10000}]}))
+    wo=submit(insert({'doctype':'Work Order','company':f['companies']['APH'],'production_item':f['items']['fg'],
+        'bom_no':bom['name'],'qty':70,'source_warehouse':f['wh']['APH'],'wip_warehouse':f['wh']['APH'],
+        'fg_warehouse':f['wh']['APH'],'skip_transfer':1,'use_multi_level_bom':0}))
+    mfg=rpc('erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry',
+        {'work_order_id':wo['name'],'purpose':'Manufacture','qty':70})
+    mfg['stock_entry_type']='Sản xuất theo kg'
+    mfg['kh_aph_loss_type']='Hao hụt tự nhiên'
+    mfg['kh_aph_loss_reason']='UAT giảm ẩm tự nhiên 5 kg'
+    mfg['additional_costs']=[{'expense_account':f['expense'],'description':'UAT manufacture costs','amount':90000}]
+    for r in mfg['items']:
+        r['kh_aph_bags']=4 if r['item_code']==f['items']['raw'] else 7
+    for label,qty,bags in [('by',20,4),('fixed',5,1)]:
+        mfg['items'].append({'item_code':f['items'][label],'qty':qty,'kh_aph_bags':bags,'uom':'Kg',
+            'conversion_factor':1,'t_warehouse':f['wh']['APH'],'secondary_item_type':'By-Product',
+            'valuation_type':'Manual','allow_zero_valuation_rate':1 if label=='by' else 0,
+            'basic_rate':5000 if label=='fixed' else 0,'set_basic_rate_manually':1 if label=='fixed' else 0,
+            'expense_account':f['adjustment'],'cost_center':f['cc']})
+    mfg=submit(insert(mfg))
+    near(mfg['total_incoming_value'],1090000);near(get('Work Order',wo['name'])['produced_qty'],70)
+    stock('APH','raw',0,0);stock('APH','fg',70,7);stock('APH','by',20,4);stock('APH','fixed',5,1,5000)
+    emit('HTTP_BOM_WORK_ORDER_MANUFACTURE','PASS',{'produced_kg':70,'byproduct_kg':20,'fixed_kg':5,'total_value':1090000})
+    cancel('Stock Entry',mfg['name']);near(get('Work Order',wo['name'])['produced_qty'],0)
+    stock('APH','raw',100,4)
+    for label in ('fg','by','fixed'):stock('APH',label,0,0)
+    emit('HTTP_WORK_ORDER_MANUFACTURE_CANCEL','PASS',{'produced_qty':0,'raw_kg':100,'raw_bags':4})
+    for a in ('VH','MK'):
+        co=get('Company',f['companies'][a])
+        source_pr=receipt('raw',25,1,5000,a)
+        drying=submit(insert({'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg',
+            'company':co['name'],'posting_date':f['date'],'items':[
+                {'item_code':f['items']['raw'],'qty':25,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+                 's_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']},
+                {'item_code':f['items']['fg'],'qty':20,'kh_aph_bags':2,'uom':'Kg','conversion_factor':1,
+                 't_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']},
+                {'item_code':f['items']['by'],'qty':5,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+                 't_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']}],
+            'additional_costs':[{'expense_account':co['default_expense_account'],'amount':25000,'description':'UAT sấy nguyên bao'}]}))
+        near(drying['total_incoming_value'],150000);stock(a,'raw',0,0);stock(a,'fg',20,2,6000);stock(a,'by',5,1,6000)
+        emit('HTTP_DRYING_FULL_BAGS_'+a,'PASS',{'company':a,'input_bags':1,'output_kg':25,'service_cost':25000,'subcontracting_order':drying.get('subcontracting_order')})
+        cancel('Stock Entry',drying['name']);stock(a,'raw',25,1,5000);stock(a,'fg',0,0);stock(a,'by',0,0)
+
+
 except Exception as exc:
     detail={'type':type(exc).__name__,'error':str(exc)[-2500:]}
     if isinstance(exc,urllib.error.HTTPError):

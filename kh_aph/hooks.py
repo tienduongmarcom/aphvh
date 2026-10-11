@@ -221,3 +221,9 @@ for _dt, _handler in (("Item", "kh_aph.bag_stock.validate_item"),
     _handlers.append(_handler)
     _events["before_validate"] = _handlers
 doc_events["APH Bag Movement"] = {"validate": "kh_aph.bag_stock.protect", "on_trash": "kh_aph.bag_stock.protect"}
+
+for _dt in ("Stock Entry", "Purchase Receipt", "Purchase Invoice"):
+    _handlers = doc_events[_dt].get("validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    _handlers.append("kh_aph.bag_stock.validate_valued_receipt")
+    doc_events[_dt]["validate"] = _handlers

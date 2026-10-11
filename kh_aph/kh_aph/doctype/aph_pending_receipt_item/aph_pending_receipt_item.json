@@ -7,7 +7,7 @@
   "fields": [
     {
       "fieldname": "item_code",
-      "label": "item_code",
+      "label": "Mã hàng",
       "fieldtype": "Link",
       "options": "Item",
       "reqd": 1,
@@ -15,32 +15,32 @@
     },
     {
       "fieldname": "warehouse",
-      "label": "warehouse",
+      "label": "Kho nhận",
       "fieldtype": "Link",
       "options": "Warehouse",
       "reqd": 1
     },
     {
       "fieldname": "qty",
-      "label": "qty",
+      "label": "Kg quy đổi",
       "fieldtype": "Float",
       "reqd": 1,
       "in_list_view": 1
     },
     {
       "fieldname": "kh_aph_bags",
-      "label": "kh_aph_bags",
+      "label": "Số bao thực tế",
       "fieldtype": "Float"
     },
     {
       "fieldname": "kh_aph_kg_per_bag",
-      "label": "kh_aph_kg_per_bag",
+      "label": "Kg/bao đã lưu",
       "fieldtype": "Float",
       "read_only": 1
     },
     {
       "fieldname": "kh_aph_bag_rate",
-      "label": "kh_aph_bag_rate",
+      "label": "Giá/bao",
       "fieldtype": "Currency",
       "read_only": 1
     }
