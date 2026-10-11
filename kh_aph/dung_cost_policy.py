@@ -45,6 +45,13 @@ def before_request():
             from kh_aph.cost_query_api import _fields
             fields = frappe.form_dict.get("fields") or frappe.form_dict.get("fieldname")
             deny = _fields(dt, frappe.form_dict.get("parent"), fields) is None
+            deny = deny or bool(frappe.form_dict.get("group_by") or frappe.form_dict.get("expand")
+                                or frappe.form_dict.get("or_filters") or frappe.form_dict.get("order_by"))
+            filters = frappe.parse_json(frappe.form_dict.get("filters"))
+            if isinstance(filters, dict):
+                deny = deny or bool(set(filters) - {"name", "parent", "parenttype", "parentfield", "item_code", "qty"})
+            elif filters is not None and not isinstance(filters, str):
+                deny = True
         elif dt in SENSITIVE or dt in ("Stock Entry", "Item", "Purchase Receipt", "Purchase Order",
                                       "Sales Order Item", "Delivery Note Item", "Serial and Batch Bundle"):
             deny = True
@@ -65,6 +72,10 @@ def mask_response(value):
         for child in value:
             mask_response(child)
     elif isinstance(value, dict):
+        if value.get("doctype") == "Stock Entry Detail":
+            for field in COST_MASK["Stock Entry"]["tables"]["items"]:
+                if field in value:
+                    value[field] = None
         spec = COST_MASK.get(value.get("doctype"))
         if spec:
             for field in spec["parent"]:
