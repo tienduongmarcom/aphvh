@@ -33,24 +33,33 @@ jobs:
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
         run: |
-          docker run -d --name uat-db --network host -e MARIADB_ROOT_PASSWORD=uat-fixture-only mariadb:11.8 --port=13306 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-          docker run -d --name uat-redis --network host redis:8.6-alpine redis-server --port 16379
+          docker network create aphvh-uat-net
+          docker run -d --name erp-aph-vh-db-1 --network aphvh-uat-net -e MARIADB_ROOT_PASSWORD=uat-fixture-only mariadb:11.8 --port=13306 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+          docker run -d --name uat-redis --network aphvh-uat-net redis:8.6-alpine redis-server --port 16379
           ready=0
           for i in $(seq 1 40); do
-            if docker exec uat-db mariadb -uroot -puat-fixture-only -P13306 -h127.0.0.1 -e 'select 1' >/dev/null 2>&1; then ready=1; break; fi
+            if docker exec erp-aph-vh-db-1 mariadb -uroot -puat-fixture-only -P13306 -h127.0.0.1 -e 'select 1' >/dev/null 2>&1; then ready=1; break; fi
             sleep 3
           done
           test "$ready" = 1
+      - name: Prepare isolated site directory
+        run: |
+          uat_root=$(mktemp -d /tmp/aphvh-http-uat-XXXXXX)
+          mkdir "$uat_root/sites"
+          docker run --rm --entrypoint tar aphvh-uat:verification -C /home/frappe/frappe-bench/sites -cf - . | sudo tar -xf - -C "$uat_root/sites"
+          sudo chown -R 1000:1000 "$uat_root/sites"
+          chmod 755 "$uat_root"
+          echo "UAT_SITE_ROOT=$uat_root" >> "$GITHUB_ENV"
       - name: Install and verify candidate on fresh UAT site
         run: |
           set -o pipefail
-          docker run --rm --network host --entrypoint bash aphvh-uat:verification -ec '
+          docker run --rm --network aphvh-uat-net -v "$UAT_SITE_ROOT/sites:/home/frappe/frappe-bench/sites" --entrypoint bash aphvh-uat:verification -ec '
             cd /home/frappe/frappe-bench
-            bench set-config -g db_host 127.0.0.1
+            bench set-config -g db_host erp-aph-vh-db-1
             bench set-config -g db_port 13306
-            bench set-config -g redis_cache redis://127.0.0.1:16379
-            bench set-config -g redis_queue redis://127.0.0.1:16379
-            bench set-config -g redis_socketio redis://127.0.0.1:16379
+            bench set-config -g redis_cache redis://uat-redis:16379
+            bench set-config -g redis_queue redis://uat-redis:16379
+            bench set-config -g redis_socketio redis://uat-redis:16379
             bench new-site aphvh-web-uat --db-root-username root --db-root-password uat-fixture-only --admin-password uat-fixture-only --install-app erpnext --install-app lab9x --install-app kh_aph --mariadb-user-host-login-scope="%"
             bench --site aphvh-web-uat disable-scheduler
             bench --site aphvh-web-uat set-config mute_emails 1
@@ -61,9 +70,25 @@ jobs:
             bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
             bench --site aphvh-web-uat execute kh_aph.uat_fresh_verify.verify
           ' 2>&1 | tee fresh-site-evidence.txt
+      - name: HTTP cost and dispatch regression with restore
+        run: |
+          set -o pipefail
+          python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 5
+          ! grep -q '"status": "FAIL"' http-cost-evidence.txt
+          python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 8
+          ! grep -q '"status": "FAIL"' http-dispatch-evidence.txt
+      - name: Stop disposable CI containers
+        if: always()
+        run: |
+          docker rm -f aphvh-p0-web-uat erp-aph-vh-backend-1 erp-aph-vh-db-1 uat-redis || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: candidate-image-evidence
           path: |
             candidate-image-evidence.txt
             fresh-site-evidence.txt
+            http-*-evidence.txt
