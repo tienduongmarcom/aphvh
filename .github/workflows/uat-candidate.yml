@@ -5,7 +5,7 @@ on:
   pull_request: {}
   workflow_dispatch: {}
 concurrency:
-  group: uat-candidate-${{ github.ref }}
+  group: uat-candidate-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -77,10 +77,11 @@ jobs:
         run: |
           set -o pipefail
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
-          python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
+          sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
           test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 5
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt
-          python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
           test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 24
           ! grep -q '"status": "FAIL"' http-dispatch-evidence.txt
       - name: Stop disposable CI containers
