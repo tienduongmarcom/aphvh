@@ -105,7 +105,11 @@ def native_journal(receipt, rows, action=None, owner=None):
 def reverse_journal(name):
     frappe.flags.funds_internal = True
     try:
-        checked("Journal Entry", name, "cancel").cancel()
+        doc = checked("Journal Entry", name, "cancel")
+        # The coordinator is still submitted during before_cancel; native
+        # accounting/stock/reconciliation links retain their normal guards.
+        doc.ignore_linked_doctypes = tuple(getattr(doc, "ignore_linked_doctypes", ()) or ()) + ("APH Funds Receipt", "APH Funds Action")
+        doc.cancel()
     finally:
         frappe.flags.funds_internal = False
 
