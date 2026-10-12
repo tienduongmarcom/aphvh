@@ -72,6 +72,16 @@
       "print": 1,
       "report": 1,
       "export": 0
+    },
+    {
+      "role": "Accounts User",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "submit": 0,
+      "cancel": 0,
+      "print": 0,
+      "report": 0
     }
   ]
 }

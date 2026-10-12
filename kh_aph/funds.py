@@ -27,10 +27,10 @@ def require(manager=False):
 def has_permission(doc, user=None, permission_type=None):
     roles = set(frappe.get_roles(user or frappe.session.user))
     if (user or frappe.session.user) == "Administrator":
-        return None
+        return True
     if "APH Không xem giá vốn" in roles or not roles & {"Accounts User", "Accounts Manager"}:
         return False
-    return None  # Preserve native role and Company User Permission checks.
+    return True  # Native role and Company User Permission checks still apply.
 
 
 def query_conditions(user=None):
