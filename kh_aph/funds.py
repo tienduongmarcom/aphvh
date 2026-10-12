@@ -208,6 +208,8 @@ class FundsAction(Document):
             frappe.throw("Thanh toán thu hộ cần chọn khoản đã cấn nợ chủ hàng, không dùng cọc mới")
         owner = checked("APH Funds Route", receipt.route).owner_company
         if self.action_type in ("Giữ cọc", "Chuyển cọc"):
+            if not self.shared_order:
+                frappe.throw("Chọn đơn cần giữ/chuyển cọc")
             order = checked("APH Shared Sales Order", self.shared_order)
             if order.docstatus != 1 or order.customer != receipt.customer:
                 frappe.throw("Chọn đơn chung đã xác nhận của đúng khách")
@@ -221,6 +223,8 @@ class FundsAction(Document):
             if not self.source_reservation:
                 frappe.throw("Chọn cọc cần giải phóng; tiền chỉ về chưa phân bổ, không vào nợ cũ")
         elif self.action_type == "Cấn hóa đơn":
+            if not self.invoice:
+                frappe.throw("Chọn hóa đơn ERP cần cấn")
             inv = checked("Sales Invoice", self.invoice)
             if inv.docstatus != 1 or inv.customer != receipt.customer or inv.is_return or inv.currency != "VND":
                 frappe.throw("Chọn hóa đơn ERP đã ghi sổ VND của đúng khách")
@@ -235,12 +239,16 @@ class FundsAction(Document):
                 if source.shared_order not in linked or (source.source_company and source.source_company != inv.company):
                     frappe.throw("Cọc giữ cho đơn/nguồn khác; cần duyệt chuyển hoặc giải phóng trước")
             if inv.company != receipt.company:
+                if not self.route:
+                    frappe.throw("Phân bổ liên company cần chọn tuyến đối ứng đã duyệt")
                 route = checked("APH Funds Route", self.route)
                 if (route.docstatus != 1 or route.receiving_company != receipt.company
                     or route.owner_company != inv.company or route.holding_account != receipt.holding_account):
                     frappe.throw("Phân bổ liên company cần tuyến đối ứng đã duyệt đúng tiền thực nhận/chủ hàng")
                 account(route.due_from_account, inv.company, "Asset")
         elif self.action_type == "Trả tiền thu hộ":
+            if not self.source_allocation:
+                frappe.throw("Chọn khoản đã cấn nợ chủ hàng để trả thu hộ")
             allocation = checked("APH Funds Action", self.source_allocation)
             if allocation.docstatus != 1 or allocation.receipt != receipt.name or allocation.action_type != "Cấn hóa đơn" or allocation.invoice_company == receipt.company:
                 frappe.throw("Chọn khoản đã phân bổ liên company của đúng thực thu")
