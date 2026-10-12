@@ -33,7 +33,15 @@ try:
   html=response.read().decode()
   assert response.status==200 and 'frappe' in html,'Native Desk HTML missing'
  print(json.dumps({'case':'NATIVE_DESK_BOOT','status':'PASS'}))
-except Exception:
+except Exception as exc:
+ # Frappe website renderer embeds the exception in developer-mode HTML.
+ # Strip markup and print only the traceback from this disposable Admin fixture.
+ if isinstance(exc,urllib.error.HTTPError):
+  import re,html
+  page=html.unescape(exc.read().decode(errors='replace'))
+  clean=re.sub(r'<[^>]+>',' ',page)
+  index=clean.find('Traceback')
+  if index>=0:print(clean[index:index+16000].replace('uat-fixture-only','[REDACTED]'),flush=True)
  result=subprocess.run(['docker','logs',WEB],text=True,capture_output=True)
  print((result.stdout+result.stderr)[-18000:].replace('uat-fixture-only','[REDACTED]'),flush=True)
  raise
