@@ -7,12 +7,10 @@ ROOT='/home/frappe/frappe-bench';SITE='aphvh-web-uat';WEB='aphvh-p0-web-uat'
 source=Path(os.environ['UAT_SITE_ROOT'])/'sites'
 assert source.parent.name.startswith('aphvh-http-uat-')
 assert (source/SITE/'site_config.json').exists() and not (source/'frontend').exists()
-# Disposable site only: print native Desk tracebacks to container logs.
-config_path=source/SITE/'site_config.json'
-config=json.loads(config_path.read_text());config['developer_mode']=1
-config_path.write_text(json.dumps(config))
 mount=str(source)+':'+ROOT+'/sites'
 subprocess.run(['docker','run','-d','--name','erp-aph-vh-backend-1','--network','aphvh-uat-net','-v',mount,'--entrypoint','bash','aphvh-uat:verification','-ec','exec sleep infinity'],check=True)
+# Set inside the disposable container as the site owner (host runner UID differs).
+subprocess.run(['docker','exec','-w',ROOT,'erp-aph-vh-backend-1','bench','--site',SITE,'set-config','developer_mode','1'],check=True)
 subprocess.run(['docker','run','-d','--name',WEB,'--network','aphvh-uat-net','-v',mount,'-p','127.0.0.1:18091:8000','--workdir',ROOT+'/sites','--entrypoint',ROOT+'/env/bin/gunicorn','aphvh-uat:verification','--bind','0.0.0.0:8000','--workers','1','--threads','2','--timeout','120','kh_aph.uat_wsgi:application'],check=True)
 state=source.parent/'state.json'
 state.write_text(json.dumps({'site':SITE,'container':WEB,'port':18091,'sites_directory':str(source),'admin_password':'uat-fixture-only'}))
