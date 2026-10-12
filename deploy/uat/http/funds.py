@@ -142,8 +142,8 @@ print('LEDGER:'+json.dumps(out));frappe.destroy()
     snapshot0=ledger();deny(lambda:submit(insert(receipt_doc)));assert ledger()==snapshot0
     emit('HTTP_FUNDS_RECEIPT_DUPLICATE','PASS','Duplicate stable bank reference rejected without cash/ledger changes')
     def action(kind,amount,**kw):
-        return submit(insert({'doctype':'APH Funds Action','receipt':receipt['name'],'action_type':kind,
-            'amount':amount,'posting_date':f['date'],'reason':'UAT explicit agreement',**kw}))
+        return rpc('kh_aph.funds.create_action',{'values':json.dumps({'receipt':receipt['name'],'action_type':kind,
+            'amount':amount,'posting_date':f['date'],'reason':'UAT explicit agreement',**kw})})
     deny(lambda:action('Giữ cọc',10000,shared_order=main['name']))
     ui_raw=run(['node','--experimental-websocket',str(Path(__file__).with_name('funds-desk.mjs')),receipt['name'],f['customer'],main['name']])
     ui=json.loads(next(l for l in ui_raw.splitlines() if l.startswith('{') and 'NATIVE_FUNDS_IDENTIFY_AND_FIGURES' in l))

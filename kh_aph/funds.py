@@ -369,6 +369,19 @@ def receipt_position(name):
 
 
 @frappe.whitelist()
+def create_action(values):
+    """Approve a new plan atomically; normal saved drafts remain separately usable."""
+    require(True)
+    values = json.loads(values) if isinstance(values, str) else values
+    fields = ("receipt", "action_type", "amount", "posting_date", "reason", "source_reservation",
+              "source_allocation", "shared_order", "source_company", "invoice", "route",
+              "bank_account", "owner_bank_account", "external_reference", "owner_external_reference")
+    doc = frappe.get_doc({"doctype": "APH Funds Action", **{f: values.get(f) for f in fields}}).insert()
+    doc.submit()
+    return doc.as_dict()
+
+
+@frappe.whitelist()
 def reconcile_rows(company_name, bank_account, rows):
     """Import/reconcile JSON bank rows; does not write cash or auto-allocate."""
     require()
