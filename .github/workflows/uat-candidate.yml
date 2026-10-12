@@ -2,7 +2,8 @@ name: UAT candidate image verification
 on:
   push:
     branches: ["fix/p0-uat-v091-20261010"]
-  pull_request: {}
+  pull_request:
+    types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
 concurrency:
   group: uat-candidate-${{ github.head_ref || github.ref_name }}
@@ -99,7 +100,11 @@ jobs:
       - name: Render four-company quantity slip to PDF
         run: |
           google-chrome --version
-          google-chrome --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/shared-four-company-slip.pdf" "file://$PWD/shared-four-company-slip.html"
+          # The native Desk suite runs as root; keep the PDF user's profile isolated.
+          chrome_root=$(mktemp -d /tmp/aphvh-pdf-XXXXXX)
+          trap 'rm -rf "$chrome_root"' EXIT
+          mkdir -p "$chrome_root/config" "$chrome_root/cache"
+          XDG_CONFIG_HOME="$chrome_root/config" XDG_CACHE_HOME="$chrome_root/cache" google-chrome --user-data-dir="$chrome_root/profile" --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/shared-four-company-slip.pdf" "file://$PWD/shared-four-company-slip.html"
           test -s shared-four-company-slip.pdf
           head -c 4 shared-four-company-slip.pdf | grep -q '%PDF'
       - name: Stop disposable CI containers
