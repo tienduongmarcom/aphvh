@@ -80,3 +80,10 @@ frappe.ui.form.on("APH Shared Sales Order", {
         }, "In");
     },
 });
+
+frappe.ui.form.on("APH Shared Sales Order",{
+    refresh(frm){
+        if(frm.doc.docstatus===1 && frappe.boot?.kh_aph?.source_change && frappe.model.can_create("APH Source Change"))
+            frm.add_custom_button("Đổi nguồn phần chưa giao",()=>frappe.new_doc("APH Source Change",{shared_order:frm.doc.name}));
+    }
+});

@@ -6,14 +6,14 @@ from frappe.utils import cint
 FLAGS = (
     "kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery",
     "kh_aph_shared_sales_order", "kh_aph_global_credit_warning",
-    "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp", "kh_aph_funds_workflow",
+    "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp", "kh_aph_funds_workflow", "kh_aph_source_change",
 )
 COUNTS = (
     "User", "Customer", "Supplier", "Item", "Warehouse", "Sales Order",
     "Delivery Note", "Sales Invoice", "Payment Entry", "Stock Entry",
     "GL Entry", "Stock Ledger Entry", "Payment Ledger Entry", "BOM", "Work Order",
     "APH Shared Sales Order", "APH Pending Receipt", "APH Bag Movement", "APH Credit Release",
-    "APH Funds Route", "APH Funds Receipt", "APH Funds Action",
+    "APH Funds Route", "APH Funds Receipt", "APH Funds Action", "APH Source Change",
 )
 
 

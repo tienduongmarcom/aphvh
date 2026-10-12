@@ -7,7 +7,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Purchase Invoice","Landed Cost Voucher","Repost Item Valuation","APH Pending Receipt","APH Pending Receipt Item","APH Bag Movement","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version","BOM","Work Order"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Purchase Invoice","Landed Cost Voucher","Repost Item Valuation","APH Pending Receipt","APH Pending Receipt Item","APH Bag Movement","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version","BOM","Work Order","APH Source Change"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)
@@ -124,7 +124,7 @@ f=json.load(sys.stdin);out={}
 for a,wh in f['wh'].items():
  out[a]={}
  for label,item in f['items'].items():
-  row=frappe.db.get_value('Bin',{'item_code':item,'warehouse':wh},['actual_qty','valuation_rate','stock_value'],as_dict=True) or {}
+  row=frappe.db.get_value('Bin',{'item_code':item,'warehouse':wh},['actual_qty','valuation_rate','stock_value','reserved_qty'],as_dict=True) or {}
   out[a][label]={**row,'bags':balance(item,wh)}
 out['counts']={dt:frappe.db.count(dt) for dt in ('Purchase Receipt','Stock Ledger Entry','GL Entry','APH Bag Movement')}
 out['customer_debt']=float(frappe.db.sql("SELECT COALESCE(SUM(debit-credit),0) FROM `tabGL Entry` WHERE party_type='Customer' AND party=%s AND is_cancelled=0",f['customer'])[0][0])
@@ -188,6 +188,46 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     dn=submit(insert(dn))
     stock('APH','trade',125,5,13333.3333333333);near(oracle()['customer_debt'],500000)
     emit('HTTP_PARTIAL_DISPATCH_BAG_LEDGER','PASS',{'kg':125,'bags':5,'debt':500000,'mismatch_rejected':True})
+    before_change=oracle()
+    stale=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':so_name})
+    stale['items'][0].update(qty=25,kh_aph_bags=1);stale=insert(stale)
+    inner("import json,sys,frappe\nfrappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\nu=frappe.get_doc('User',json.load(sys.stdin)['user']);u.append('roles',{'role':'Sales Manager'});u.save();frappe.db.commit();frappe.destroy()",json.dumps(f))
+    factory=session(f['user'],factory_password)
+    change=submit(insert({'doctype':'APH Source Change','source_order':so_name,'source_row':so['items'][0]['name'],
+        'qty':50,'target_warehouse':f['wh']['VH'],'reason':'UAT shift remaining bags'},factory),factory)
+    after_change=oracle()
+    assert after_change['counts']==before_change['counts'] and after_change['customer_debt']==before_change['customer_debt']
+    near(after_change['APH']['trade']['actual_qty'],125);near(after_change['VH']['trade']['actual_qty'],50)
+    near(after_change['APH']['trade']['reserved_qty'],0);near(after_change['VH']['trade']['reserved_qty'],50)
+    assert change['changed_by']==f['user']
+    assert 'rate' not in json.loads(change['original_row_json'])
+    assert get('Sales Order',so_name)['items'][0]['qty']==25 and get('Sales Order',so_name)['items'][0]['kh_aph_bags']==1
+    target=get('Sales Order',change['target_order'])
+    assert target['company']==f['companies']['VH'] and target['items'][0]['qty']==50 and target['items'][0]['kh_aph_bags']==2
+    assert target['items'][0]['kh_aph_shared_line']==so['items'][0]['kh_aph_shared_line']
+    deny(lambda:submit(stale));assert oracle()==after_change
+    emit('HTTP_SOURCE_REMAINDER_NO_COST_AND_STALE_DN','PASS',{'actor':change['changed_by'],'original_kg':25,'target_kg':50,'price_snapshot':False})
+    new_dn=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':target['name']})
+    new_dn['items'][0].update(qty=25,kh_aph_bags=1);new_dn=submit(insert(new_dn))
+    stock('APH','trade',125,5);stock('VH','trade',25,1);near(oracle()['customer_debt'],1000000)
+    figures=rpc('kh_aph.funds.shared_financials',{'name':shared['name']})
+    near(figures['dispatched_debt'],1000000);near(figures['undelivered_value'],500000)
+    emit('HTTP_SOURCE_TARGET_DISPATCH_OWNER_FIGURES','PASS','Only target owner stock/debt changed')
+    same=oracle();deny(lambda:cancel('APH Source Change',change['name']));assert oracle()==same
+    emit('HTTP_SOURCE_CANCEL_DISPATCH_GUARD','PASS','Dispatched target prevents coordinator reversal')
+    new_return=rpc('erpnext.stock.doctype.delivery_note.delivery_note.make_sales_return',{'source_name':new_dn['name']})
+    new_return['items'][0].update(qty=-25,kh_aph_bags=-1);new_return=submit(insert(new_return))
+    def linked_si(note):
+        return rpc('frappe.client.get_list',{'doctype':'Sales Invoice Item','parent':'Sales Invoice','filters':json.dumps({'delivery_note':note}),'fields':json.dumps(['parent'])})[0]['parent']
+    cancel('Sales Invoice',linked_si(new_return['name']));cancel('Delivery Note',new_return['name'])
+    cancel('Sales Invoice',linked_si(new_dn['name']));cancel('Delivery Note',new_dn['name'])
+    cancel('APH Source Change',change['name'])
+    stock('APH','trade',125,5);stock('VH','trade',50,2);near(oracle()['customer_debt'],500000)
+    restored=get('Sales Order',so_name)
+    assert restored['items'][0]['qty']==75 and restored['items'][0]['kh_aph_bags']==3
+    original=get('Delivery Note',dn['name'])
+    assert original['docstatus']==1 and original['company']==f['companies']['APH'] and original['items'][0]['qty']==25
+    emit('HTTP_SOURCE_REVERSE_HISTORY_CONSERVATION','PASS','Native target vouchers reversed before restoring original; first dispatch unchanged')
     ret=rpc('erpnext.stock.doctype.delivery_note.delivery_note.make_sales_return',{'source_name':dn['name']})
     ret['items'][0].update(qty=-25,kh_aph_bags=-1)
     ret=submit(insert(ret));stock('APH','trade',150,6);near(oracle()['customer_debt'],0)

@@ -70,6 +70,10 @@ class APHSharedSalesOrder(Document):
         linked = frappe.get_all("Sales Order", filters={"kh_aph_shared_order": self.name},
                                  fields=["name", "company", "docstatus", "kh_aph_shared_fingerprint"])
         if linked:
+            if frappe.db.exists("DocType","APH Source Change") and frappe.db.exists("APH Source Change",{"shared_order":self.name}):
+                from kh_aph.source_change import effective_plan
+                effective_plan(self)
+                return
             if (len(linked) == len(plan["companies"])
                 and {r.company for r in linked} == set(plan["companies"])
                 and all(r.docstatus == 1 and r.kh_aph_shared_fingerprint == plan["fingerprint"] for r in linked)):
@@ -101,6 +105,10 @@ class APHSharedSalesOrder(Document):
 
     def before_cancel(self):
         self._require_enabled()
+        frappe.db.sql("SELECT name FROM `tabAPH Shared Sales Order` WHERE name=%s FOR UPDATE",self.name)
+        if frappe.db.exists("DocType","APH Source Change"):
+            for name in frappe.get_all("APH Source Change",filters={"shared_order":self.name,"docstatus":1},pluck="name",order_by="creation desc"):
+                frappe.get_doc("APH Source Change",name).cancel()
         for name in frappe.get_all("Sales Order", filters={"kh_aph_shared_order": self.name}, pluck="name"):
             so = frappe.get_doc("Sales Order", name)
             if so.docstatus == 1:

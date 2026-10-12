@@ -250,3 +250,9 @@ for _event in ("validate", "before_cancel", "before_update_after_submit"):
 _handlers = doc_events["Payment Entry"]["validate"]
 if isinstance(_handlers, str): _handlers = [_handlers]
 doc_events["Payment Entry"]["validate"] = _handlers + ["kh_aph.funds.guard_native_order_advance"]
+
+# Quantity-only source changes, preserving native cancellation and delivery guards.
+for _dt, _event, _method in (("Sales Order","on_cancel","coordinator_links"),("Sales Order","on_change","prevent_reopen"),("Delivery Note","before_submit","lock_delivery_sources")):
+    _handlers = doc_events.setdefault(_dt,{}).get(_event,[])
+    if isinstance(_handlers,str): _handlers=[_handlers]
+    doc_events[_dt][_event]=_handlers+["kh_aph.source_change."+_method]
