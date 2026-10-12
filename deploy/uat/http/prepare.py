@@ -9,6 +9,8 @@ assert source.parent.name.startswith('aphvh-http-uat-')
 assert (source/SITE/'site_config.json').exists() and not (source/'frontend').exists()
 mount=str(source)+':'+ROOT+'/sites'
 subprocess.run(['docker','run','-d','--name','erp-aph-vh-backend-1','--network','aphvh-uat-net','-v',mount,'--entrypoint','bash','aphvh-uat:verification','-ec','exec sleep infinity'],check=True)
+# We override the base entrypoint for isolated gunicorn; reproduce its asset link.
+subprocess.run(['docker','exec','erp-aph-vh-backend-1',ROOT+'/env/bin/python','-c',"from pathlib import Path\nroot=Path('/home/frappe/frappe-bench')\nassets=root/'assets'\nassert (assets/'assets.json').is_file(),'Image built assets manifest missing'\nlink=root/'sites'/'assets'\nif link.is_symlink():link.unlink()\nassert not link.exists(),'Refuse to replace unexpected UAT asset directory'\nlink.symlink_to(assets,target_is_directory=True)\nassert (link/'assets.json').is_file()\n"],check=True)
 # Set inside the disposable container as the site owner (host runner UID differs).
 subprocess.run(['docker','exec','-w',ROOT,'erp-aph-vh-backend-1','bench','--site',SITE,'set-config','developer_mode','1'],check=True)
 subprocess.run(['docker','run','-d','--name',WEB,'--network','aphvh-uat-net','-v',mount,'-p','127.0.0.1:18091:8000','--workdir',ROOT+'/sites','--entrypoint',ROOT+'/env/bin/gunicorn','aphvh-uat:verification','--bind','0.0.0.0:8000','--workers','1','--threads','2','--timeout','120','kh_aph.uat_wsgi:application'],check=True)
