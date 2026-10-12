@@ -20,7 +20,8 @@ def balance_for(customer):
     ''', customer)[0][0]
     if cint(frappe.conf.get('kh_aph_funds_workflow')):
         from kh_aph.funds import unapplied_verified
-        return balance - unapplied_verified(customer)
+        from kh_aph.funds_rules import money
+        return money(balance) - unapplied_verified(customer)
     return balance
 
 def evaluate(customer, additional):
