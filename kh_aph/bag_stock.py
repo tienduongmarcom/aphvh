@@ -151,3 +151,4 @@ def protect(doc, method=None):
 
 def boot_session(bootinfo):
     bootinfo.setdefault("kh_aph", {})["quantity_valuation_mvp"] = enabled()
+    bootinfo.kh_aph["funds_workflow"] = cint(frappe.conf.get("kh_aph_funds_workflow"))

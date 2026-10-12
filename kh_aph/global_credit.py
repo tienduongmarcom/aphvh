@@ -9,7 +9,7 @@ FLAG_FIELD = 'kh_aph_global_credit_over'
 def balance_for(customer):
     # Receivable GL includes verified-customer unallocated receipts once, already
     # in debit-credit. Never subtract Payment Entry again or use anonymous money.
-    return frappe.db.sql('''
+    balance = frappe.db.sql('''
         SELECT COALESCE(SUM(gl.debit-gl.credit),0)
         FROM `tabGL Entry` gl
         JOIN `tabCompany` co ON co.name=gl.company
@@ -18,6 +18,10 @@ def balance_for(customer):
           AND gl.is_cancelled=0 AND co.abbr IN ('APH','VH','MK','TL')
           AND a.account_type='Receivable'
     ''', customer)[0][0]
+    if cint(frappe.conf.get('kh_aph_funds_workflow')):
+        from kh_aph.funds import unapplied_verified
+        return balance - unapplied_verified(customer)
+    return balance
 
 def evaluate(customer, additional):
     limit = frappe.db.get_value('Customer', customer, LIMIT_FIELD) or 0

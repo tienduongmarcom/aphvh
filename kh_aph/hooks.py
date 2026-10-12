@@ -238,3 +238,15 @@ for _dt in ("Stock Entry", "Purchase Receipt", "Purchase Invoice", "Sales Order"
         _scripts = [_scripts]
     doctype_js[_dt] = _scripts + ["public/js/bag_quantity.js"]
 doctype_js["APH Pending Receipt"].append("public/js/pending_receipt.js")
+
+# Explicit money/deposit plans: native JE owns GL; no automatic bank movement.
+for _dt in ("APH Funds Route", "APH Funds Receipt", "APH Funds Action"):
+    has_permission[_dt] = "kh_aph.funds.has_permission"
+    permission_query_conditions[_dt] = "kh_aph.funds.query_conditions"
+for _event in ("validate", "before_cancel", "before_update_after_submit"):
+    _handlers = doc_events.setdefault("Journal Entry", {}).get(_event, [])
+    if isinstance(_handlers, str): _handlers = [_handlers]
+    doc_events["Journal Entry"][_event] = _handlers + ["kh_aph.funds.protect_journal"]
+_handlers = doc_events["Payment Entry"]["validate"]
+if isinstance(_handlers, str): _handlers = [_handlers]
+doc_events["Payment Entry"]["validate"] = _handlers + ["kh_aph.funds.guard_native_order_advance"]

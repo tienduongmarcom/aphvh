@@ -27,6 +27,8 @@ def setup_uat():
         frappe.get_doc({"doctype": "Role", "role_name": ROLE_NO_COST, "desk_access": 1}).insert()
     from kh_aph.quantity_setup import setup as setup_quantity
     setup_quantity()
+    from kh_aph.funds_setup import setup as setup_funds
+    setup_funds()
     apply_query_field_permissions()
     setup_shared()
     if not frappe.db.exists("DocType", "APH Credit Release"):

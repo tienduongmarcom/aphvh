@@ -1425,3 +1425,6 @@
 "Credit & Overdue Limits","Hạn mức công nợ và quá hạn"
 "Allow sales invoice creation without delivery note","Cho phép lập hóa đơn bán hàng không cần phiếu giao hàng"
 "Allow sales invoice creation without sales order","Cho phép lập hóa đơn bán hàng không cần đơn bán hàng"
+APH Funds Receipt,Tiền thực nhận
+APH Funds Action,Kế hoạch cọc và phân bổ
+APH Funds Route,Tuyến tài khoản tiền và thu hộ

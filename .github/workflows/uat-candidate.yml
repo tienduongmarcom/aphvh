@@ -32,7 +32,7 @@ jobs:
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
             test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
-            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "460f5aeb6a10f34331d4ba9a2f55ba14537e57e5054859e76983fffe7b1f9d38"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "ccf8474c093862f1065bc7bd10074c22cbe13567880205d4609fc720630468b8"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
       - name: Create isolated database and Redis
@@ -68,7 +68,7 @@ jobs:
             bench --site aphvh-web-uat disable-scheduler
             bench --site aphvh-web-uat set-config mute_emails 1
             bench --site aphvh-web-uat execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json\"}"
-            for flag in kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp; do
+            for flag in kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp kh_aph_funds_workflow; do
               bench --site aphvh-web-uat set-config "$flag" 1
             done
             bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
@@ -80,6 +80,10 @@ jobs:
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/funds.py | tee http-funds-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-funds-evidence.txt)" = 19
+          ! grep -q '"status": "FAIL"' http-funds-evidence.txt
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
           test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 14
           ! grep -q '"status": "FAIL"' http-cost-evidence.txt

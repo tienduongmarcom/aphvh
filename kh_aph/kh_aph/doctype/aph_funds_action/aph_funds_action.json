@@ -1,0 +1,214 @@
+{
+  "doctype": "DocType",
+  "name": "APH Funds Action",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "track_changes": 1,
+  "is_submittable": 1,
+  "fields": [
+    {
+      "fieldname": "receipt",
+      "label": "Khoản tiền thực nhận",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "APH Funds Receipt"
+    },
+    {
+      "fieldname": "action_type",
+      "label": "Thao tác",
+      "fieldtype": "Select",
+      "reqd": 1,
+      "options": "Giữ cọc\nChuyển cọc\nGiải phóng cọc\nCấn hóa đơn\nHoàn tiền\nTrả tiền thu hộ"
+    },
+    {
+      "fieldname": "amount",
+      "label": "Số tiền",
+      "fieldtype": "Currency",
+      "reqd": 1,
+      "options": "VND"
+    },
+    {
+      "fieldname": "posting_date",
+      "label": "Ngày xử lý",
+      "fieldtype": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "customer",
+      "label": "Khách",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Customer"
+    },
+    {
+      "fieldname": "receiving_company",
+      "label": "Đơn vị thực nhận",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Company"
+    },
+    {
+      "fieldname": "source_reservation",
+      "label": "Cọc nguồn đã giữ/chuyển",
+      "fieldtype": "Link",
+      "options": "APH Funds Action"
+    },
+    {
+      "fieldname": "shared_order",
+      "label": "Đơn giữ/chuyển cọc tới",
+      "fieldtype": "Link",
+      "options": "APH Shared Sales Order"
+    },
+    {
+      "fieldname": "source_company",
+      "label": "Nguồn cọc (trống: cọc chung)",
+      "fieldtype": "Link",
+      "options": "Company"
+    },
+    {
+      "fieldname": "invoice",
+      "label": "Hóa đơn ERP được cấn",
+      "fieldtype": "Link",
+      "options": "Sales Invoice"
+    },
+    {
+      "fieldname": "invoice_company",
+      "label": "Đơn vị công nợ",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Company"
+    },
+    {
+      "fieldname": "route",
+      "label": "Tuyến liên company đã duyệt",
+      "fieldtype": "Link",
+      "options": "APH Funds Route"
+    },
+    {
+      "fieldname": "bank_account",
+      "label": "Quỹ/ngân hàng thực chi hoàn",
+      "fieldtype": "Link",
+      "options": "Account"
+    },
+    {
+      "fieldname": "external_reference",
+      "label": "Mã giao dịch thực hoàn",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "external_key",
+      "label": "Khóa chống trùng hoàn",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "read_only": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "journal_entry",
+      "label": "Chứng từ cấn/hoàn",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Journal Entry"
+    },
+    {
+      "fieldname": "reason",
+      "label": "Lý do/thỏa thuận",
+      "fieldtype": "Small Text",
+      "reqd": 1
+    },
+    {
+      "fieldname": "approved_by",
+      "label": "Người duyệt",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "User"
+    },
+    {
+      "fieldname": "approved_at",
+      "label": "Thời điểm duyệt",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "source_allocation",
+      "label": "Khoản thu hộ đã cấn nợ",
+      "fieldtype": "Link",
+      "options": "APH Funds Action"
+    },
+    {
+      "fieldname": "owner_bank_account",
+      "label": "Quỹ/ngân hàng chủ hàng thực nhận",
+      "fieldtype": "Link",
+      "options": "Account"
+    },
+    {
+      "fieldname": "owner_external_reference",
+      "label": "Mã giao dịch chủ hàng thực nhận",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "owner_external_key",
+      "label": "Khóa chống trùng chủ hàng",
+      "fieldtype": "Data",
+      "unique": 1,
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "owner_journal_entry",
+      "label": "Chứng từ chủ hàng nhận tiền",
+      "fieldtype": "Link",
+      "options": "Journal Entry",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "receipt",
+    "action_type",
+    "amount",
+    "posting_date",
+    "customer",
+    "receiving_company",
+    "source_reservation",
+    "shared_order",
+    "source_company",
+    "invoice",
+    "invoice_company",
+    "route",
+    "bank_account",
+    "external_reference",
+    "external_key",
+    "journal_entry",
+    "reason",
+    "approved_by",
+    "approved_at",
+    "source_allocation",
+    "owner_bank_account",
+    "owner_external_reference",
+    "owner_external_key",
+    "owner_journal_entry"
+  ],
+  "permissions": [
+    {
+      "role": "Accounts Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1,
+      "print": 1,
+      "report": 1,
+      "export": 0
+    },
+    {
+      "role": "Accounts User",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 0,
+      "print": 1,
+      "report": 1,
+      "export": 0
+    }
+  ]
+}
