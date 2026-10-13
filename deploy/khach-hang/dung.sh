@@ -11,6 +11,18 @@ KHACH="${1:?tên khách}"; TAG="${2:?phiên bản image}"; CFG="${3:?file cấu 
 KHUON="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DIR="${ERP_HOME:-$HOME/erp}/$KHACH"
 [ -e "$DIR/.env" ] && { echo "Đã có $DIR/.env: khách này đã dựng. Dùng nang-cap.sh để nâng cấp."; exit 1; }
+# Mật khẩu Administrator: hỏi TRƯỚC khi tạo gì (nhập sai thì hỏi lại, không phải dọn thư mục); không in ra, không lưu lịch sử lệnh
+if [ -t 0 ]; then
+  for lan in 1 2 3; do
+    read -r -s -p "Mật khẩu Administrator mới (>= 10 ký tự): " AP; echo; read -r -s -p "Nhập lại: " AP2; echo
+    [ "$AP" = "$AP2" ] && [ ${#AP} -ge 10 ] && break
+    echo "Không khớp hoặc ngắn hơn 10 ký tự (đã nhập ${#AP} ký tự). Nhập lại."; AP=""
+  done
+  [ -n "$AP" ] || { echo "Nhập sai 3 lần: dừng, chưa tạo gì."; exit 1; }
+  SINH_MK=0
+else
+  AP="$(python3 -c 'import secrets;print(secrets.token_urlsafe(18))')"; SINH_MK=1
+fi
 mkdir -p "$DIR/sao-luu"
 cp -r "$KHUON/compose.yaml" "$KHUON/overrides" "$KHUON/erpctl" "$KHUON/nang-cap.sh" "$KHUON/quay-lui.sh" "$DIR/"
 cp "$CFG" "$DIR/khach.json"
@@ -33,14 +45,7 @@ ERP_HTTPS=$([ -n "$DOMAIN" ] && echo 1 || echo 0)
 EOF
 chmod 600 "$DIR/.env"
 cd "$DIR"
-# Mật khẩu Administrator: nhập tay (không in ra, không lưu trong lịch sử lệnh)
-if [ -t 0 ]; then
-  read -r -s -p "Mật khẩu Administrator mới: " AP; echo; read -r -s -p "Nhập lại: " AP2; echo
-  [ "$AP" = "$AP2" ] && [ ${#AP} -ge 10 ] || { echo "Không khớp hoặc ngắn hơn 10 ký tự"; exit 1; }
-else
-  AP="$(python3 -c 'import secrets;print(secrets.token_urlsafe(18))')"; printf '%s\n' "$AP" > "$DIR/admin-password.txt"
-  echo "Không có bàn phím: đã tạo mật khẩu Administrator ngẫu nhiên trong $DIR/admin-password.txt (đổi ngay sau khi vào)"
-fi
+if [ "$SINH_MK" = 1 ]; then printf '%s\n' "$AP" > "$DIR/admin-password.txt"; echo "Không có bàn phím: mật khẩu Administrator ngẫu nhiên ở $DIR/admin-password.txt (đổi ngay sau khi vào)"; fi
 ./erpctl up -d
 echo "Chờ dịch vụ sẵn sàng..."
 for i in $(seq 1 60); do
