@@ -91,6 +91,10 @@ class NhatQuanDanhSachCo(unittest.TestCase):
         self.assertEqual(len(self._co_app()), 8)
 
     def test_quay_lui_dau_van_ci_cung_danh_sach(self):
+        if not (GOC / ".github").exists() or not (GOC / "deploy/khach-hang").exists():
+            # Trong image: .dockerignore loại .github và deploy/khach-hang. Bước "Test đơn vị" của
+            # phat-hanh.yml chạy test này đầy đủ trên repo.
+            self.skipTest("chạy trong image: thiếu .github/deploy/khach-hang")
         co = self._co_app()
         for tep in ("deploy/khach-hang/quay-lui.sh", "deploy/release/dau_van_site.py",
                     ".github/workflows/cong-3-nang-cap-production.yml", "kh_aph/handoff_preflight.py"):
