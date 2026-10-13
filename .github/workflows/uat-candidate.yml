@@ -5,6 +5,7 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
+  workflow_call: {}
 concurrency:
   group: uat-candidate-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -24,7 +25,7 @@ jobs:
           load: true
           push: false
           tags: aphvh-uat:verification
-          build-args: ERPNEXT_IMAGE=frappe/erpnext:v16.36.1
+          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:13d6d2889b8690b2d6c69cb562d63bd2990f42df8cff92db840043ae69034fef
       - name: Record versions and verified source hashes
         run: |
           expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
@@ -100,7 +101,7 @@ jobs:
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 28
+          test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 32
           ! grep -q '"status": "FAIL"' http-inventory-evidence.txt
       - name: Render four-company quantity slip to PDF
         run: |

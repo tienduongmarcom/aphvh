@@ -10,14 +10,16 @@ permissions:
   packages: write
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/kh-aph-erpnext
-  ERPNEXT_IMAGE: frappe/erpnext:v16.36.1
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:13d6d2889b8690b2d6c69cb562d63bd2990f42df8cff92db840043ae69034fef
 jobs:
+  candidate-uat:
+    uses: ./.github/workflows/uat-candidate.yml
   cong-2:
     uses: ./.github/workflows/cong-2-site-trang.yml
   cong-2b:
     uses: ./.github/workflows/cong-2b-dien-tap.yml
   phat-hanh:
-    needs: [cong-2, cong-2b]
+    needs: [candidate-uat, cong-2, cong-2b]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +27,8 @@ jobs:
         run: |
           V=$(python3 -c "import re;print(re.search(r'\"(.+)\"',open('kh_aph/__init__.py').read()).group(1))")
           if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v${V}" ]; then echo "Tag ${GITHUB_REF_NAME} không khớp phiên bản app ${V}"; exit 1; fi
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then echo "Release requires an immutable reviewed version tag"; exit 1; fi
+          if [ "${V}" = "0.9.1" ]; then echo "Refusing to overwrite production 0.9.1; bump release version after acceptance"; exit 1; fi
           echo "VERSION=${V}" >> "$GITHUB_ENV"
       - name: Test đơn vị
         run: |

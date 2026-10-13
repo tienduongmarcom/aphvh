@@ -143,7 +143,7 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
         if rate is not None:d['rate']=rate
         return d
     def receipt(label,qty,bags,rate,a='APH',posting_date=None):
-        return submit(insert({'doctype':'Purchase Receipt','company':f['companies'][a],'supplier':f['supplier'],'posting_date':posting_date or f['date'],'currency':'VND','conversion_rate':1,'items':[row(label,qty,bags,rate,a)]}))
+        return submit(insert({'doctype':'Purchase Receipt','company':f['companies'][a],'supplier':f['supplier'],'posting_date':posting_date or f['date'],'set_posting_time':1 if posting_date else 0,'posting_time':'08:00:00','currency':'VND','conversion_rate':1,'items':[row(label,qty,bags,rate,a)]}))
     pending=submit(insert({'doctype':'APH Pending Receipt','company':f['companies']['APH'],'supplier':f['supplier'],'received_date':f['date'],'items':[row('trade',100,4)]}))
     initial=oracle();assert initial['counts']['Stock Ledger Entry']==initial['counts']['GL Entry']==0,initial
     stock('APH','trade',0,0)
@@ -176,6 +176,58 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     vhpr=receipt('trade',50,2,5000,'VH')
     stock('VH','trade',50,2,5000);stock('APH','trade',150,6,13333.3333333333)
     emit('HTTP_MOVING_AVERAGE_PER_WAREHOUSE','PASS',{'APH_qty':150,'APH_ma':13333.3333333333,'VH_ma':5000})
+    # Full source closure and chain reversal never rewrite earlier vouchers.
+    baseline_full=oracle()
+    full=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['date'],'delivery_date':f['date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('trade',25,1,20000),'line_id':'full-source-line'}]}))
+    def company_orders(root):
+        names=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':root,'docstatus':1}),'fields':json.dumps(['name'])})
+        return [get('Sales Order',r['name']) for r in names]
+    full_so=company_orders(full['name'])[0]
+    desk_raw=run(['node','--experimental-websocket',str(Path(__file__).with_name('source-desk.mjs')),full_so['name'],f['wh']['VH']])
+    desk=json.loads(next(line for line in desk_raw.splitlines() if line.startswith('{"case":')))
+    assert desk['status']=='PASS',desk
+    admin=session('Administrator',state['admin_password'])
+    full_change=get('APH Source Change',desk['change']['name'])
+    full_target=get('Sales Order',full_change['target_order'])
+    assert get('Sales Order',full_so['name'])['status']=='Closed'
+    near(oracle()['customer_debt'],0)
+    assert oracle()['counts']==baseline_full['counts']
+    emit('NATIVE_DESK_SOURCE_CHANGE_FULL','PASS',{'closed_original':full_so['name'],'target':full_target['name'],'qty':25})
+    # Explicit reopen must be blocked while the source-change coordinator is active.
+    same=oracle()
+    deny(lambda:rpc('erpnext.selling.doctype.sales_order.sales_order.update_status',{'status':'Draft','name':full_so['name']}))
+    assert oracle()==same and get('Sales Order',full_so['name'])['status']=='Closed'
+    emit('HTTP_SOURCE_CLOSED_REOPEN_GUARD','PASS','Transferred source cannot reserve stock twice')
+    second=submit(insert({'doctype':'APH Source Change','source_order':full_target['name'],
+        'source_row':full_target['items'][0]['name'],'qty':25,'target_warehouse':f['wh']['MK'],'reason':'UAT second full source change'}))
+    third=get('Sales Order',second['target_order'])
+    assert third['company']==f['companies']['MK'] and third['items'][0]['qty']==25
+    same=oracle();deny(lambda:cancel('APH Source Change',full_change['name']));assert oracle()==same
+    cancel('APH Source Change',second['name']);cancel('APH Source Change',full_change['name'])
+    back=get('Sales Order',full_so['name'])
+    assert back['docstatus']==1 and back['status']!='Closed' and back['items'][0]['qty']==25
+    cancel('APH Shared Sales Order',full['name'])
+    assert oracle()==baseline_full
+    emit('HTTP_SOURCE_FULL_CHAIN_REVERSE','PASS','Reverse descendants first; original contract restored; no GL/SLE')
+    multiple=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['date'],'delivery_date':f['date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('trade',25,1,20000),'line_id':'removed-line'},
+                 {**row('trade',50,2,20000),'line_id':'unchanged-line'}]}))
+    multi_so=company_orders(multiple['name'])[0]
+    removed=next(r for r in multi_so['items'] if r['kh_aph_shared_line']=='removed-line')
+    move=submit(insert({'doctype':'APH Source Change','source_order':multi_so['name'],
+        'source_row':removed['name'],'qty':25,'target_warehouse':f['wh']['VH'],'reason':'UAT move one entire row'}))
+    remaining=get('Sales Order',multi_so['name'])
+    assert len(remaining['items'])==1 and remaining['items'][0]['kh_aph_shared_line']=='unchanged-line' and remaining['items'][0]['qty']==50
+    cancel('APH Source Change',move['name'])
+    back=get('Sales Order',multi_so['name'])
+    assert sorted((r['kh_aph_shared_line'],r['qty'],r['kh_aph_bags']) for r in back['items'])==[('removed-line',25,1),('unchanged-line',50,2)]
+    cancel('APH Shared Sales Order',multiple['name']);assert oracle()==baseline_full
+    emit('HTTP_SOURCE_MULTIROW_RESTORE','PASS','Moved row restored; other row and contract quantity preserved')
     shared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],'transaction_date':f['date'],'delivery_date':f['date'],'selling_price_list':f['price_list'],'currency':'VND','items':[{**row('trade',75,3,20000),'line_id':'bag-line'}]}))
     so_name=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':shared['name']}),'fields':json.dumps(['name'])})[0]['name']
     so=get('Sales Order',so_name);assert so['items'][0]['qty']==75 and so['items'][0]['kh_aph_bags']==3
@@ -256,6 +308,8 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     # revalue the dispatched cost in both SLE and GL, while receivable stays fixed.
     cpr1=receipt('cogs',100,4,10000,posting_date=f['cost_date'])
     cpr2=receipt('cogs',50,2,20000,posting_date=f['cost_date'])
+    assert cpr1['posting_date']==cpr2['posting_date']==f['cost_date'],(cpr1['posting_date'],cpr2['posting_date'],f['cost_date'])
+    stock('APH','cogs',150,6,13333.3333333333)
     cshared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
         'transaction_date':f['cost_date'],'delivery_date':f['sale_date'],
         'selling_price_list':f['price_list'],'currency':'VND',
