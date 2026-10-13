@@ -17,6 +17,12 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
       - uses: docker/setup-buildx-action@v3
       - name: Build candidate locally without publishing
         uses: docker/build-push-action@v6
