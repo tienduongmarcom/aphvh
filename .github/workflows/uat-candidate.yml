@@ -77,11 +77,18 @@ jobs:
             bench --site aphvh-web-uat execute kh_aph.uat_fresh_verify.verify
             bench --site aphvh-web-uat execute kh_aph.handoff_preflight.inspect
           ' 2>&1 | tee fresh-site-evidence.txt
-      - name: HTTP cost and dispatch regression with restore
+      - name: HTTP inventory, funds, cost and dispatch regression with restore
         run: |
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          # Run newly extended inventory/source/COGS cases first; then full regressions.
+          set -o pipefail
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 32
+          ! grep -q '"status": "FAIL"' http-inventory-evidence.txt
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/funds.py | tee http-funds-evidence.txt
           test "$(grep -c '"status": "PASS"' http-funds-evidence.txt)" = 19
           ! grep -q '"status": "FAIL"' http-funds-evidence.txt
@@ -96,13 +103,6 @@ jobs:
           sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
           test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 48
           ! grep -q '"status": "FAIL"' http-dispatch-evidence.txt
-      - name: Quantity valuation and production HTTP UAT with restore
-        run: |
-          set -o pipefail
-          docker exec uat-redis redis-cli -p 16379 FLUSHDB
-          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 32
-          ! grep -q '"status": "FAIL"' http-inventory-evidence.txt
       - name: Render four-company quantity slip to PDF
         run: |
           google-chrome --version
