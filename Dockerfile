@@ -1,7 +1,7 @@
 # Bản cài ERPNext có kèm app kh_aph.
 # Dựng:  docker build -t kh-aph-erpnext:0.8.0 .
 # ERPNEXT_IMAGE phải trùng phiên bản ERPNext đang chạy (hiện là v16.36.1).
-ARG ERPNEXT_IMAGE=frappe/erpnext:v16.36.1
+ARG ERPNEXT_IMAGE=frappe/erpnext:v16.50.0
 FROM ${ERPNEXT_IMAGE}
 
 USER frappe

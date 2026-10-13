@@ -7,12 +7,12 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   push:
-    branches: ["fix/p0-uat-v091-20261010"]
+    branches: ["fix/p0-uat-v091-20261010", "thu/erpnext-v16.50"]
 permissions:
   contents: read
   packages: read
 env:
-  ERPNEXT_IMAGE: frappe/erpnext@sha256:13d6d2889b8690b2d6c69cb562d63bd2990f42df8cff92db840043ae69034fef
+  ERPNEXT_IMAGE: frappe/erpnext:v16.50.0
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
   PROD_TAG: "0.9.1"
   # Digest image đang chạy trên erpnext-prod (kiểm kê chỉ đọc 13/10/2026).

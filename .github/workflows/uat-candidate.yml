@@ -1,7 +1,7 @@
 name: UAT candidate image verification
 on:
   push:
-    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012"]
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50"]
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -25,7 +25,7 @@ jobs:
           load: true
           push: false
           tags: aphvh-uat:verification
-          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:13d6d2889b8690b2d6c69cb562d63bd2990f42df8cff92db840043ae69034fef
+          build-args: ERPNEXT_IMAGE=frappe/erpnext:v16.50.0
       - name: Record versions and verified source hashes
         run: |
           expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
