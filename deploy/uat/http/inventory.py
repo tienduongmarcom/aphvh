@@ -78,7 +78,7 @@ os.chmod(restore_record,0o600)
 try:
     # Fixture masters only; all business documents below go through authenticated HTTP.
     fixture_code = '''import json,sys,uuid,frappe
-from frappe.utils import today
+from frappe.utils import today, add_days
 from frappe.utils.password import update_password
 from kh_aph.constants import INV_FLAG,INV_NO,ROLE_FACTORY,ROLE_NO_COST,IG_FIXED_RATE
 frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')
@@ -96,11 +96,11 @@ for a in ('APH','VH'):
  co=companies[a];tax=frappe.get_doc({'doctype':'Item Tax Template','title':p+'-'+a+'-10','company':co.name,'taxes':[{'tax_type':frappe.db.get_value('Account',{'company':co.name,'account_number':'33311','is_group':0},'name'),'tax_rate':10}]}).insert()
  taxes.append({'item_tax_template':tax.name,'tax_category':customer.tax_category})
 items={}
-for label,weight in [('trade',25),('raw',25),('fg',10),('by',5),('fixed',5)]:
+for label,weight in [('trade',25),('cogs',25),('raw',25),('fg',10),('by',5),('fixed',5)]:
  item=frappe.get_doc({'doctype':'Item','item_code':p+'-'+label,'item_name':p+'-'+label,'item_group':fixed if label=='fixed' else group,'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','kh_aph_kg_per_bag':weight,'taxes':taxes,'item_defaults':[{'company':co.name,'default_warehouse':warehouses[a],'income_account':co.default_income_account,'expense_account':co.default_expense_account,'buying_cost_center':co.cost_center,'selling_cost_center':co.cost_center} for a,co in companies.items()]}).insert()
  items[label]=item.name
 u=frappe.get_doc({'doctype':'User','email':p.lower()+'@example.invalid','first_name':'Dũng UAT kho','enabled':1,'user_type':'System User','send_welcome_email':0,'roles':[{'role':ROLE_FACTORY},{'role':ROLE_NO_COST}]});u.flags.no_welcome_mail=True;u.insert();update_password(u.name,payload['password'])
-frappe.db.commit();print('FIXTURE:'+json.dumps({'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
+frappe.db.commit();print('FIXTURE:'+json.dumps({'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'cost_date':add_days(today(),-3),'sale_date':add_days(today(),-1),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
 '''
     raw=inner(fixture_code,json.dumps({'password':factory_password}))
     f=json.loads(next(l[8:] for l in raw.splitlines() if l.startswith('FIXTURE:')))
@@ -142,8 +142,8 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
         d={'item_code':f['items'][label],'warehouse':f['wh'][a],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['ccs'][a]}
         if rate is not None:d['rate']=rate
         return d
-    def receipt(label,qty,bags,rate,a='APH'):
-        return submit(insert({'doctype':'Purchase Receipt','company':f['companies'][a],'supplier':f['supplier'],'posting_date':f['date'],'currency':'VND','conversion_rate':1,'items':[row(label,qty,bags,rate,a)]}))
+    def receipt(label,qty,bags,rate,a='APH',posting_date=None):
+        return submit(insert({'doctype':'Purchase Receipt','company':f['companies'][a],'supplier':f['supplier'],'posting_date':posting_date or f['date'],'currency':'VND','conversion_rate':1,'items':[row(label,qty,bags,rate,a)]}))
     pending=submit(insert({'doctype':'APH Pending Receipt','company':f['companies']['APH'],'supplier':f['supplier'],'received_date':f['date'],'items':[row('trade',100,4)]}))
     initial=oracle();assert initial['counts']['Stock Ledger Entry']==initial['counts']['GL Entry']==0,initial
     stock('APH','trade',0,0)
@@ -252,6 +252,40 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     def repost():return inner(repost_code)
     repost();stock('APH','trade',150,6,14333.3333333333);stock('VH','trade',50,2,5000)
     emit('HTTP_LANDED_COST_KG_AND_REPOST','PASS',{'charges':charges,'APH_ma':14333.3333333333,'VH_ma':5000})
+    # Independent item: receipts precede yesterday's dispatch; today's LCV must
+    # revalue the dispatched cost in both SLE and GL, while receivable stays fixed.
+    cpr1=receipt('cogs',100,4,10000,posting_date=f['cost_date'])
+    cpr2=receipt('cogs',50,2,20000,posting_date=f['cost_date'])
+    cshared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['cost_date'],'delivery_date':f['sale_date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('cogs',25,1,20000),'line_id':'cogs-line'}]}))
+    cso=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':cshared['name']}),'fields':json.dumps(['name'])})[0]['name']
+    cdn=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':cso})
+    cdn.update(posting_date=f['sale_date'],posting_time='12:00:00',set_posting_time=1)
+    cdn=submit(insert(cdn));repost()
+    def sale_cost(note):
+        gl=rpc('frappe.client.get_list',{'doctype':'GL Entry','filters':json.dumps({
+            'voucher_type':'Delivery Note','voucher_no':note,'account':f['expense'],'is_cancelled':0}),
+            'fields':json.dumps(['debit','credit'])})
+        sle=rpc('frappe.client.get_list',{'doctype':'Stock Ledger Entry','filters':json.dumps({
+            'voucher_type':'Delivery Note','voucher_no':note,'item_code':f['items']['cogs'],'is_cancelled':0}),
+            'fields':json.dumps(['stock_value_difference'])})
+        return {'gl':sum(float(r['debit'])-float(r['credit']) for r in gl),
+                'sle':-sum(float(r['stock_value_difference']) for r in sle)}
+    initial_cogs=sale_cost(cdn['name'])
+    near(initial_cogs['gl'],333333.3333333333);near(initial_cogs['sle'],333333.3333333333)
+    stock('APH','cogs',125,5,13333.3333333333);near(oracle()['customer_debt'],500000)
+    emit('HTTP_BACKDATED_DISPATCH_COGS_GL_SLE','PASS',initial_cogs)
+    c_landed=lcv([cpr1['name'],cpr2['name']],150000);repost()
+    after_cogs=sale_cost(cdn['name'])
+    near(after_cogs['gl'],358333.3333333333);near(after_cogs['sle'],358333.3333333333)
+    stock('APH','cogs',125,5,14333.3333333333);near(oracle()['customer_debt'],500000)
+    emit('HTTP_LATE_LANDED_COST_REPOSTS_DISPATCH_COGS','PASS',{'cost':after_cogs,'debt':500000})
+    cancel('Sales Invoice',linked_si(cdn['name']));cancel('Delivery Note',cdn['name']);repost()
+    stock('APH','cogs',150,6,14333.3333333333);near(oracle()['customer_debt'],0)
+    reversed_cost=sale_cost(cdn['name']);near(reversed_cost['gl'],0);near(reversed_cost['sle'],0)
+    emit('HTTP_REPOSTED_DISPATCH_CANCEL_REVERSE','PASS',{'kg':150,'bags':6,'debt':0,'active_cost':reversed_cost})
     raw_pr=receipt('raw',100,4,10000)
     abnormal_doc={'doctype':'Stock Entry','stock_entry_type':'Material Issue',
         'company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt bất thường',
