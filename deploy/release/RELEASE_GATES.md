@@ -1,5 +1,21 @@
 # Chuyển ứng viên sang frontend
 
+## Hiện trạng và cách đóng gate (13/10/2026, bản 0.10.0)
+
+- **Kiểm kê chỉ đọc đã chạy trên VM** (`collect_frontend_inventory.py` ở SHA 3ef5cf0): Frappe 16.35.0 / ERPNext 16.36.1 /
+  lab9x 0.2.0 / kh_aph 0.9.1; 6 service cùng image `kh-aph-erpnext:0.9.1@sha256:ce75590079309b678b2a15cc2e4a8ccc413345f1eff30b07bd161cd435107bb1`;
+  Compose `/home/tienduongmarcom/erp/aph-vh`; 4 company APH/VH/MK/TL; chỉ 4 kho gốc "All Warehouses"; 0 khách,
+  0 mặt hàng, 0 chứng từ, 0 GL/SLE/PLE; chỉ user Administrator; mọi cờ tắt. RAM 3,9 GB (2,5 GB trống), đĩa 23 GB trống.
+- **Bộ cài production**: `kh_aph.cai_dat_tinh_nang.cai/kiem` dùng chính phần schema đã kiểm trên UAT; khóa
+  Administrator + gõ đúng tên site + đủ 8 cờ + site chưa có dữ liệu nghiệp vụ. `setup_uat` vẫn chỉ cho UAT.
+- **Migration/rollback rehearsal**: vì frontend trắng, thay bản sao trên VM bằng **Cổng 3** (CI) dựng từ đúng digest
+  production ở trên → `nang-cap.sh` → bộ cài → so schema với site dựng mới → `quay-lui.sh` → dấu vân
+  (`dau_van_site.py`: đếm, tổng GL/SLE/Bin/PLE, schema, cờ) khớp bản trước nâng cấp. Phát hành cần Cổng 3.
+- **Mục 3–4 dưới đây vẫn bắt buộc nếu frontend đã có dữ liệu** khi tới cửa sổ triển khai (kiểm lại ở bước 1 của
+  `TRIEN_KHAI_FRONTEND.md`).
+- Thủ tục cửa sổ triển khai: `deploy/release/TRIEN_KHAI_FRONTEND.md`.
+
+
 Đây là thứ tự thực hiện và tiêu chí kiểm chứng. Chưa phải bằng chứng production
 đã triển khai. Không chạy script UAT trắng lên frontend, không sửa writable layer
 của container production và không ghi đè tag 0.9.1.
@@ -41,8 +57,8 @@ Giữ image ID/digest của cả sáu service app và tệp Compose đúng hiệ
 Phục hồi backup vào volume/site/db/Redis tách biệt; tắt scheduler, email và MISA
 thật. Kiểm tra counts/balance trước migrate. Clone phải phản ánh dữ liệu thật,
 không thay bằng CI site trắng. Dùng schema installer đã kiểm chứng trên clone;
-`uat_candidate_setup.setup_uat` bị giới hạn cho site trắng và không phải installer
-production. Review trước/sau Custom Field, Property Setter, DocPerm và chart;
+`uat_candidate_setup.setup_uat` bị giới hạn cho site UAT; installer production là
+`kh_aph.cai_dat_tinh_nang` (từ 0.10.0, chỉ nhận site chưa có dữ liệu nghiệp vụ). Review trước/sau Custom Field, Property Setter, DocPerm và chart;
 không reset toàn bộ quyền hoặc tạo lại hệ thống tài khoản production.
 
 Đối chiếu GL, SLE, Payment Ledger, Bin và số bao vật lý mở đầu. Kho chỉ có kg mà
