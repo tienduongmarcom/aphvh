@@ -85,7 +85,11 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
 3. **Không tạo kho** trong app: khách tự tạo cây kho. `khach.json` không có mục kho (`nha_may`, `kho_them`, `ten_nha_may`
    sẽ báo lỗi). App vẫn dựng tài khoản chuẩn, nhóm hàng cấp 1 gắn tài khoản kho, mẫu thuế, tài khoản mặc định, và **xóa**
    kho/nhóm/tài khoản mẫu của ERPNext.
-4. **Giao diện chỉ No-Code / Low-Code**: Customize Form, Workspace, Dashboard, Client Script; JS qua `doctype_js` (không build
+4. **Giao diện theo `docs/kien-truc-giao-dien.md` (Hybrid Native, chốt 14/10/2026)**: Workspace chuẩn để điều hướng,
+   Dialog cho thao tác ngắn, **Native Frappe Page** chỉ khi đạt 6 tiêu chí trong tài liệu đó (có cờ, có số đo A/B, chỉ
+   Page API chính thức, gọi API facade trả trường tối thiểu). Chưa dùng Vue/SPA/bước build frontend. Không DocType
+   "Nhiệm vụ" trạng thái riêng. Phần dưới vẫn áp dụng cho form chuẩn:
+   Customize Form, Workspace, Dashboard, Client Script; JS qua `doctype_js` (không build
    asset). Giữ kiểu Frappe, nhận diện thương hiệu 9xLab; không bắt chước MISA AMIS. Không ghi đè tệp lõi Frappe/ERPNext.
 5. Mọi bước cài đặt (`after_install`, `after_migrate`, `ap_dung`) phải **chạy lại nhiều lần không hỏng** (idempotent).
 6. Không đưa mật khẩu/token vào repo, log hay lệnh. Máy chủ chỉ giữ token `read:packages`.
