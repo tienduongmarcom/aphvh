@@ -18,8 +18,10 @@ jobs:
     uses: ./.github/workflows/cong-2-site-trang.yml
   cong-2b:
     uses: ./.github/workflows/cong-2b-dien-tap.yml
+  cong-3:
+    uses: ./.github/workflows/cong-3-nang-cap-production.yml
   phat-hanh:
-    needs: [candidate-uat, cong-2, cong-2b]
+    needs: [candidate-uat, cong-2, cong-2b, cong-3]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

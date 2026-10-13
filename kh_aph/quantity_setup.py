@@ -7,6 +7,11 @@ from kh_aph.bag_stock import FLAG
 def setup():
     if frappe.local.site != 'aphvh-web-uat' or frappe.session.user != 'Administrator':
         frappe.throw('Thiết lập số lượng chỉ trên site UAT trắng')
+    schema()
+
+
+def schema():
+    """Phần schema dùng chung cho UAT và bộ cài production (kh_aph.cai_dat_tinh_nang); không tự kiểm site."""
     if not frappe.conf.get(FLAG):
         frappe.throw('Cần bật flag quantity/valuation trên UAT')
     for slug in ('aph_bag_movement', 'aph_pending_receipt_item', 'aph_pending_receipt'):

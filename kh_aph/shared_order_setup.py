@@ -5,6 +5,11 @@ import frappe
 def setup_uat():
     if frappe.local.site != "aphvh-web-uat" or frappe.session.user != "Administrator":
         frappe.throw("Thiết lập candidate chỉ cho Administrator trên aphvh-web-uat")
+    schema()
+
+
+def schema():
+    """Phần schema dùng chung cho UAT và bộ cài production (kh_aph.cai_dat_tinh_nang); không tự kiểm site."""
     if not frappe.conf.get("kh_aph_shared_sales_order"):
         frappe.throw("Chưa bật candidate đơn chung trên UAT")
     for name in ("aph_shared_sales_order_item", "aph_shared_sales_order"):

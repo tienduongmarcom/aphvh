@@ -4,7 +4,7 @@ Requires an opt-in blank aphvh-web-uat clone. Review before any release.
 """
 import frappe
 from kh_aph.server_cost_guard import apply_query_field_permissions
-from kh_aph.shared_order_setup import setup_uat as setup_shared
+from kh_aph.shared_order_setup import schema as setup_shared
 
 FIELDS = {'APH Credit Release': [{'fieldname': 'revocation_reason', 'label': 'Lý do thu hồi', 'fieldtype': 'Small Text', 'insert_after': 'revoked_at', 'read_only': 1, 'hidden': 0, 'no_copy': 0, 'permlevel': 0, 'reqd': 0}, {'fieldname': 'revoked_at', 'label': 'Thời điểm thu hồi', 'fieldtype': 'Datetime', 'insert_after': 'revoked_by', 'read_only': 1, 'hidden': 0, 'no_copy': 0, 'permlevel': 0, 'reqd': 0}, {'fieldname': 'revoked_by', 'label': 'Người thu hồi', 'fieldtype': 'Link', 'options': 'User', 'insert_after': 'approved_at', 'read_only': 1, 'hidden': 0, 'no_copy': 0, 'permlevel': 0, 'reqd': 0}], 'APH Shared Sales Order': [{'fieldname': 'kh_aph_global_credit_over', 'label': 'Vượt hạn mức chung', 'fieldtype': 'Check', 'insert_after': 'net_total', 'read_only': 1, 'hidden': 0, 'no_copy': 1, 'permlevel': 0, 'reqd': 0}], 'Customer': [{'fieldname': 'kh_aph_credit_high_risk', 'label': 'Rủi ro cao: cần duyệt bán chịu', 'fieldtype': 'Check', 'insert_after': 'kh_aph_global_credit_limit', 'read_only': 0, 'hidden': 0, 'no_copy': 0, 'permlevel': 9, 'reqd': 0}, {'fieldname': 'kh_aph_global_credit_limit', 'label': 'Hạn mức công nợ chung APH/VH/MK/TL', 'fieldtype': 'Currency', 'options': 'VND', 'insert_after': 'customer_name', 'read_only': 0, 'hidden': 0, 'no_copy': 0, 'permlevel': 9, 'reqd': 0, 'description': '0: chưa đặt hạn mức. Candidate chỉ cảnh báo, chưa chặn khách rủi ro cao.'}], 'Delivery Note': [{'fieldname': 'kh_aph_global_credit_over', 'label': 'Vượt hạn mức chung khi giao', 'fieldtype': 'Check', 'insert_after': 'customer', 'read_only': 1, 'hidden': 0, 'no_copy': 1, 'permlevel': 0, 'reqd': 0}], 'Sales Order Item': [{'fieldname': 'kh_aph_shared_line', 'label': 'Dòng đơn chung', 'fieldtype': 'Data', 'insert_after': 'item_code', 'read_only': 1, 'hidden': 1, 'no_copy': 1, 'permlevel': 0, 'reqd': 0}], 'Sales Order': [{'fieldname': 'kh_aph_shared_fingerprint', 'label': 'Dấu vết đơn chung', 'fieldtype': 'Data', 'insert_after': 'kh_aph_shared_order', 'read_only': 1, 'hidden': 1, 'no_copy': 1, 'permlevel': 0, 'reqd': 0}, {'fieldname': 'kh_aph_shared_order', 'label': 'Đơn bán chung', 'fieldtype': 'Link', 'options': 'APH Shared Sales Order', 'insert_after': 'company', 'read_only': 1, 'hidden': 0, 'no_copy': 1, 'permlevel': 0, 'reqd': 0}]}
 
@@ -13,6 +13,15 @@ APPROVAL_DOCTYPE = {'name': 'APH Credit Release', 'module': 'Kh Aph', 'custom': 
 def setup_uat():
     if frappe.local.site != "aphvh-web-uat" or frappe.session.user != "Administrator":
         frappe.throw("Candidate setup chỉ cho Administrator trên aphvh-web-uat")
+    return schema()
+
+
+def schema():
+    """Phần schema dùng chung cho UAT và bộ cài production (kh_aph.cai_dat_tinh_nang).
+
+    Không tự kiểm site; người gọi phải kiểm Administrator và site đích. Vẫn đòi đủ cờ và site
+    chưa có dữ liệu nghiệp vụ.
+    """
     flags = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery",
              "kh_aph_shared_sales_order", "kh_aph_global_credit_warning",
              "kh_aph_high_risk_credit_guard")
@@ -25,9 +34,9 @@ def setup_uat():
     from kh_aph.constants import ROLE_NO_COST
     if not frappe.db.exists("Role", ROLE_NO_COST):
         frappe.get_doc({"doctype": "Role", "role_name": ROLE_NO_COST, "desk_access": 1}).insert()
-    from kh_aph.quantity_setup import setup as setup_quantity
+    from kh_aph.quantity_setup import schema as setup_quantity
     setup_quantity()
-    from kh_aph.funds_setup import setup as setup_funds
+    from kh_aph.funds_setup import schema as setup_funds
     setup_funds()
     apply_query_field_permissions()
     setup_shared()

@@ -1,16 +1,23 @@
-"""Run only inside a newly created GitHub Actions UAT site."""
+"""Run only inside a newly created GitHub Actions UAT site.
+
+Phần kiểm schema (`kiem_schema`) dùng chung với bộ cài production `kh_aph.cai_dat_tinh_nang`.
+"""
 import json
 import frappe
 from kh_aph.uat_candidate_setup import FIELDS, setup_uat
 
-def verify():
-    assert frappe.local.site == "aphvh-web-uat"
-    assert frappe.session.user == "Administrator"
+BLANK = ("Customer", "Item", "Sales Order", "Delivery Note", "Sales Invoice",
+         "Payment Entry", "Stock Entry", "GL Entry", "Stock Ledger Entry",
+         "APH Shared Sales Order", "APH Credit Release")
+
+
+def kiem_schema(cai_lai):
+    """Chạy lại bộ cài `cai_lai()` để chứng minh idempotent rồi kiểm schema, hook, quyền. Trả về số liệu."""
     expected = {"APH", "VH", "MK", "TL"}
     assert set(frappe.get_all("Company", pluck="abbr")) == expected
     before = {dt: frappe.db.count(dt) for dt in
               ("Custom Field", "Custom DocPerm", "Property Setter")}
-    setup_uat()
+    cai_lai()
     after = {dt: frappe.db.count(dt) for dt in before}
     assert before == after, ("Setup is not idempotent", before, after)
     for dt, fields in FIELDS.items():
@@ -31,11 +38,14 @@ def verify():
     assert overrides["frappe.client.get_value"][-1] == "kh_aph.cost_query_api.get_value"
     filters = {"parent": "Delivery Note", "role": "Accounts Manager", "permlevel": 0, "if_owner": 0}
     assert frappe.db.get_value("Custom DocPerm", filters, "read") == 1
-    blank = {dt: frappe.db.count(dt) for dt in
-             ("Customer", "Item", "Sales Order", "Delivery Note", "Sales Invoice",
-              "Payment Entry", "Stock Entry", "GL Entry", "Stock Ledger Entry",
-              "APH Shared Sales Order", "APH Credit Release")}
+    blank = {dt: frappe.db.count(dt) for dt in BLANK}
     assert not any(blank.values()), blank
-    print(json.dumps({"case": "FRESH_IMAGE_SETUP", "status": "PASS",
-                      "idempotent": True, "companies": sorted(expected),
-                      "blank_counts": blank, "schema_counts": after}, ensure_ascii=False))
+    return {"companies": sorted(expected), "blank_counts": blank, "schema_counts": after}
+
+
+def verify():
+    assert frappe.local.site == "aphvh-web-uat"
+    assert frappe.session.user == "Administrator"
+    ket_qua = kiem_schema(setup_uat)
+    print(json.dumps({"case": "FRESH_IMAGE_SETUP", "status": "PASS", "idempotent": True,
+                      **ket_qua}, ensure_ascii=False))
