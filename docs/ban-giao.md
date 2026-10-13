@@ -13,7 +13,11 @@
   thủ tục `deploy/release/TRIEN_KHAI_FRONTEND.md`. Gộp các commit 09/10 (dung.sh hỏi mật khẩu, sao lưu PREFIX).
 
 **Việc còn mở (theo thứ tự)**
-1. CI xanh trên cùng một SHA của nhánh PR: UAT candidate, Cổng 2, Cổng 3 (+ Cổng 2b khi phát hành).
+1. ~~CI xanh cùng SHA~~ — **đạt 13/10 trên `55b4491`**: UAT candidate run 38361750647 (110 ca), Cổng 2 run 38361758496,
+   Cổng 3 run 38361750585 (nâng cấp từ digest production, bộ cài + ca từ chối, schema khớp site mới, quay lui khớp dấu vân).
+   Ghi nhận: UAT candidate run 38359275943 trên `3baba2e` FAIL ở bước hồi quy HTTP, không đọc được log; app code giống hệt
+   `b6ce8cf`/`55b4491` (đều SUCCESS) → lỗi không ổn định, chưa rõ nguyên nhân; theo dõi nếu lặp lại (nay có chú thích lỗi).
+   Cổng 2b chạy khi phát hành.
 2. Chủ dự án gắn tag `v0.10.0` → workflow Phát hành xanh → ghi digest image.
 3. Cửa sổ triển khai theo `TRIEN_KHAI_FRONTEND.md` (kiểm kê lại trước: còn trắng mới làm; có dữ liệu thì đi quy trình
    bản sao trong `RELEASE_GATES.md`).
