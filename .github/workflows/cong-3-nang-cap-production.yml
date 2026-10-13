@@ -126,6 +126,8 @@ jobs:
           ./quay-lui.sh "$BK" --tu-dong </dev/null 2>&1 | tee "$RUNNER_TEMP/log-6.txt"
           grep -q "^CUSTOM_TAG=$PROD_TAG$" .env
           if grep -q " 1$" "sao-luu/$BK/co-sau-quay-lui.txt"; then echo "Cờ còn bật sau quay lui"; exit 1; fi
+          # quay-lui.sh tạo lại container (đổi image): chép lại khach.json trước khi kiểm.
+          ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
           ex frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "$RUNNER_TEMP/log-6b.txt"
           grep -q "KHÔNG ĐẠT: 0" "$RUNNER_TEMP/log-6b.txt"
           dv frontend | tee "$RUNNER_TEMP/dv-4-sau-quay-lui.txt"
@@ -133,7 +135,8 @@ jobs:
       - name: Nhật ký khi lỗi
         if: failure()
         run: |
-          for f in "$RUNNER_TEMP"/log-*.txt; do
+          # GitHub chỉ giữ 10 chú thích mỗi bước: in log mới nhất trước.
+          for f in $(ls -t "$RUNNER_TEMP"/log-*.txt 2>/dev/null | head -8); do
             [ -f "$f" ] || continue
             echo "::error title=$(basename "$f")::$(tail -c 1500 "$f" | tr '\n\r' '  ' | sed 's/%/%25/g')"
           done
