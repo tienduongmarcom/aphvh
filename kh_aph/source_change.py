@@ -78,8 +78,9 @@ def update_row(so, row_name, qty, restored=None):
         values = {"item_code": restored["item_code"], "warehouse": restored["warehouse"],
             "uom": "Kg", "conversion_factor": 1, "delivery_date": restored["delivery_date"]}
         child = set_order_defaults("Sales Order", so.name, "Sales Order Item", "items", values)
-        child.update(qty=float(qty), rate=restored["rate"], kh_aph_shared_line=restored["kh_aph_shared_line"],
-            kh_aph_kg_per_bag=restored["kh_aph_kg_per_bag"], kh_aph_bags=restored["kh_aph_bags"])
+        child.update({"qty": float(qty), "rate": restored["rate"],
+            "kh_aph_shared_line": restored["kh_aph_shared_line"],
+            "kh_aph_kg_per_bag": restored["kh_aph_kg_per_bag"], "kh_aph_bags": restored["kh_aph_bags"]})
         child.parent, child.parenttype, child.parentfield = so.name, "Sales Order", "items"
         child.idx = len(so.items) + 1
         child.flags.ignore_validate_update_after_submit = True
