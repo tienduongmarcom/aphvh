@@ -81,6 +81,9 @@ def update_row(so, row_name, qty, restored=None):
         child.update({"qty": float(qty), "rate": restored["rate"],
             "kh_aph_shared_line": restored["kh_aph_shared_line"],
             "kh_aph_kg_per_bag": restored["kh_aph_kg_per_bag"], "kh_aph_bags": restored["kh_aph_bags"]})
+        # Native update-after-submit skips before_validate; restore the bag-price
+        # display from the approved root selling rate and stored package weight.
+        child.kh_aph_bag_rate = float(number(restored["rate"]) * number(restored["kh_aph_kg_per_bag"]))
         child.parent, child.parenttype, child.parentfield = so.name, "Sales Order", "items"
         child.idx = len(so.items) + 1
         child.flags.ignore_validate_update_after_submit = True

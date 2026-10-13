@@ -438,6 +438,8 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     cancel('APH Source Change',move['name'])
     back=get('Sales Order',multi_so['name'])
     assert sorted((r['kh_aph_shared_line'],r['qty'],r['kh_aph_bags']) for r in back['items'])==[('removed-line',25,1),('unchanged-line',50,2)]
+    assert all(r['kh_aph_bag_rate']==500000 for r in back['items']),back['items']
+    near(back['grand_total'],1500000)
     cancel('APH Shared Sales Order',multiple['name']);assert oracle()==baseline_full,json.dumps({"before":baseline_full,"after":oracle()})
     emit('HTTP_SOURCE_MULTIROW_RESTORE','PASS','Moved row restored; other row and contract quantity preserved')
 
