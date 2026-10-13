@@ -195,14 +195,21 @@ print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
     inner("import json,sys,frappe\nfrappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\nu=frappe.get_doc('User',json.load(sys.stdin)['user']);u.append('roles',{'role':'Sales Manager'});u.save();frappe.db.commit();frappe.destroy()",json.dumps(f))
     factory=session(f['user'],factory_password)
     change=submit(insert({'doctype':'APH Source Change','source_order':so_name,'source_row':so['items'][0]['name'],
-        'qty':50,'target_warehouse':f['wh']['VH'],'reason':'UAT shift remaining bags'},factory),factory)
+        'qty':50,'target_warehouse':f['wh']['VH'],'reason':'UAT shift remaining bags','closed_source':1},factory),factory)
     after_change=oracle()
     assert after_change['counts']==before_change['counts'] and after_change['customer_debt']==before_change['customer_debt']
     near(after_change['APH']['trade']['actual_qty'],125);near(after_change['VH']['trade']['actual_qty'],50)
     near(after_change['APH']['trade']['reserved_qty'],0);near(after_change['VH']['trade']['reserved_qty'],50)
     assert change['changed_by']==f['user']
+    assert not change['closed_source'],'Forged client state must be recomputed on submit'
     assert 'rate' not in json.loads(change['original_row_json'])
     assert get('Sales Order',so_name)['items'][0]['qty']==25 and get('Sales Order',so_name)['items'][0]['kh_aph_bags']==1
+    forged_cancel=dict(get('APH Source Change',change['name']))
+    forged_cancel.update(docstatus=2,qty=25)
+    same=oracle()
+    deny(lambda:rpc('frappe.client.save',{'doc':json.dumps(forged_cancel)}))
+    assert oracle()==same and get('APH Source Change',change['name'])['docstatus']==1
+    emit('HTTP_SOURCE_CANCEL_JSON_IMMUTABILITY','PASS','Cancellation cannot alter coordinator quantity/history')
     target=get('Sales Order',change['target_order'])
     assert target['company']==f['companies']['VH'] and target['items'][0]['qty']==50 and target['items'][0]['kh_aph_bags']==2
     assert target['items'][0]['kh_aph_shared_line']==so['items'][0]['kh_aph_shared_line']
@@ -258,6 +265,8 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     cpr1=receipt('cogs',100,4,10000,posting_date=f['cost_date'])
     cpr2=receipt('cogs',50,2,20000,posting_date=f['cost_date'])
     assert cpr1['posting_date']==cpr2['posting_date']==f['cost_date'],(cpr1['posting_date'],cpr2['posting_date'],f['cost_date'])
+    near(cpr1['items'][0]['rate'],10000);near(cpr2['items'][0]['rate'],20000)
+    repost()
     stock('APH','cogs',150,6,13333.3333333333)
     cshared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
         'transaction_date':f['cost_date'],'delivery_date':f['sale_date'],
@@ -438,6 +447,15 @@ except Exception as exc:
     if isinstance(exc,urllib.error.HTTPError):
         try:
             payload=json.loads(exc.read());detail['response']={k:payload.get(k) for k in ('exc_type','exception','_server_messages')}
+        except Exception:pass
+    if 'cpr1' in locals():
+        try:
+            detail['cogs_fixture']={'receipts':[{'name':r['name'],'date':r['posting_date'],
+                'time':r.get('posting_time'),'rate':r['items'][0]['rate']} for r in (cpr1,cpr2)],
+                'stock':oracle()['APH']['cogs'],
+                'sle':rpc('frappe.client.get_list',{'doctype':'Stock Ledger Entry',
+                    'filters':json.dumps({'item_code':f['items']['cogs']}),
+                    'fields':json.dumps(['voucher_no','posting_date','posting_time','actual_qty','qty_after_transaction','valuation_rate','stock_value','stock_value_difference','is_cancelled'])})}
         except Exception:pass
     detail['traceback']=traceback.format_exc()[-2500:]
     emit('HTTP_INVENTORY_RUNNER','FAIL',detail)

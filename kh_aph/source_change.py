@@ -3,7 +3,7 @@ import json
 from decimal import Decimal
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, now
+from frappe.utils import cint, now, get_datetime
 
 def number(value):
     try:
@@ -153,8 +153,8 @@ class SourceChange(Document):
                 "kh_aph_bags":float(number(self.qty)/number(row.kh_aph_kg_per_bag)) if row.get("kh_aph_kg_per_bag") else 0}]}
         frappe.flags.source_change_internal = True
         try:
-            if len(so.items) == 1 and number(row.qty) == number(self.qty):
-                self.db_set("closed_source",1)
+            # Derived state comes from the actual source, never client JSON.
+            self.db_set("closed_source", int(len(so.items) == 1 and number(row.qty) == number(self.qty)))
             update_row(so,row.name,number(row.qty)-number(self.qty))
             target = frappe.get_doc(values).insert()
             target.submit()
@@ -166,6 +166,16 @@ class SourceChange(Document):
         frappe.throw("Đổi nguồn đã xác nhận bất biến")
     def before_cancel(self):
         self.check_permission("cancel")
+        persisted = frappe.get_doc(self.doctype, self.name)
+        for field in ("shared_order", "source_order", "source_row", "target_warehouse", "target_order",
+                      "original_row_json", "line_id", "source_item", "source_company", "target_company",
+                      "reason", "changed_by"):
+            if str(self.get(field) or "") != str(persisted.get(field) or ""):
+                frappe.throw("Không sửa lịch sử đổi nguồn khi hủy")
+        if (get_datetime(self.changed_at) if self.changed_at else None) != (get_datetime(persisted.changed_at) if persisted.changed_at else None):
+            frappe.throw("Không sửa thời điểm đổi nguồn khi hủy")
+        if number(self.qty) != number(persisted.qty) or cint(self.closed_source) != cint(persisted.closed_source):
+            frappe.throw("Không sửa lượng/trạng thái nguồn khi hủy")
         frappe.db.sql("SELECT name FROM `tabAPH Shared Sales Order` WHERE name=%s FOR UPDATE",self.shared_order)
         source = frappe.get_doc("Sales Order",self.source_order)
         target = frappe.get_doc("Sales Order",self.target_order)
