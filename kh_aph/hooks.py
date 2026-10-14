@@ -335,3 +335,9 @@ for _dt in ("Customer", "Company"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/ban_0114.js"]
+
+# 0.12.0 (cờ kh_aph_du_lieu): Trung tâm dữ liệu, đề nghị cập nhật số liệu có duyệt.
+# 0.12.1 (cờ kh_aph_dau_ky): số dư đầu kỳ theo bảng nguồn, báo cáo đối chiếu, chốt.
+has_permission["APH De nghi so lieu"] = "kh_aph.du_lieu.has_permission"
+has_permission["APH So du dau ky nguon"] = "kh_aph.dau_ky.has_permission"
+permission_query_conditions["APH So du dau ky nguon"] = "kh_aph.dau_ky.query_conditions"

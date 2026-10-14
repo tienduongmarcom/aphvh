@@ -61,6 +61,10 @@ def schema():
     # 0.11.4: báo cáo quản trị, khóa kỳ, xác nhận công nợ (hàm tự đòi cờ kh_aph_quan_tri).
     from kh_aph import quan_tri
     quan_tri.schema()
+    # 0.12.0–0.12.1: Trung tâm dữ liệu, số dư đầu kỳ (mỗi hàm tự đòi cờ của mình).
+    from kh_aph import dau_ky, du_lieu
+    du_lieu.schema()
+    dau_ky.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
     create_custom_fields({'Delivery Note': [

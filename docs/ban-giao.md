@@ -1,6 +1,18 @@
 # Bàn giao dự án APH-VH
 
-## 00000000. Bản 0.11.5 — 14/10/2026 (ĐANG KIỂM TRÊN CI)
+## 000000000. Lượt 0.12 (phát hành 0.12.1 = 0.11.5 + 0.12.0 + 0.12.1) — 14–15/10/2026 (ĐANG KIỂM TRÊN CI)
+
+Đặc tả `docs/dac-ta-0.12.0-0.12.1.md` (anh Tiến chốt 14/10 22:40). Hai cờ mới (16, 17):
+
+| Cờ | Nội dung |
+|---|---|
+| `kh_aph_du_lieu` | Workspace "Trung tâm dữ liệu"; "APH De nghi so lieu" (kg tịnh, sản lượng mẻ, hao hụt, định mức mặc định) Dũng lập → chị Dung duyệt → app ghi, định mức đã xác nhận thì tạo bản mới; báo cáo rà soát thêm nhóm "Danh mục" (MST sai/trùng, thiếu kg tịnh, giá vốn 0 còn tồn, định mức mặc định, sản lượng lệch 20%). |
+| `kh_aph_dau_ky` | "APH So du dau ky nguon" (số theo bảng nguồn), báo cáo "Doi chieu so du dau ky" (4 loại, số dư 9990, sổ kho = sổ cái), nút "Chốt số dư đầu kỳ" (khóa tháng bằng khóa kỳ 0.11.4). |
+
+Sửa lỗi production: Opening Invoice Creation Tool hỏng vì `bag_stock.validate` đọc dòng không mã hàng → bỏ qua dòng đó.
+Thử cục bộ: kịch bản APH/MK đạt; bộ HTTP `b012` 7/7 ca. Lệnh triển khai: `trien_khai_frontend.sh 0.12.1 kh_aph_du_lieu kh_aph_dau_ky`.
+
+## 00000000. Bản 0.11.5 — 14/10/2026 (gộp vào lượt 0.12; CI xanh 661f8ac)
 
 Không thêm cờ. Dịch thêm 651 chuỗi ERPNext 16.50 (kế toán, bán, mua, kho, sản xuất), tự bật Language `vi` khi cài
 (`khach_hang.bat_tieng_viet`), test tệp dịch. Cổng 3 nâng cấp từ 0.11.4 (digest `54bf5a99…`, 15 cờ).

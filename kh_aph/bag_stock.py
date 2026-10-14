@@ -13,6 +13,8 @@ def validate(doc, method=None):
     if not enabled():
         return
     for row in doc.get("items") or []:
+        if not row.get("item_code"):
+            continue  # dòng không mã hàng (hóa đơn đầu kỳ của Opening Invoice Creation Tool, dòng dịch vụ tự do)
         item = frappe.get_cached_doc("Item", row.item_code)
         weight = flt(item.get("kh_aph_kg_per_bag"))
         if not weight:
@@ -153,6 +155,6 @@ def boot_session(bootinfo):
     bootinfo.setdefault("kh_aph", {})["quantity_valuation_mvp"] = enabled()
     bootinfo.kh_aph["funds_workflow"] = cint(frappe.conf.get("kh_aph_funds_workflow"))
     bootinfo.kh_aph["source_change"] = cint(frappe.conf.get("kh_aph_source_change"))
-    for _co in ("factory_costing", "factory_cash", "sales_adjust", "data_review", "kho_chuan", "sales_p1", "quan_tri"):  # 0.11.1–0.11.4
+    for _co in ("factory_costing", "factory_cash", "sales_adjust", "data_review", "kho_chuan", "sales_p1", "quan_tri", "du_lieu", "dau_ky"):  # 0.11.1–0.12.1
         bootinfo.kh_aph[_co] = cint(frappe.conf.get("kh_aph_" + _co))
 

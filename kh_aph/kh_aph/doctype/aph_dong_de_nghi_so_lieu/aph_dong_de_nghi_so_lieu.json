@@ -1,0 +1,120 @@
+{
+ "name": "APH Dong de nghi so lieu",
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "creation": "2026-10-14 23:00:00.000000",
+ "modified": "2026-10-14 23:30:00.000000",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "truong",
+   "label": "Số liệu",
+   "fieldtype": "Select",
+   "options": "kg_tinh\nsan_luong_me\nhao_hut\ndinh_muc_mac_dinh",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "kg_tinh: kg tịnh mỗi đơn vị (Mặt hàng) · san_luong_me: sản lượng mỗi mẻ · hao_hut: % hao hụt cho phép · dinh_muc_mac_dinh: đặt định mức mặc định (giá trị 1)"
+  },
+  {
+   "fieldname": "mat_hang",
+   "label": "Mặt hàng",
+   "fieldtype": "Link",
+   "options": "Item",
+   "depends_on": "eval:doc.truong=='kg_tinh'",
+   "mandatory_depends_on": "eval:doc.truong=='kg_tinh'",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "dinh_muc",
+   "label": "Định mức",
+   "fieldtype": "Link",
+   "options": "BOM",
+   "depends_on": "eval:doc.truong && doc.truong!='kg_tinh'",
+   "mandatory_depends_on": "eval:doc.truong && doc.truong!='kg_tinh'",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "loai_doi_tuong",
+   "label": "Loại",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "doi_tuong",
+   "label": "Đối tượng",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gia_tri_hien_tai",
+   "label": "Giá trị hiện tại",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "gia_tri_moi",
+   "label": "Giá trị mới",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "so_goi",
+   "label": "Số gói mỗi đơn vị",
+   "fieldtype": "Float",
+   "depends_on": "eval:doc.truong=='kg_tinh'"
+  },
+  {
+   "fieldname": "gram_moi_goi",
+   "label": "Gram mỗi gói",
+   "fieldtype": "Float",
+   "depends_on": "eval:doc.truong=='kg_tinh'"
+  },
+  {
+   "fieldname": "ly_do",
+   "label": "Lý do",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "canh_bao",
+   "label": "Cảnh báo",
+   "fieldtype": "Small Text",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "ket_qua",
+   "label": "Đã ghi vào",
+   "fieldtype": "Data",
+   "read_only": 1
+  }
+ ],
+ "field_order": [
+  "truong",
+  "mat_hang",
+  "dinh_muc",
+  "loai_doi_tuong",
+  "doi_tuong",
+  "gia_tri_hien_tai",
+  "gia_tri_moi",
+  "so_goi",
+  "gram_moi_goi",
+  "ly_do",
+  "canh_bao",
+  "ket_qua"
+ ],
+ "permissions": [],
+ "istable": 1,
+ "editable_grid": 1
+}

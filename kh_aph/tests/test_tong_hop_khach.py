@@ -50,7 +50,9 @@ class TestTongHop(unittest.TestCase):
                                  # 0.11.1: phiếu quỹ nhà máy (cờ kh_aph_factory_cash)
                                  "aph_phieu_quy_nha_may", "aph_dong_phieu_quy_nha_may", "aph_khoan_muc_chi_nha_may",
                                  # 0.11.3: hồ sơ hóa đơn MISA, lịch sử gia hạn (cờ kh_aph_sales_p1)
-                                 "aph_hoa_don_ngoai", "aph_dong_hoa_don_ngoai", "aph_lich_su_gia_han"})
+                                 "aph_hoa_don_ngoai", "aph_dong_hoa_don_ngoai", "aph_lich_su_gia_han",
+                                 # 0.12.0–0.12.1: đề nghị số liệu (kh_aph_du_lieu), số dư đầu kỳ nguồn (kh_aph_dau_ky)
+                                 "aph_de_nghi_so_lieu", "aph_dong_de_nghi_so_lieu", "aph_so_du_dau_ky_nguon"})
 
 
 if __name__ == "__main__":

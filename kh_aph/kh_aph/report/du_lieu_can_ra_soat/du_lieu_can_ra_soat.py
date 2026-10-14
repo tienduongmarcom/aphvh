@@ -25,7 +25,7 @@ def execute(filters=None):
     ]
     rows = []
     for nhom, ham in (("Tài sản", _tai_san), ("Giá tạm", _gia_tam), ("Tồn kho", _ton_kho), ("Kho dở dang", _kho_bon),
-                      ("Bao bì", _bao_bi)):
+                      ("Bao bì", _bao_bi), ("Danh mục", _danh_muc)):
         if not filters.nhom or filters.nhom == nhom:
             rows += [{"nhom": nhom, **r} for r in ham(filters.company)]
     return cols, rows
@@ -153,3 +153,9 @@ def _bao_bi(company):
     return [{"ma": "f", "loai": "Item", "ten": ma, "gia_tri": len(boms),
              "mo_ta": "Một mã bao bì mang nhiều quy cách: " + " | ".join(mo_ta) + " (BOM: " + ", ".join(boms[:5]) + ")"}
             for ma, mo_ta, boms in R.kiem_bao_bi_nhieu_quy_cach(dong)]
+
+
+def _danh_muc(company):
+    """0.12.0 (cờ kh_aph_du_lieu): MST sai/trùng, thiếu kg tịnh, giá vốn 0 còn tồn, định mức mặc định, sản lượng lệch."""
+    from kh_aph import du_lieu
+    return du_lieu.ra_soat(company)

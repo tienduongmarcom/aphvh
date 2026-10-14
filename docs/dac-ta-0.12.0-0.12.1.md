@@ -22,8 +22,7 @@ Nguồn:
 
 ### 2.1 Workspace "Trung tâm dữ liệu"
 Một màn hình gồm:
-- **Mẫu nhập** (Excel tải về, đã có sẵn tên cột tiếng Việt và một dòng ví dụ): khách hàng, nhà cung cấp, mặt hàng, quy đổi ĐVT, định mức.
-- **Nạp**: nút mở Data Import đúng DocType, đúng mẫu.
+- **Nạp danh mục**: Data Import chuẩn (nút "Tải mẫu" của Data Import sinh tệp Excel đúng cột; chưa làm mẫu riêng).
 - **Đề nghị sửa số liệu chờ duyệt** (mục 2.2).
 - **Danh sách cần rà soát** (báo cáo `Du lieu can ra soat` đã có, mở rộng ở mục 2.3).
 - Số đếm nhanh: số đề nghị chờ duyệt, số dòng cần rà soát theo nhóm.
@@ -38,7 +37,8 @@ Số liệu nhà máy (sản lượng mẻ, kg tịnh, gram mỗi gói, bao bì 
 | Duyệt | Chị Dung (định mức hiệu lực: Giám đốc hoặc chị Dung) | Duyệt hoặc trả lại từng phiếu, bắt buộc lý do khi trả. |
 | Áp dụng | App | Khi duyệt: ghi vào mã hàng / định mức. Định mức đã dùng thì **tạo bản định mức mới** (ERPNext không cho sửa định mức đã xác nhận), đặt mặc định, giữ bản cũ. Lưu nhật ký trước/sau. |
 
-Dùng **Workflow chuẩn của Frappe** cho trạng thái (Nháp → Chờ duyệt → Đã áp dụng / Trả lại). Không tạo DocType "Nhiệm vụ".
+Trạng thái (Nháp → Chờ duyệt → Đã áp dụng / Trả lại) do nút trên form điều khiển, kiểm quyền ở máy chủ. Không tạo DocType "Nhiệm vụ".
+Đã làm: nhiều thay đổi cùng một định mức gộp vào **một** bản mới.
 
 ### 2.3 Mở rộng danh sách cần rà soát
 Thêm vào báo cáo `Du lieu can ra soat` (đang có từ 0.11.1):

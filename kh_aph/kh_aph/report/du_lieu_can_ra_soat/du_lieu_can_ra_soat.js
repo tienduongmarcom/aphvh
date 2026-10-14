@@ -4,6 +4,6 @@ frappe.query_reports["Du lieu can ra soat"] = {
 		{fieldname: "company", label: __("Đơn vị"), fieldtype: "Link", options: "Company",
 			default: frappe.defaults.get_user_default("Company")},
 		{fieldname: "nhom", label: __("Nhóm kiểm"), fieldtype: "Select",
-			options: "\nTài sản\nGiá tạm\nTồn kho\nKho dở dang\nBao bì"},
+			options: "\nTài sản\nGiá tạm\nTồn kho\nKho dở dang\nBao bì\nDanh mục"},
 	],
 };
