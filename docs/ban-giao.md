@@ -9,7 +9,7 @@
 - Cây kho: lần 1 tạo 55 kho, cảnh báo 0; lần 2 tạo 0.
 - Kiểm triển khai: "Cây kho chuẩn đủ (55 kho) ĐẠT", không có mục KHÔNG ĐẠT.
 - Dấu vân: phần tong KHỚP.
-- **Chưa ghi:** digest image 0.11.1 cho `PROD_DIGEST` của Cổng 3.
+- Digest: 0.11.1 `sha256:9335dfa1…f8424` (đã ghim vào Cổng 3), 0.11.2 `sha256:f2417393…09ca3` (ghi ở `phien-ban.yaml`; bản sau Cổng 3 nâng cấp từ 0.11.2).
 
 **Chưa phải PASS nghiệp vụ:** khách chưa nhập dữ liệu thật. Cấu hình khách cần làm sau 0.11.2 được liệt kê trong TRIEN_KHAI_FRONTEND.md.
 
