@@ -236,6 +236,24 @@ finally:frappe.destroy()
     d=actor('/api/method/frappe.www.printview.get_html_and_style',args)['message']['html']
     assert 'PROBE_COST=10000' in a and 'PROBE_COST=10000' not in d and 'PROBE_QTY=100' in d
     emit('HTTP_DUNG_PRINT','PASS',{'admin_probe_cost':10000,'dung_cost_visible':False,'quantity':100})
+    # 0.11.0: lối in/xem trước bỏ qua bước xóa giá phải bị chặn với người bị ẩn giá (kh_aph.print_guard).
+    se_doc=admin("/api/method/frappe.client.get?"+urllib.parse.urlencode({"doctype":"Stock Entry","name":fixture["stock_entry"]}))["message"]
+    bypass=(("frappe.utils.weasyprint.download_pdf",{"doctype":"Stock Entry","name":fixture["stock_entry"],"print_format":fmt}),
+            ("frappe.utils.weasyprint_legacy.download_pdf",{"doctype":"Purchase Order","name":fixture["purchase_order"],"print_format":fmt}),
+            ("frappe.utils.print_format_generator.get_formatted_field_values",{"doctype":"Purchase Order","name":fixture["purchase_order"]}),
+            ("frappe.utils.print_format_generator.check_conditions",{"doctype":"Purchase Order","name":fixture["purchase_order"],"conditions":json.dumps(["doc.items[0].rate > 12000"])}),
+            ("frappe.desk.doc_preview.get_preview",{"doctype":"Stock Entry Detail","name":se_doc["items"][0]["name"]}))
+    for method,margs in bypass:
+        denied(actor,"/api/method/"+method,margs)
+    admin_control="endpoint_absent"
+    try:
+        v=admin("/api/method/frappe.utils.print_format_generator.get_formatted_field_values",{"doctype":"Purchase Order","name":fixture["purchase_order"]})["message"]
+        import re
+        assert re.search(r"12\D?345",json.dumps(v,ensure_ascii=False)),"Admin control did not show purchase rate"
+        admin_control="purchase_rate_visible_to_admin"
+    except urllib.error.HTTPError:
+        pass
+    emit('HTTP_PRINT_BYPASS_DENIED','PASS',{'denied':[m for m,_ in bypass],'admin_control':admin_control})
 except Exception as exc:
     detail={"type":type(exc).__name__,"error":str(exc)[-2500:]}
     if isinstance(exc,urllib.error.HTTPError):

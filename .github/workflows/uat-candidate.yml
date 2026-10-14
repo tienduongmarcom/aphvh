@@ -100,7 +100,7 @@ jobs:
           if grep -q '"status": "FAIL"' http-funds-evidence.txt; then echo "Có ca FAIL trong http-funds-evidence.txt"; exit 1; fi
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 14
+          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 15
           if grep -q '"status": "FAIL"' http-cost-evidence.txt; then echo "Có ca FAIL trong http-cost-evidence.txt"; exit 1; fi
           # Database restore leaves queued fixture contact jobs in disposable Redis.
           # This Redis belongs only to this fresh CI site; no workers consume it.
