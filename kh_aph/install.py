@@ -831,8 +831,10 @@ def reload_print_formats():
 def ensure_default_print_formats():
     """Đặt mẫu in mặc định của app, trừ khi đã có người chọn mẫu khác.
 
-    Mẫu "<chứng từ> with Item Image" do ERPNext tự đặt lúc cài thì coi như chưa chọn.
+    Mẫu ERPNext tự đặt lúc cài ("<chứng từ> with Item Image", từ 16.50 "<chứng từ> Modern with Images") coi như chưa chọn.
     """
+    from lab9x.print_rules import la_mau_mac_dinh_erpnext
+
     reload_print_formats()
     for doctype, print_format in DEFAULT_PRINT_FORMATS.items():
         if not frappe.db.exists("Print Format", print_format):
@@ -842,7 +844,7 @@ def ensure_default_print_formats():
             {"doc_type": doctype, "property": "default_print_format", "doctype_or_field": "DocType"},
             "value",
         )
-        if current and current != f"{doctype} with Item Image":
+        if not la_mau_mac_dinh_erpnext(doctype, current):
             continue
         frappe.make_property_setter(
             {

@@ -122,7 +122,11 @@ jobs:
           ex doi-chieu execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "doi-chieu"}' > "$RUNNER_TEMP/log-5c.txt" 2>&1
           grep -q '"idempotent": true' "$RUNNER_TEMP/log-5c.txt"
           dv doi-chieu > "$RUNNER_TEMP/dv-3-doi-chieu.txt"
-          so "$RUNNER_TEMP/dv-2-sau-cai.txt" "$RUNNER_TEMP/dv-3-doi-chieu.txt" --phan schema,co | tee "$RUNNER_TEMP/log-5d.txt"
+          # Mẫu in mặc định ERPNext tự đặt cho chứng từ app KHÔNG quản lý: ERPNext 16.50 chỉ đặt "… Modern with Images"
+          # khi cài mới, site nâng cấp giữ "… with Item Image" — hành vi của ERPNext, không phải lệch do app.
+          # 5 chứng từ app đặt mẫu riêng (install.DEFAULT_PRINT_FORMATS) KHÔNG bỏ qua: phải khớp mẫu của app.
+          so "$RUNNER_TEMP/dv-2-sau-cai.txt" "$RUNNER_TEMP/dv-3-doi-chieu.txt" --phan schema,co \
+            --bo-qua '^PS\|(?!(Purchase Receipt|Stock Entry|Delivery Note|Payment Entry|Sales Invoice)\|)[^|]+\|\|default_print_format\|.*( with Item Image| Modern with Images)$' | tee "$RUNNER_TEMP/log-5d.txt"
           ./erpctl exec -T backend bash -c 'bench drop-site doi-chieu --force --no-backup --db-root-username root --db-root-password "'"$DB_PASSWORD"'"' </dev/null > "$RUNNER_TEMP/log-5e.txt" 2>&1
       - name: 6. quay-lui.sh về 0.9.1, cờ trả về như bản sao lưu
         run: |

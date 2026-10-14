@@ -1,11 +1,14 @@
 """So hai dấu vân của deploy/release/dau_van_site.py. In khác biệt; mã thoát 1 nếu lệch.
 
-    python3 so_dau_van.py truoc.txt sau.txt --phan schema,dem,tong,co,versions
+    python3 so_dau_van.py truoc.txt sau.txt --phan schema,dem,tong,co,versions [--bo-qua REGEX ...]
+
+--bo-qua: bỏ các mục schema khớp biểu thức (ở cả hai bên) — chỉ dùng cho khác biệt đã biết và có lý do ghi ở nơi gọi.
 
 Tệp đầu vào là output của dau_van_site.py (dòng bắt đầu bằng "DAU_VAN "; các dòng khác bỏ qua).
 """
 import argparse
 import json
+import re
 import sys
 
 
@@ -22,18 +25,23 @@ def main():
     ap.add_argument("a")
     ap.add_argument("b")
     ap.add_argument("--phan", default="schema,dem,tong")
+    ap.add_argument("--bo-qua", action="append", default=[], help="regex mục schema bỏ qua")
     ns = ap.parse_args()
+    bo = [re.compile(x) for x in ns.bo_qua]
     a, b = doc(ns.a), doc(ns.b)
     lech = 0
     for phan in ns.phan.split(","):
         if phan == "schema":
-            ma, mb = set(a["schema"]["muc"]), set(b["schema"]["muc"])
+            ma = {m for m in a["schema"]["muc"] if not any(r.search(m) for r in bo)}
+            mb = {m for m in b["schema"]["muc"] if not any(r.search(m) for r in bo)}
+            if bo:
+                print(f"schema: bỏ qua {len(a['schema']['muc']) - len(ma)} / {len(b['schema']['muc']) - len(mb)} mục theo --bo-qua")
             for m in sorted(ma - mb):
                 print(f"schema chỉ có ở {ns.a}: {m}")
             for m in sorted(mb - ma):
                 print(f"schema chỉ có ở {ns.b}: {m}")
             lech += len(ma ^ mb)
-            print(f"schema: {a['schema']['so_muc']} / {b['schema']['so_muc']} mục, lệch {len(ma ^ mb)}")
+            print(f"schema: {len(ma)} / {len(mb)} mục, lệch {len(ma ^ mb)}")
         else:
             xa, xb = a.get(phan) or {}, b.get(phan) or {}
             for k in sorted(set(xa) | set(xb)):

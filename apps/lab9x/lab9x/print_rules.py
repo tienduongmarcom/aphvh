@@ -150,3 +150,15 @@ def nhan_thue_suat(template_title, rate=None) -> str:
         return ""
     r = float(rate)
     return f"{int(r)}%" if r == int(r) else f"{r:g}%".replace(".", ",")
+
+
+# Mẫu in mặc định ERPNext tự đặt lúc cài (không phải người dùng chọn). Tên đổi theo phiên bản:
+# ERPNext ≤ 16.36 "<chứng từ> with Item Image"; ERPNext 16.50 "<chứng từ> Modern with Images".
+MAU_MAC_DINH_ERPNEXT = ("{dt} with Item Image", "{dt} Modern with Images")
+
+
+def la_mau_mac_dinh_erpnext(doctype: str, ten_mau: str | None) -> bool:
+    """True nếu mẫu in mặc định hiện tại là mẫu ERPNext tự đặt (coi như chưa ai chọn) hoặc chưa có (thuần)."""
+    if not ten_mau:
+        return True
+    return ten_mau in {m.format(dt=doctype) for m in MAU_MAC_DINH_ERPNEXT}
