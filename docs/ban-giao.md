@@ -1,6 +1,14 @@
 # Bàn giao dự án APH-VH
 
-## 000000. Bản 0.11.3 — 14/10/2026 (CI XANH, CHỜ GẮN TAG)
+## 000000. Bản 0.11.3 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~21:00)
+
+**Phát hành và triển khai:**
+- Phát hành: run `38570867103` xanh đủ 6 job.
+- Triển khai bằng `trien_khai_frontend.sh`, kết quả ĐẠT:
+  - nâng cấp 0.11.2 → 0.11.3 kiểm đạt; bản sao lưu trước nâng cấp: `sao-luu/20261014-135331`;
+  - bộ dựng cây kho chạy lại "tạo 0"; kiểm triển khai "KHÔNG ĐẠT: 0";
+  - tổng sổ trước và sau KHỚP.
+- Digest image 0.11.3: `sha256:716f1401…bd2d8` (bản sau: Cổng 3 nâng cấp từ 0.11.3, 14 cờ).
 
 Đặc tả: `docs/dac-ta-0.11.3.md` (E1–E9, anh Tiến đồng ý 18:30). Cờ thứ 14 `kh_aph_sales_p1` gồm các phần:
 - **Trả hàng 2 chiều.** Phiếu trả hỏi hai ô: hàng trả về đâu (bán lại được / cách ly vào "Hàng cách ly <địa điểm>") và xử lý tiền thế nào (bù trừ / hoàn tiền / đổi hàng).
