@@ -19,7 +19,7 @@ Bật/tắt: Cài đặt bán hàng → "Tự tạo hóa đơn nháp khi xác nh
 from collections import defaultdict
 
 import frappe
-from frappe.utils import cint, cstr, escape_html, flt, fmt_money, get_link_to_form
+from frappe.utils import cint, cstr, escape_html, flt, fmt_money, get_link_to_form, getdate
 
 from kh_aph.constants import INV_FLAG, SI_AUTO, SS_AUTO_INVOICE
 from kh_aph.sales_warnings import setting_on
@@ -134,8 +134,9 @@ def _build_invoice(doc, return_against: str | None):
             _link_return_rows(si, return_against)
     else:
         # Hạn thanh toán tính từ ngày giao hàng, không phải ngày app chạy
+        # ERPNext 16.50 kiểm kiểu: ngày phải là chuỗi (datetime.date báo FrappeTypeError khi khách có điều khoản thanh toán).
         si.due_date = get_due_date(
-            doc.posting_date, "Customer", si.customer, si.company, template_name=si.payment_terms_template
+            str(getdate(doc.posting_date)), "Customer", si.customer, si.company, template_name=si.payment_terms_template
         )
         # 0.11.3 (cờ kh_aph_sales_p1, Q166): đơn có hạn thanh toán chung thì mọi đợt giao lấy chung hạn đó.
         from kh_aph.sales_p1 import ap_han_hoa_don

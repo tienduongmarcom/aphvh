@@ -228,7 +228,7 @@ def _han_mac_dinh(so):
     tpl = so.get("payment_terms_template") or frappe.db.get_value("Customer", so.customer, "payment_terms")
     if not tpl:
         return None
-    return getdate(get_due_date(so.transaction_date, "Customer", so.customer, so.company, template_name=tpl))
+    return getdate(get_due_date(str(getdate(so.transaction_date)), "Customer", so.customer, so.company, template_name=tpl))
 
 
 def validate_don(doc, method=None):
