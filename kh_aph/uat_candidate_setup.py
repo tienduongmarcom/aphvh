@@ -55,6 +55,9 @@ def schema():
     # 0.11.3: bán hàng P1 (hàm tự đòi cờ kh_aph_sales_p1).
     from kh_aph import sales_p1
     sales_p1.schema()
+    # 0.11.4: báo cáo quản trị, khóa kỳ, xác nhận công nợ (hàm tự đòi cờ kh_aph_quan_tri).
+    from kh_aph import quan_tri
+    quan_tri.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
     create_custom_fields({'Delivery Note': [

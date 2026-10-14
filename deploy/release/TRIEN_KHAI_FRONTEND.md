@@ -1,4 +1,29 @@
-# Triển khai bản 0.11.3 lên `frontend` (máy erpnext-prod)
+# Triển khai bản 0.11.4 lên `frontend` (máy erpnext-prod)
+
+Production đang chạy 0.11.3 (từ 14/10/2026 ~21:00, 14 cờ). Bản 0.11.4 (đặc tả `docs/dac-ta-0.11.4.md`) thêm cờ thứ 15
+`kh_aph_quan_tri`, gồm:
+- 3 báo cáo: lãi gộp quản trị cộng ngang 4 đơn vị, dòng tiền 7 / 30 ngày, khách chưa xác nhận công nợ;
+- khóa / mở khóa kỳ trên form Company;
+- ghi nhận xác nhận công nợ trên form Customer.
+
+**Chạy trên SSH vào máy chủ erpnext-prod** (user `tienduongmarcom`):
+
+```bash
+cd ~/trien-khai && git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.11.4 && git checkout -q --detach v0.11.4
+bash deploy/release/trien_khai_frontend.sh 0.11.4 kh_aph_quan_tri 2>&1 | tee ~/log-0.11.4-tong.txt
+```
+
+**Đạt khi** dòng cuối là `=== XONG 0.11.4: ĐẠT ===`.
+- Nâng cấp lỗi thì `nang-cap.sh` tự quay lui.
+- Muốn quay lui sau khi đã xong: `./quay-lui.sh <thư mục sao-luu mới nhất>`.
+
+**Sau khi triển khai:**
+- Kế toán trưởng khóa từng tháng đã kết thúc trên form Company → Kỳ kế toán → Khóa kỳ. ERPNext không cho khóa tháng đang chạy.
+- Chiết khấu hoặc hoa hồng gắn được vào một đơn: ghi bằng bút toán và chọn ô "Đơn bán" trên dòng chi phí.
+
+---
+
+# (Lịch sử) Triển khai bản 0.11.3 lên `frontend` — đã làm 14/10/2026 ~21:00, ĐẠT
 
 Production đang chạy 0.11.2 (từ 14/10/2026 17:10): 13 cờ, cây kho 55 kho, site chưa có dữ liệu nghiệp vụ.
 

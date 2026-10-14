@@ -87,8 +87,8 @@ class NhatQuanDanhSachCo(unittest.TestCase):
         khoi = re.search(r"FLAGS = \((.*?)\)", src, re.S).group(1)
         return set(re.findall(r'"(kh_aph_\w+)"', khoi))
 
-    def test_muoi_bon_co(self):
-        self.assertEqual(len(self._co_app()), 14)  # 8 cờ 0.10.0 + 4 cờ 0.11.1 + 1 cờ 0.11.2 + 1 cờ 0.11.3
+    def test_muoi_lam_co(self):
+        self.assertEqual(len(self._co_app()), 15)  # 8 (0.10.0) + 4 (0.11.1) + 1 (0.11.2) + 1 (0.11.3) + 1 (0.11.4)
 
     def test_quay_lui_dau_van_ci_cung_danh_sach(self):
         if not (GOC / ".github").exists() or not (GOC / "deploy/khach-hang").exists():

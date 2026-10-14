@@ -14,7 +14,7 @@ FLAGS = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery",
     "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp",
     "kh_aph_funds_workflow", "kh_aph_source_change",
          "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
-         "kh_aph_kho_chuan", "kh_aph_sales_p1")
+         "kh_aph_kho_chuan", "kh_aph_sales_p1", "kh_aph_quan_tri")
 DOCTYPES = ("User", "Customer", "Supplier", "Item", "Warehouse", "Sales Order",
     "Delivery Note", "Sales Invoice", "Purchase Receipt", "Purchase Invoice",
     "Payment Entry", "Journal Entry", "Stock Entry", "GL Entry", "Stock Ledger Entry",

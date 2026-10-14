@@ -153,6 +153,6 @@ def boot_session(bootinfo):
     bootinfo.setdefault("kh_aph", {})["quantity_valuation_mvp"] = enabled()
     bootinfo.kh_aph["funds_workflow"] = cint(frappe.conf.get("kh_aph_funds_workflow"))
     bootinfo.kh_aph["source_change"] = cint(frappe.conf.get("kh_aph_source_change"))
-    for _co in ("factory_costing", "factory_cash", "sales_adjust", "data_review", "kho_chuan", "sales_p1"):  # 0.11.1–0.11.3
+    for _co in ("factory_costing", "factory_cash", "sales_adjust", "data_review", "kho_chuan", "sales_p1", "quan_tri"):  # 0.11.1–0.11.4
         bootinfo.kh_aph[_co] = cint(frappe.conf.get("kh_aph_" + _co))
 

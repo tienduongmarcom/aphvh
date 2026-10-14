@@ -324,3 +324,14 @@ for _dt in ("Sales Order", "Delivery Note", "Sales Invoice"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/ban_0113.js"]
+
+# 0.11.4 (cờ kh_aph_quan_tri): cảnh báo mềm xác nhận công nợ (R039); nút khóa kỳ / xác nhận công nợ.
+_handlers = doc_events.setdefault("Sales Order", {}).get("validate", [])
+_handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+if "kh_aph.quan_tri.canh_bao_xac_nhan" not in _handlers:
+    _handlers.append("kh_aph.quan_tri.canh_bao_xac_nhan")
+doc_events["Sales Order"]["validate"] = _handlers
+for _dt in ("Customer", "Company"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ban_0114.js"]

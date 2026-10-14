@@ -1,5 +1,22 @@
 # Bàn giao dự án APH-VH
 
+## 0000000. Bản 0.11.4 — 14/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+
+Đặc tả `docs/dac-ta-0.11.4.md` (anh Tiến đồng ý 21:08). Cờ thứ 15 `kh_aph_quan_tri`, gồm:
+
+| Phần | Nội dung |
+|---|---|
+| Báo cáo "Lai gop quan tri" | Cộng ngang 4 đơn vị, không phải hợp nhất kế toán. Xem theo công ty / kho / mặt hàng / khách / đơn. Có trả hàng, giảm giá sau giao, chi phí trực tiếp của đơn (bút toán có chọn ô "Đơn bán"), cờ lãi tạm tính. |
+| Báo cáo "Dong tien 7 30 ngay" | Loại khoản nội bộ; khoản quá hạn hiện riêng. |
+| Khóa / mở khóa kỳ | Dùng Accounting Period chuẩn. Bắt buộc lý do, có nhật ký. Chỉ khóa được tháng đã kết thúc. |
+| Xác nhận công nợ (R039) | Cảnh báo mềm trên đơn bán. Báo cáo "Khach chua xac nhan cong no". |
+| Chặn xem | Dũng và nhân viên bán hàng không xem được ba báo cáo trên. |
+
+Kiểm thử:
+- Thử cục bộ: bộ b0114 đạt 6/6 ca.
+- Cổng 3 chuyển sang nâng cấp từ 0.11.3 theo digest `716f1401…`.
+- Chi phí chuyến đã vào giá vốn hàng nhập (Landed Cost theo kg), nên không trừ lại trong "lãi sau chi phí trực tiếp".
+
 ## 000000. Bản 0.11.3 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~21:00)
 
 **Phát hành và triển khai:**
