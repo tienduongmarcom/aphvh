@@ -13,7 +13,7 @@ Nguồn:
 | # | Nội dung | Đề xuất |
 |---|---|---|
 | H1 | Cờ | Hai cờ mới, mặc định tắt: **`kh_aph_du_lieu`** (cờ 16, Trung tâm dữ liệu) và **`kh_aph_dau_ky`** (cờ 17, số dư đầu kỳ). Bật riêng được. |
-| H2 | Ai nạp dữ liệu thật | **Nhân viên tự nạp trên giao diện** (Dung, Dũng). App chỉ cung cấp mẫu, kiểm, duyệt và đối chiếu. 9xLab không nạp dữ liệu thật của khách. |
+| H2 | Ai nạp dữ liệu thật | **Anh Tiến nạp** bằng công cụ của app (chốt 14/10 22:40). Nhân viên kiểm, đối chiếu và tự xử lý dòng thiếu/sai. Tác tử lập trình không nạp dữ liệu thật. |
 | H3 | Chặn hay cảnh báo | Lỗi **cấu trúc** chặn (sai mã, sai công ty, thiếu cột bắt buộc, nợ ≠ có). Lỗi **số liệu** chỉ cảnh báo và đưa vào danh sách cần rà soát (thiếu giá, lệch định mức, nghi trùng). |
 | H4 | Công cụ nạp | Dùng **Data Import của ERPNext 16.50** (trình hướng dẫn mới, có xem trước và báo lỗi từng dòng) và các công cụ chuẩn (Opening Invoice Creation Tool, Stock Reconciliation, Journal Entry loại Opening Entry). Không viết bộ nạp riêng. |
 | H5 | Giao diện | Workspace chuẩn "Trung tâm dữ liệu" (không Native Page, không Vue), theo `docs/kien-truc-giao-dien.md`. |
@@ -101,10 +101,22 @@ Chị Dung bấm **"Chốt số dư đầu kỳ"** khi báo cáo khớp: app kh�
   4. Tồn kho thiếu giá → vẫn nạp được, vào danh sách rà soát.
   5. Chốt số dư → chứng từ ngày đầu kỳ bị chặn; mở khóa cần lý do.
 
-## 5. Cần anh / chị Dung chốt
+## 5. Đã chốt (anh Tiến, 14/10 22:40)
 
-1. **H2:** nhân viên tự nạp trên giao diện, 9xLab không nạp dữ liệu thật — đồng ý?
-2. **Ngày đầu kỳ:** `khach.json` đang để **30/09/2026**; ghi chép cũ (29/09) dùng mốc tồn kho **31/08/2026** cho APH. Dùng ngày nào, có khác nhau giữa các công ty không?
-3. **Tài khoản đối ứng:** 3389 hay 9990 (chị Dung).
-4. **Công nợ đầu kỳ** theo từng hóa đơn còn nợ (đề xuất) hay một số tổng mỗi khách?
-5. **Tài sản cố định, khế ước vay, vốn** có đưa vào lượt này không, hay chỉ tồn kho + tiền + công nợ trước?
+1. Anh Tiến nạp; nhân viên kiểm và xử lý phần thiếu/sai.
+2. Ngày đầu kỳ **30/09/2026** cho cả 4 đơn vị (cuối tháng, cuối quý gần nhất; tháng 9 đã kết thúc nên khóa kỳ được).
+   Tồn kho đầu kỳ phải là tồn **ngày 30/09** (kiểm kê 01/09 cộng trừ phát sinh tháng 9), không phải tồn 01/09.
+   Chứng từ từ 01/10 nhập bù sau khi nạp đầu kỳ.
+3. Tài khoản đối ứng: **9990 "Tài khoản tạm nhập số dư đầu kỳ"**, ngoài hệ thống tài khoản của thông tư.
+   Lý do: TT133 và TT99 không quy định tài khoản đối ứng cho số dư đầu kỳ (sổ được chuyển số dư, không ghi bút toán);
+   TT133 không có 3389; dùng một tài khoản 338x thật sẽ trộn với nợ phải trả thật trên báo cáo tình hình tài chính.
+   9990 phải về 0 khi đã nạp đủ mọi số dư (kể cả vốn 411, lợi nhuận chưa phân phối 421); không lên báo cáo tài chính.
+   Ghi vào `docs/bang-ra-soat-phap-ly-APH-VH.md` để chị Dung xác nhận.
+4. Công nợ theo từng hóa đơn còn nợ.
+5. Tài sản cố định, CCDC, vay, vốn: **lượt sau**. Lượt này: tồn kho, tiền mặt + ngân hàng, công nợ khách, công nợ NCC.
+   Vì vậy sau lượt này 9990 **chưa về 0**: số dư còn lại phải bằng đúng phần chưa nạp (TSCĐ, CCDC, vay, vốn, các khoản khác);
+   báo cáo đối chiếu hiện dòng "phần chưa nạp (lượt sau)".
+
+**Nạp từ 15/10 trước khi có 0.12.1:** dùng ngay công cụ chuẩn (Stock Reconciliation mục đích Nhập số dư đầu kỳ, Opening Invoice
+Creation Tool, Journal Entry loại Opening Entry), ngày 30/09/2026, đối ứng 9990. Dữ liệu này dùng tiếp được với 0.12.1:
+báo cáo đối chiếu và nút chốt đọc thẳng các chứng từ đó.
