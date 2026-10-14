@@ -5,7 +5,7 @@
 - Phát hành: tag `v0.11.1` = `a2ab58c`; run phát hành 38526754413 xanh (UAT candidate có 14/14 ca 0.11.1, Cổng 2, 2b, 3
   nâng cấp từ image production 0.11.0 `sha256:6bc8f302…`). Repo chuyển công khai 14/10 để chạy Actions miễn phí.
 - Trên VM theo `TRIEN_KHAI_FRONTEND.md` mục 0.11.1: nâng cấp 0.11.0 → 0.11.1, bật 4 cờ mới (12/12), bộ cài + kiểm; dấu vân
-  sau: `tong` khớp. Quay lui trước khi nhập liệu: `./quay-lui.sh <thư mục sao-luu của nang-cap.sh 0.11.1>`.
+  sau: `tong` khớp. Sao lưu trước nâng cấp `~/erp/aph-vh/sao-luu/20261014-074331`, Cloud Storage `aph-vh/2026-10-14_1443`. Bộ cài: idempotent 2 lần, CF 147, Custom DocPerm 535, Property Setter 220 (CI cùng bản: 216, chênh 4 — xem lại khi làm 0.11.2, không chặn); `kiem_trien_khai` 53 dòng KHÔNG ĐẠT: 0. Quay lui trước khi nhập liệu: `cd ~/erp/aph-vh && ./quay-lui.sh 20261014-074331`. VM báo *System restart required* (cập nhật hệ điều hành): khởi động lại trong khung bảo trì.
 - Việc tiếp: cấu hình khách sau 0.11.1 (TRIEN_KHAI_FRONTEND.md), chị Dung xác nhận D2 (6323), làm 0.11.2 (P1).
 
 ### Ghi chép lúc làm 0.11.1
