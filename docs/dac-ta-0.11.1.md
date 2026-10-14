@@ -8,7 +8,7 @@ khác biệt đều ghi rõ ở mục 2.
 
 | # | Nội dung | Chốt |
 |---|---|---|
-| D1 | Tài khoản chi phí sản xuất của APH (TT133 không có 621/622/627) | Mở **tài khoản chi tiết dưới 154** theo xưởng và theo yếu tố chi phí (mục 3.3). Không mở 622/627 cho APH. |
+| D1 | Tài khoản chi phí sản xuất của APH (TT133 không có 621/622/627) | Mở **tài khoản chi tiết dưới 154** theo yếu tố chi phí (1548x); xưởng tách bằng trung tâm chi phí (mục 3.3). Không mở 622/627 cho APH. |
 | D2 | Chi phí "Nhà máy chung" | **Ghi vào 632 hằng tháng** dưới dạng "chi phí sản xuất chung cố định không phân bổ"; không đưa vào giá thành đậu/phồng tôm, không ghi vào 642. **Chị Dung (kế toán trưởng) hoặc kiểm toán xác nhận** trước khi dùng trên sổ thật (bảng rà soát pháp lý, dòng 12). |
 | D3 | Phạm vi | **0.11.1** gồm các mục P0 của BA: 1–9, 12, 16. **0.11.2** gồm các mục P1: 10, 11, 13, 14, 15. |
 | BA-II.1 | Tiền mặt và chi phí nhỏ của Dũng | Phương án A: cổng riêng, chỉ phiếu mình lập, không mở giá vốn. |
@@ -79,43 +79,53 @@ Bản 0.11.1 có bốn cờ mới, đều mặc định tắt. Hook nào cũng p
 
 ### 3.3 Tài khoản chi phí sản xuất và phân bổ cuối tháng (R079, R088, D1, D2)
 
-**Tài khoản (lab9x, chỉ cho công ty TT133).** Đây là chi tiết doanh nghiệp mở dưới 154. Các tài khoản đều không phải tài khoản kho,
-nên ghi bút toán tay được.
+Cập nhật 14/10 sau khi nhận file "Mẫu nhập tài sản APH 31/08". Xưởng được xác định bằng **trung tâm chi phí** (Sheet 4, mỗi tài
+sản và mỗi khoản CCDC đã có cột này). Tài khoản chi tiết chỉ còn theo **yếu tố chi phí**, đánh số cuối giống 627x mà chị Dung đã
+duyệt (6272, 6274). Số ở đây là 1548x, vì TT133 không có 627.
 
-| Số | Tên |
-|---|---|
-| 15412 / 15422 | Nhân công trực tiếp - sơ chế / - phồng tôm |
-| 15413 / 15423 | Khấu hao TSCĐ - sơ chế / - phồng tôm |
-| 15414 / 15424 | Công cụ dụng cụ phân bổ - sơ chế / - phồng tôm |
-| 15415 / 15425 | Điện, nước - sơ chế / - phồng tôm |
-| 15418 / 15428 | Chi phí sản xuất khác - sơ chế / - phồng tôm |
-| 15491 | Chi phí sản xuất chung nhà máy (chung hai xưởng) |
-| 6323 | Chi phí sản xuất chung cố định không phân bổ |
+**Tài khoản (lab9x, chỉ cho công ty TT133).** Chi tiết doanh nghiệp mở dưới 154. Các tài khoản đều không phải tài khoản kho, nên
+ghi bút toán tay được.
+
+| Số | Tên | Thay cho đề xuất cũ |
+|---|---|---|
+| 15481 | Chi phí nhân công trực tiếp sản xuất | 622 |
+| 15482 | Chi phí vật liệu, công cụ dụng cụ sản xuất | 6272 |
+| 15484 | Chi phí khấu hao TSCĐ sản xuất | 6274 |
+| 15487 | Chi phí dịch vụ mua ngoài sản xuất (điện, nước…) | 6277 |
+| 15488 | Chi phí sản xuất bằng tiền khác, hao hụt tự nhiên | 6278 |
+| 6323 | Chi phí sản xuất chung cố định không phân bổ (chi tiết 632) | |
 
 15411 và 15421 (dở dang, tài khoản kho) giữ nguyên. Công ty TT99 không nhận các tài khoản này, vì TT99 đã có 621/622/627.
 
-**Ghi nhận trong tháng (kế toán làm, app không tự ghi):**
-- Lương, điện nước, chi phí khác: bút toán Nợ 1541x/1542x/15491, Có tài khoản tiền hoặc phải trả.
-- Khấu hao: thẻ tài sản dùng nhóm tài sản (Asset Category) có tài khoản chi phí khấu hao là 15413, 15423 hoặc 15491. Khách tạo
-  nhóm tài sản theo từng xưởng.
-- CCDC 242: bút toán phân bổ hằng tháng vào 15414, 15424 hoặc 15491.
+**Cài đặt `APH Cài đặt giá thành`** (Single, kế toán trưởng đặt):
+- Công ty.
+- Bảng xưởng: trung tâm chi phí và tên hiển thị. Ví dụ "Xưởng sơ chế đậu", "Xưởng phồng tôm".
+- Trung tâm chi phí "Nhà máy chung".
+- Danh sách tài khoản yếu tố. Mặc định là 15481, 15482, 15484, 15487, 15488.
 
-**Phiếu sản xuất:** thêm ô `kh_aph_xuong` (Chọn: "Xưởng sơ chế đậu" / "Xưởng phồng tôm"). Phiếu theo quy tắc kg-v4 bắt buộc
-chọn ô này.
+Khách tự tạo trung tâm chi phí theo Sheet 4; app không tạo.
+
+**Ghi nhận trong tháng (kế toán làm, app không tự ghi):**
+- Mọi bút toán chi phí sản xuất ghi Nợ 1548x, **kèm trung tâm chi phí** của xưởng hoặc của nhà máy chung.
+- Khấu hao: nhóm tài sản sản xuất dùng tài khoản chi phí khấu hao 15484. Trung tâm chi phí trên thẻ tài sản quyết định xưởng.
+- CCDC 242: bút toán phân bổ Nợ 15482 kèm trung tâm chi phí, theo Sheet 7.
+
+**Phiếu sản xuất:** thêm ô `kh_aph_xuong` (Link Cost Center, phải nằm trong bảng xưởng). Phiếu theo quy tắc kg-v4 bắt buộc có ô
+này. Khi lưu, app gán trung tâm chi phí đó cho các dòng thành phẩm.
 
 **Công cụ "Phân bổ chi phí sản xuất cuối tháng"** (`kh_aph.factory_costing.phan_bo_thang`, chỉ kế toán):
-1. Theo từng xưởng: lấy số dư đến cuối tháng của các tài khoản chi phí của xưởng đó (1541x hoặc 1542x, trừ 15411/15421).
-2. Tạo **Landed Cost Voucher nháp** (lối chuẩn ERPNext, đã dùng cho chi phí chuyến):
+1. Với từng xưởng: lấy số dư đến cuối tháng của từng tài khoản 1548x theo trung tâm chi phí của xưởng đó.
+2. Tạo **Landed Cost Voucher nháp** (lối chuẩn ERPNext, có hỗ trợ Stock Entry):
    - Phiếu nhận chi phí: các phiếu sản xuất kg-v4 của xưởng trong tháng.
    - Dòng nhận chi phí: các dòng thành phẩm chia giá (không gồm phụ phẩm giá cố định), chia theo `kg × hệ số` đã lưu.
    - Dòng chi phí: mỗi tài khoản một dòng.
-3. Kế toán xem lại rồi tự ghi sổ. ERPNext ghi Nợ kho thành phẩm, Có tài khoản chi phí, rồi tự repost giá vốn các phiếu xuất sau
-   đó.
-4. **Nhà máy chung (D2):** tạo **bút toán nháp** Nợ 6323, Có 15491 bằng số dư 15491 cuối tháng, diễn giải "CPSXC cố định không
-   phân bổ". Kế toán duyệt rồi ghi sổ.
-5. Chạy lại trong cùng tháng không tạo trùng: nếu đã có chứng từ nháp hoặc đã ghi sổ của cùng tháng và xưởng thì trả chứng từ đó.
-6. R079 (ước tính rồi điều chỉnh): hóa đơn về sau làm số dư tháng sau thay đổi, phần chênh được phân bổ ở lần chạy tháng đó.
-   Điều chỉnh lùi tháng cũ thì kế toán tự lập Landed Cost Voucher.
+3. Kế toán xem lại rồi tự ghi sổ. ERPNext ghi Nợ kho thành phẩm, Có 1548x theo trung tâm chi phí của xưởng, rồi repost giá vốn.
+4. **Nhà máy chung (D2):** tạo **bút toán nháp** Nợ 6323, Có từng tài khoản 1548x, bằng số dư theo trung tâm chi phí "Nhà máy
+   chung". Diễn giải "CPSXC cố định không phân bổ". Kế toán duyệt rồi ghi sổ.
+5. Xưởng có chi phí mà trong tháng không có phiếu sản xuất: không phân bổ, báo cho kế toán. Số dư để lại tháng sau.
+6. Chạy lại trong cùng tháng không tạo trùng: nếu đã có chứng từ nháp hoặc đã ghi sổ của cùng tháng và xưởng thì trả chứng từ đó.
+7. R079 (ước tính rồi điều chỉnh): chi phí ghi bổ sung sau làm số dư tháng sau thay đổi, phần chênh được phân bổ ở lần chạy tháng
+   đó. Điều chỉnh lùi tháng cũ thì kế toán tự lập Landed Cost Voucher.
 
 ### 3.4 Kho bồn dở dang và vét bồn (R075, R076, R068)
 
@@ -129,7 +139,7 @@ chọn ô này.
   - Đầu vào: kho bồn, ngày, loại hao hụt cho phần còn trên sổ ("Hao hụt tự nhiên" hoặc "Hao hụt bất thường"), lý do.
   - Tạo **phiếu xuất kho nháp** (Material Issue) toàn bộ lượng còn trên sổ của bồn, theo từng mã.
   - Tài khoản đối ứng:
-    - Hao hụt tự nhiên: **tài khoản 15418 hoặc 15428 của xưởng**, để lần phân bổ cuối tháng đưa vào giá thành thành phẩm (R068:
+    - Hao hụt tự nhiên: **15488 kèm trung tâm chi phí của xưởng**, để lần phân bổ cuối tháng đưa vào giá thành thành phẩm (R068:
       hao hụt tự nhiên nằm trong giá trị hàng còn lại).
     - Hao hụt bất thường: **6322** "Tổn thất hàng tồn kho ghi nhận vào giá vốn".
   - Phiếu lưu loại hao hụt, lý do, người làm và thời điểm.
@@ -151,7 +161,12 @@ vì báo cáo có giá trị.
 
 | Mã | Nội dung |
 |---|---|
-| (a) | Tài sản (Asset) đã ghi sổ có hao mòn lũy kế đầu kỳ ≥ nguyên giá mà vẫn còn kỳ khấu hao, hoặc hao mòn lũy kế > nguyên giá (dấu hiệu đảo cột Sheet 5) |
+| (a) | Tài sản (Asset) có một trong các dấu hiệu sau. Ví dụ từ Sheet 5: dòng 1 Máy cắt phồng tôm, dòng 30 xe nâng, dòng 37 máy sấy 150KW, dòng 18 máy phồng tôm |
+| (a1) | Hao mòn lũy kế đầu kỳ ≥ nguyên giá mà vẫn còn kỳ khấu hao |
+| (a2) | Hao mòn lũy kế > nguyên giá |
+| (a3) | Khấu hao tháng dự kiến lớn gấp hơn 3 lần mức đường thẳng (nguyên giá / tổng số tháng) |
+| (a4) | Trung tâm chi phí khác vị trí. Ví dụ tài sản ở "Xưởng phồng tôm" nhưng trung tâm chi phí là "Xưởng sơ chế đậu" |
+| (a5) | Tài khoản chi phí khấu hao của nhóm tài sản không hợp với trung tâm chi phí. Ví dụ tài sản của xưởng hoặc nhà máy chung mà nhóm tài sản ghi vào 642x |
 | (b) | Phiếu nhập hoặc phiếu kho giá tạm chưa chốt (3.1) |
 | (c) | Tồn kho theo kho và mã có số lượng 0 mà giá trị khác 0, hoặc số lượng âm |
 | (d) | Mã hàng nằm ở kho có tài khoản kho khác tài khoản kho của nhóm hàng cấp 1 (ví dụ thành phẩm 155x nằm ở kho nguyên liệu 152x) |
@@ -168,7 +183,7 @@ Báo cáo không sửa dữ liệu. Mỗi dòng có liên kết tới chứng t�
 - **Cài đặt `APH Cài đặt quỹ nhà máy`** (Single, kế toán trưởng đặt):
   - Công ty, quỹ tiền mặt nhà máy (tài khoản tiền chi tiết, ví dụ 11111, do kế toán mở).
   - Trung tâm chi phí nhà máy.
-  - Bảng khoản mục: tên khoản mục và tài khoản chi phí, ví dụ "Bốc xếp" ứng với 15418, "Chi phí nhỏ khác" ứng với 15491.
+  - Bảng khoản mục: tên khoản mục và tài khoản chi phí, ví dụ "Bốc xếp" ứng với 15488.
   - Tài khoản tiền nhận bàn giao.
 - **Ghi sổ** bằng Journal Entry do server tạo:
   - Thu tiền khách: Nợ quỹ nhà máy, Có 131 theo khách. Không cấn hóa đơn (quyết định 5).
@@ -250,7 +265,7 @@ Khi lưu Sales Order hoặc đơn bán chung:
 - Phân bổ cuối tháng:
   - Landed Cost Voucher nháp đúng số tiền theo trọng số.
   - Ghi sổ xong thì giá thành phẩm tăng đúng.
-  - Không tạo được LCV cho 15491; JE 6323 có số đúng.
+  - Chi phí trung tâm "Nhà máy chung" không vào LCV; JE 6323 có số đúng.
 - Vét bồn tự nhiên và bất thường: tài khoản đúng, bồn về 0.
 - Giá tạm:
   - Nhóm không cho giá tạm thì bị chặn.
@@ -279,7 +294,7 @@ Khi lưu Sales Order hoặc đơn bán chung:
 
 ## 6. Dữ liệu khách cần trước khi nghiệm thu (không chặn việc viết code)
 
-1. File mẫu tài sản 31/08 (Sheet 1, 4, 5): để thử báo cáo rà soát (a) trên dữ liệu thật đã ẩn danh.
+1. ~~File mẫu tài sản 31/08~~: đã nhận 14/10. Sheet 1 dòng 6 (6272/6274) đổi thành 15482/15484 theo D1. Sheet 7 có khoản CCDC ghi 811 và 632 cần chị Dung xem lại. Hướng dẫn "khấu hao không cộng vào giá thành" ở sheet "Đọc trước" **hết hiệu lực** (thay bằng 3.3).
 2. Cây nhóm hàng thật: nhóm nào tích "Cho nhập giá tạm", nhóm nào tích "Thành phẩm chính: giá Hà Nội chốt".
 3. Hệ số phẩm cấp từng thành phẩm đậu. Ví dụ BA: 24.000 đ/kg đến 35.000 đ/kg, tức hệ số khoảng 0,69–1,0.
 4. Danh sách khoản mục chi phí nhỏ của nhà máy và tài khoản tương ứng.
