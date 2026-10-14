@@ -110,8 +110,12 @@ Khách tự tạo trung tâm chi phí theo Sheet 4; app không tạo.
 - Khấu hao: nhóm tài sản sản xuất dùng tài khoản chi phí khấu hao 15484. Trung tâm chi phí trên thẻ tài sản quyết định xưởng.
 - CCDC 242: bút toán phân bổ Nợ 15482 kèm trung tâm chi phí, theo Sheet 7.
 
-**Phiếu sản xuất:** thêm ô `kh_aph_xuong` (Link Cost Center, phải nằm trong bảng xưởng). Phiếu theo quy tắc kg-v4 bắt buộc có ô
-này. Khi lưu, app gán trung tâm chi phí đó cho các dòng thành phẩm.
+**Phiếu sản xuất:** thêm ô `kh_aph_xuong` (Link Cost Center, phải là trung tâm loại "Xưởng sản xuất"). Phiếu "Sản xuất
+theo kg" bắt buộc có ô này. Phiếu "Đóng gói theo kg" dùng làm sản xuất có phụ phẩm: chọn xưởng thì được phân bổ, không chọn
+thì không. Khi lưu, app gán trung tâm chi phí của xưởng cho các dòng thành phẩm.
+
+Thay đổi khi làm: không dùng DocType cài đặt riêng. Loại trung tâm chi phí là ô `kh_aph_loai_ttcp` trên Cost Center;
+tài khoản yếu tố tìm theo số hiệu 1548x.
 
 **Công cụ "Phân bổ chi phí sản xuất cuối tháng"** (`kh_aph.factory_costing.phan_bo_thang`, chỉ kế toán):
 1. Với từng xưởng: lấy số dư đến cuối tháng của từng tài khoản 1548x theo trung tâm chi phí của xưởng đó.
@@ -129,8 +133,10 @@ này. Khi lưu, app gán trung tâm chi phí đó cho các dòng thành phẩm.
 
 ### 3.4 Kho bồn dở dang và vét bồn (R075, R076, R068)
 
-- **Warehouse:** thêm ô `kh_aph_kho_bon` ("Kho bồn dở dang"). Kế toán tự tạo kho bồn (Bồn hạt + xay, Bồn bóc vỏ) và gắn tài
-  khoản kho (15411 hoặc chi tiết).
+- **Warehouse:** thêm ô `kh_aph_kho_bon` ("Kho bồn dở dang"). Kế toán tự tạo kho bồn (Bồn hạt + xay, Bồn bóc vỏ).
+  Lưu ý: site đang ghi tồn kho theo tài khoản của nhóm hàng (enable_item_wise_inventory_account). Vì vậy hàng trong bồn vẫn
+  nằm trên tài khoản của nhóm (ví dụ 152x), không chuyển sang 154. Bồn chỉ là chỗ theo dõi số lượng. Muốn trình bày dở
+  dang trên 154 thì chị Dung quyết định riêng.
 - **Vận hành:**
   - Đưa nguyên liệu vào bồn bằng chuyển kho (Material Transfer), bồn là kho đích.
   - Phiếu sản xuất lấy đầu vào từ kho bồn.
@@ -148,7 +154,9 @@ này. Khi lưu, app gán trung tâm chi phí đó cho các dòng thành phẩm.
 
 ### 3.5 Đóng gói lại lệch kg (Q103, R080)
 
-Với phiếu "Đóng gói theo kg" (mục đích Repack) khi cờ `kh_aph_factory_costing` bật:
+Thay đổi khi làm: "Đóng gói theo kg" đang được dùng cho cả sản xuất có hao hụt và phụ phẩm (có ca UAT), nên không đổi quy
+tắc của loại này. Thêm loại phiếu mới **"Đổi bao, đóng gói lại"** (mục đích Repack), chỉ dùng cho đổi bao / đóng gói nhỏ.
+Với loại mới, khi cờ `kh_aph_factory_costing` bật:
 - Kg đầu ra phải bằng kg đầu vào (sai số 0,001 kg).
 - Nếu lệch: không ghi hao hụt. Phiếu chỉ lưu được khi người lập tích `kh_aph_xac_nhan_lech_kg` và ghi lý do. Bản thân phiếu
   không đổi cách chia giá.
@@ -192,8 +200,10 @@ Báo cáo không sửa dữ liệu. Mỗi dòng có liên kết tới chứng t�
   - Bàn giao tiền: khi Dũng gửi, phiếu ở trạng thái "Chờ nhận". Người nhận (kế toán) xác nhận số thực nhận thì mới tạo bút toán
     Nợ tài khoản nhận, Có quỹ nhà máy theo **số thực nhận**. Phần chênh ghi "Chờ điều tra", không tự quy trách nhiệm (R048).
     Nhận từng phần được.
+- **Thay đổi khi làm:** không có Single cài đặt. Quỹ tiền mặt nhà máy là ô `kh_aph_quy_nha_may` trên Company. Khoản mục
+  là DocType nhỏ "APH Khoan muc chi nha may", gồm tên, tài khoản chi phí và trung tâm chi phí.
 - **Quyền:**
-  - Vai trò "Kế toán nhà máy" tạo, gửi và xem **chỉ phiếu mình lập** (if_owner).
+  - Vai trò "Kế toán nhà máy" và "APH Không xem giá vốn" tạo, gửi và xem **chỉ phiếu mình lập** (if_owner).
   - Kế toán xem tất cả.
   - Dũng không được mở Journal Entry hay GL. Phiếu chỉ hiện số tiền do chính Dũng lập (R085).
   - `dung_cost_policy` cho phép đúng DocType này trong lối danh sách (reportview) và vẫn chặn mọi thứ khác như cũ.
@@ -251,6 +261,19 @@ Khi lưu Sales Order hoặc đơn bán chung:
 - **Đơn vị tính (R053, Q199):** hàng có bao thì in "bao + kg". Hàng theo thùng hoặc hộp in đơn vị tính bán của dòng (UOM) và quy
   đổi.
 
+### 3.13 Sửa lỗi tìm thấy khi kiểm thử 0.11.1 (có trên production 0.11.0)
+
+1. **Hook quyền `dung_cost_policy.has_permission` trả `None`.** Frappe 16 (`has_controller_permissions`, kiểm trên mã
+   nguồn 16.35 và 16.51) coi giá trị falsy, kể cả `None`, là từ chối. Hậu quả: mọi người dùng trừ Administrator không mở được
+   GL Entry, Bin, Stock Ledger Entry, Purchase Invoice, Landed Cost Voucher, Stock Reconciliation, BOM, Work Order, Repost
+   Item Valuation. UAT cũ không bắt được vì các ca đó chạy bằng Administrator.
+   Sửa: hook trả `True` khi người dùng không bị hồ sơ Dũng. Có unit test và ca HTTP kế toán mở Stock Reconciliation /
+   Landed Cost Voucher.
+2. **Phản hồi khi lưu/tạo chứng từ lộ giá vốn với nhân viên bán hàng.** Đơn bán trả về `valuation_rate` và `gross_profit`
+   từng dòng; lớp đọc chỉ che khi mở chứng từ. Sửa: `after_request` xóa các trường giá vốn trong mọi phản hồi JSON của người
+   bị ẩn giá vốn, giá bán giữ nguyên. Có ca HTTP.
+3. Kế toán bán hàng được quyền đọc "APH Shared Sales Order" (Q182 cần).
+
 ## 4. Kiểm thử
 
 **Unit test thuần cho phần tính toán:**
@@ -260,7 +283,9 @@ Khi lưu Sales Order hoặc đơn bán chung:
 - Phân loại điều chỉnh, kiểm lệch kg khi đóng gói lại.
 - Quyền phiếu quỹ.
 
-**Ca UAT HTTP trên CI** (thêm vào bộ chạy hiện có, cập nhật số ca PASS kỳ vọng):
+**Ca UAT HTTP trên CI:** bộ `deploy/uat/http/b0111.py` + `b0111_cases.py`, có 13 ca. Cộng ca khôi phục CSDL là 14 PASS kỳ
+vọng. Ngày 14/10 đã chạy PASS 13/13 trên máy thử (ERPNext 16.36); CI trên 16.50 đang chờ. Bộ inventory đổi kỳ vọng sang
+`kg-v4` và chọn xưởng cho phiếu "Sản xuất theo kg". Danh sách ca ban đầu:
 - Phiếu SX kg-v4 với hệ số 1,0 và 1,4. Kiểm số chia đúng, và repost không đổi.
 - Phân bổ cuối tháng:
   - Landed Cost Voucher nháp đúng số tiền theo trọng số.

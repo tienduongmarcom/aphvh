@@ -22,12 +22,12 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 
 | Đường dẫn | Nội dung |
 |---|---|
-| `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.0) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
-| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.10.0; production đang 0.9.1), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
+| `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.2) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
+| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.11.1 đang kiểm; production đang 0.11.0), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
 | `khach/<ten>/khach.json` | Cấu hình khách (một nguồn sự thật). `phien-ban.yaml`: image đang chạy + môi trường. |
 | `deploy/khach-hang/` | `dung.sh` (dựng mới), `nang-cap.sh` (nâng cấp, tự quay lui khi lỗi), `quay-lui.sh`, `compose.yaml`, `erpctl`. |
 | `deploy/cloud/` | Sao lưu 2 lần/ngày lên Google Cloud Storage (systemd timer). |
-| `.github/workflows/` | UAT candidate (110 ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ đúng image production 0.9.1 + bộ cài + quay lui), Phát hành image (tag `v*`, cần tất cả). |
+| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.11.0 đã bật 8 cờ + bộ cài + quay lui), Phát hành image (tag `v*`, cần tất cả). |
 | `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py`, `so_dau_van.py`), cổng phát hành, thủ tục triển khai frontend. |
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
@@ -50,15 +50,15 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 
 ```bash
 # Cổng 1 — unit test (không cần ERPNext; Python 3.11+)
-(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 48 test
-PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 184 test
+(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 58 test
+PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 213 test
 # Dựng image như CI
 docker build -t kh-aph-erpnext:dev .
 ```
 
 Cổng chạy trên GitHub Actions (Linux amd64): Cổng 2 tự chạy theo pull request đụng `kh_aph/**`, `apps/**`, `khach/**`,
 `Dockerfile`; UAT candidate và Cổng 3 tự chạy khi push nhánh PR; Cổng 2b chạy bằng tay hoặc khi phát hành. Số ca PASS kỳ
-vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 14, dispatch 48). **Không tuyên bố PASS khi
+vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14). **Không tuyên bố PASS khi
 chưa có run xanh trên đúng SHA**; run FAIL giữ nguyên làm bằng chứng, không sửa assertion để che lỗi. Lỗi được in thành chú thích
 `::error::` — đọc qua `check-runs/<id>/annotations` của GitHub API.
 
@@ -115,3 +115,11 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
 - Script triển khai phải chạy được trên Linux và macOS: không dùng `hostname -I` không dự phòng, `sed -i` phải có hậu tố
   (`sed -i.bak … && rm -f *.bak`), truyền tệp vào container qua stdin thay vì `docker cp`.
 - Python package không được bắt đầu bằng chữ số → lõi tên `lab9x`, tiêu đề "9xLab".
+- **Frappe 16: hook `has_permission` trả giá trị falsy (kể cả `None`) là TỪ CHỐI.** Hook chỉ được trả `True` (không ý kiến)
+  hoặc `False` (chặn). Lỗi này từng chặn kế toán mở GL/Purchase Invoice/kiểm kê (sửa 0.11.1). Ca HTTP phải chạy bằng người
+  dùng thật, không chỉ Administrator (Administrator bỏ qua hook).
+- Phản hồi `frappe.client.insert`/`savedocs` trả nguyên chứng từ, không qua lớp che khi đọc: trường nhạy cảm phải che ở
+  `after_request` (xem `dung_cost_policy.mask_cost_response`).
+- Mẫu in: sửa `.html` rồi chạy `python tools/build_print_formats.py` (tăng `MODIFIED`); hàm jinja mới phải nằm ở
+  `kh_aph.print_utils` (có test).
+- 12 cờ (0.11.1 thêm `kh_aph_factory_costing`, `kh_aph_factory_cash`, `kh_aph_sales_adjust`, `kh_aph_data_review`).

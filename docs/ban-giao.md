@@ -1,5 +1,30 @@
 # Bàn giao dự án APH-VH
 
+## 0000. Bản 0.11.1 — 14/10/2026 (ĐANG KIỂM, CHƯA PHÁT HÀNH)
+
+- Nguồn yêu cầu: đánh giá BA (`docs/ba/danh-gia-BA-0.11.1.md`) và quyết định của anh Tiến ngày 14/10 (D1 chi tiết 154 cho
+  APH; D2 nhà máy chung vào 6323, chờ chị Dung xác nhận; D3 chia 0.11.1 P0 / 0.11.2 P1). Đặc tả có hiệu lực:
+  `docs/dac-ta-0.11.1.md`.
+- Đã làm:
+  - Giá thành nhà máy (kg-v4 hệ số, giá tạm, 1548x/6323, phân bổ cuối tháng, vét bồn, "Đổi bao, đóng gói lại").
+  - Phiếu quỹ nhà máy của Dũng; khóa giá thành phẩm chính.
+  - Bán hàng: cảnh báo giá vốn chỉ kế toán thấy; xe quay về / chuyển khách; mã khách KH-; đóng phần chưa giao; biên bản
+    không giá, có cột thực nhận, in bao + kg.
+  - Báo cáo "Dữ liệu cần rà soát".
+- Sửa 2 lỗi có trên production 0.11.0 (đặc tả mục 3.13):
+  - Hook quyền trả `None` chặn kế toán mở GL / Purchase Invoice / kiểm kê / LCV / BOM / Work Order.
+  - Lộ giá vốn trong phản hồi lưu đơn của nhân viên bán hàng.
+  - **Phải lên 0.11.1 trước khi khách nhập liệu.**
+- Kiểm:
+  - Unit test: lab9x 58 OK, kh_aph 213 OK.
+  - 13 ca HTTP 0.11.1 PASS trên máy thử (16.36).
+  - **CI commit `a843837` chưa chạy**: GitHub báo tài khoản hết hạn mức hoặc lỗi thanh toán Actions. Anh Tiến sửa Billing
+    xong thì chạy lại.
+- Cổng 3 đổi nền sang production 0.11.0 (8 cờ bật + bộ cài 0.11.0). `PROD_DIGEST` còn trống, chờ digest đọc trên VM.
+- Triển khai: `deploy/release/TRIEN_KHAI_FRONTEND.md` phần 0.11.1 (bật thêm 4 cờ + bộ cài) và cấu hình khách sau triển khai.
+- Việc chuyển 0.11.2 (P1): trả hàng 5 tình trạng, giảm giá sau giao, hạn thanh toán / gia hạn, giao nhiều địa chỉ, kiểm kê
+  có mốc, hàng đợi hóa đơn MISA, báo cáo quản trị, xác nhận công nợ, khóa kỳ.
+
 ## 000. Triển khai 0.11.0 lên frontend — 14/10/2026 (ĐÃ XONG)
 
 - Phát hành: tag `v0.11.0` = `96fad42`, run 38502150872 xanh (UAT candidate, Cổng 2, 2b, 3 trên nền ghim
