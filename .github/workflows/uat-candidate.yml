@@ -43,6 +43,12 @@ jobs:
             test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "$EXPECTED_SOURCE_HOOK_SHA"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt
+      - name: Ghi phiên bản và digest ảnh nền thành chú thích
+        run: |
+          docker pull -q frappe/erpnext:v16.50.0 >/dev/null 2>&1 || true
+          d=$(docker image inspect frappe/erpnext:v16.50.0 --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
+          v=$(docker run --rm --entrypoint bash aphvh-uat:verification -c 'cd /home/frappe/frappe-bench && bench version' | tr '\n' ' ')
+          echo "::notice title=Nền và phiên bản::$v | digest nền: $d"
       - name: Create isolated database and Redis
         run: |
           docker network create aphvh-uat-net

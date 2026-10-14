@@ -75,6 +75,11 @@ jobs:
           grep -q "== XONG" "$RUNNER_TEMP/log-1.txt"
           source "$RUNNER_TEMP/ham.sh"
           dv frontend | tee "$RUNNER_TEMP/dv-0-truoc.txt"
+          python3 - "$RUNNER_TEMP/dv-0-truoc.txt" <<'EOF'
+          import json,sys
+          d=json.loads([l for l in open(sys.argv[1]) if l.startswith("DAU_VAN ")][0][8:])
+          print(f"::notice title=Dấu vân trước nâng cấp (so với frontend thật)::schema {d['schema']['so_muc']} mục, sha {d['schema']['sha256'][:16]}")
+          EOF
           grep -q '"kh_aph": "0.9.1"' "$RUNNER_TEMP/dv-0-truoc.txt"
       - name: 2. nang-cap.sh lên bản ứng viên (cờ còn tắt)
         run: |
