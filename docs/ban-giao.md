@@ -1,6 +1,6 @@
 # Bàn giao dự án APH-VH
 
-## 000000. Bản 0.11.3 — 14/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+## 000000. Bản 0.11.3 — 14/10/2026 (CI XANH, CHỜ GẮN TAG)
 
 Đặc tả: `docs/dac-ta-0.11.3.md` (E1–E9, anh Tiến đồng ý 18:30). Cờ thứ 14 `kh_aph_sales_p1` gồm các phần:
 - **Trả hàng 2 chiều.** Phiếu trả hỏi hai ô: hàng trả về đâu (bán lại được / cách ly vào "Hàng cách ly <địa điểm>") và xử lý tiền thế nào (bù trừ / hoàn tiền / đổi hàng).
@@ -13,7 +13,11 @@
 - **Hồ sơ hóa đơn MISA** (`APH Hoa don ngoai`): hàng đợi "Hoa don cho xuat", khóa người xử lý chống trùng, Gốc / Điều chỉnh / Thay thế / Hủy; chênh lệch với doanh thu quản trị chỉ hiển thị, không chặn (Q148).
 
 Kiểm thử và triển khai:
-- Thử cục bộ (bench v16, dữ liệu giả): bộ b0113 đạt 12/12 ca; b0111 13/13 và b0112 12/12 khi bật cả cờ mới. Chưa có run CI xanh.
+- CI xanh trên `dc6aa1b`: UAT candidate `38567486172` (đủ các bộ, gồm b0113 13 PASS), Cổng 3 `38567486151` (nâng cấp từ 0.11.2), Cổng 2 `38567493935`.
+- Ba lần đỏ trước đó được giữ làm bằng chứng:
+  - Phiếu trả bắt buộc chọn hai ô làm hỏng bộ inventory → đổi sang điền mặc định.
+  - ERPNext 16.50 đòi ngày dạng chuỗi ở `get_payment_terms`.
+  - Hạn chung bị điều khoản của khách ghi đè → đặt sẵn lịch thanh toán một dòng.
 - Cổng 3 chuyển sang nâng cấp từ 0.11.2 theo digest `f2417393…`, dựng cây kho ở bước 1 giống production.
 - Script triển khai một lệnh: `deploy/release/trien_khai_frontend.sh <phiên bản> <cờ mới…>`.
 - Mục BA 15 (báo cáo quản trị, R039, khóa kỳ) làm ở 0.11.4.
