@@ -29,8 +29,10 @@ Ghi chú xác nhận chỉ để ghi nhận, bỏ khi đã về một sổ.
 | 9 | Khấu trừ GTGT hóa đơn từ 5 triệu | NĐ 181/2025 | Khoản thanh toán từ 5 triệu phải có chứng từ không dùng tiền mặt mới tính vào 1331 | Đã đọc |
 | 10 | Hộ kinh doanh Minh Khang | NĐ 68/2026, TT152/2025 (sổ S2c theo doanh thu và chi phí; S1a/S2 theo doanh thu) | Sổ và báo cáo theo mẫu TT152; hóa đơn điện tử máy tính tiền theo NĐ 70/2025 và NĐ 68/2026 | Chưa đối chiếu điều khoản (nguồn tìm được chỉ là bài tóm tắt) |
 | 11 | Xử phạt | NĐ 310/2025 | Không có tính năng tự động; các cờ "Cần xử lý" giúp kế toán rà trước khi kê khai | Chưa đối chiếu mức phạt từng hành vi |
+| 12 | Chi phí sản xuất APH (TT133) và chi phí "Nhà máy chung" (0.11.1, D1/D2) | TT133/2016 TK 154 nguyên tắc 1(đ), 1(e): chi phí SX tập hợp trên 154; CPSXC cố định không phân bổ không tính vào hàng tồn kho mà tính vào giá vốn hàng bán trong kỳ | Chi tiết 1541x/1542x theo xưởng, 15491 nhà máy chung; cuối tháng phân bổ 1541x/1542x vào thành phẩm (Landed Cost Voucher), 15491 kết chuyển 6323 (chi tiết 632) bằng bút toán nháp kế toán duyệt | Đã đọc nguyên tắc 154 (bản trích hoatieu.vn). **Chưa xác nhận**: để toàn bộ nhà máy chung không phân bổ (thay vì theo công suất bình thường) là lựa chọn của chủ dự án; chị Dung/kiểm toán xác nhận trước khi ghi sổ thật |
 
 ## Việc cần chị Dung chốt (mỗi dòng một câu, không chặn triển khai)
 1. Dòng 2, 6, 11: xem lại điều khoản và mức phạt, báo dòng nào cần đổi quy tắc app.
 2. Dòng 10: đối chiếu mẫu sổ HKD với bản TT152/2025 chính thức.
 3. Dòng 4: tài khoản chi tiết 3388x đang dùng thông lệ; ghi nhận, sẽ bỏ khi về một sổ.
+4. Dòng 12: xác nhận ghi toàn bộ chi phí nhà máy chung vào 6323 hằng tháng (không phân bổ theo công suất bình thường) trước khi dùng trên sổ thật.
