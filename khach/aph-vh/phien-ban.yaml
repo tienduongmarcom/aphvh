@@ -1,4 +1,6 @@
 # Phiên bản image đang chạy cho khách này (đổi file này bằng pull request = nâng cấp).
 khach: aph-vh
-image_tag: "0.9.1"
-moi_truong: uat   # uat | production
+image_tag: "0.10.0"
+image_digest: "sha256:ca7cebd73b4695b2370d564fa2830e048d3bfa6542a359fa91950c4cea915d31"
+nguon_sha: "32336076d5eb3ce3034041b2f6248bba3859888a"
+moi_truong: production   # site frontend trên erpnext-prod; triển khai 14/10/2026
