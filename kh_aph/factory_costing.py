@@ -6,14 +6,16 @@
 - Hệ số phẩm cấp (R078): quy tắc kg-v4 trong stock_entry_kg.py, trọng số = kg × hệ số đã lưu trên dòng.
 - Phân bổ chi phí sản xuất cuối tháng (R079, R088, D1, D2): số dư 1548x theo trung tâm chi phí → Landed Cost Voucher NHÁP cho
   từng xưởng; phần "Nhà máy chung" → bút toán NHÁP Nợ 6323 / Có 1548x. Kế toán xem rồi tự ghi sổ.
-- Vét bồn (R075, R076, R068): phiếu xuất NHÁP toàn bộ tồn sổ của kho bồn; hao hụt tự nhiên vào 15488 của xưởng (được phân bổ
-  vào giá thành), bất thường vào 6322.
-App không tạo kho, không tạo trung tâm chi phí, không tự ghi sổ chứng từ nào.
+- Quyết toán dở dang về 0 (R075, R076, R068; 0.11.2 docs/dac-ta-0.11.2.md mục 3): phiếu xuất NHÁP toàn bộ tồn sổ của kho
+  Dở dang dây chuyền. Dây chuyền có định mức (đầu ra có BOM mặc định): app tự chia phần trong định mức (+ tỷ lệ cho phép) vào
+  15488 của xưởng (được phân bổ vào giá thành) và phần vượt vào 6322 (TT133 TK154 nguyên tắc 1(đ)). Không có định mức: kế
+  toán chọn tự nhiên/bất thường như 0.11.1. Cấp liệu lệch định mức: chỉ cảnh báo (R073).
+App không tạo trung tâm chi phí, không tự ghi sổ chứng từ nào.
 """
 
 from lab9x.vn_words import so_vn
 import frappe
-from frappe.utils import cint, flt, get_first_day, get_last_day, getdate, nowdate
+from frappe.utils import cint, flt, get_first_day, get_last_day, getdate, nowdate, nowtime
 
 from lab9x import gia_thanh as G
 
@@ -32,6 +34,9 @@ F_VET_BON = "kh_aph_vet_bon"
 TTCP_XUONG = "Xưởng sản xuất"
 REPACK_TYPE = "Đổi bao, đóng gói lại"
 TTCP_CHUNG = "Nhà máy chung"
+DO_DANG = "Dở dang dây chuyền"  # = lab9x.cay_kho.DO_DANG
+# Công đoạn 2 (đóng gói lại / đóng gói thành phẩm) không nhận phân bổ chi phí sản xuất: giá đã mang theo từ đầu vào CĐ1.
+KHONG_PHAN_BO_TYPES = (REPACK_TYPE, "Đóng gói thành phẩm")
 VAI_TRO_KE_TOAN = {"Accounts Manager", "Accounts User", "System Manager"}
 
 FIELDS = {
@@ -60,8 +65,7 @@ FIELDS = {
                           "insert_after": "supplier"}],
     "Stock Reconciliation": [{"fieldname": F_GIA_TAM, "label": "Giá tạm (sửa dần bằng phiếu kiểm kê sau)",
                               "fieldtype": "Check", "insert_after": "purpose"}],
-    "Warehouse": [{"fieldname": F_KHO_BON, "label": "Kho bồn dở dang (R076)", "fieldtype": "Check",
-                   "insert_after": "warehouse_name"}],
+    # 0.11.2: bỏ ô "Kho bồn dở dang" (F_KHO_BON); kho dở dang nhận biết bằng Loại kho = Dở dang dây chuyền (kho_chuan).
     "Cost Center": [{"fieldname": F_LOAI_TTCP, "label": "Loại trong giá thành (0.11.1)", "fieldtype": "Select",
                      "options": f"\n{TTCP_XUONG}\n{TTCP_CHUNG}", "insert_after": "cost_center_name",
                      "description": "Xưởng sản xuất: chi phí 1548x được phân bổ vào giá thành. Nhà máy chung: kết chuyển 6323."}],
@@ -238,10 +242,11 @@ def phan_bo_thang(company, thang):
                 se.kh_aph_xuong AS xuong
             FROM `tabStock Entry` se JOIN `tabStock Entry Detail` d ON d.parent=se.name
             WHERE se.docstatus=1 AND se.company=%s AND se.purpose IN ('Manufacture','Repack') AND se.kh_aph_costing_rule=%s
-              AND IFNULL(se.kh_aph_xuong,'')!=''
+              AND IFNULL(se.kh_aph_xuong,'')!='' AND se.stock_entry_type NOT IN %s
               AND se.posting_date BETWEEN %s AND %s AND IFNULL(d.t_warehouse,'')!='' AND IFNULL(d.s_warehouse,'')=''
               AND (d.is_finished_item=1 OR IFNULL(d.secondary_item_type,'')!='') AND IFNULL(d.kh_aph_gia_co_dinh,0)=0
-            ORDER BY se.posting_date, se.name, d.idx""", (company, G.QUY_TAC_HE_SO, dau, cuoi), as_dict=True):
+            ORDER BY se.posting_date, se.name, d.idx""", (company, G.QUY_TAC_HE_SO, KHONG_PHAN_BO_TYPES, dau, cuoi),
+            as_dict=True):
         dong.setdefault(r.xuong, []).append((r.phieu, r.dong, flt(r.kg), flt(r.he_so)))
     kh = G.ke_hoach_phan_bo(so_du, xuong, chung, dong)
     kq = {"ky": ky, "lcv": {}, "but_toan_chung": None, "bo_qua": kh["bo_qua"]}
@@ -303,6 +308,11 @@ def _tao_je_chung(company, ngay, ky, cc, dong):
     return doc.name
 
 
+def la_do_dang(wh):
+    """Kho dở dang: Loại kho = Dở dang dây chuyền (0.11.2); vẫn nhận ô Kho bồn của 0.11.1 nếu site còn ô đó."""
+    return wh.get("kh_aph_loai_kho") == DO_DANG or bool(cint(wh.get(F_KHO_BON)))
+
+
 @frappe.whitelist(methods=["POST"])
 def vet_bon(kho, xuong, loai_hao_hut, ly_do, ngay=None):
     """Quyết toán vét bồn về 0: phiếu xuất NHÁP toàn bộ tồn sổ. Trả tên phiếu và các dòng bất thường cần xem."""
@@ -310,8 +320,8 @@ def vet_bon(kho, xuong, loai_hao_hut, ly_do, ngay=None):
     from erpnext.stock.utils import get_stock_balance
     wh = frappe.get_doc("Warehouse", kho)
     wh.check_permission("read")
-    if not cint(wh.get(F_KHO_BON)):
-        frappe.throw(f"{kho} chưa được đánh dấu Kho bồn dở dang")
+    if not la_do_dang(wh):
+        frappe.throw(f"{kho} không phải kho loại {DO_DANG}")
     if loai_hao_hut not in ("Hao hụt tự nhiên", "Hao hụt bất thường") or not (ly_do or "").strip():
         frappe.throw("Chọn loại hao hụt (tự nhiên/bất thường) và ghi lý do")
     cc = frappe.db.get_value("Cost Center", xuong, ["company", F_LOAI_TTCP], as_dict=True)
@@ -346,3 +356,171 @@ def vet_bon(kho, xuong, loai_hao_hut, ly_do, ngay=None):
     })
     doc.insert(ignore_permissions=True)  # quyền đã kiểm ở _can_ke_toan; phiếu NHÁP, người có quyền kho ghi sổ
     return {"phieu": doc.name, "bat_thuong": bat_thuong}
+
+
+# ---------------------------------------------------------------- định mức (0.11.2)
+
+F_HAO_HUT_BOM = "kh_aph_hao_hut_cho_phep"
+
+
+def dinh_muc(cac_ma):
+    """{mã: (số lượng của BOM, {nguyên liệu: lượng theo ĐVT tồn kho}, % hao hụt cho phép)} từ BOM mặc định đang dùng."""
+    out = {}
+    co_ty_le = frappe.get_meta("BOM").has_field(F_HAO_HUT_BOM)
+    for ma in set(cac_ma):
+        bom = frappe.db.get_value("BOM", {"item": ma, "is_default": 1, "is_active": 1, "docstatus": 1},
+                                  ["name", "quantity", *([F_HAO_HUT_BOM] if co_ty_le else [])], as_dict=True)
+        if not bom:
+            continue
+        dong = {}
+        for r in frappe.get_all("BOM Item", {"parent": bom.name, "parenttype": "BOM"}, ["item_code", "stock_qty"]):
+            dong[r.item_code] = dong.get(r.item_code, 0.0) + flt(r.stock_qty)
+        out[ma] = (flt(bom.quantity), dong, flt(bom.get(F_HAO_HUT_BOM)) if co_ty_le else 0.0)
+    return out
+
+
+def canh_bao_dinh_muc(doc):
+    """R073: thành phẩm chính có BOM mặc định mà đầu vào lệch định mức (ngoài tỷ lệ cho phép) → cảnh báo, không chặn."""
+    if not enabled():
+        return
+    from kh_aph.stock_entry_kg import input_rows
+    san_luong = {}
+    for d in doc.get("items") or []:
+        if d.is_finished_item and d.t_warehouse and not d.s_warehouse:
+            san_luong[d.item_code] = san_luong.get(d.item_code, 0.0) + flt(d.transfer_qty)
+    dm = dinh_muc(san_luong)
+    if not dm:
+        return
+    san_luong = {k: v for k, v in san_luong.items() if k in dm}
+    can, _thieu = G.nhu_cau_dinh_muc(san_luong, dm)
+    muc, _ = G.nhu_cau_dinh_muc(san_luong, dm, cong_ty_le=True)
+    thuc_te = {}
+    for d in input_rows(doc):
+        thuc_te[d.item_code] = thuc_te.get(d.item_code, 0.0) + flt(d.transfer_qty)
+    lech = []
+    for nl in sorted(set(thuc_te) | set(can)):
+        t, c, m = thuc_te.get(nl, 0.0), can.get(nl, 0.0), muc.get(nl, 0.0)
+        if c <= 0:
+            lech.append(f"{nl}: dùng {so_vn(t)}, không có trong định mức")
+        elif t > m + 1e-6 or t < c - 1e-6:
+            lech.append(f"{nl}: dùng {so_vn(t)}, định mức {so_vn(round(c, 3))} ({so_vn(round((t - c) / c * 100, 2))}%)")
+    if lech:
+        frappe.msgprint("Lệch định mức (R073, chỉ cảnh báo):<br>" + "<br>".join(lech), title="Lệch định mức",
+                        indicator="orange")
+
+
+def _ky_quyet_toan(kho, moc):
+    """Mốc quyết toán trước (phiếu quyết toán đã ghi sổ gần nhất của kho) → mốc này."""
+    truoc = frappe.db.sql("""SELECT MAX(TIMESTAMP(posting_date, posting_time)) FROM `tabStock Entry`
+        WHERE docstatus=1 AND kh_aph_vet_bon=%s AND TIMESTAMP(posting_date, posting_time) < %s""", (kho, moc))[0][0]
+    return truoc
+
+
+def so_lieu_ky(kho, moc):
+    """Sản lượng thành phẩm chính và lượng nguyên liệu đã ghi tiêu hao từ kho dở dang trong kỳ quyết toán."""
+    truoc = _ky_quyet_toan(kho, moc)
+    dk_truoc = "AND TIMESTAMP(se.posting_date, se.posting_time) > %(truoc)s" if truoc else ""
+    phieu = frappe.db.sql_list(f"""SELECT DISTINCT se.name FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` d ON d.parent=se.name
+        WHERE se.docstatus=1 AND se.purpose IN ('Manufacture','Repack') AND se.kh_aph_costing_rule=%(rule)s
+          AND d.s_warehouse=%(kho)s AND TIMESTAMP(se.posting_date, se.posting_time) <= %(moc)s {dk_truoc}""",
+                               {"rule": G.QUY_TAC_HE_SO, "kho": kho, "moc": moc, "truoc": truoc})
+    san_luong, da_dung = {}, {}
+    if phieu:
+        for r in frappe.get_all("Stock Entry Detail", {"parent": ["in", phieu]},
+                                ["item_code", "transfer_qty", "s_warehouse", "t_warehouse", "is_finished_item"]):
+            if r.s_warehouse == kho and not r.t_warehouse:
+                da_dung[r.item_code] = da_dung.get(r.item_code, 0.0) + flt(r.transfer_qty)
+            elif cint(r.is_finished_item) and r.t_warehouse and not r.s_warehouse:
+                san_luong[r.item_code] = san_luong.get(r.item_code, 0.0) + flt(r.transfer_qty)
+    return {"tu": truoc, "den": moc, "phieu": phieu, "san_luong": san_luong, "da_dung": da_dung}
+
+
+def _ton_kho(kho, ngay, gio):
+    from erpnext.stock.utils import get_stock_balance
+    ton = []
+    for item in frappe.get_all("Bin", {"warehouse": kho}, pluck="item_code"):
+        sl, gia = get_stock_balance(item, kho, ngay, gio, with_valuation_rate=True)[:2]
+        ton.append((item, sl, flt(sl) * flt(gia)))
+    return ton
+
+
+def _ma_quan_ly_bao(cac_ma):
+    if not frappe.get_meta("Item").has_field("kh_aph_kg_per_bag"):
+        return set()
+    return {i for i in cac_ma if flt(frappe.get_cached_value("Item", i, "kh_aph_kg_per_bag"))}
+
+
+@frappe.whitelist(methods=["POST"])
+def quyet_toan_do_dang(kho, xuong, ly_do, ngay=None, gio=None, loai_hao_hut=None):
+    """Quyết toán kho Dở dang dây chuyền về 0 khi dừng chuyền.
+
+    Có định mức (thành phẩm chính trong kỳ có BOM mặc định): tự chia phần còn trên sổ thành hao hụt tự nhiên (trong định
+    mức × (1 + tỷ lệ cho phép), 15488 theo xưởng) và bất thường (vượt, 6322) — hai phiếu xuất NHÁP. Không có định mức:
+    dùng lựa chọn `loai_hao_hut` của kế toán (như vet_bon 0.11.1).
+    """
+    _can_ke_toan()
+    wh = frappe.get_doc("Warehouse", kho)
+    wh.check_permission("read")
+    if not la_do_dang(wh):
+        frappe.throw(f"{kho} không phải kho loại {DO_DANG}")
+    if not (ly_do or "").strip():
+        frappe.throw("Ghi lý do quyết toán (dừng chuyền ngày…, ca…)")
+    cc = frappe.db.get_value("Cost Center", xuong, ["company", F_LOAI_TTCP], as_dict=True)
+    if not cc or cc.company != wh.company or cc.get(F_LOAI_TTCP) != TTCP_XUONG:
+        frappe.throw("Chọn trung tâm chi phí loại Xưởng sản xuất của cùng công ty")
+    ngay, gio = ngay or nowdate(), gio or nowtime()
+    da = frappe.get_all("Stock Entry", {F_VET_BON: kho, "docstatus": 0}, pluck="name")
+    if da:
+        return {"phieu": da, "da_co": True}
+    from frappe.utils import get_datetime
+    moc = get_datetime(f"{ngay} {gio}")
+    ky = so_lieu_ky(kho, moc)
+    dm = dinh_muc(ky["san_luong"])
+    if not dm:
+        if not loai_hao_hut:
+            return {"che_do": "ke_toan_chon", "can_chon": True,
+                    "thong_bao": "Dây chuyền này chưa có định mức trong kỳ: chọn hao hụt tự nhiên hay bất thường."}
+        kq = vet_bon(kho, xuong, loai_hao_hut, ly_do, ngay)
+        kq["che_do"] = "ke_toan_chon"
+        return kq
+    thieu_dm = sorted(set(ky["san_luong"]) - set(dm))
+    if thieu_dm:
+        frappe.throw("Thành phẩm trong kỳ chưa có định mức (BOM mặc định): " + ", ".join(thieu_dm)
+                     + ". Nhập định mức trước khi quyết toán.", title="Thiếu định mức")
+    can, _ = G.nhu_cau_dinh_muc(ky["san_luong"], dm)
+    muc, _ = G.nhu_cau_dinh_muc(ky["san_luong"], dm, cong_ty_le=True)
+    xuat, bat_thuong = G.ke_hoach_vet_bon(_ton_kho(kho, ngay, gio))
+    bao = _ma_quan_ly_bao(i for i, _sl in xuat)
+    bat_thuong += [(i, sl, "mã quản lý bao: dùng mã hàng rời cho kho dở dang") for i, sl in xuat if i in bao]
+    con_lai = {i: sl for i, sl in xuat if i not in bao}
+    chia = G.chia_hao_hut_dinh_muc(con_lai, ky["da_dung"], can, muc=muc)
+    chi_tiet = [{"item_code": nl, "con_lai": con_lai[nl], "da_dung": round(ky["da_dung"].get(nl, 0.0), 6),
+                 "dinh_muc": round(can.get(nl, 0.0), 6), "muc_cho_phep": round(muc.get(nl, 0.0), 6), **v}
+                for nl, v in sorted(chia.items())]
+    dien_giai = "; ".join(
+        f"{c['item_code']}: còn {so_vn(c['con_lai'])}, đã ghi {so_vn(c['da_dung'])}, định mức {so_vn(round(c['dinh_muc'], 3))}"
+        f" → tự nhiên {so_vn(c['tu_nhien'])}, vượt {so_vn(c['bat_thuong'])}" + (f" ({c['ghi_chu']})" if c["ghi_chu"] else "")
+        for c in chi_tiet)
+    tu = ky["tu"].strftime("%d/%m/%Y %H:%M") if ky["tu"] else "đầu"
+    remark = f"Quyết toán {kho} kỳ {tu} → {moc:%d/%m/%Y %H:%M} theo định mức. {dien_giai}. Lý do: {ly_do.strip()}"
+    phieu = {}
+    for loai, khoa, so in (("Hao hụt tự nhiên", "tu_nhien", G.TK_HAO_HUT_TU_NHIEN),
+                           ("Hao hụt bất thường", "bat_thuong", G.TK_TON_THAT)):
+        dong = [(nl, v[khoa]) for nl, v in sorted(chia.items()) if flt(v[khoa]) > 0]
+        if not dong:
+            continue
+        tk = frappe.db.get_value("Account", {"company": wh.company, "account_number": so, "is_group": 0}, "name")
+        if not tk:
+            frappe.throw(f"Thiếu tài khoản {so}")
+        doc = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Issue", "purpose": "Material Issue",
+            "company": wh.company, "posting_date": ngay, "posting_time": gio, "set_posting_time": 1, F_VET_BON: kho,
+            "kh_aph_loss_type": loai, "kh_aph_loss_reason": ly_do.strip(), "remarks": remark,
+            "items": [{"item_code": nl, "qty": q, "s_warehouse": kho, "expense_account": tk, "cost_center": xuong}
+                      for nl, q in dong]})
+        doc.insert(ignore_permissions=True)  # quyền đã kiểm ở _can_ke_toan; phiếu NHÁP, kế toán xem rồi ghi sổ
+        phieu[khoa] = doc.name
+    return {"che_do": "dinh_muc", "phieu": list(phieu.values()), "tu_nhien": phieu.get("tu_nhien"),
+            "bat_thuong_phieu": phieu.get("bat_thuong"), "chi_tiet": chi_tiet, "bat_thuong": bat_thuong,
+            "ky": {"tu": str(ky["tu"] or ""), "den": str(moc), "so_phieu_san_xuat": len(ky["phieu"])}}

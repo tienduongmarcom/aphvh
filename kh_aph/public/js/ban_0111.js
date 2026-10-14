@@ -27,20 +27,4 @@ frappe.ui.form.on("APH Shared Sales Order", {
 					.then(() => frm.reload_doc()), __("Đóng phần chưa giao (Q182)")));
 	},
 });
-
-frappe.ui.form.on("Warehouse", {
-	refresh(frm) {
-		if (!kh_aph.b0111.on("factory_costing") || !frm.doc.kh_aph_kho_bon || frm.is_new()) return;
-		frm.add_custom_button(__("Quyết toán vét bồn về 0"), () =>
-			frappe.prompt([
-				{fieldname: "xuong", label: __("Xưởng (trung tâm chi phí)"), fieldtype: "Link", options: "Cost Center", reqd: 1,
-					get_query: () => ({filters: {company: frm.doc.company, kh_aph_loai_ttcp: "Xưởng sản xuất", is_group: 0}})},
-				{fieldname: "loai_hao_hut", label: __("Phần còn trên sổ là"), fieldtype: "Select", reqd: 1,
-					options: "Hao hụt tự nhiên\nHao hụt bất thường"},
-				{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1},
-				{fieldname: "ngay", label: __("Ngày"), fieldtype: "Date", default: frappe.datetime.get_today()},
-			], (v) => frappe.call({method: "kh_aph.factory_costing.vet_bon", args: {kho: frm.doc.name, ...v}, freeze: true})
-				.then((r) => r.message.phieu ? frappe.set_route("Form", "Stock Entry", r.message.phieu)
-					: frappe.msgprint(__("Bồn không còn tồn trên sổ."))), __("Vét bồn (R076)")));
-	},
-});
+// Nút quyết toán dở dang trên Warehouse chuyển sang public/js/ban_0112.js (0.11.2: kho loại Dở dang dây chuyền).

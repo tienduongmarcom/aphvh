@@ -33,3 +33,25 @@ def kiem_ton(sl, gia_tri):
     if sl == 0 and abs(gia_tri) >= 1:
         return [("c", f"Số lượng 0 nhưng còn giá trị {so_vn(gia_tri, 0)}")]
     return []
+
+
+def kiem_bao_bi_nhieu_quy_cach(dong):
+    """0.11.2 (docs/dac-ta-0.11.2.md mục 5): một mã bao bì không mang hai quy cách.
+
+    dong: [(BOM, mã bao bì, mô tả trên dòng BOM)]. Trả [(mã, [mô tả...], [BOM...])] cho mã xuất hiện với ≥ 2 mô tả khác nhau
+    (so sánh bỏ khoảng trắng thừa, không phân biệt hoa thường).
+    """
+    gom = {}
+    for bom, ma, mo_ta in dong:
+        chuan = " ".join(str(mo_ta or "").split()).casefold()
+        if not chuan:
+            continue
+        g = gom.setdefault(ma, {})
+        g.setdefault(chuan, (" ".join(str(mo_ta).split()), set()))[1].add(bom)
+    out = []
+    for ma in sorted(gom):
+        if len(gom[ma]) > 1:
+            mo_ta = sorted(v[0] for v in gom[ma].values())
+            boms = sorted(set().union(*(v[1] for v in gom[ma].values())))
+            out.append((ma, mo_ta, boms))
+    return out

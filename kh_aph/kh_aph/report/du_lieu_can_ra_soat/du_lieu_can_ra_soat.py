@@ -24,7 +24,8 @@ def execute(filters=None):
         {"fieldname": "gia_tri", "label": "Giá trị liên quan", "fieldtype": "Float", "width": 140},
     ]
     rows = []
-    for nhom, ham in (("Tài sản", _tai_san), ("Giá tạm", _gia_tam), ("Tồn kho", _ton_kho), ("Kho bồn", _kho_bon)):
+    for nhom, ham in (("Tài sản", _tai_san), ("Giá tạm", _gia_tam), ("Tồn kho", _ton_kho), ("Kho dở dang", _kho_bon),
+                      ("Bao bì", _bao_bi)):
         if not filters.nhom or filters.nhom == nhom:
             rows += [{"nhom": nhom, **r} for r in ham(filters.company)]
     return cols, rows
@@ -116,11 +117,16 @@ def _ton_kho(company):
 
 
 def _kho_bon(company):
-    if not frappe.get_meta("Warehouse").has_field("kh_aph_kho_bon"):
-        return []
+    """Kho dở dang (0.11.2: Loại kho = Dở dang dây chuyền; 0.11.1: ô Kho bồn) còn tồn mà lâu chưa quyết toán về 0."""
+    meta = frappe.get_meta("Warehouse")
+    kho = set()
+    if meta.has_field("kh_aph_loai_kho"):
+        kho |= set(frappe.get_all("Warehouse", {"kh_aph_loai_kho": "Dở dang dây chuyền", **_co(company)}, pluck="name"))
+    if meta.has_field("kh_aph_kho_bon"):
+        kho |= set(frappe.get_all("Warehouse", {"kh_aph_kho_bon": 1, **_co(company)}, pluck="name"))
     out = []
     moc = add_days(getdate(nowdate()), -R.NGAY_BON_TOI_DA)
-    for w in frappe.get_all("Warehouse", {"kh_aph_kho_bon": 1, **_co(company)}, pluck="name"):
+    for w in sorted(kho):
         ton = flt(frappe.db.sql("SELECT SUM(actual_qty) FROM `tabBin` WHERE warehouse=%s", w)[0][0])
         if ton <= 0:
             continue
@@ -129,5 +135,21 @@ def _kho_bon(company):
             "kh_aph_vet_bon") else None
         if not lan_ve_0 or getdate(lan_ve_0) < moc:
             out.append({"ma": "e", "loai": "Warehouse", "ten": w, "gia_tri": ton,
-                        "mo_ta": f"Bồn còn {so_vn(ton, 0)} trên sổ, chưa vét về 0 trong {R.NGAY_BON_TOI_DA} ngày"})
+                        "mo_ta": f"Dở dang còn {so_vn(ton, 0)} trên sổ, chưa quyết toán về 0 trong {R.NGAY_BON_TOI_DA} ngày"})
     return out
+
+
+def _bao_bi(company):
+    """0.11.2: cùng mã bao bì ở hai BOM với hai mô tả khác nhau (một mã đang mang nhiều quy cách)."""
+    if not frappe.get_meta("Item Group").has_field("kh_aph_bao_bi"):
+        return []
+    from kh_aph.factory_costing import nhom_co_co
+    dong = frappe.db.sql("""SELECT b.name, bi.item_code, bi.description, i.item_group FROM `tabBOM Item` bi
+        JOIN `tabBOM` b ON b.name=bi.parent AND bi.parenttype='BOM' JOIN `tabItem` i ON i.name=bi.item_code
+        WHERE b.docstatus<2 AND b.is_active=1 {co}""".format(co="AND b.company=%(c)s" if company else ""),
+                         {"c": company}, as_dict=True)
+    dong = [(r.name, r.item_code, frappe.utils.strip_html(r.description or "")) for r in dong
+            if nhom_co_co(r.item_group, "kh_aph_bao_bi")]
+    return [{"ma": "f", "loai": "Item", "ten": ma, "gia_tri": len(boms),
+             "mo_ta": "Một mã bao bì mang nhiều quy cách: " + " | ".join(mo_ta) + " (BOM: " + ", ".join(boms[:5]) + ")"}
+            for ma, mo_ta, boms in R.kiem_bao_bi_nhieu_quy_cach(dong)]

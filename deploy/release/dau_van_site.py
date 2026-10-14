@@ -18,7 +18,8 @@ SITE = sys.argv[1] if len(sys.argv) > 1 else "frontend"
 FLAGS = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery", "kh_aph_shared_sales_order",
          "kh_aph_global_credit_warning", "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp",
          "kh_aph_funds_workflow", "kh_aph_source_change",
-         "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review")
+         "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
+         "kh_aph_kho_chuan")
 DEM = ("User", "Company", "Account", "Warehouse", "Item Group", "Customer", "Supplier", "Item", "Item Price",
        "Sales Order", "Delivery Note", "Sales Invoice", "Purchase Order", "Purchase Receipt", "Purchase Invoice",
        "Payment Entry", "Journal Entry", "Stock Entry", "Stock Reconciliation", "Landed Cost Voucher",
@@ -29,6 +30,9 @@ DEM = ("User", "Company", "Account", "Warehouse", "Item Group", "Customer", "Sup
 SETTINGS = ("Stock Settings", "Accounts Settings", "Selling Settings", "Buying Settings", "Manufacturing Settings",
             "System Settings", "Print Settings")
 BO_TRUONG = {"modified", "creation", "modified_by", "owner", "name", "idx", "docstatus"}
+# 0.11.2: Property Setter do người dùng chỉnh cột danh sách trên giao diện (List View Settings / Customize Form) không
+# phải schema của app; tách sang phần "giao_dien" để so production với CI chỉ báo lệch thật (docs/dac-ta-0.11.2.md mục 7).
+PS_GIAO_DIEN = ("in_list_view", "columns", "in_preview")
 QUYEN = ("read", "write", "create", "submit", "cancel", "amend", "delete", "report", "export", "print",
          "email", "share", "select")
 
@@ -45,6 +49,8 @@ def _schema():
                                     ("dt", "fieldname", "fieldtype", "options", "permlevel", "insert_after",
                                      "read_only", "hidden", "reqd", "allow_on_submit")))
     for r in frappe.get_all("Property Setter", fields=["doc_type", "field_name", "property", "value"]):
+        if r.property in PS_GIAO_DIEN:
+            continue
         muc.append(f"PS|{r.doc_type}|{r.field_name or ''}|{r.property}|{r.value}")
     for r in frappe.get_all("Custom DocPerm", fields=["parent", "role", "permlevel", "if_owner", *QUYEN]):
         muc.append("DP|" + "|".join(str(r[k]) for k in ("parent", "role", "permlevel", "if_owner", *QUYEN)))
@@ -57,6 +63,12 @@ def _schema():
         muc.append(f"RO|{r}")
     muc = sorted(set(muc))
     return {"so_muc": len(muc), "sha256": hashlib.sha256("\n".join(muc).encode()).hexdigest(), "muc": muc}
+
+
+def _giao_dien():
+    return {f"{r.doc_type}|{r.field_name or ''}|{r.property}": r.value
+            for r in frappe.get_all("Property Setter", filters={"property": ["in", PS_GIAO_DIEN]},
+                                    fields=["doc_type", "field_name", "property", "value"])}
 
 
 def _cai_dat():
@@ -103,6 +115,7 @@ try:
         "tong": _tong(),
         "schema": _schema(),
         "cai_dat": _cai_dat(),
+        "giao_dien": _giao_dien(),
     }
     print("DAU_VAN " + json.dumps(kq, ensure_ascii=False, default=str))
 finally:

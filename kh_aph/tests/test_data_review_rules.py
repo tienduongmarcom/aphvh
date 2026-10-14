@@ -32,5 +32,17 @@ class TestTon(unittest.TestCase):
         self.assertEqual(R.kiem_ton(-1, 0)[0][0], "c")
 
 
+
+class TestBaoBi(unittest.TestCase):
+    def test_mot_ma_nhieu_quy_cach(self):
+        # File định mức 2026: VT.TUI43 dùng cho cả gói 250 g và gói 500 g
+        dong = [("BOM-1", "VT.TUI43", "Túi 43 gói 250g"), ("BOM-2", "VT.TUI43", "Túi 43  gói 500g"),
+                ("BOM-3", "VT.TUI43", "túi 43 gói 250G"), ("BOM-1", "VT.THUNG", "Thùng 18 kg"),
+                ("BOM-2", "VT.THUNG", " Thùng 18 kg ")]
+        kq = R.kiem_bao_bi_nhieu_quy_cach(dong)
+        self.assertEqual([k[0] for k in kq], ["VT.TUI43"])
+        self.assertEqual(kq[0][2], ["BOM-1", "BOM-2", "BOM-3"])
+        self.assertEqual(len(kq[0][1]), 2)
+
 if __name__ == "__main__":
     unittest.main()

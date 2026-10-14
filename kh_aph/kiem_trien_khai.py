@@ -87,6 +87,12 @@ def chay(duong_dan: str = None, ra: str = None, cfg: dict = None) -> list:
     ok("Không tự thêm dòng thuế theo mẫu thuế mặt hàng (tránh tính thuế hai lần)", not frappe.db.get_single_value("Accounts Settings", "add_taxes_from_item_tax_template"))
     for c in cfg["cong_ty"]:
         kiem_cong_ty(c, ok)
+    from kh_aph import kho_chuan
+    if kho_chuan.enabled() and cfg.get("cay_kho") and frappe.get_meta("Warehouse").has_field(kho_chuan.F_LOAI):
+        # 0.11.2: sau khi chạy kh_aph.kho_chuan.dung, cây kho phải đủ (kho ngoài cây chỉ là cảnh báo, không tính lỗi).
+        ke, tao, canh_bao, _co = kho_chuan.ke_hoach_site(cfg)
+        ok(f"Cây kho chuẩn đủ ({len(ke)} kho)", not tao,
+           [f"{k['ten']} - {k['abbr']}" for k in tao][:10] or ("cảnh báo: " + "; ".join(canh_bao[:5]) if canh_bao else ""))
     if ra:
         json.dump(R, open(ra, "w"), ensure_ascii=False, indent=1)
     print("TỔNG", len(R), "dòng, KHÔNG ĐẠT:", sum(1 for r in R if r[1] != "ĐẠT"))

@@ -1,4 +1,88 @@
-# Triển khai bản 0.11.1 lên `frontend` (máy erpnext-prod)
+# Triển khai bản 0.11.2 lên `frontend` (máy erpnext-prod)
+
+Production đang chạy 0.11.1 (từ 14/10/2026 14:43): 12 cờ bật, đã chạy bộ cài 0.11.1, site chưa có dữ liệu nghiệp vụ.
+
+Bản 0.11.2 (đặc tả `docs/dac-ta-0.11.2.md`):
+- Thêm cờ thứ 13 `kh_aph_kho_chuan`: cây kho chuẩn do app dựng, ô Loại kho, chặn bán từ kho không bán, đóng gói 2 công
+  đoạn ("Đóng gói thành phẩm"), bao bì không cộng kg, kiểm kê có mốc.
+- Quyết toán dở dang về 0 theo định mức (cờ `kh_aph_factory_costing` sẵn có), báo cáo "Tiêu hao so với định mức".
+- Gỡ ô "Kho bồn dở dang" của 0.11.1 (production chưa dùng).
+
+**Điều kiện:**
+- Tag `v0.11.2` đã phát hành với các cổng xanh: UAT candidate (bộ 0.11.1 đủ 14 PASS, bộ 0.11.2 đủ 13 PASS), Cổng 2,
+  Cổng 2b, **Cổng 3 (nâng cấp từ 0.11.1)**.
+- Kiểm kê bước 1 phải TRẮNG. Không TRẮNG thì **dừng**.
+
+Tất cả lệnh dưới đây chạy **trên SSH vào máy chủ erpnext-prod**, user `tienduongmarcom`:
+
+```bash
+# 0. Lấy script đúng bản phát hành (token chỉ đọc nhập bằng read -s, không lưu)
+cd ~/trien-khai
+read -s -p "Token chỉ đọc: " GH_TOKEN; echo
+git fetch "https://x-access-token:${GH_TOKEN}@github.com/tienduongmarcom/aphvh.git" tag v0.11.2
+unset GH_TOKEN
+git checkout --detach v0.11.2 && git log --oneline -1
+
+# 1. Dấu vân trước (chỉ đọc): phải TRẮNG, kh_aph 0.11.1, 12 cờ = 1, kh_aph_kho_chuan = 0
+#    Ghi digest image 0.11.1 đang chạy (gửi lại để điền PROD_DIGEST của Cổng 3 cho bản sau)
+docker image inspect "$(docker inspect -f '{{.Image}}' erp-aph-vh-backend-1)" -f '{{json .RepoDigests}}'
+docker exec -i -w /home/frappe/frappe-bench/sites erp-aph-vh-backend-1 /home/frappe/frappe-bench/env/bin/python - frontend \
+  < deploy/release/dau_van_site.py > ~/dv-0112-truoc.txt
+python3 deploy/release/kiem_trang.py ~/dv-0112-truoc.txt
+
+# 2. Sao lưu lên Cloud Storage ngay trước
+sudo systemctl start erpnext-backup.service && sudo journalctl -u erpnext-backup.service -n 5 --no-pager
+
+# 3. Cập nhật script vận hành (quay-lui.sh 0.11.2 biết cờ thứ 13) và cấu hình khách (có mục cay_kho)
+cp deploy/khach-hang/nang-cap.sh deploy/khach-hang/quay-lui.sh ~/erp/aph-vh/
+cp khach/aph-vh/khach.json ~/erp/aph-vh/khach.json
+
+# 4. Nâng cấp cả 6 service (tự sao lưu trước, migrate, kiểm; lỗi thì tự quay lui về 0.11.1)
+cd ~/erp/aph-vh && ./nang-cap.sh 0.11.2
+#    Phải thấy "== XONG: 0.11.1 -> 0.11.2, kiểm đạt". Ghi lại thư mục sao-luu/<NGAY>.
+
+# 5. Bật cờ mới, chạy bộ cài (gõ đúng tên site), dựng cây kho (chạy 2 lần: lần 2 phải "tạo 0"), kiểm
+./erpctl exec -T backend bench --site frontend set-config -p kh_aph_kho_chuan 1
+./erpctl exec -T backend bench --site frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}'
+./erpctl exec -T backend bench --site frontend execute kh_aph.cai_dat_tinh_nang.kiem --kwargs '{"xac_nhan_site": "frontend"}'
+./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
+./erpctl exec -T backend bench --site frontend execute kh_aph.kho_chuan.dung --kwargs '{"duong_dan": "/tmp/khach.json", "xac_nhan_site": "frontend"}' | tail -8
+./erpctl exec -T backend bench --site frontend execute kh_aph.kho_chuan.dung --kwargs '{"duong_dan": "/tmp/khach.json", "xac_nhan_site": "frontend"}' | grep "^Cây kho"
+./erpctl exec -T backend bench --site frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tail -3
+./erpctl exec -T backend bench --site frontend clear-cache
+./erpctl restart backend queue-short queue-long scheduler websocket frontend
+
+# 6. Dấu vân sau + sao lưu Cloud Storage
+cd ~/trien-khai
+docker exec -i -w /home/frappe/frappe-bench/sites erp-aph-vh-backend-1 /home/frappe/frappe-bench/env/bin/python - frontend \
+  < deploy/release/dau_van_site.py > ~/dv-0112-sau.txt
+python3 deploy/release/so_dau_van.py ~/dv-0112-truoc.txt ~/dv-0112-sau.txt --phan tong
+sudo systemctl start erpnext-backup.service
+```
+
+**Đạt khi:**
+- Bước 4 in ra "kiểm đạt".
+- Bước 5: `"idempotent": true` hai lần; lần dựng cây đầu "Cây kho: tạo 55"; lần hai "Cây kho: tạo 0"; kiểm triển khai có
+  dòng "Cây kho chuẩn đủ (55 kho) ĐẠT" và "KHÔNG ĐẠT: 0". Cảnh báo "kho ngoài cây chuẩn" (nếu có) chỉ để kế toán xem.
+- Bước 6: phần `tong` khớp (chưa có giao dịch nên GL/SLE/Bin không đổi; số Warehouse tăng 55 là đúng thiết kế).
+
+**Quay lui trước khi nhập liệu:** `cd ~/erp/aph-vh && ./quay-lui.sh <thư mục sao-luu ở bước 4>`. Hệ thống về 0.11.1:
+12 cờ bật, `kh_aph_kho_chuan` tắt, cây kho mới mất theo bản sao lưu.
+
+## Cấu hình khách cần làm sau 0.11.2 (kế toán trưởng / anh Hùng / Dũng làm trên giao diện)
+
+1. Nhóm hàng bao bì (túi, thùng, nhãn): tích "Bao bì đóng gói". Mỗi quy cách bao bì một mã riêng (báo cáo rà soát nhóm
+   "Bao bì" chỉ ra mã đang mang nhiều quy cách).
+2. Thành phẩm đóng thùng / gói: nhập Trọng lượng/đơn vị (kg tịnh) và Đơn vị trọng lượng = Kg.
+3. Định mức (BOM): CĐ1 một BOM cho mỗi loại bánh (số lượng = sản lượng một mẻ), CĐ2 một BOM cho mỗi quy cách. Đặt mặc định
+   và đang dùng. "Tỷ lệ hao hụt cho phép (%)" để 0 nếu đúng định mức là mức bình thường.
+4. Stock Settings: "Ngưỡng chênh lệch kiểm kê cần lý do (%)".
+5. Xưởng: hai trung tâm chi phí loại "Xưởng sản xuất" (đã làm ở 0.11.1). Quyết toán: mở kho dở dang → Kho → Quyết toán
+   dở dang về 0.
+
+---
+
+# (Lịch sử) Triển khai bản 0.11.1 lên `frontend` — đã làm 14/10/2026 14:43, KHỚP
 
 Production đang chạy 0.11.0: 8 cờ bật, đã chạy bộ cài 0.11.0, site chưa có dữ liệu nghiệp vụ.
 
@@ -72,14 +156,15 @@ Bộ cài làm ba thay đổi, đều là đúng thiết kế:
 **Quay lui trước khi nhập liệu:** `cd ~/erp/aph-vh && ./quay-lui.sh <thư mục sao-luu ở bước 4>`. Hệ thống về 0.11.0:
 8 cờ cũ bật, 4 cờ mới tắt.
 
-## Cấu hình khách cần làm sau 0.11.1 (kế toán trưởng làm trên giao diện)
+### Cấu hình khách sau 0.11.1 (kế toán trưởng làm trên giao diện)
 
 1. Tạo trung tâm chi phí theo Sheet 4 của file tài sản, rồi đặt ô "Loại trong giá thành":
    - Hai xưởng chọn "Xưởng sản xuất".
    - Nhà máy chung chọn "Nhà máy chung" (mỗi công ty chỉ một trung tâm loại này).
 2. Nhóm tài sản dùng cho sản xuất: đặt tài khoản chi phí khấu hao là 15484. Trung tâm chi phí trên thẻ tài sản quyết định
    tài sản thuộc xưởng nào.
-3. Kho bồn (khách tự tạo kho): tích ô "Kho bồn dở dang". Hàng trong bồn dùng mã hàng rời, không quản lý theo bao.
+3. (Thay ở 0.11.2) Kho dở dang do app dựng: "Dở dang dây chuyền đậu / phồng tôm". Hàng dở dang dùng mã hàng rời, không
+   quản lý theo bao.
 4. Nhóm hàng và mặt hàng:
    - Tích "Cho nhập giá tạm" cho nhóm nguyên liệu, bán thành phẩm, bao bì, vật tư nhà máy.
    - Tích "Thành phẩm chính: giá Hà Nội chốt" cho nhóm thành phẩm chính.

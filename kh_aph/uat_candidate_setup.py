@@ -49,6 +49,9 @@ def schema():
     sales_adjust.schema()
     if not frappe.conf.get("kh_aph_data_review"):
         frappe.throw("Cần bật cờ kh_aph_data_review")
+    # 0.11.2: cây kho chuẩn / loại kho / đóng gói 2 công đoạn / kiểm kê có mốc (hàm tự đòi cờ kh_aph_kho_chuan).
+    from kh_aph import kho_chuan
+    kho_chuan.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
     create_custom_fields({'Delivery Note': [

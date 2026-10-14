@@ -25,6 +25,8 @@ from kh_aph.constants import IG_FIXED_RATE, KG_ENTRY_TYPE, KG_UOM, RULE_KG_V1, R
 from lab9x.costing_rules import split_by_weight, split_with_fixed
 
 REPACK_TYPE = "Đổi bao, đóng gói lại"  # 0.11.1 (Q103): đóng gói lại bảo toàn kg, không hao hụt
+DONG_GOI_TYPE = "Đóng gói thành phẩm"  # 0.11.2: công đoạn 2 (đóng thành phẩm / chia nhỏ hàng thương mại), bảo toàn kg
+BAO_TOAN_KG = (REPACK_TYPE, DONG_GOI_TYPE)
 RULE_KG_V4 = "kg-v4"  # 0.11.1: kg-v3 + hệ số phẩm cấp lưu trên dòng (lab9x.gia_thanh)
 V3_PLUS = ("kg-v3", RULE_KG_V4)
 
@@ -33,7 +35,7 @@ class StockEntryKgCosting:
     """Lớp mở rộng cho DocType Stock Entry (khai báo trong hooks.extend_doctype_class)."""
 
     def validate_repack_entry(self):
-        if ((self.purpose == "Repack" and self.stock_entry_type in (KG_ENTRY_TYPE, REPACK_TYPE))
+        if ((self.purpose == "Repack" and self.stock_entry_type in (KG_ENTRY_TYPE, *BAO_TOAN_KG))
                 or (self.purpose == "Manufacture" and self.stock_entry_type == "Sản xuất theo kg")):
             from kh_aph.bag_stock import enabled
             from kh_aph.factory_costing import quy_tac_moi
@@ -150,8 +152,18 @@ def uom_factor_to_kg(uom):
 
 
 def snapshot_kg(doc):
-    """Lưu hệ số kg/ĐVT tồn kho và số kg lên từng dòng (chỉ chạy lúc lưu/gửi phiếu)."""
+    """Lưu hệ số kg/ĐVT tồn kho và số kg lên từng dòng (chỉ chạy lúc lưu/gửi phiếu).
+
+    0.11.2 (cờ kh_aph_kho_chuan): dòng đầu vào thuộc nhóm "Bao bì đóng gói" chỉ cộng tiền, không cộng kg (kg = 0).
+    """
+    from kh_aph.kho_chuan import la_bao_bi
     for d in doc.get("items"):
+        if d.s_warehouse and not d.t_warehouse and la_bao_bi(d.item_code):
+            d.kh_aph_kg_per_unit = 0
+            d.kh_aph_kg = 0
+            if d.meta.has_field(SED_FIXED_RATE):
+                d.set(SED_FIXED_RATE, 0)
+            continue
         factor = kg_per_stock_uom(d.item_code, d.stock_uom)
         d.kh_aph_kg_per_unit = factor
         d.kh_aph_kg = flt(flt(d.transfer_qty) * factor, 6)
@@ -199,12 +211,18 @@ def validate_kg_entry(doc):
         from kh_aph import factory_costing as F
         F.snapshot_he_so(doc, finished_rows(doc))
         F.kiem_xuong(doc, finished_rows(doc))
-    elif doc.stock_entry_type == REPACK_TYPE:
-        frappe.throw(f"Loại phiếu {REPACK_TYPE} cần bật tính năng giá thành nhà máy")
-    if doc.get("kh_aph_costing_rule") == RULE_KG_V4 and doc.stock_entry_type == REPACK_TYPE:
+        F.canh_bao_dinh_muc(doc)  # 0.11.2 R073: chỉ cảnh báo
+    elif doc.stock_entry_type in BAO_TOAN_KG:
+        frappe.throw(f"Loại phiếu {doc.stock_entry_type} cần bật tính năng giá thành nhà máy")
+    if doc.stock_entry_type == DONG_GOI_TYPE:
+        from kh_aph.kho_chuan import enabled as kho_chuan_bat
+        if not kho_chuan_bat():
+            frappe.throw(f"Loại phiếu {DONG_GOI_TYPE} cần bật tính năng cây kho chuẩn (kh_aph_kho_chuan)")
+    if doc.get("kh_aph_costing_rule") == RULE_KG_V4 and doc.stock_entry_type in BAO_TOAN_KG:
         if any(flt(row.amount) < 0 for row in doc.get("additional_costs") or []):
             frappe.throw("Chi phí sản xuất cộng thêm không được âm")
-        # Q103: đóng gói lại không tạo hao hụt; lệch kg phải xác nhận kèm lý do.
+        # Q103: đóng gói lại / đóng gói thành phẩm không tạo hao hụt; lệch kg (hàng chính, không tính bao bì) phải xác
+        # nhận kèm lý do.
         F.kiem_lech_repack(doc, sum(flt(d.kh_aph_kg) for d in input_rows(doc)),
                            sum(flt(d.kh_aph_kg) for d in finished_rows(doc)))
     elif doc.get("kh_aph_costing_rule") in V3_PLUS:

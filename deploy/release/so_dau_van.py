@@ -1,6 +1,8 @@
 """So hai dấu vân của deploy/release/dau_van_site.py. In khác biệt; mã thoát 1 nếu lệch.
 
-    python3 so_dau_van.py truoc.txt sau.txt --phan schema,dem,tong,co,versions [--bo-qua REGEX ...]
+    python3 so_dau_van.py truoc.txt sau.txt --phan schema,dem,tong,co,versions,cai_dat,giao_dien [--bo-qua REGEX ...]
+
+giao_dien (0.11.2): Property Setter cột danh sách do người dùng chỉnh trên giao diện, tách khỏi schema.
 
 --bo-qua: bỏ các mục schema khớp biểu thức (ở cả hai bên) — chỉ dùng cho khác biệt đã biết và có lý do ghi ở nơi gọi.
 

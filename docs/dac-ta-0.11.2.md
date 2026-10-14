@@ -32,27 +32,34 @@ Tên kho có hậu tố viết tắt của pháp nhân, theo cách ERPNext đặ
 
 ```
 <Pháp nhân> (nhóm gốc)
-├── Nhà máy Phú Thọ (nhóm)                         [chỉ APH; VH/MK chỉ có kho Gửi]
+├── Nhà máy Phú Thọ (nhóm)                         [chỉ APH sở hữu]
 │   ├── Kho nguyên liệu                    loại: Nguyên liệu
 │   ├── Kho vật tư - bao bì - phụ tùng     loại: Nguyên liệu
 │   ├── Dở dang dây chuyền đậu             loại: Dở dang dây chuyền   (dây chuyền: Đậu)
 │   ├── Dở dang dây chuyền phồng tôm       loại: Dở dang dây chuyền   (dây chuyền: Phồng tôm)
 │   ├── Kho chờ đóng gói                   loại: Chờ đóng gói
 │   └── Kho thành phẩm nhà máy             loại: Thành phẩm
-│   (VH, MK: "Gửi tại nhà máy Phú Thọ"    loại: Gửi — hàng của VH/MK sấy hoặc chia nhỏ tại nhà máy, R082)
-├── Hà Nội (nhóm)
+│   (VH, MK: nhóm "Nhà máy Phú Thọ" chỉ có "Gửi tại Nhà máy Phú Thọ", loại Gửi — hàng của VH/MK sấy hoặc chia nhỏ
+│    tại nhà máy, R082)
+├── Hà Nội (nhóm)                                  [APH, VH, MK, TL]
 │   ├── Kho bán hàng Hà Nội                loại: Bán hàng
-│   └── <các kho vệ tinh khai trong khach.json>   loại: Bán hàng
-├── Đà Nẵng (nhóm) → Kho Đà Nẵng           loại: Bán hàng
-├── Hồ Chí Minh (nhóm) → Kho Hồ Chí Minh   loại: Bán hàng
-└── Hàng đang vận chuyển                   loại: Vận chuyển (warehouse_type Transit, đặt làm kho vận chuyển mặc định)
+│   └── Kho vệ tinh <tên> × 6              loại: Bán hàng  (Bác Hiền, Chị Thoa, Hải Thành, Lê Huyên, Bác Khuyên, Hằng Viết)
+├── Đà Nẵng (nhóm) → Kho bán hàng Đà Nẵng          [APH, VH]
+├── Hồ Chí Minh (nhóm) → Kho bán hàng Hồ Chí Minh  [APH, VH]
+└── Hàng đang vận chuyển                   loại: Vận chuyển (warehouse_type Transit, đặt làm kho vận chuyển mặc định
+                                           của công ty nếu ô đó đang trống)
 ```
 
-**Không tạo sẵn** các kho "Chờ xử lý" và "Cách ly". Thao tác trả hàng hoặc kiểm kê sẽ tạo đúng một kho cho mỗi địa điểm khi lần đầu cần dùng.
+Cấu hình thật (`khach/aph-vh/khach.json`, mục `cay_kho`) sinh **55 kho** (11 nhóm + 44 kho lá) cho 4 pháp nhân. Mỗi pháp nhân chỉ một nhà máy
+(tên kho nhà máy không kèm địa điểm; cấu hình hai nhà máy cho một pháp nhân bị báo lỗi).
+
+**Không tạo sẵn** các kho "Chờ xử lý" và "Cách ly". Thao tác kiểm kê (0.11.2) và trả hàng (0.11.3) tạo đúng một kho cho mỗi
+địa điểm khi lần đầu cần dùng, tên kèm địa điểm: "Hàng chờ xử lý Nhà máy Phú Thọ - APH", "Hàng chờ xử lý Hà Nội - VH"…
 
 ### 2.3 Quy tắc mới thay quy tắc số 3 (AGENTS.md)
 
-- Cây kho khai trong `khach.json`, mục mới `dia_diem`, gồm: địa điểm nào có ở pháp nhân nào, và danh sách kho vệ tinh.
+- Cây kho khai trong `khach.json`, mục mới `cay_kho.dia_diem`, gồm: địa điểm nào có ở pháp nhân nào (`cong_ty`), pháp nhân
+  nào gửi hàng ở nhà máy (`gui`), và danh sách kho vệ tinh (`kho_ve_tinh`). Kiểm cấu hình: `lab9x.cay_kho.kiem_cau_hinh`.
   - Các khóa cũ `nha_may`, `kho_them`, `ten_nha_may` vẫn báo lỗi.
   - Không ghi tên kho tùy ý: tên kho do app sinh theo cây chuẩn.
 - Bộ dựng chạy lại nhiều lần không hỏng, theo các ràng buộc sau:
@@ -141,10 +148,12 @@ Chuyển từ 0.11.1 sang đây vì gắn với cây kho:
 
 - **Kiểm kê có mốc thời gian (R054):** dùng Stock Reconciliation có ngày giờ. Giao dịch sau mốc không bị chặn.
 - **Chênh lệch lớn (R055):** ngưỡng % do nhân viên nhập. Vượt ngưỡng thì cảnh báo, bắt buộc lý do, lưu nhật ký.
-- **Thiếu chờ xử lý (R056):** chuyển ngay sang kho **Chờ xử lý** của địa điểm, nên lượng có thể bán giảm ngay. Hạch toán hai bước theo quyết định 05/10:
+- **Thiếu chờ xử lý (R056):** phiếu xuất khỏi kho đang kiểm theo mốc (Nợ 1381), nên lượng có thể bán giảm ngay — hàng
+  thiếu không còn trên thực tế nên không chuyển sang kho nào. Hạch toán hai bước theo quyết định 05/10:
   1. Theo biên bản kiểm kê: thừa ghi Nợ 152/153/155/156, Có 3381; thiếu ghi Nợ 1381, Có 152/153/155/156.
   2. Bước xử lý **chờ chị Dung chốt tài khoản**.
-- **Thừa chưa xác nhận (R056):** nhập vào kho Chờ xử lý, chưa bán được cho tới khi xác nhận.
+- **Thừa chưa xác nhận (R056):** nhập vào kho Chờ xử lý của địa điểm (Có 3381), theo giá bình quân của kho đang kiểm tại
+  mốc; chưa bán được cho tới khi xác nhận và chuyển sang kho bán.
 
 ## 7. Lệch Property Setter (220 production / 216 CI) — đã tìm ra, không phải lỗi app
 
@@ -179,7 +188,27 @@ Kết quả liệt kê trên production, chạy lệnh chỉ đọc lúc 15:20 n
   - Kiểm kê có mốc; thiếu chờ xử lý làm giảm lượng có thể bán.
 - **Cổng 3** nâng cấp từ 0.11.1 (digest image 0.11.1 đọc trên máy chủ sau khi triển khai).
 
-## 9. Còn chờ chị Dung (không chặn code)
+## 9. Triển khai trong code (15/10/2026)
+
+| Phần | Nơi | Ghi chú |
+|---|---|---|
+| Quy tắc cây kho (thuần) | `apps/lab9x/lab9x/cay_kho.py` | `kiem_cau_hinh`, `ke_hoach`, `so_sanh` (không bao giờ đề xuất xóa/đổi tên), `ten_kho_tinh_trang` |
+| Định mức (thuần) | `apps/lab9x/lab9x/gia_thanh.py` | `nhu_cau_dinh_muc` (tỷ lệ cho phép theo từng BOM), `chia_hao_hut_dinh_muc`, `lech_dinh_muc` |
+| Cờ `kh_aph_kho_chuan` | `kh_aph/kho_chuan.py` | `schema()` (ô Loại kho, Dây chuyền, Bao bì đóng gói, Tỷ lệ hao hụt cho phép trên BOM — sửa được sau khi gửi, ngưỡng kiểm kê trên Stock Settings, loại phiếu "Đóng gói thành phẩm"; gỡ ô Kho bồn), bộ dựng `dung`, chặn bán `validate_kho_ban` (đơn bán, đơn bán chung, phiếu giao, hóa đơn xuất kho; hàng trả lại được nhập vào), `validate_kho` (không đổi loại kho đang có tồn), kiểm kê `so_sach` / `ghi_kiem_ke` |
+| Quyết toán dở dang | `kh_aph/factory_costing.py::quyet_toan_do_dang` | Kỳ = sau phiếu quyết toán đã ghi sổ gần nhất của kho. Có định mức → hai phiếu nháp (tự nhiên 15488 theo xưởng / vượt 6322); thiếu định mức cho một thành phẩm trong kỳ thì dừng, báo nhập định mức; không có định mức → hỏi kế toán chọn (gọi lại `vet_bon` 0.11.1). Chạy lại khi còn phiếu nháp trả phiếu cũ |
+| R073 | `factory_costing.canh_bao_dinh_muc` | Gọi khi lưu phiếu kg-v4; chỉ `msgprint` màu cam |
+| Bao bì không cộng kg | `stock_entry_kg.snapshot_kg` | Dòng đầu vào thuộc nhóm "Bao bì đóng gói": kg = 0 (cả "Đổi bao, đóng gói lại" — sửa lỗi 0.11.1) |
+| CĐ2 không nhận phân bổ chi phí tháng | `factory_costing.phan_bo_thang` | Loại phiếu "Đổi bao…" và "Đóng gói thành phẩm" bị loại khỏi phân bổ (giá đã mang từ CĐ1) |
+| Báo cáo | `Tieu hao so voi dinh muc`; `Du lieu can ra soat` thêm nhóm "Kho dở dang" (thay "Kho bồn") và "Bao bì" (mã f) | |
+| Giao diện | `public/js/ban_0112.js` | Nút "Kho → Quyết toán dở dang về 0" và "Kho → Kiểm kê có mốc" trên Warehouse (Dialog) |
+| Dấu vân | `deploy/release/dau_van_site.py` | Property Setter `in_list_view` / `columns` / `in_preview` sang phần `giao_dien` |
+| UAT | `deploy/uat/http/b0112.py` + `b0112_cases.py` | 12 ca + khôi phục CSDL = **13 PASS**; bộ 0.11.1 đổi fixture kho bồn sang Loại kho |
+| Cổng 3 | `.github/workflows/cong-3-nang-cap-production.yml` | Nâng cấp từ image 0.11.1 (12 cờ), bật cờ mới, cài, dựng cây 2 lần, kiểm "Cây kho chuẩn đủ", quay lui |
+
+Thử trên site thật cục bộ (bench v16, dữ liệu giả) 15/10: bộ 0.11.2 đủ 12 ca, bộ 0.11.1 đủ 13 ca khi bật cờ mới. **Chưa
+phải PASS của CI** — chỉ tuyên bố PASS khi có run xanh trên đúng SHA.
+
+## 10. Còn chờ chị Dung (không chặn code)
 
 1. Bước xử lý chênh lệch kiểm kê (mục 6).
 2. Tài khoản đối ứng số dư đầu kỳ: **3389** (Sheet 8 file tài sản) hay **9990** (tài khoản tạm app đang dựng). Cần trước 0.12.1.

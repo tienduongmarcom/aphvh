@@ -97,3 +97,80 @@ def ke_hoach_vet_bon(ton):
         elif sl < 0 or gt:
             bat_thuong.append((ma, sl, gt))
     return xuat, bat_thuong
+
+
+# ---------------------------------------------------------------- định mức (0.11.2, phồng tôm)
+
+def nhu_cau_dinh_muc(san_luong, dinh_muc, cong_ty_le=False):
+    """Lượng nguyên liệu lẽ ra phải dùng.
+
+    san_luong: {mã đầu ra: số lượng}. dinh_muc: {mã đầu ra: (số lượng đầu ra của BOM, {mã nguyên liệu: lượng}[, % hao hụt
+    cho phép])}. cong_ty_le=True: nhân thêm (1 + % hao hụt cho phép của từng BOM) — "mức" tối đa tính vào giá thành.
+    Đầu ra không có định mức thì bỏ qua (trả trong danh sách thứ hai).
+    """
+    can, thieu_dm = {}, []
+    for ma, sl in san_luong.items():
+        if ma not in dinh_muc:
+            thieu_dm.append(ma)
+            continue
+        goc, dong = dinh_muc[ma][0], dinh_muc[ma][1]
+        ty_le = float(dinh_muc[ma][2] or 0) if len(dinh_muc[ma]) > 2 else 0.0
+        if float(goc or 0) <= 0:
+            thieu_dm.append(ma)
+            continue
+        if ty_le < 0:
+            raise ValueError(f"Tỷ lệ hao hụt cho phép của định mức {ma} không được âm")
+        he = float(sl or 0) / float(goc) * ((1 + ty_le / 100) if cong_ty_le else 1)
+        for nl, q in dong.items():
+            can[nl] = can.get(nl, 0.0) + he * float(q or 0)
+    return can, thieu_dm
+
+
+def chia_hao_hut_dinh_muc(con_lai, da_dung, can_dung, ty_le_cho_phep=0.0, muc=None):
+    """Chia lượng còn trên sổ kho dở dang khi quyết toán về 0 (TT133 TK154 nguyên tắc 1(đ)).
+
+    con_lai: {nguyên liệu: lượng còn trên sổ}; da_dung: {nguyên liệu: lượng đã ghi tiêu hao trên phiếu sản xuất trong kỳ};
+    can_dung: {nguyên liệu: nhu cầu theo định mức}; ty_le_cho_phep: % hao hụt cho phép thêm trên định mức.
+    muc: {nguyên liệu: mức tối đa đã cộng tỷ lệ của từng BOM} (nhu_cau_dinh_muc(..., cong_ty_le=True)); có thì thay
+    cho can_dung × (1 + ty_le_cho_phep).
+
+    Trả {nguyên liệu: {"tu_nhien": x, "bat_thuong": y, "ghi_chu": str}}. Phần còn lại trong mức (định mức × (1 + tỷ lệ)) trừ
+    phần đã dùng là tự nhiên; vượt là bất thường. Nguyên liệu không có định mức: toàn bộ là bất thường, ghi chú để kế toán xem.
+    """
+    if float(ty_le_cho_phep or 0) < 0:
+        raise ValueError("Tỷ lệ hao hụt cho phép không được âm")
+    kq = {}
+    for nl, r in con_lai.items():
+        r = float(r or 0)
+        if r <= 0:
+            continue
+        if nl not in can_dung:
+            kq[nl] = {"tu_nhien": 0.0, "bat_thuong": r, "ghi_chu": "không có trong định mức"}
+            continue
+        gioi_han = (float(muc[nl]) if muc is not None and nl in muc
+                    else float(can_dung[nl]) * (1 + float(ty_le_cho_phep or 0) / 100))
+        con_duoc = max(0.0, gioi_han - float(da_dung.get(nl, 0)))
+        tn = min(r, con_duoc)
+        bt = round(r - tn, 6)
+        tong = float(da_dung.get(nl, 0)) + r
+        ghi = ""
+        if tong < float(can_dung[nl]) - 1e-6:
+            ghi = "dùng ít hơn định mức: kiểm lại cấp liệu / cân"
+        kq[nl] = {"tu_nhien": round(tn, 6), "bat_thuong": bt, "ghi_chu": ghi}
+    return kq
+
+
+def lech_dinh_muc(thuc_te, can_dung, ty_le_cho_phep=0.0):
+    """Cảnh báo cấp liệu lệch định mức (R073): trả [(nguyên liệu, thực tế, định mức, % lệch)] vượt ngưỡng ±tỷ lệ."""
+    out = []
+    nguong = float(ty_le_cho_phep or 0)
+    for nl in sorted(set(thuc_te) | set(can_dung)):
+        t, c = float(thuc_te.get(nl, 0)), float(can_dung.get(nl, 0))
+        if c <= 0:
+            if t > 0:
+                out.append((nl, t, c, None))
+            continue
+        pt = (t - c) / c * 100
+        if abs(pt) > nguong + 1e-9:
+            out.append((nl, t, c, round(pt, 2)))
+    return out

@@ -1,5 +1,24 @@
 # Bàn giao dự án APH-VH
 
+## 00000. Bản 0.11.2 — 15/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+
+Đặc tả và bảng nơi đặt code: `docs/dac-ta-0.11.2.md` (mục 9). Quyết định K1–K6 chốt 14/10 — không hỏi lại.
+
+- **Cờ thứ 13 `kh_aph_kho_chuan`** (mặc định tắt): cây kho chuẩn do app dựng từ `khach.json` mục `cay_kho`
+  (`kh_aph.kho_chuan.dung`, chỉ thêm kho thiếu, 55 kho cho 4 pháp nhân), ô Loại kho / Dây chuyền, chặn bán từ kho không
+  bán, loại phiếu "Đóng gói thành phẩm" (CĐ2), nhóm "Bao bì đóng gói" chỉ cộng tiền không cộng kg, kiểm kê có mốc (thiếu
+  Nợ 1381, thừa vào kho "Hàng chờ xử lý <địa điểm>" Có 3381, ngưỡng % đòi lý do).
+- **Quyết toán dở dang về 0** (`factory_costing.quyet_toan_do_dang`): có định mức → tự chia 15488 / 6322 theo TT133 TK154
+  1(đ); không có định mức → kế toán chọn. Cảnh báo lệch định mức R073. Báo cáo "Tieu hao so voi dinh muc".
+- Sửa lỗi 0.11.1: "Đổi bao, đóng gói lại" cộng cả kg túi PP vào cân đối kg. CĐ2 không nhận phân bổ chi phí tháng.
+- Dấu vân: Property Setter cột danh sách (in_list_view/columns/in_preview) sang phần `giao_dien` — giải thích lệch 220/216.
+- Thử cục bộ 15/10 (bench v16, dữ liệu giả): bộ b0112 đủ 12 ca, bộ b0111 đủ 13 ca khi bật cờ mới. CI: chờ run xanh.
+- Cổng 3 nâng cấp từ tag 0.11.1; `PROD_DIGEST` để trống (kéo theo tag) — lấy digest ở bước 1 của thủ tục 0.11.2.
+- Thủ tục lên production: `deploy/release/TRIEN_KHAI_FRONTEND.md` (đầu tệp).
+
+Còn chờ chị Dung (không chặn code): bước 2 xử lý chênh lệch kiểm kê; 3389 hay 9990 cho số dư đầu kỳ; xác nhận 6323 (D2).
+Tiếp theo: 0.11.3 (P1 bán hàng / hóa đơn / báo cáo) → 0.12.0 Trung tâm dữ liệu → 0.12.1 số dư đầu kỳ → 0.13.0 giao diện Kho.
+
 ## 0000. Bản 0.11.1 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~14:50)
 
 - Phát hành: tag `v0.11.1` = `a2ab58c`; run phát hành 38526754413 xanh (UAT candidate có 14/14 ca 0.11.1, Cổng 2, 2b, 3

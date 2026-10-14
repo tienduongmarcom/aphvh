@@ -63,6 +63,11 @@ def kiem_cau_hinh(cfg: dict) -> list:
             loi.append(f"công ty #{i}: 'thong_tu' phải là 133, 99 hoặc 152 (hoặc khai \"noi_bo\": true)")
         if any(k in c for k in ("nha_may", "kho_them", "ten_nha_may")):
             loi.append(f"công ty #{i}: từ 0.8.0 không khai kho trong cấu hình (khách tự tạo kho trên giao diện)")
+    if "cay_kho" in cfg:
+        # 0.11.2: cây kho chuẩn khai ở cấp khách (mục cay_kho), không ở từng công ty.
+        from lab9x.cay_kho import kiem_cau_hinh as kiem_cay
+
+        loi += ["cay_kho: " + x for x in kiem_cay(cfg["cay_kho"], thay_abbr)]
     return loi
 
 

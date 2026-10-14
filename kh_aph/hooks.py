@@ -296,3 +296,16 @@ for _dt in ("Delivery Note", "APH Shared Sales Order", "Warehouse"):
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/ban_0111.js"]
 doctype_list_js["Landed Cost Voucher"] = "public/js/ban_0111_lcv_list.js"
+
+# 0.11.2 (cờ kh_aph_kho_chuan): cây kho chuẩn, chặn bán từ kho không bán, quyết toán dở dang theo định mức, kiểm kê có mốc.
+for _dt, _handler in (("Sales Order", "kh_aph.kho_chuan.validate_kho_ban"),
+                      ("APH Shared Sales Order", "kh_aph.kho_chuan.validate_kho_ban"),
+                      ("Delivery Note", "kh_aph.kho_chuan.validate_kho_ban"),
+                      ("Sales Invoice", "kh_aph.kho_chuan.validate_kho_ban"),
+                      ("Warehouse", "kh_aph.kho_chuan.validate_kho")):
+    _handlers = doc_events.setdefault(_dt, {}).get("validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if _handler not in _handlers:
+        _handlers.append(_handler)
+    doc_events[_dt]["validate"] = _handlers
+doctype_js["Warehouse"] = list(doctype_js["Warehouse"]) + ["public/js/ban_0112.js"]

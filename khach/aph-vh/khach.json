@@ -26,5 +26,54 @@
       "abbr": "TL",
       "noi_bo": true
     }
-  ]
+  ],
+  "cay_kho": {
+    "dia_diem": [
+      {
+        "ten": "Nhà máy Phú Thọ",
+        "loai": "nha_may",
+        "cong_ty": [
+          "APH"
+        ],
+        "gui": [
+          "VH",
+          "MK"
+        ]
+      },
+      {
+        "ten": "Hà Nội",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH",
+          "MK",
+          "TL"
+        ],
+        "kho_ve_tinh": [
+          "Bác Hiền",
+          "Chị Thoa",
+          "Hải Thành",
+          "Lê Huyên",
+          "Bác Khuyên",
+          "Hằng Viết"
+        ]
+      },
+      {
+        "ten": "Đà Nẵng",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH"
+        ]
+      },
+      {
+        "ten": "Hồ Chí Minh",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH"
+        ]
+      }
+    ]
+  }
 }
