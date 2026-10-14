@@ -1,6 +1,18 @@
 # Bàn giao dự án APH-VH
 
-## 00000. Bản 0.11.2 — 15/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+## 00000. Bản 0.11.2 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~17:10)
+
+**Phát hành:** run "Phát hành image v0.11.2" `38543418851` xanh đủ 6 job. Image `kh-aph-erpnext:0.11.2`, nguồn `8201b87`.
+
+**Triển khai** bằng một script gộp (`~/trien-khai-0112.sh` trên VM, cùng các bước như TRIEN_KHAI_FRONTEND.md):
+- Nâng cấp: "XONG: 0.11.1 -> 0.11.2, kiểm đạt". Bản sao lưu trước nâng cấp: `sao-luu/20261014-100602` (dùng khi cần quay lui).
+- Cây kho: lần 1 tạo 55 kho, cảnh báo 0; lần 2 tạo 0.
+- Kiểm triển khai: "Cây kho chuẩn đủ (55 kho) ĐẠT", không có mục KHÔNG ĐẠT.
+- Dấu vân: phần tong KHỚP.
+- **Chưa ghi:** digest image 0.11.1 cho `PROD_DIGEST` của Cổng 3.
+
+**Chưa phải PASS nghiệp vụ:** khách chưa nhập dữ liệu thật. Cấu hình khách cần làm sau 0.11.2 được liệt kê trong TRIEN_KHAI_FRONTEND.md.
+
 
 Đặc tả và bảng nơi đặt code: `docs/dac-ta-0.11.2.md` (mục 9). Quyết định K1–K6 chốt 14/10 — không hỏi lại.
 
