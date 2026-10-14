@@ -12,6 +12,10 @@ SENSITIVE = ("Bin", "Stock Ledger Entry", "GL Entry", "Purchase Invoice",
              "Landed Cost Voucher", "Stock Reconciliation", "BOM", "Work Order",
              "Repost Item Valuation", "Item Price")
 
+# 0.11.1: danh sách phiếu Dũng được xem (quyền if_owner chuẩn vẫn áp dụng; không có giá vốn trên các DocType này).
+DANH_SACH_DUOC_XEM = ("APH Phieu quy nha may", "APH Khoan muc chi nha may")
+
+
 def restricted(user=None):
     user = user or frappe.session.user
     return (bool(cint(frappe.conf.get("kh_aph_server_cost_guard")))
@@ -33,7 +37,7 @@ def before_request():
     if not cmd and "/api/method/" in path:
         cmd = path.split("/api/method/", 1)[1]
     deny = (bool(cint(frappe.form_dict.get("as_csv"))) or "export" in cmd.lower() or "download_template" in cmd.lower()
-            or cmd.startswith("frappe.desk.reportview.")
+            or (cmd.startswith("frappe.desk.reportview.") and frappe.form_dict.get("doctype") not in DANH_SACH_DUOC_XEM)
             or cmd.startswith("erpnext.stock.get_item_details.")
             or cmd.endswith(".get_item_details")
             or cmd.endswith((".get_stock_balance", ".get_incoming_rate", ".get_stock_value")))

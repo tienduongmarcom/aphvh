@@ -267,3 +267,11 @@ for _dt in ("Purchase Order", "Purchase Receipt", "Stock Reconciliation"):
     if "kh_aph.factory_costing.validate_gia_tam" not in _handlers:
         _handlers.append("kh_aph.factory_costing.validate_gia_tam")
     doc_events[_dt]["validate"] = _handlers
+
+# 0.11.1 (cờ kh_aph_factory_cash): khóa giá thành phẩm chính khi người vận hành nhà máy bán (R091, Q138).
+for _dt in ("Sales Order", "Sales Invoice", "Delivery Note", "APH Shared Sales Order"):
+    _handlers = doc_events.setdefault(_dt, {}).get("validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if "kh_aph.factory_cash.validate_khoa_gia" not in _handlers:
+        _handlers.append("kh_aph.factory_cash.validate_khoa_gia")
+    doc_events[_dt]["validate"] = _handlers
