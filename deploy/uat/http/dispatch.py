@@ -158,7 +158,8 @@ finally:frappe.destroy()
     assert again['kh_aph_delivery_at']==receipt['kh_aph_delivery_at']
     check(80000,96,1)
     emit('HTTP_DELIVERY_RECEIPT_REPEAT','PASS','Repeated receipt preserves timestamp and ledger')
-    forged=dict(receipt);forged['kh_aph_delivery_state']='Chờ xuất'
+    # confirm() chỉ trả trường giao/nhận (0.11.0): lấy cả phiếu bằng getdoc để thử lưu đè trạng thái.
+    forged=dict(getdoc('Delivery Note',fixture['dn1']));forged['kh_aph_delivery_state']='Chờ xuất'
     forged['flags']={'kh_aph_delivery_transition':True}
     try:
         admin('/api/method/frappe.client.save',{'doc':json.dumps(forged)})

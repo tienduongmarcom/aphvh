@@ -40,6 +40,14 @@ def before_update_after_submit(doc, method=None):
     validate(doc, method)
 
 
+KET_QUA = ("name", "docstatus", "company", "customer", STATE, ACTOR, TIME, "modified")
+
+
+def _ket_qua(doc):
+    """Chỉ trả các trường giao/nhận đã cho phép (0.11.0) — không gửi cả phiếu (giá, thuế) về trình duyệt."""
+    return {"doctype": doc.doctype, **{f: doc.get(f) for f in KET_QUA}}
+
+
 @frappe.whitelist(methods=['POST'])
 def confirm(name, action):
     if not enabled():
@@ -60,7 +68,7 @@ def confirm(name, action):
         if cint(doc.docstatus) != 1 or current not in (TRANSIT, RECEIVED):
             frappe.throw('Chỉ xác nhận nhận hàng sau khi xuất hàng')
         if current == RECEIVED:
-            return doc.as_dict()
+            return _ket_qua(doc)
         previous = frappe.flags.get('kh_aph_delivery_transition')
         frappe.flags.kh_aph_delivery_transition = doc.name
         try:
@@ -73,7 +81,7 @@ def confirm(name, action):
     else:
         target = RECEIVED if action == 'pickup' else TRANSIT
         if cint(doc.docstatus) == 1 and current == target:
-            return doc.as_dict()
+            return _ket_qua(doc)
         if cint(doc.docstatus) != 0 or current != WAITING:
             frappe.throw('Phiếu không còn ở trạng thái chờ xuất')
         doc.check_permission('submit')
@@ -84,4 +92,4 @@ def confirm(name, action):
         finally:
             frappe.flags.kh_aph_delivery_pickup = previous
     # Frappe commits the request only after all native stock/credit hooks succeed.
-    return doc.as_dict()
+    return _ket_qua(doc)
