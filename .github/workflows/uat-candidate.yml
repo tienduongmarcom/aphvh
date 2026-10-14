@@ -31,7 +31,7 @@ jobs:
           load: true
           push: false
           tags: aphvh-uat:verification
-          build-args: ERPNEXT_IMAGE=frappe/erpnext:v16.50.0
+          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d
       - name: Record versions and verified source hashes
         run: |
           expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
@@ -45,8 +45,8 @@ jobs:
           cat candidate-image-evidence.txt
       - name: Ghi phiên bản và digest ảnh nền thành chú thích
         run: |
-          docker pull -q frappe/erpnext:v16.50.0 >/dev/null 2>&1 || true
-          d=$(docker image inspect frappe/erpnext:v16.50.0 --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
+          docker pull -q frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d >/dev/null 2>&1 || true
+          d=$(docker image inspect frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
           v=$(docker run --rm --entrypoint bash aphvh-uat:verification -c 'cd /home/frappe/frappe-bench && bench version' | tr '\n' ' ')
           echo "::notice title=Nền và phiên bản::$v | digest nền: $d"
       - name: Create isolated database and Redis

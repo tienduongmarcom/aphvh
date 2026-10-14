@@ -1,4 +1,4 @@
-"""Dấu vân một site: số bản ghi, tổng sổ (GL/SLE/Bin/PLE), schema tùy biến, cờ tính năng. CHỈ ĐỌC.
+"""Dấu vân một site: số bản ghi, tổng sổ (GL/SLE/Bin/PLE), schema tùy biến, giá trị Settings, cờ tính năng. CHỈ ĐỌC.
 
 Độc lập với app (chạy được trên 0.9.1 lẫn bản mới) để so trước nâng cấp / sau quay lui / site dựng mới.
 Chạy bằng python của bench, cwd = frappe-bench/sites, mã qua stdin, tham số là tên site:
@@ -24,6 +24,10 @@ DEM = ("User", "Company", "Account", "Warehouse", "Item Group", "Customer", "Sup
        "GL Entry", "Stock Ledger Entry", "Payment Ledger Entry", "Bin", "BOM", "Work Order", "File",
        "APH Shared Sales Order", "APH Pending Receipt", "APH Bag Movement", "APH Credit Release",
        "APH Funds Route", "APH Funds Receipt", "APH Funds Action", "APH Source Change")
+# Giá trị các trang Settings (tabSingles), bỏ trường mật khẩu/tệp và trường hệ thống. So riêng bằng --phan cai_dat.
+SETTINGS = ("Stock Settings", "Accounts Settings", "Selling Settings", "Buying Settings", "Manufacturing Settings",
+            "System Settings", "Print Settings")
+BO_TRUONG = {"modified", "creation", "modified_by", "owner", "name", "idx", "docstatus"}
 QUYEN = ("read", "write", "create", "submit", "cancel", "amend", "delete", "report", "export", "print",
          "email", "share", "select")
 
@@ -52,6 +56,20 @@ def _schema():
         muc.append(f"RO|{r}")
     muc = sorted(set(muc))
     return {"so_muc": len(muc), "sha256": hashlib.sha256("\n".join(muc).encode()).hexdigest(), "muc": muc}
+
+
+def _cai_dat():
+    out = {}
+    for dt in SETTINGS:
+        if not frappe.db.exists("DocType", dt):
+            continue
+        bo = {df.fieldname for df in frappe.get_meta(dt).fields
+              if df.fieldtype in ("Password", "Attach", "Attach Image", "Code")}
+        for f, v in frappe.db.sql("select field, value from `tabSingles` where doctype=%s", dt):
+            if f in bo or f in BO_TRUONG:
+                continue
+            out[f"{dt}.{f}"] = v
+    return out
 
 
 def _tong():
@@ -83,6 +101,7 @@ try:
         "dem": {d: frappe.db.count(d) if frappe.db.exists("DocType", d) else None for d in DEM},
         "tong": _tong(),
         "schema": _schema(),
+        "cai_dat": _cai_dat(),
     }
     print("DAU_VAN " + json.dumps(kq, ensure_ascii=False, default=str))
 finally:

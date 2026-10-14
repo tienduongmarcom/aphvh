@@ -12,7 +12,7 @@ permissions:
   contents: read
   packages: read
 env:
-  ERPNEXT_IMAGE: frappe/erpnext:v16.50.0
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d  # ERPNext 16.50.0 + Frappe 16.51.0
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
   PROD_TAG: "0.9.1"
   # Digest image đang chạy trên erpnext-prod (kiểm kê chỉ đọc 13/10/2026).
@@ -146,7 +146,7 @@ jobs:
           ex frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "$RUNNER_TEMP/log-6b.txt"
           grep -q "KHÔNG ĐẠT: 0" "$RUNNER_TEMP/log-6b.txt"
           dv frontend | tee "$RUNNER_TEMP/dv-4-sau-quay-lui.txt"
-          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-4-sau-quay-lui.txt" --phan schema,dem,tong,co,versions | tee "$RUNNER_TEMP/log-6c.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-4-sau-quay-lui.txt" --phan schema,dem,tong,co,versions,cai_dat | tee "$RUNNER_TEMP/log-6c.txt"
       - name: Nhật ký khi lỗi
         if: failure()
         run: |

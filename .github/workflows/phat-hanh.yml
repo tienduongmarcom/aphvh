@@ -10,7 +10,7 @@ permissions:
   packages: write
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/kh-aph-erpnext
-  ERPNEXT_IMAGE: frappe/erpnext@sha256:13d6d2889b8690b2d6c69cb562d63bd2990f42df8cff92db840043ae69034fef
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d  # ERPNext 16.50.0 + Frappe 16.51.0
 jobs:
   candidate-uat:
     uses: ./.github/workflows/uat-candidate.yml
@@ -25,6 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
       - name: Kiểm phiên bản khớp tag
         run: |
           V=$(python3 -c "import re;print(re.search(r'\"(.+)\"',open('kh_aph/__init__.py').read()).group(1))")
