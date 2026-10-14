@@ -250,9 +250,11 @@ def ap_han_hoa_don(si, ngay_giao):
     due = B.han_hoa_don(han, getdate(ngay_giao)) if han else None
     if not due:
         return
+    # Bỏ điều khoản (ERPNext sẽ tính lại lịch theo ngày giao) và đặt sẵn một dòng lịch 100% đúng hạn chung;
+    # ERPNext tự điền số tiền của dòng theo tổng hóa đơn.
     si.payment_terms_template = None
     si.ignore_default_payment_terms_template = 1
-    si.set("payment_schedule", [])
+    si.set("payment_schedule", [{"due_date": due, "invoice_portion": 100}])
     si.due_date = due
 
 

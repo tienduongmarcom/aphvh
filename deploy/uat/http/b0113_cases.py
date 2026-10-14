@@ -77,9 +77,16 @@ def chay(admin, phien, f, emit):
         ret.update({"kh_aph_loai_dieu_chinh": "Khách trả hàng (R025)", **kw})
         return ret
 
-    # 1. Hạn thanh toán chung (Q166): 2 đợt giao cùng hạn = ngày đơn + 30
-    so = don(f["aph"], f["kh1"], [(f["A"], 50, 30000, f["kho"], f["t10"])])
-    han = (ngay + datetime.timedelta(days=30)).isoformat()
+    # 1. Hạn thanh toán chung (Q166): tự điền = ngày đơn + 30 (điều khoản của khách); kế toán sửa được trước khi xác nhận.
+    #    Đơn đặt hạn 20 ngày (khác điều khoản 30 ngày) để chứng minh hóa đơn lấy hạn của đơn, không lấy điều khoản.
+    nhap = insert({"doctype": "Sales Order", "company": f["aph"], "customer": f["kh1"], "transaction_date": d, "delivery_date": d,
+                   "selling_price_list": f["pl"], "currency": "VND", "conversion_rate": 1,
+                   "items": [{"item_code": f["A"], "qty": 1, "uom": "Kg", "conversion_factor": 1, "rate": 30000,
+                              "warehouse": f["kho"], "delivery_date": d, "item_tax_template": f["t10"]}]}, ktt)
+    assert nhap["kh_aph_han_thanh_toan"] == (ngay + datetime.timedelta(days=30)).isoformat(), nhap["kh_aph_han_thanh_toan"]
+    ktt("/api/method/frappe.client.delete", {"doctype": "Sales Order", "name": nhap["name"]})
+    han = (ngay + datetime.timedelta(days=20)).isoformat()
+    so = don(f["aph"], f["kh1"], [(f["A"], 50, 30000, f["kho"], f["t10"])], kh_aph_han_thanh_toan=han)
     assert so["kh_aph_han_thanh_toan"] == han, so["kh_aph_han_thanh_toan"]
     dn1, dn2 = giao(so["name"], 20), giao(so["name"], 10)
     hd1, hd2 = hd_cua(dn1["name"]), hd_cua(dn2["name"])

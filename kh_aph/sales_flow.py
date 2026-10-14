@@ -125,7 +125,7 @@ def _build_invoice(doc, return_against: str | None):
     target.flags.ignore_permissions = True
     si = make_sales_invoice(doc.name, target_doc=target)
     si.set_posting_time = 1
-    si.posting_date = doc.posting_date
+    si.posting_date = str(getdate(doc.posting_date))  # ERPNext 16.50 kiểm kiểu ngày (chuỗi) khi lập lịch thanh toán
     si.posting_time = doc.posting_time
     if cint(doc.is_return):
         si.is_return = 1
@@ -138,10 +138,11 @@ def _build_invoice(doc, return_against: str | None):
         si.due_date = get_due_date(
             str(getdate(doc.posting_date)), "Customer", si.customer, si.company, template_name=si.payment_terms_template
         )
+    si.set("payment_schedule", [])
+    if not cint(doc.is_return):
         # 0.11.3 (cờ kh_aph_sales_p1, Q166): đơn có hạn thanh toán chung thì mọi đợt giao lấy chung hạn đó.
         from kh_aph.sales_p1 import ap_han_hoa_don
         ap_han_hoa_don(si, doc.posting_date)
-    si.set("payment_schedule", [])
     si.set(SI_AUTO, 1)
     si.flags.ignore_permissions = True
     si.insert()
