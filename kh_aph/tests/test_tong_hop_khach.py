@@ -48,7 +48,9 @@ class TestTongHop(unittest.TestCase):
         names = {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")}
         self.assertEqual(names, {"aph_shared_sales_order", "aph_shared_sales_order_item", "aph_pending_receipt", "aph_pending_receipt_item", "aph_bag_movement", "aph_funds_receipt", "aph_funds_action", "aph_funds_route", "aph_source_change",
                                  # 0.11.1: phiếu quỹ nhà máy (cờ kh_aph_factory_cash)
-                                 "aph_phieu_quy_nha_may", "aph_dong_phieu_quy_nha_may", "aph_khoan_muc_chi_nha_may"})
+                                 "aph_phieu_quy_nha_may", "aph_dong_phieu_quy_nha_may", "aph_khoan_muc_chi_nha_may",
+                                 # 0.11.3: hồ sơ hóa đơn MISA, lịch sử gia hạn (cờ kh_aph_sales_p1)
+                                 "aph_hoa_don_ngoai", "aph_dong_hoa_don_ngoai", "aph_lich_su_gia_han"})
 
 
 if __name__ == "__main__":

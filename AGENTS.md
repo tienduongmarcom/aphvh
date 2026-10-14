@@ -22,12 +22,12 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 
 | Đường dẫn | Nội dung |
 |---|---|
-| `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.3) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
-| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.11.2 đang kiểm; production đang 0.11.1), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
+| `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.4) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
+| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.11.3 đang kiểm; production đang 0.11.2), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
 | `khach/<ten>/khach.json` | Cấu hình khách (một nguồn sự thật). `phien-ban.yaml`: image đang chạy + môi trường. |
 | `deploy/khach-hang/` | `dung.sh` (dựng mới), `nang-cap.sh` (nâng cấp, tự quay lui khi lỗi), `quay-lui.sh`, `compose.yaml`, `erpctl`. |
 | `deploy/cloud/` | Sao lưu 2 lần/ngày lên Google Cloud Storage (systemd timer). |
-| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py` và 0.11.2 `b0112*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.11.1 đã bật 12 cờ + bộ cài + dựng cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
+| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.11.2 theo digest, đã bật 13 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
 | `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py`, `so_dau_van.py`), cổng phát hành, thủ tục triển khai frontend. |
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
@@ -50,7 +50,7 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 
 ```bash
 # Cổng 1 — unit test (không cần ERPNext; Python 3.11+)
-(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 69 test
+(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 74 test
 PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 214 test
 # Dựng image như CI
 docker build -t kh-aph-erpnext:dev .
@@ -58,7 +58,7 @@ docker build -t kh-aph-erpnext:dev .
 
 Cổng chạy trên GitHub Actions (Linux amd64): Cổng 2 tự chạy theo pull request đụng `kh_aph/**`, `apps/**`, `khach/**`,
 `Dockerfile`; UAT candidate và Cổng 3 tự chạy khi push nhánh PR; Cổng 2b chạy bằng tay hoặc khi phát hành. Số ca PASS kỳ
-vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13). **Không tuyên bố PASS khi
+vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13, b0113 13). **Không tuyên bố PASS khi
 chưa có run xanh trên đúng SHA**; run FAIL giữ nguyên làm bằng chứng, không sửa assertion để che lỗi. Lỗi được in thành chú thích
 `::error::` — đọc qua `check-runs/<id>/annotations` của GitHub API.
 
@@ -123,8 +123,11 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   `after_request` (xem `dung_cost_policy.mask_cost_response`).
 - Mẫu in: sửa `.html` rồi chạy `python tools/build_print_formats.py` (tăng `MODIFIED`); hàm jinja mới phải nằm ở
   `kh_aph.print_utils` (có test).
-- 13 cờ (0.11.1 thêm `kh_aph_factory_costing`, `kh_aph_factory_cash`, `kh_aph_sales_adjust`, `kh_aph_data_review`;
-  0.11.2 thêm `kh_aph_kho_chuan`).
+- 14 cờ (0.11.1 thêm `kh_aph_factory_costing`, `kh_aph_factory_cash`, `kh_aph_sales_adjust`, `kh_aph_data_review`;
+  0.11.2 thêm `kh_aph_kho_chuan`; 0.11.3 thêm `kh_aph_sales_p1`).
+- Hóa đơn trả lại tự sinh trừ thẳng vào hóa đơn gốc (`update_outstanding_for_self = 0`), nên tự nó không có "nợ":
+  `get_payment_entry` trên nó báo "Paid Amount is mandatory". Phiếu chi hoàn tiền phải lập theo số tiền, không theo hóa đơn.
+- Danh sách DocType của app được ghi cứng trong `test_tong_hop_khach.test_wired`: thêm DocType mới phải sửa test đó.
 - Đổi cấu trúc Custom Field (vd thêm `allow_on_submit`) thì chạy lại `schema()` trên site thử: `create_custom_fields` cập nhật
   ô đã có. Báo cáo mới cần migrate (hoặc `frappe.reload_doc`) mới chạy được trên site cũ.
 - Kho dở dang nhận biết bằng Loại kho = "Dở dang dây chuyền" (0.11.2); ô "Kho bồn dở dang" 0.11.1 đã gỡ.

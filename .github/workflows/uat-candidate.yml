@@ -82,7 +82,7 @@ jobs:
             bench --site aphvh-web-uat disable-scheduler
             bench --site aphvh-web-uat set-config mute_emails 1
             bench --site aphvh-web-uat execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json\"}"
-            for flag in kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp kh_aph_funds_workflow kh_aph_source_change kh_aph_factory_costing kh_aph_factory_cash kh_aph_sales_adjust kh_aph_data_review kh_aph_kho_chuan; do
+            for flag in kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp kh_aph_funds_workflow kh_aph_source_change kh_aph_factory_costing kh_aph_factory_cash kh_aph_sales_adjust kh_aph_data_review kh_aph_kho_chuan kh_aph_sales_p1; do
               bench --site aphvh-web-uat set-config "$flag" 1
             done
             bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
@@ -127,6 +127,12 @@ jobs:
           sudo env HOME="$HOME" python3 deploy/uat/http/b0112.py | tee http-b0112-evidence.txt
           test "$(grep -c '"status": "PASS"' http-b0112-evidence.txt)" = 13
           if grep -q '"status": "FAIL"' http-b0112-evidence.txt; then echo "Có ca FAIL trong http-b0112-evidence.txt"; exit 1; fi
+          # 0.11.3: 12 ca nghiệp vụ (trả hàng 2 chiều, giảm giá sau giao, hạn chung, địa chỉ, hồ sơ hóa đơn MISA) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b0113.py | tee http-b0113-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b0113-evidence.txt)" = 13
+          if grep -q '"status": "FAIL"' http-b0113-evidence.txt; then echo "Có ca FAIL trong http-b0113-evidence.txt"; exit 1; fi
       - name: Render four-company quantity slip to PDF
         run: |
           google-chrome --version

@@ -137,6 +137,9 @@ def _build_invoice(doc, return_against: str | None):
         si.due_date = get_due_date(
             doc.posting_date, "Customer", si.customer, si.company, template_name=si.payment_terms_template
         )
+        # 0.11.3 (cờ kh_aph_sales_p1, Q166): đơn có hạn thanh toán chung thì mọi đợt giao lấy chung hạn đó.
+        from kh_aph.sales_p1 import ap_han_hoa_don
+        ap_han_hoa_don(si, doc.posting_date)
     si.set("payment_schedule", [])
     si.set(SI_AUTO, 1)
     si.flags.ignore_permissions = True

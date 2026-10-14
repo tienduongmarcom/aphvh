@@ -19,13 +19,13 @@ FLAGS = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery", "kh_a
          "kh_aph_global_credit_warning", "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp",
          "kh_aph_funds_workflow", "kh_aph_source_change",
          "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
-         "kh_aph_kho_chuan")
+         "kh_aph_kho_chuan", "kh_aph_sales_p1")
 DEM = ("User", "Company", "Account", "Warehouse", "Item Group", "Customer", "Supplier", "Item", "Item Price",
        "Sales Order", "Delivery Note", "Sales Invoice", "Purchase Order", "Purchase Receipt", "Purchase Invoice",
        "Payment Entry", "Journal Entry", "Stock Entry", "Stock Reconciliation", "Landed Cost Voucher",
        "GL Entry", "Stock Ledger Entry", "Payment Ledger Entry", "Bin", "BOM", "Work Order", "File",
        "APH Shared Sales Order", "APH Pending Receipt", "APH Bag Movement", "APH Credit Release",
-       "APH Funds Route", "APH Funds Receipt", "APH Funds Action", "APH Source Change")
+       "APH Funds Route", "APH Funds Receipt", "APH Funds Action", "APH Source Change", "APH Hoa don ngoai")
 # Giá trị các trang Settings (tabSingles), bỏ trường mật khẩu/tệp và trường hệ thống. So riêng bằng --phan cai_dat.
 SETTINGS = ("Stock Settings", "Accounts Settings", "Selling Settings", "Buying Settings", "Manufacturing Settings",
             "System Settings", "Print Settings")

@@ -1,0 +1,232 @@
+{
+ "name": "APH Hoa don ngoai",
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "title_field": "so",
+ "search_fields": "so,ky_hieu,customer,loai",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "label": "Số hồ sơ",
+   "fieldtype": "Select",
+   "options": "HDN-.YYYY.-.#####",
+   "default": "HDN-.YYYY.-.#####",
+   "hidden": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "loai",
+   "label": "Loại hóa đơn",
+   "fieldtype": "Select",
+   "options": "Gốc\nĐiều chỉnh\nThay thế\nHủy",
+   "default": "Gốc",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "hoa_don_lien_quan",
+   "label": "Hồ sơ hóa đơn bị điều chỉnh / thay thế / hủy",
+   "fieldtype": "Link",
+   "options": "APH Hoa don ngoai",
+   "depends_on": "eval:doc.loai!='Gốc'",
+   "mandatory_depends_on": "eval:doc.loai!='Gốc'"
+  },
+  {
+   "fieldname": "company",
+   "label": "Đơn vị phát hành",
+   "fieldtype": "Link",
+   "options": "Company",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer",
+   "label": "Khách",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ky_hieu",
+   "label": "Ký hiệu",
+   "fieldtype": "Data",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "so",
+   "label": "Số hóa đơn",
+   "fieldtype": "Data",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ngay",
+   "label": "Ngày hóa đơn",
+   "fieldtype": "Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "trang_thai",
+   "label": "Trạng thái",
+   "fieldtype": "Select",
+   "options": "Đang xử lý\nĐã xuất\nBị điều chỉnh\nBị thay thế\nĐã hủy",
+   "default": "Đang xử lý",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nguoi_xu_ly",
+   "label": "Người đang xử lý",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "nhan_luc",
+   "label": "Nhận xử lý lúc",
+   "fieldtype": "Datetime",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_hd",
+   "label": "Hóa đơn bán trong ERP",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "dong",
+   "label": "Hóa đơn bán",
+   "fieldtype": "Table",
+   "options": "APH Dong hoa don ngoai"
+  },
+  {
+   "fieldname": "sec_tien",
+   "label": "Số tiền trên hóa đơn MISA (không bắt buộc bằng doanh thu quản trị — Q148)",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "tien_truoc_thue",
+   "label": "Tiền trước thuế",
+   "fieldtype": "Currency",
+   "options": "VND"
+  },
+  {
+   "fieldname": "tien_thue",
+   "label": "Tiền thuế",
+   "fieldtype": "Currency",
+   "options": "VND"
+  },
+  {
+   "fieldname": "col2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tong",
+   "label": "Tổng tiền hóa đơn",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "read_only": 1
+  },
+  {
+   "fieldname": "doanh_thu_quan_tri",
+   "label": "Tổng doanh thu quản trị",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chenh_lech",
+   "label": "Chênh lệch (hóa đơn − quản trị)",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ghi_chu",
+   "label": "Ghi chú",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "journal_entry",
+   "label": "Bút toán giảm giá liên quan",
+   "fieldtype": "Link",
+   "options": "Journal Entry"
+  },
+  {
+   "fieldname": "amended_from",
+   "label": "Sửa từ",
+   "fieldtype": "Link",
+   "options": "APH Hoa don ngoai",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "field_order": [
+  "naming_series",
+  "loai",
+  "hoa_don_lien_quan",
+  "company",
+  "customer",
+  "col1",
+  "ky_hieu",
+  "so",
+  "ngay",
+  "trang_thai",
+  "nguoi_xu_ly",
+  "nhan_luc",
+  "sec_hd",
+  "dong",
+  "sec_tien",
+  "tien_truoc_thue",
+  "tien_thue",
+  "col2",
+  "tong",
+  "doanh_thu_quan_tri",
+  "chenh_lech",
+  "ghi_chu",
+  "journal_entry",
+  "amended_from"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 19:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 19:00:00.000000"
+}

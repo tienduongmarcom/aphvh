@@ -1,4 +1,42 @@
-# Triển khai bản 0.11.2 lên `frontend` (máy erpnext-prod)
+# Triển khai bản 0.11.3 lên `frontend` (máy erpnext-prod)
+
+Production đang chạy 0.11.2 (từ 14/10/2026 17:10): 13 cờ, cây kho 55 kho, site chưa có dữ liệu nghiệp vụ.
+
+Bản 0.11.3 (đặc tả `docs/dac-ta-0.11.3.md`) thêm cờ thứ 14 `kh_aph_sales_p1`:
+- trả hàng 2 chiều (hàng về đâu × xử lý tiền);
+- giảm giá sau giao;
+- hạn thanh toán chung và gia hạn;
+- đổi địa chỉ khi đang giao;
+- báo cáo đơn quá hạn giao;
+- hồ sơ hóa đơn MISA có hàng đợi và khóa chống trùng.
+
+**Điều kiện:**
+- Tag `v0.11.3` phát hành xanh: UAT candidate (b0111 14, b0112 13, b0113 13), Cổng 2, 2b, Cổng 3 (nâng cấp từ 0.11.2 theo
+  digest).
+- Bước 1 phải TRẮNG.
+
+**Chạy trên SSH vào máy chủ erpnext-prod** (user `tienduongmarcom`). Repo công khai nên không cần token:
+
+```bash
+cd ~/trien-khai
+git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.11.3 && git checkout -q --detach v0.11.3
+bash deploy/release/trien_khai_frontend.sh 0.11.3 kh_aph_sales_p1 2>&1 | tee ~/log-0.11.3-tong.txt
+```
+
+**Đạt khi** dòng cuối là `=== XONG 0.11.3: ĐẠT ===`.
+- Script dừng ngay ở bước lỗi và in `!!! DỪNG: …`. Nâng cấp lỗi thì `nang-cap.sh` tự quay lui.
+- Bộ dựng cây kho chạy lại phải báo "tạo 0".
+- Dòng cuối của log in digest image 0.11.3: gửi lại để ghim cho Cổng 3 của bản sau.
+
+**Quay lui trước khi nhập liệu:** `cd ~/erp/aph-vh && ./quay-lui.sh <thư mục sao-luu mới nhất>`. Hệ thống về 0.11.2.
+
+**Cấu hình khách sau 0.11.3:**
+- Kế toán đặt "Điều khoản thanh toán" (Payment Terms Template) trên từng khách để đơn tự có hạn chung.
+- Công ty có "Tài khoản tiền mặt mặc định" để phiếu chi hoàn tiền tự lập.
+
+---
+
+# (Lịch sử) Triển khai bản 0.11.2 lên `frontend` — đã làm 14/10/2026 ~17:10, ĐẠT (script gộp `~/trien-khai-0112.sh`)
 
 Production đang chạy 0.11.1 (từ 14/10/2026 14:43): 12 cờ bật, đã chạy bộ cài 0.11.1, site chưa có dữ liệu nghiệp vụ.
 

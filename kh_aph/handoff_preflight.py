@@ -8,7 +8,7 @@ FLAGS = (
     "kh_aph_shared_sales_order", "kh_aph_global_credit_warning",
     "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp", "kh_aph_funds_workflow", "kh_aph_source_change",
     "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
-    "kh_aph_kho_chuan",
+    "kh_aph_kho_chuan", "kh_aph_sales_p1",
 )
 COUNTS = (
     "User", "Customer", "Supplier", "Item", "Warehouse", "Sales Order",

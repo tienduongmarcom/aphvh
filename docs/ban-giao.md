@@ -1,5 +1,23 @@
 # Bàn giao dự án APH-VH
 
+## 000000. Bản 0.11.3 — 14/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+
+Đặc tả: `docs/dac-ta-0.11.3.md` (E1–E9, anh Tiến đồng ý 18:30). Cờ thứ 14 `kh_aph_sales_p1` gồm các phần:
+- **Trả hàng 2 chiều.** Phiếu trả hỏi hai ô: hàng trả về đâu (bán lại được / cách ly vào "Hàng cách ly <địa điểm>") và xử lý tiền thế nào (bù trừ / hoàn tiền / đổi hàng).
+  - Hoàn tiền: app lập phiếu chi nháp theo số tiền.
+  - Đổi hàng: app lập phiếu giao nháp từ đơn gốc.
+- **Giảm giá sau giao.** Bút toán nháp loại Credit Note, chia theo tỷ trọng từng dòng và tách phần thuế. VH ghi Nợ 521; APH, MK, TL ghi giảm thẳng 511. Dòng 13 của bảng rà soát pháp lý chờ chị Dung xác nhận cách ghi này.
+- **Hạn thanh toán chung của đơn.** Các hóa đơn tự sinh lấy chung hạn của đơn. Gia hạn bắt buộc có lý do và lưu lịch sử; khi gia hạn, app cập nhật hạn trên hóa đơn, lịch thanh toán và sổ công nợ PLE.
+- **Đổi địa chỉ khi đang giao**, có nhật ký.
+- **Báo cáo** "Don qua han giao".
+- **Hồ sơ hóa đơn MISA** (`APH Hoa don ngoai`): hàng đợi "Hoa don cho xuat", khóa người xử lý chống trùng, Gốc / Điều chỉnh / Thay thế / Hủy; chênh lệch với doanh thu quản trị chỉ hiển thị, không chặn (Q148).
+
+Kiểm thử và triển khai:
+- Thử cục bộ (bench v16, dữ liệu giả): bộ b0113 đạt 12/12 ca; b0111 13/13 và b0112 12/12 khi bật cả cờ mới. Chưa có run CI xanh.
+- Cổng 3 chuyển sang nâng cấp từ 0.11.2 theo digest `f2417393…`, dựng cây kho ở bước 1 giống production.
+- Script triển khai một lệnh: `deploy/release/trien_khai_frontend.sh <phiên bản> <cờ mới…>`.
+- Mục BA 15 (báo cáo quản trị, R039, khóa kỳ) làm ở 0.11.4.
+
 ## 00000. Bản 0.11.2 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~17:10)
 
 **Phát hành:** run "Phát hành image v0.11.2" `38543418851` xanh đủ 6 job. Image `kh-aph-erpnext:0.11.2`, nguồn `8201b87`.

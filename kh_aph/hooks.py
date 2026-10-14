@@ -309,3 +309,18 @@ for _dt, _handler in (("Sales Order", "kh_aph.kho_chuan.validate_kho_ban"),
         _handlers.append(_handler)
     doc_events[_dt]["validate"] = _handlers
 doctype_js["Warehouse"] = list(doctype_js["Warehouse"]) + ["public/js/ban_0112.js"]
+
+# 0.11.3 (cờ kh_aph_sales_p1): trả hàng 2 chiều, giảm giá sau giao, hạn thanh toán chung, đổi địa chỉ, hồ sơ hóa đơn MISA.
+for _dt, _event, _handler in (("Delivery Note", "validate", "kh_aph.sales_p1.validate_tra_hang"),
+                              ("Delivery Note", "on_submit", "kh_aph.sales_p1.sau_ghi_tra_hang"),
+                              ("Sales Invoice", "on_submit", "kh_aph.sales_p1.sau_ghi_hoa_don_giam"),
+                              ("Sales Order", "validate", "kh_aph.sales_p1.validate_don")):
+    _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if _handler not in _handlers:
+        _handlers.append(_handler)
+    doc_events[_dt][_event] = _handlers
+for _dt in ("Sales Order", "Delivery Note", "Sales Invoice"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ban_0113.js"]
