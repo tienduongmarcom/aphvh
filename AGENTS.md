@@ -82,9 +82,10 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
    điều khoản thì **chưa làm** — ghi vào `docs/bang-ra-soat-phap-ly-APH-VH.md` và hỏi.
 2. **Không bao giờ chạm dữ liệu thật của khách.** Thử trên site trắng / dữ liệu giả / UAT. Trên VM chỉ chạy lệnh chỉ đọc
    hoặc thủ tục đã ghi trong `TRIEN_KHAI_FRONTEND.md`; xác định đúng site/VM trước mọi thao tác.
-3. **Không tạo kho** trong app: khách tự tạo cây kho. `khach.json` không có mục kho (`nha_may`, `kho_them`, `ten_nha_may`
-   sẽ báo lỗi). App vẫn dựng tài khoản chuẩn, nhóm hàng cấp 1 gắn tài khoản kho, mẫu thuế, tài khoản mặc định, và **xóa**
-   kho/nhóm/tài khoản mẫu của ERPNext.
+3. **Cây kho do app dựng theo cây chuẩn** (đổi 14/10/2026, xem `docs/dac-ta-0.11.2.md` mục 2): khai địa điểm và kho vệ tinh
+   trong `khach.json` (`dia_diem`); tên kho do app sinh. Bộ dựng chỉ THÊM kho thiếu, không đổi tên/xóa/đổi pháp nhân kho có
+   tồn; kho ngoài cây chỉ báo. Khóa cũ `nha_may`, `kho_them`, `ten_nha_may` vẫn báo lỗi. App vẫn dựng tài khoản chuẩn,
+   nhóm hàng cấp 1 gắn tài khoản kho, mẫu thuế, tài khoản mặc định, và **xóa** kho/nhóm/tài khoản mẫu của ERPNext.
 4. **Giao diện theo `docs/kien-truc-giao-dien.md` (Hybrid Native, chốt 14/10/2026)**: Workspace chuẩn để điều hướng,
    Dialog cho thao tác ngắn, **Native Frappe Page** chỉ khi đạt 6 tiêu chí trong tài liệu đó (có cờ, có số đo A/B, chỉ
    Page API chính thức, gọi API facade trả trường tối thiểu). Chưa dùng Vue/SPA/bước build frontend. Không DocType
