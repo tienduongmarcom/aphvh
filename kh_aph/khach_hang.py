@@ -102,6 +102,19 @@ def _wizard(cfg: dict):
     frappe.db.commit()
 
 
+def bat_tieng_viet():
+    """ERPNext 16 tắt sẵn bản ghi Language "vi": bật lại và đặt làm ngôn ngữ mặc định nếu hệ thống đang để trống / en.
+
+    Chạy lại nhiều lần không đổi gì thêm. Không đổi ngôn ngữ đã chọn riêng của từng người dùng.
+    """
+    import frappe
+
+    if frappe.db.exists("Language", "vi") and not frappe.db.get_value("Language", "vi", "enabled"):
+        frappe.db.set_value("Language", "vi", "enabled", 1)
+    if (frappe.db.get_single_value("System Settings", "language") or "en") == "en":
+        frappe.db.set_single_value("System Settings", "language", "vi")
+
+
 def ap_dung(duong_dan: str = None, cfg: dict = None) -> list:
     import frappe
     from frappe.installer import update_site_config
@@ -121,6 +134,7 @@ def ap_dung(duong_dan: str = None, cfg: dict = None) -> list:
     frappe.conf["kh_aph_loai"] = extra
     if not frappe.is_setup_complete():
         _wizard(cfg)
+    bat_tieng_viet()
     ket_qua = []
     for c in cfg["cong_ty"]:
         ten = frappe.db.get_value("Company", {"abbr": c["abbr"]}, "name")
