@@ -55,7 +55,7 @@ liệt kê **mọi nghiệp vụ / chức năng / báo cáo / phân quyền / d�
 
 | Mục | Giá trị |
 |---|---|
-| Production | Site `frontend`, VM GCloud `erpnext-prod`, http://34.143.178.144 |
+| Production | Site `frontend`, VM GCloud `erpnext-prod`, http://<IP máy chủ erpnext-prod> |
 | Phiên bản | **kh_aph 0.11.0**, **lab9x 0.2.1** trên **ERPNext 16.50.0 + Frappe 16.51.0** (nền ghim digest) |
 | Dữ liệu | **Trắng**: 0 khách, 0 mặt hàng, 0 chứng từ, 0 dòng sổ. Chỉ có 4 công ty, hệ thống tài khoản, 4 kho gốc, Administrator |
 | Cờ tính năng | Bật đủ 8 (mục 5.4) |

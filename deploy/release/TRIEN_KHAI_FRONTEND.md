@@ -164,7 +164,7 @@ sudo systemctl start erpnext-backup.service
 ```
 
 Đạt khi: bước 4 "kiểm đạt"; bước 5 có `"idempotent": true` hai lần và "KHÔNG ĐẠT: 0"; bước 6 `tong` khớp (không phát
-sinh sổ); trình duyệt vào được `http://34.143.178.144`, Desk mở, danh sách "APH Shared Sales Order" mở được.
+sinh sổ); trình duyệt vào được `http://<IP máy chủ erpnext-prod>`, Desk mở, danh sách "APH Shared Sales Order" mở được.
 
 ## Quay lui
 
