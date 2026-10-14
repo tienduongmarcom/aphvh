@@ -254,6 +254,11 @@ finally:frappe.destroy()
     except urllib.error.HTTPError:
         pass
     emit('HTTP_PRINT_BYPASS_DENIED','PASS',{'denied':[m for m,_ in bypass],'admin_control':admin_control})
+    # 0.11.0: vai trò nhà máy lấy được mẫu thuế mua vào mặc định (ERPNext 16.50 đòi quyền select trên mẫu).
+    tax=actor("/api/method/erpnext.controllers.accounts_controller.get_default_taxes_and_charges",
+              {"master_doctype":"Purchase Taxes and Charges Template","company":fixture["company"]})["message"] or {}
+    assert str(tax.get("taxes_and_charges") or "").startswith("Thuế GTGT mua vào"),str(tax)[:300]
+    emit('HTTP_FACTORY_PURCHASE_TAX_DEFAULT','PASS',{'template':tax.get('taxes_and_charges')})
 except Exception as exc:
     detail={"type":type(exc).__name__,"error":str(exc)[-2500:]}
     if isinstance(exc,urllib.error.HTTPError):

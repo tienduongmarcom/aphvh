@@ -395,6 +395,9 @@ ROLE_FACTORY_PERMS = {
     "Account": {"select": 1},
     "Cost Center": {"select": 1},
     "Project": {"select": 1},
+    # 0.11.0: ERPNext 16.50 kiểm quyền "select" khi phiếu nhập lấy mẫu thuế mặc định ("Thuế GTGT mua vào");
+    # mẫu chỉ có thuế suất/tài khoản, không có giá hàng.
+    "Purchase Taxes and Charges Template": {"select": 1},
     # Màn hình phiếu nhập, phiếu kho đọc các cài đặt này (không chứa giá)
     "Stock Settings": {"read": 1},
     "Buying Settings": {"read": 1},
