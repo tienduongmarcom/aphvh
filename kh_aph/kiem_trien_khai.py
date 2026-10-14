@@ -28,7 +28,10 @@ def kiem_cong_ty(c: dict, ok):
     ok(f"{ab}: đủ tài khoản chuẩn {ten_tt}", all(d["so"] in so for d in chuan), [d["so"] for d in chuan if d["so"] not in so][:10])
     khong_so = [d.name for d in frappe.get_all("Account", {"company": co, "parent_account": ["is", "set"]}, ["name", "account_number"]) if not d.account_number]
     ok(f"{ab}: không còn tài khoản mẫu không số hiệu", not khong_so, khong_so[:8])
-    thua = sorted(set(so) - {d["so"] for d in chuan} - {C.TK_TAM[0]} - set(CAN[loai]))
+    # 0.11.1: tài khoản do bộ cài tính năng giá thành tạo cho công ty TT133 (1548x, 6323) là chi tiết hợp lệ.
+    from lab9x.gia_thanh import TK_KHONG_PHAN_BO, TK_YEU_TO_154
+    tinh_nang = {t for t, _ in TK_YEU_TO_154} | {TK_KHONG_PHAN_BO[1]} if loai == "aph" else set()
+    thua = sorted(set(so) - {d["so"] for d in chuan} - {C.TK_TAM[0]} - set(CAN[loai]) - tinh_nang)
     ok(f"{ab}: không có tài khoản ngoài bảng chuẩn", not thua, thua[:10])
     cam = ["621", "622", "623", "627", "641", "3389"] if loai == "aph" else ["3389", "3385"] if loai == "vh" else ["33311", "1331"]
     ok(f"{ab}: không có tài khoản cấm theo thông tư", not [k for k in cam if k in so], [k for k in cam if k in so])
