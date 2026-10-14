@@ -79,6 +79,11 @@ def validate_tra_hang(doc, method=None):
         doc.set(F_HANG, None)
         doc.set(F_TIEN, None)
         return
+    # Không chọn thì giữ đúng cách làm trước 0.11.3: hàng về kho cũ bán lại được, hóa đơn giảm bù trừ công nợ.
+    if not doc.get(F_HANG):
+        doc.set(F_HANG, B.HANG_BAN_LAI)
+    if not doc.get(F_TIEN):
+        doc.set(F_TIEN, B.TIEN_BU_TRU)
     loi = B.kiem_tra_hang(True, doc.get(F_HANG), doc.get(F_TIEN))
     if loi:
         frappe.throw(loi, title="Trả hàng (R025)")

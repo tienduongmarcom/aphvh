@@ -23,7 +23,9 @@ Production đang chạy 0.11.2 (13 cờ).
 
 ## 2. Trả hàng 5 tình trạng (R025)
 
-- Phiếu giao trả lại (Delivery Note `is_return = 1`) có loại điều chỉnh "Khách trả hàng (R025)" thì bắt buộc chọn hai ô:
+- Phiếu giao trả lại (Delivery Note `is_return = 1`) có loại điều chỉnh "Khách trả hàng (R025)" có hai ô. Để trống thì app
+  điền mặc định **Bán lại được + Bù trừ công nợ**, đúng cách làm trước 0.11.3. Lý do: CI 14/10 cho thấy bắt buộc chọn sẽ chặn
+  các luồng trả hàng sẵn có (bộ inventory).
   - `kh_aph_hang_tra_ve`: Bán lại được / Cách ly.
   - `kh_aph_xu_ly_tien`: Bù trừ công nợ / Hoàn tiền / Đổi hàng.
 - **Cách ly:**

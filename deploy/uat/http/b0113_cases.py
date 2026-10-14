@@ -122,8 +122,11 @@ def chay(admin, phien, f, emit):
     emit("HTTP_0113_QUA_HAN_GIAO", "PASS", {"don": qh["name"], "tre": 3})
 
     # 5. Trả hàng cách ly + bù trừ (R025): thiếu lựa chọn bị chặn; hàng vào kho cách ly, không bán được từ đó
+    # Không chọn: mặc định như trước 0.11.3 (bán lại được, bù trừ) để luồng trả hàng cũ không bị chặn.
+    md = insert(tra(dn2["name"], 1), ktt)
+    assert md["kh_aph_hang_tra_ve"] == "Bán lại được" and md["kh_aph_xu_ly_tien"] == "Bù trừ công nợ", md["kh_aph_hang_tra_ve"]
+    ktt("/api/method/frappe.client.delete", {"doctype": "Delivery Note", "name": md["name"]})
     r = tra(dn2["name"], 4)
-    denied(lambda: insert(r, ktt), text="hàng trả về")
     r.update(kh_aph_hang_tra_ve="Cách ly", kh_aph_xu_ly_tien="Bù trừ công nợ")
     tr = submit(insert(r, ktt), ktt)
     cl = "Hàng cách ly Hà Nội - APH"
