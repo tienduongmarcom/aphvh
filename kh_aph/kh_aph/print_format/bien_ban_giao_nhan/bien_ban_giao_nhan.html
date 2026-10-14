@@ -11,6 +11,10 @@
 {%- set dc = kh_aph_dia_chi(doc.shipping_address or doc.address_display) -%}
 {%- set gia = kh_aph_gia_gom_thue(doc) -%}
 {%- set tong = gia.tong -%}
+{#- 0.11.1 (cờ kh_aph_sales_adjust): Q192 mặc định không giá; Q198 cột thực nhận khi có phiếu trả lại loại giao thiếu;
+    R053/Q199 số lượng "bao + kg" hoặc ĐVT bán kèm quy đổi. Cờ tắt: in như cũ. -#}
+{%- set an_gia = kh_aph_bbgn_an_gia(doc) -%}
+{%- set tn = kh_aph_thuc_nhan(doc) -%}
 
 {%- macro ben_cty(nhan) -%}
   <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ cty.ten }}</div>
@@ -66,8 +70,11 @@
       <th class="c-dvt">ĐVT</th>
       <th class="c-lo">Số lô</th>
       <th class="c-sl">Số lượng</th>
+      {%- if tn %}<th class="c-sl">Thực nhận</th>{% endif %}
+      {%- if not an_gia %}
       <th class="c-tien">Đơn giá{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
       <th class="c-tien">Thành tiền{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
+      {%- endif %}
     </tr>
   </thead>
   <tbody>
@@ -78,17 +85,22 @@
       <td class="c">{{ row.item_code }}</td>
       <td class="c">{{ row.uom }}</td>
       <td class="c">{{ kh_aph_lo(row) }}</td>
-      <td class="r">{{ kh_aph_so((row.qty or 0) | abs) }}</td>
+      <td class="r">{{ kh_aph_sl_hien_thi(row) or kh_aph_so((row.qty or 0) | abs) }}</td>
+      {%- if tn %}<td class="r">{{ kh_aph_so(tn.get(row.name, row.qty)) }}</td>{% endif %}
+      {%- if not an_gia %}
       {%- set g = gia.dong[loop.index0] %}
       <td class="r">{{ kh_aph_so(g.don_gia, g.le) }}</td>
       <td class="r">{{ kh_aph_so(g.thanh_tien, 0) }}</td>
+      {%- endif %}
     </tr>
   {%- endfor %}
-    <tr class="aph-sum"><td colspan="7" class="l">Tổng cộng tiền thanh toán{% if gia.co_thue %} (đã gồm thuế GTGT){% endif %}</td><td class="r">{{ kh_aph_so(tong, 0) }}</td></tr>
+    {%- if not an_gia %}
+    <tr class="aph-sum"><td colspan="{{ 8 if tn else 7 }}" class="l">Tổng cộng tiền thanh toán{% if gia.co_thue %} (đã gồm thuế GTGT){% endif %}</td><td class="r">{{ kh_aph_so(tong, 0) }}</td></tr>
+    {%- endif %}
   </tbody>
 </table>
 <div class="aph-info">
-  <div>- Số tiền viết bằng chữ: {{ kh_aph_bang_chu(tong) }}</div>
+  {%- if not an_gia %}<div>- Số tiền viết bằng chữ: {{ kh_aph_bang_chu(tong) }}</div>{% endif %}
   {%- if tra %}
   <div>- Bên B đã nhận lại đủ số lượng hàng hóa trên. Tình trạng hàng, bao bì: {{ cham }}{{ cham }}</div>
   {%- else %}

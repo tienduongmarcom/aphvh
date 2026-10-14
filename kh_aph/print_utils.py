@@ -289,3 +289,19 @@ def kh_aph_ban_hang(doc) -> dict:
         no = {"cu": so_du - con_no_hd, "con_no_hd": con_no_hd, "tong": so_du}
     return {"co_thue": co_thue, "dong": dong, "no": no}
 
+
+
+# 0.11.1 (cờ kh_aph_sales_adjust): biên bản giao nhận — xem kh_aph/sales_adjust.py
+def kh_aph_bbgn_an_gia(doc):
+    from kh_aph.sales_adjust import kh_aph_bbgn_an_gia as f
+    return f(doc)
+
+
+def kh_aph_sl_hien_thi(row):
+    from kh_aph.sales_adjust import kh_aph_sl_hien_thi as f
+    return f(row)
+
+
+def kh_aph_thuc_nhan(doc):
+    from kh_aph.sales_adjust import kh_aph_thuc_nhan as f
+    return f(doc)

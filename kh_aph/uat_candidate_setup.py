@@ -42,6 +42,13 @@ def schema():
     setup_shared()
     if not frappe.db.exists("DocType", "APH Credit Release"):
         frappe.get_doc(APPROVAL_DOCTYPE).insert()
+    # 0.11.1: giá thành nhà máy, phiếu quỹ nhà máy, điều chỉnh bán hàng (mỗi hàm tự đòi cờ của mình).
+    from kh_aph import factory_cash, factory_costing, sales_adjust
+    factory_costing.schema()
+    factory_cash.schema()
+    sales_adjust.schema()
+    if not frappe.conf.get("kh_aph_data_review"):
+        frappe.throw("Cần bật cờ kh_aph_data_review")
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
     create_custom_fields({'Delivery Note': [

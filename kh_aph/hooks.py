@@ -275,3 +275,24 @@ for _dt in ("Sales Order", "Sales Invoice", "Delivery Note", "APH Shared Sales O
     if "kh_aph.factory_cash.validate_khoa_gia" not in _handlers:
         _handlers.append("kh_aph.factory_cash.validate_khoa_gia")
     doc_events[_dt]["validate"] = _handlers
+
+# 0.11.1 (cờ kh_aph_sales_adjust): loại điều chỉnh trên chứng từ trả lại/giảm (R022/R024); cảnh báo dưới giá vốn chỉ cho
+# kế toán (R011/R084); hàm in biên bản giao nhận (Q192/Q198/R053/Q199).
+for _dt, _handler in (("Delivery Note", "kh_aph.sales_adjust.validate_dieu_chinh"),
+                      ("Sales Invoice", "kh_aph.sales_adjust.validate_dieu_chinh"),
+                      ("Sales Order", "kh_aph.sales_adjust.canh_bao_gia_von"),
+                      ("APH Shared Sales Order", "kh_aph.sales_adjust.canh_bao_gia_von")):
+    _handlers = doc_events.setdefault(_dt, {}).get("validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if _handler not in _handlers:
+        _handlers.append(_handler)
+    doc_events[_dt]["validate"] = _handlers
+jinja["methods"] += ["kh_aph.print_utils.kh_aph_bbgn_an_gia", "kh_aph.print_utils.kh_aph_sl_hien_thi",
+                     "kh_aph.print_utils.kh_aph_thuc_nhan"]
+
+# 0.11.1: nút Dialog (chỉ hiện khi cờ bật).
+for _dt in ("Delivery Note", "APH Shared Sales Order", "Warehouse"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ban_0111.js"]
+doctype_list_js["Landed Cost Voucher"] = "public/js/ban_0111_lcv_list.js"

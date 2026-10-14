@@ -22,9 +22,10 @@ def restricted(user=None):
             and user != "Administrator" and ROLE_NO_COST in frappe.get_roles(user))
 
 def has_permission(doc, ptype=None, user=None, **kwargs):
-    if restricted(user):
-        return False
-    return None
+    # Frappe 16 (has_controller_permissions): hook trả giá trị "falsy" — kể cả None — là TỪ CHỐI. Phải trả True khi
+    # không có ý kiến, nếu không mọi người (trừ Administrator) bị chặn mở GL/Bin/Purchase Invoice/LCV/kiểm kê/BOM/
+    # Work Order (lỗi phát hiện 14/10/2026, sửa ở 0.11.1). Quyền vai trò chuẩn vẫn áp dụng sau bước này.
+    return not restricted(user)
 
 def query_conditions(user=None, **kwargs):
     return "1=0" if restricted(user) else ""
@@ -124,9 +125,53 @@ def mask_response(value):
         for child in value.values():
             mask_response(child)
 
+GIA_VON = ("valuation_rate", "incoming_rate", "outgoing_rate", "gross_profit", "last_purchase_rate",
+           "stock_value", "stock_value_difference", "stock_value_change")
+
+
+def mask_cost_response(value):
+    """Người bị ẩn giá vốn (nhân viên bán hàng, thủ kho, nhà máy): xóa giá vốn trong mọi phản hồi JSON, giữ giá bán.
+
+    Lớp đọc (CostReadGuard) đã che khi mở chứng từ; phản hồi lưu/tạo (frappe.client.insert, savedocs…) trả cả chứng
+    từ không qua lớp đó (lộ valuation_rate, gross_profit dòng đơn bán — phát hiện 14/10/2026, sửa ở 0.11.1).
+    """
+    from kh_aph.price_visibility import COST_MASK
+    if isinstance(value, list):
+        for child in value:
+            mask_cost_response(child)
+    elif isinstance(value, dict):
+        for field in GIA_VON:
+            if field in value:
+                value[field] = None
+        spec = COST_MASK.get(value.get("doctype"))
+        if spec:
+            for field in spec["parent"]:
+                if field in value:
+                    value[field] = None
+            for table, fields in spec["tables"].items():
+                for row in value.get(table) or []:
+                    for field in fields:
+                        if field in row:
+                            row[field] = None
+            for table in spec["clear"]:
+                if table in value:
+                    value[table] = []
+        for child in value.values():
+            mask_cost_response(child)
+
+
 def after_request(response, request=None):
-    if not restricted() or not response.is_json or response.status_code >= 400:
+    if not response.is_json or response.status_code >= 400:
         return
-    payload = response.get_json()
-    mask_response(payload)
-    response.set_data(frappe.as_json(payload))
+    if restricted():
+        payload = response.get_json()
+        mask_response(payload)
+        response.set_data(frappe.as_json(payload))
+        return
+    if frappe.session.user in (None, "Guest", "Administrator"):
+        return
+    from kh_aph.price_visibility import is_cost_restricted
+    if is_cost_restricted():
+        payload = response.get_json()
+        mask_cost_response(payload)
+        response.set_data(frappe.as_json(payload))

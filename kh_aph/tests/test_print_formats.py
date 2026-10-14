@@ -57,6 +57,10 @@ def _env(an):
         kh_aph_gia_gom_thue=_gia_gom_thue,
         kh_aph_mau=lambda c: "(Ban hành theo Thông tư số 133/2016/TT-BTC ngày 26/08/2016 của Bộ Tài chính)" if c == "APH" else "",
         kh_aph_loai_phieu_kho=__import__("lab9x.print_rules", fromlist=["x"]).ten_loai_phieu_kho,
+        # 0.11.1: mặc định như cờ kh_aph_sales_adjust tắt (in như cũ)
+        kh_aph_bbgn_an_gia=lambda doc: False,
+        kh_aph_sl_hien_thi=lambda row: None,
+        kh_aph_thuc_nhan=lambda doc: {},
     )
     return env
 
@@ -151,6 +155,33 @@ def _dn(**kw):
     )
     base.update(kw)
     return Row(**base)
+
+
+class TestBienBan0111(unittest.TestCase):
+    """0.11.1 (cờ kh_aph_sales_adjust bật): mặc định không giá, cột thực nhận, số lượng bao + kg."""
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_khong_gia_thuc_nhan_bao(self):
+        from kh_aph.sales_adjust_rules import hien_thi_sl
+        html = (ROOT / "bien_ban_giao_nhan" / "bien_ban_giao_nhan.html").read_text(encoding="utf-8")
+        env = _env(False)
+        env.globals.update(kh_aph_bbgn_an_gia=lambda doc: True,
+                           kh_aph_sl_hien_thi=lambda row: hien_thi_sl(row.qty, row.uom, row.qty, "Kg", row.kh_aph_bags),
+                           kh_aph_thuc_nhan=lambda doc: {"a": 480})
+        doc = _dn()
+        doc.items[0].name, doc.items[0].kh_aph_bags = "a", 10
+        out = env.from_string(html).render(doc=doc)
+        self.assertNotIn("Đơn giá", out)
+        self.assertNotIn("22.680.000", out)
+        self.assertNotIn("triệu", out)
+        self.assertIn("Thực nhận", out)
+        self.assertIn("480", out)
+        self.assertIn("10 bao (500 Kg)", out)
+        env.globals.update(kh_aph_bbgn_an_gia=lambda doc: False, kh_aph_thuc_nhan=lambda doc: {})
+        out = env.from_string(html).render(doc=doc)
+        self.assertIn("Đơn giá", out)
+        self.assertIn("22.680.000", out)
+        self.assertNotIn("Thực nhận", out)
 
 
 class TestDeliveryNotePrints(unittest.TestCase):

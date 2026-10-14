@@ -10,6 +10,8 @@
   vào giá thành), bất thường vào 6322.
 App không tạo kho, không tạo trung tâm chi phí, không tự ghi sổ chứng từ nào.
 """
+
+from lab9x.vn_words import so_vn
 import frappe
 from frappe.utils import cint, flt, get_first_day, get_last_day, getdate, nowdate
 
@@ -185,7 +187,7 @@ def kiem_lech_repack(doc, kg_vao, kg_ra):
     lech = G.lech_kg(kg_vao, kg_ra)
     doc.kh_aph_process_loss_kg = lech
     if lech and not (cint(doc.get(F_XAC_NHAN_LECH)) and (doc.get(F_LY_DO_LECH) or "").strip()):
-        frappe.throw(f"Đóng gói lại lệch {lech:g} kg (đầu vào − đầu ra). Kiểm lại số kg; nếu đúng thực tế, "
+        frappe.throw(f"Đóng gói lại lệch {so_vn(lech)} kg (đầu vào − đầu ra). Kiểm lại số kg; nếu đúng thực tế, "
                      "tích \"Xác nhận đóng gói lại lệch kg\" và ghi lý do.", title="Lệch kg khi đóng gói lại")
 
 

@@ -100,7 +100,8 @@ for label,weight in [('trade',25),('cogs',25),('raw',25),('fg',10),('by',5),('fi
  item=frappe.get_doc({'doctype':'Item','item_code':p+'-'+label,'item_name':p+'-'+label,'item_group':fixed if label=='fixed' else group,'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','kh_aph_kg_per_bag':weight,'taxes':taxes,'item_defaults':[{'company':co.name,'default_warehouse':warehouses[a],'income_account':co.default_income_account,'expense_account':co.default_expense_account,'buying_cost_center':co.cost_center,'selling_cost_center':co.cost_center} for a,co in companies.items()]}).insert()
  items[label]=item.name
 u=frappe.get_doc({'doctype':'User','email':p.lower()+'@example.invalid','first_name':'Dũng UAT kho','enabled':1,'user_type':'System User','send_welcome_email':0,'roles':[{'role':ROLE_FACTORY},{'role':ROLE_NO_COST}]});u.flags.no_welcome_mail=True;u.insert();update_password(u.name,payload['password'])
-frappe.db.commit();print('FIXTURE:'+json.dumps({'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'cost_date':add_days(today(),-3),'sale_date':add_days(today(),-1),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
+xuong=frappe.get_doc({'doctype':'Cost Center','cost_center_name':p+'-XUONG','company':companies['APH'].name,'parent_cost_center':frappe.db.get_value('Cost Center',{'company':companies['APH'].name,'is_group':1},'name'),'kh_aph_loai_ttcp':'Xưởng sản xuất'}).insert().name if frappe.get_meta('Cost Center').has_field('kh_aph_loai_ttcp') else None
+frappe.db.commit();print('FIXTURE:'+json.dumps({'xuong':xuong,'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'cost_date':add_days(today(),-3),'sale_date':add_days(today(),-1),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
 '''
     raw=inner(fixture_code,json.dumps({'password':factory_password}))
     f=json.loads(next(l[8:] for l in raw.splitlines() if l.startswith('FIXTURE:')))
@@ -325,7 +326,8 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
             rows.append(d)
         return {'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg','company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt tự nhiên','kh_aph_loss_reason':'UAT giảm ẩm tự nhiên 5 kg','items':rows,'additional_costs':[{'expense_account':f['expense'],'description':'UAT chi phí sản xuất','amount':90000}]}
     prod=submit(insert(production()))
-    assert prod['kh_aph_costing_rule']=='kg-v3',prod
+    # 0.11.1: cờ kh_aph_factory_costing bật trên UAT -> phiếu mới dùng kg-v4 (kg-v3 + hệ số phẩm cấp; hệ số mặc định 1 nên số liệu không đổi).
+    assert prod['kh_aph_costing_rule']=='kg-v4',prod
     near(prod['total_incoming_value'],1090000);stock('APH','raw',0,0);stock('APH','fg',70,7);stock('APH','by',20,4);stock('APH','fixed',5,1,5000)
     by_item={r['item_code']:r for r in prod['items']}
     near(by_item[f['items']['fg']]['additional_cost'],70000);near(by_item[f['items']['by']]['additional_cost'],20000);near(by_item[f['items']['fixed']]['additional_cost'],0)
@@ -353,6 +355,7 @@ frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuat
     mfg=rpc('erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry',
         {'work_order_id':wo['name'],'purpose':'Manufacture','qty':70})
     mfg['stock_entry_type']='Sản xuất theo kg'
+    mfg['kh_aph_xuong']=f['xuong']  # 0.11.1: phiếu sản xuất theo kg bắt buộc chọn xưởng (trung tâm chi phí)
     mfg['kh_aph_loss_type']='Hao hụt tự nhiên'
     mfg['kh_aph_loss_reason']='UAT giảm ẩm tự nhiên 5 kg'
     mfg['additional_costs']=[{'expense_account':f['expense'],'description':'UAT manufacture costs','amount':90000}]

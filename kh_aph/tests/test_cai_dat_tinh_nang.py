@@ -87,8 +87,8 @@ class NhatQuanDanhSachCo(unittest.TestCase):
         khoi = re.search(r"FLAGS = \((.*?)\)", src, re.S).group(1)
         return set(re.findall(r'"(kh_aph_\w+)"', khoi))
 
-    def test_tam_co(self):
-        self.assertEqual(len(self._co_app()), 8)
+    def test_muoi_hai_co(self):
+        self.assertEqual(len(self._co_app()), 12)  # 8 cờ 0.10.0 + 4 cờ 0.11.1
 
     def test_quay_lui_dau_van_ci_cung_danh_sach(self):
         if not (GOC / ".github").exists() or not (GOC / "deploy/khach-hang").exists():
@@ -98,9 +98,7 @@ class NhatQuanDanhSachCo(unittest.TestCase):
         co = self._co_app()
         for tep in ("deploy/khach-hang/quay-lui.sh", "deploy/release/dau_van_site.py",
                     ".github/workflows/cong-3-nang-cap-production.yml", "kh_aph/handoff_preflight.py"):
-            tim = set(re.findall(r"kh_aph_(?:server_cost_guard|post_receivable_on_delivery|shared_sales_order|"
-                                 r"global_credit_warning|high_risk_credit_guard|quantity_valuation_mvp|"
-                                 r"funds_workflow|source_change)\b", (GOC / tep).read_text(encoding="utf-8")))
+            tim = set(re.findall(r"\b(?:" + "|".join(sorted(co)) + r")\b", (GOC / tep).read_text(encoding="utf-8")))
             self.assertEqual(tim, co, tep)
 
     def test_khong_tu_chay_khi_cai_hoac_migrate(self):

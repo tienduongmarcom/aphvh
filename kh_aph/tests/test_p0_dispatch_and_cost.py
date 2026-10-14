@@ -200,6 +200,19 @@ class TestCostRead(unittest.TestCase):
         self.assertIsNone(response["helper"]["basic_rate"])
         self.assertEqual(response["helper"]["qty"], 2)
 
+    def test_has_permission_hook_never_returns_none(self):
+        """Frappe 16: hook has_permission trả None là TỪ CHỐI — người không bị hồ sơ Dũng phải nhận True."""
+        from kh_aph.constants import ROLE_NO_COST
+        self.frappe.conf = {"kh_aph_server_cost_guard": 1}
+        self.frappe.session = Row(user="ke-toan@x")
+        policy = module("test_dung_hp", "dung_cost_policy.py")
+        self.frappe.get_roles.return_value = ["Accounts Manager"]
+        self.assertIs(policy.has_permission(Row(), "read", "ke-toan@x"), True)
+        self.frappe.get_roles.return_value = [ROLE_NO_COST, "Accounts Manager"]
+        self.assertIs(policy.has_permission(Row(), "read", "dung@x"), False)
+        self.frappe.conf = {}
+        self.assertIs(policy.has_permission(Row(), "read", "dung@x"), True)
+
     def test_explicit_profile_denies_scalar_and_tuple_cost_rpc(self):
         from kh_aph.constants import ROLE_NO_COST
         self.frappe.get_roles.return_value = [ROLE_NO_COST, "Stock Manager"]

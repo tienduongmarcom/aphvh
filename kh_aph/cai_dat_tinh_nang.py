@@ -9,7 +9,7 @@ deploy/release/RELEASE_GATES.md:
     bench --site frontend execute kh_aph.cai_dat_tinh_nang.kiem --kwargs '{"xac_nhan_site": "frontend"}'
 
 Dùng CHÍNH phần schema đã kiểm trên UAT (uat_candidate_setup.schema và các hàm schema() con), chỉ khác
-lớp khóa: phải là Administrator, gõ đúng tên site đích, đủ 8 cờ, và site chưa có dữ liệu nghiệp vụ
+lớp khóa: phải là Administrator, gõ đúng tên site đích, đủ 12 cờ, và site chưa có dữ liệu nghiệp vụ
 (site đã có dữ liệu phải đi quy trình bản sao + đối chiếu sổ riêng, bộ cài này từ chối).
 Dấu vân schema/số liệu để so sánh: deploy/release/dau_van_site.py (chạy được trên mọi phiên bản).
 """
@@ -21,6 +21,8 @@ FLAGS = (
     "kh_aph_shared_sales_order", "kh_aph_global_credit_warning",
     "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp",
     "kh_aph_funds_workflow", "kh_aph_source_change",
+    # 0.11.1
+    "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
 )
 CAM_SITE = ("erpnext.local",)
 

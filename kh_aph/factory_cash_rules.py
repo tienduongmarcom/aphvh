@@ -1,5 +1,7 @@
 """Phần thuần của kh_aph.factory_cash (không import frappe) để unit test."""
 
+from lab9x.vn_words import so_vn
+
 
 LOAI_CHI = "Chi phí nhỏ"
 LOAI_THU = "Thu tiền khách"
@@ -50,7 +52,7 @@ def vi_pham_khoa_gia(dong):
         if gia_bang is None:
             loi.append(f"Dòng {idx} ({ma}): thành phẩm chính chưa có giá Hà Nội trên bảng giá; nhờ kế toán đặt giá")
         elif abs(float(gia or 0) - float(gia_bang)) > SAI_SO_GIA:
-            loi.append(f"Dòng {idx} ({ma}): thành phẩm chính bán đúng giá Hà Nội chốt {float(gia_bang):,.0f}")
+            loi.append(f"Dòng {idx} ({ma}): thành phẩm chính bán đúng giá Hà Nội chốt {so_vn(float(gia_bang), 0)}")
     return loi
 
 
