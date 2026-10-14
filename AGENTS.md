@@ -51,7 +51,7 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 ```bash
 # Cổng 1 — unit test (không cần ERPNext; Python 3.11+)
 (cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 79 test
-PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 214 test
+PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 217 test
 # Dựng image như CI
 docker build -t kh-aph-erpnext:dev .
 ```
