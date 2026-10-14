@@ -7,7 +7,7 @@ thông báo lỗi trên giao diện: tiếng Việt có dấu.
 
 ## Dự án là gì
 
-Đơn vị tư vấn ERPNext **9xLab** đóng gói ERPNext **v16.36.1** cho doanh nghiệp Việt Nam, mỗi khách một máy ảo chạy Docker.
+Đơn vị tư vấn ERPNext **9xLab** đóng gói ERPNext **16.50.0 + Frappe 16.51.0** (ghim theo digest, từ 0.11.0) cho doanh nghiệp Việt Nam, mỗi khách một máy ảo chạy Docker.
 Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng (APH-VH)**, 4 đơn vị trên một site: APH (TT133), VH (TT99), HKD Minh Khang (TT152),
 TL (đơn vị nội bộ = XB, hàng không hóa đơn; không tạo company thứ năm). MISA chỉ lập hóa đơn thuế; ERP ghi tồn kho/công nợ
 vận hành. Production là site **`frontend`** trên VM GCloud `erpnext-prod` (Compose `~/erp/aph-vh`, project `erp-aph-vh`).
@@ -32,7 +32,7 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
 | `docs/` | Quy trình, rà soát pháp lý, đối chiếu tài khoản thông tư, thu hộ. |
-| `Dockerfile` | Image = `frappe/erpnext:v16.36.1` + lab9x + kh_aph (qua tệp `.pth`, thêm vào `sites/apps.txt`, chạy unit test lúc build). |
+| `Dockerfile` | Image = `frappe/erpnext@sha256:ac5b4591…` (ERPNext 16.50.0 + Frappe 16.51.0) + lab9x + kh_aph (qua tệp `.pth`, thêm vào `sites/apps.txt`, chạy unit test lúc build). |
 
 ### Đặt code ở đâu
 
