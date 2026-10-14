@@ -1,6 +1,6 @@
 # Triển khai bản 0.11.4 lên `frontend` (máy erpnext-prod)
 
-Production đang chạy 0.11.3 (từ 14/10/2026 ~21:00, 14 cờ). Bản 0.11.4 (đặc tả `docs/dac-ta-0.11.4.md`) thêm cờ thứ 15
+Production đang chạy 0.11.4 (từ 14/10/2026 ~22:15, 15 cờ, digest `54bf5a99…`). Bản 0.11.5 không thêm cờ: `trien_khai_frontend.sh 0.11.5` (không kèm cờ). (Ghi chú cũ:) Bản 0.11.4 (đặc tả `docs/dac-ta-0.11.4.md`) thêm cờ thứ 15
 `kh_aph_quan_tri`, gồm:
 - 3 báo cáo: lãi gộp quản trị cộng ngang 4 đơn vị, dòng tiền 7 / 30 ngày, khách chưa xác nhận công nợ;
 - khóa / mở khóa kỳ trên form Company;

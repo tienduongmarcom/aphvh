@@ -1,6 +1,14 @@
 # Bàn giao dự án APH-VH
 
-## 0000000. Bản 0.11.4 — 14/10/2026 (ĐANG KIỂM TRÊN CI, CHƯA PHÁT HÀNH)
+## 00000000. Bản 0.11.5 — 14/10/2026 (ĐANG KIỂM TRÊN CI)
+
+Không thêm cờ. Dịch thêm 651 chuỗi ERPNext 16.50 (kế toán, bán, mua, kho, sản xuất), tự bật Language `vi` khi cài
+(`khach_hang.bat_tieng_viet`), test tệp dịch. Cổng 3 nâng cấp từ 0.11.4 (digest `54bf5a99…`, 15 cờ).
+Từ đây gộp 2–3 bản mỗi lượt phát hành/triển khai (anh Tiến, 14/10 22:13).
+
+## 0000000. Bản 0.11.4 — 14/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~22:15, ĐẠT)
+
+Phát hành run 38582677234 xanh. Digest `sha256:54bf5a99f0174b234429e8e4541dc587e13e509461fb53fe8d0d9caa1543a881`.
 
 Đặc tả `docs/dac-ta-0.11.4.md` (anh Tiến đồng ý 21:08). Cờ thứ 15 `kh_aph_quan_tri`, gồm:
 
