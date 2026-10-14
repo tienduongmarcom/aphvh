@@ -13,6 +13,9 @@ APPROVAL_DOCTYPE = {'name': 'APH Credit Release', 'module': 'Kh Aph', 'custom': 
 def setup_uat():
     if frappe.local.site != "aphvh-web-uat" or frappe.session.user != "Administrator":
         frappe.throw("Candidate setup chỉ cho Administrator trên aphvh-web-uat")
+    # Từ 0.11.5 ap_dung đặt ngôn ngữ hệ thống = vi; bộ UAT HTTP/Desk gọi bằng Administrator và đọc thông báo,
+    # nhãn gốc tiếng Anh của ERPNext. Giữ Administrator ở tiếng Anh như trước; người dùng thử khác vẫn theo hệ thống.
+    frappe.db.set_value("User", "Administrator", "language", "en")
     return schema()
 
 
