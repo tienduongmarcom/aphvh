@@ -258,3 +258,12 @@ for _dt, _event, _method in (("Sales Order","on_cancel","coordinator_links"),("S
     _handlers = doc_events.setdefault(_dt,{}).get(_event,[])
     if isinstance(_handlers,str): _handlers=[_handlers]
     doc_events[_dt][_event]=_handlers+["kh_aph.source_change."+_method]
+
+# 0.11.1 (cờ kh_aph_factory_costing): giá tạm cho hàng nhà máy (R064). Hệ số phẩm cấp, xưởng, lệch kg đóng gói lại
+# nằm trong stock_entry_kg (quy tắc kg-v4); phân bổ cuối tháng và vét bồn là thao tác kế toán gọi tay.
+for _dt in ("Purchase Order", "Purchase Receipt", "Stock Reconciliation"):
+    _handlers = doc_events.setdefault(_dt, {}).get("validate", [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if "kh_aph.factory_costing.validate_gia_tam" not in _handlers:
+        _handlers.append("kh_aph.factory_costing.validate_gia_tam")
+    doc_events[_dt]["validate"] = _handlers
