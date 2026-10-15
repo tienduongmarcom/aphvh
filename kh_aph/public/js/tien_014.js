@@ -1,7 +1,7 @@
 // Lượt 0.14 (cờ kh_aph_tien_vay): đối chiếu sao kê trên thẻ tài khoản ngân hàng (chỉ đọc; dòng chưa ghi sổ mở phiếu nháp).
 (function () {
 	const bat = () => (frappe.boot.kh_aph || {}).tien_vay;
-	const MAU = {dong_tieu_de: 1, ngay: "Ngày", ma: "Số tham chiếu", noi_dung: "Diễn giải", ghi_no: "Ghi nợ", ghi_co: "Ghi có"};
+
 
 	function bang_ket_qua(m, frm) {
 		const mau = {"Khớp": "green", "Lệch": "orange", "Trùng": "red", "Chưa ghi sổ": "blue"};
@@ -35,14 +35,14 @@
 			if (!bat() || frm.is_new() || !frm.doc.is_company_account) return;
 			frm.add_custom_button(__("Đối chiếu sao kê"), () => {
 				frappe.db.get_value("Bank", frm.doc.bank, "kh_aph_mau_sao_ke").then(({message}) => {
-					const co_mau = message && message.kh_aph_mau_sao_ke;
+
 					const d = new frappe.ui.Dialog({
 						title: __("Đối chiếu sao kê {0}", [frm.doc.account_name]),
 						fields: [
-							{fieldname: "file_url", label: __("Tệp sao kê (.xlsx / .csv)"), fieldtype: "Attach", reqd: 1},
-							{fieldname: "anh_xa", label: __("Mẫu cột (để trống: dùng mẫu đã lưu của ngân hàng)"), fieldtype: "Code",
-							 options: "JSON", default: co_mau ? "" : JSON.stringify(MAU, null, 1)},
-							{fieldname: "luu_mau", label: __("Lưu mẫu cột cho ngân hàng này"), fieldtype: "Check", default: co_mau ? 0 : 1},
+							{fieldname: "file_url", label: __("Tệp sao kê (.xlsx / .xls / .csv)"), fieldtype: "Attach", reqd: 1},
+							{fieldname: "anh_xa", label: __("Mẫu cột (để trống: dùng mẫu đã lưu / mẫu có sẵn cho ACB, MB, VietinBank)"), fieldtype: "Code",
+							 options: "JSON"},
+							{fieldname: "luu_mau", label: __("Lưu mẫu cột cho ngân hàng này"), fieldtype: "Check", default: 0},
 						],
 						primary_action_label: __("Đối chiếu"),
 						primary_action(v) {

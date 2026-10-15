@@ -162,21 +162,55 @@ def ngay(x):
     return None
 
 
+def _chuan(x):
+    return " ".join(str(x or "").replace("\n", " ").split()).lower()
+
+
+# Mẫu cột sao kê theo ngân hàng (tiêu đề cột đúng như tệp tải từ internet banking, 15/10/2026). Dòng tiêu đề tự dò
+# (dòng đầu tiên có tên cột ngày), nên tệp có thêm / bớt dòng thông tin phía trên vẫn đọc được.
+MAU_NGAN_HANG = {
+    "ACB": {"ngay": "Ngày hiệu lực", "ma": "Số GD", "noi_dung": "Nội dung giao dịch",
+            "ghi_no": "Số tiền rút ra", "ghi_co": "Số tiền gửi vào"},
+    "MB": {"ngay": "NGÀY HẠCH TOÁN", "ma": "BÚT TOÁN", "noi_dung": "NỘI DUNG",
+           "ghi_no": "PHÁT SINH NỢ", "ghi_co": "PHÁT SINH CÓ"},
+    "VIETINBANK": {"ngay": "Ngày hạch toán/Accounting date", "ma": "Số giao dịch/ Transaction number",
+                   "noi_dung": "Mô tả giao dịch/ Transaction description", "ghi_no": "Nợ/ Debit", "ghi_co": "Có / Credit"},
+}
+TEN_KHAC = {"VIETIN": "VIETINBANK", "MBBANK": "MB", "MB BANK": "MB"}
+
+
+def mau_ngan_hang(ten):
+    k = (ten or "").strip().upper()
+    return MAU_NGAN_HANG.get(TEN_KHAC.get(k, k))
+
+
 def _chi_so(tieu_de, cot):
-    """cot: số thứ tự cột (bắt đầu 1) hoặc tên tiêu đề (không phân biệt hoa thường)."""
+    """cot: số thứ tự cột (bắt đầu 1) hoặc tên tiêu đề (không phân biệt hoa thường, khoảng trắng / xuống dòng)."""
     if cot in (None, ""):
         return None
     if isinstance(cot, int) or str(cot).isdigit():
         return int(cot) - 1
-    t = [str(h or "").strip().lower() for h in tieu_de]
-    c = str(cot).strip().lower()
+    t = [_chuan(h) for h in tieu_de]
+    c = _chuan(cot)
     return t.index(c) if c in t else None
+
+
+def _dong_tieu_de(bang, anh_xa):
+    """Dòng tiêu đề (1-based): theo mẫu nếu đúng, không thì dòng đầu tiên chứa cột ngày."""
+    hd = int(anh_xa.get("dong_tieu_de") or 0)
+    if 0 < hd <= len(bang) and _chi_so(bang[hd - 1], anh_xa.get("ngay")) is not None:
+        return hd
+    if isinstance(anh_xa.get("ngay"), str) and not str(anh_xa.get("ngay")).isdigit():
+        for i, r in enumerate(bang, 1):
+            if _chi_so(r, anh_xa["ngay"]) is not None:
+                return i
+    return hd or 1
 
 
 def doc_sao_ke(bang, anh_xa):
     """bang: danh sách dòng (list). anh_xa: {dong_tieu_de (1-based), ngay, ma, noi_dung, ghi_no, ghi_co} — cột theo số
     hoặc tên. Trả (dòng chuẩn, lỗi). so_tien > 0 là tiền vào (ghi có trên sao kê), < 0 là tiền ra."""
-    hd = int(anh_xa.get("dong_tieu_de") or 1)
+    hd = _dong_tieu_de(bang, anh_xa)
     if hd > len(bang):
         return [], ["Tệp không có dòng tiêu đề như mẫu"]
     tieu_de = bang[hd - 1]
@@ -239,6 +273,16 @@ def khop_sao_ke(dong, so_sach, sai_ngay=2):
             lech = abs(round(s["so_tien"] - d["so_tien"], 2)) > 0.5 or abs((_d(s["ngay"]) - d["ngay"]).days) > sai_ngay
             kq.update(trang_thai="Lệch" if lech else "Khớp", chung_tu=s["chung_tu"])
         else:
+            nd = (d.get("noi_dung") or "").upper()
+            trong = [i for i, s in enumerate(so_sach) if i not in dung and len(str(s.get("ma") or "")) >= 6
+                     and str(s["ma"]).strip().upper() in nd]
+            if len(trong) == 1:
+                s = so_sach[trong[0]]
+                dung.add(trong[0])
+                lech = abs(round(s["so_tien"] - d["so_tien"], 2)) > 0.5 or abs((_d(s["ngay"]) - d["ngay"]).days) > sai_ngay
+                kq.update(trang_thai="Lệch" if lech else "Khớp", chung_tu=s["chung_tu"])
+                ket.append(kq)
+                continue
             hop = [i for i, s in enumerate(so_sach) if i not in dung and not s.get("ma")
                    and abs(round(s["so_tien"] - d["so_tien"], 2)) <= 0.5 and abs((_d(s["ngay"]) - d["ngay"]).days) <= sai_ngay]
             if len(hop) == 1:

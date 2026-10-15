@@ -100,3 +100,32 @@ class SaoKe(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MauNganHang(unittest.TestCase):
+    """Bố cục giống tệp tải từ internet banking (dữ liệu giả): dòng tiêu đề tự dò, tiêu đề có xuống dòng / song ngữ."""
+
+    def test_acb(self):
+        bang = [["Chủ tài khoản: X"], [], [None, None, None, "Số dư đầu"],
+                ["Ngày hiệu lực", "Ngày giao dịch", "Số GD", "Nội dung giao dịch", "Số tiền rút ra", "Số tiền gửi vào", "Số dư"],
+                ["15/10/2026", "14/10/2026 19:24:08", "3754", "A CHUYEN KHOAN FT26287670450837 GD", "", 17125000.0, 1.0],
+                ["15/10/2026", "15/10/2026 08:51:39", "3756", "CHUYEN TIEN NOI BO", 53000000.0, "", 1.0]]
+        dong, loi = T.doc_sao_ke(bang, T.mau_ngan_hang("ACB"))
+        self.assertEqual(loi, [])
+        self.assertEqual([(d["ma"], d["so_tien"]) for d in dong], [("3754", 17125000), ("3756", -53000000)])
+        # phiếu thu ghi mã FT (nằm trong nội dung sao kê ACB) vẫn khớp
+        kq = T.khop_sao_ke(dong, [{"chung_tu": "PE1", "ma": "FT26287670450837", "ngay": "2026-10-14", "so_tien": 17125000}])
+        self.assertEqual((kq[0]["trang_thai"], kq[0]["chung_tu"]), ("Khớp", "PE1"))
+
+    def test_mb_vietin(self):
+        mb = [["SAO KÊ"], [], ["STT", "NGÀY GIAO DỊCH", "NGÀY HẠCH TOÁN", "PHÁT SINH NỢ", "PHÁT SINH CÓ", "SỐ DƯ", "ĐƠN VỊ", "NỘI DUNG",
+                              "BÚT TOÁN"],
+              ["1", "15/10/2026 14:34:58", "15/10/2026", 0.0, 6575000.0, 1.0, "X", "ck", "FT1"], ["TỔNG TIỀN", 0, 6575000.0]]
+        dong, _l = T.doc_sao_ke(mb, T.mau_ngan_hang("MB"))
+        self.assertEqual([(d["ma"], d["so_tien"]) for d in dong], [("FT1", 6575000)])
+        vt = [["LỊCH SỬ"], ["STT/No.", "Ngày hạch toán/Accounting date", "Mô tả giao dịch/ Transaction description", "Nợ/ Debit",
+                           "Có / Credit", "Số dư TK/ Account Balance", "Số giao dịch/ Transaction number"],
+              [0.0, "15-10-2026 11:06:49", "phi", 6336000.0, 0.0, 1.0, "146K26A0PALBTMD2"], ["Từ ngày 21/03/2025 ..."]]
+        dong, _l = T.doc_sao_ke(vt, T.mau_ngan_hang("VIETIN"))
+        self.assertEqual([(d["ngay"], d["ma"], d["so_tien"]) for d in dong], [(D(2026, 10, 15), "146K26A0PALBTMD2", -6336000)])
+        self.assertIsNone(T.mau_ngan_hang("Sacombank"))

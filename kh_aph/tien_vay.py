@@ -183,7 +183,10 @@ def dung_ngan_hang(duong_dan=None, cfg=None):
         if not frappe.db.exists("Bank", r["ngan_hang"].strip()):
             frappe.get_doc({"doctype": "Bank", "bank_name": r["ngan_hang"].strip()}).insert(ignore_permissions=True)
         if not frappe.db.exists("Bank Account", {"account": tk}):
-            ba = frappe.get_doc({"doctype": "Bank Account", "account_name": ten, "bank": r["ngan_hang"].strip(), "account": tk,
+            # tên thẻ Bank Account là duy nhất toàn site (account_name - ngân hàng): thêm viết tắt đơn vị
+            # (APH và VH cùng có MB đuôi 9999)
+            ba = frappe.get_doc({"doctype": "Bank Account", "account_name": f"{ten} {r['don_vi']}", "bank": r["ngan_hang"].strip(),
+                                 "account": tk,
                                  "company": cty, "is_company_account": 1, "mask": r["so_cuoi"]})
             ba.insert(ignore_permissions=True)
             kq["tao_the"].append(ba.name)
@@ -416,8 +419,13 @@ def _bang_tu_tep(file_url):
     if ten.endswith((".xlsx", ".xlsm")):
         import io
         from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(noi_dung), read_only=True, data_only=True)
+        # không dùng read_only: tệp MB ghi sai kích thước trang tính, chế độ read_only chỉ đọc được 1 dòng
+        wb = load_workbook(io.BytesIO(noi_dung), data_only=True)
         return [list(r) for r in wb.worksheets[0].iter_rows(values_only=True)]
+    if ten.endswith(".xls"):
+        import xlrd  # có sẵn trong bench Frappe
+        sh = xlrd.open_workbook(file_contents=noi_dung).sheet_by_index(0)
+        return [sh.row_values(i) for i in range(sh.nrows)]
     if ten.endswith(".csv"):
         import csv
         import io
@@ -425,7 +433,7 @@ def _bang_tu_tep(file_url):
         mau = txt[:2000]
         dau = ";" if mau.count(";") > mau.count(",") else ","
         return [r for r in csv.reader(io.StringIO(txt), delimiter=dau)]
-    frappe.throw("Chỉ nhận tệp .xlsx hoặc .csv (lưu lại tệp .xls thành .xlsx)")
+    frappe.throw("Chỉ nhận tệp .xlsx, .xls hoặc .csv")
 
 
 def _so_sach(tk, tu, den):
@@ -459,11 +467,14 @@ def doi_chieu_sao_ke(bank_account, file_url, anh_xa=None, luu_mau=0):
     if anh_xa:
         mau = frappe.parse_json(anh_xa) if isinstance(anh_xa, str) else anh_xa
     else:
-        mau = frappe.parse_json(frappe.db.get_value("Bank", ba.bank, F_MAU) or "{}")
+        mau = frappe.parse_json(frappe.db.get_value("Bank", ba.bank, F_MAU) or "{}") or T.mau_ngan_hang(ba.bank)
     if not mau:
         frappe.throw(f"Ngân hàng {ba.bank} chưa có mẫu cột sao kê: khai mẫu trên thẻ Ngân hàng hoặc trong hộp thoại")
     bang = _bang_tu_tep(file_url)
     dong, loi = T.doc_sao_ke(bang, mau)
+    co_san = T.mau_ngan_hang(ba.bank)
+    if not dong and not anh_xa and co_san and co_san != mau:  # mẫu đã lưu không hợp tệp: thử mẫu có sẵn của ngân hàng
+        dong, loi = T.doc_sao_ke(bang, co_san)
     if loi and not dong:
         frappe.throw("; ".join(loi))
     if cint(luu_mau) and anh_xa:

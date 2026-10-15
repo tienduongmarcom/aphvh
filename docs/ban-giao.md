@@ -1,5 +1,12 @@
 # Bàn giao dự án APH-VH
 
+## 000000000000. Bản 0.14.1 — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+
+Theo dữ liệu anh Tiến gửi 16:22: `khach.json` mục `ngan_hang` 15 tài khoản (VH 5, APH 7, MK 3; chỉ 4 số cuối, tệp gốc có số
+đầy đủ KHÔNG đưa vào repo). Đối chiếu sao kê đọc được tệp .xls (VietinBank), có sẵn mẫu cột ACB / MB / VietinBank, tự dò dòng
+tiêu đề, khớp được khi mã giao dịch (FT…) nằm trong nội dung sao kê (ACB). Sửa lỗi: tên thẻ Bank Account trùng giữa hai đơn vị
+(APH và VH cùng MB đuôi 9999) → thêm viết tắt đơn vị. Người thu / chi hộ (Trang, Ninh, Ánh): kế toán tạo trong danh mục Nhân viên.
+
 ## 00000000000. Lượt 0.14 (bản 0.14.0) — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 15/10 ~15:45, ĐẠT, digest `3a259c9b…`, 21 cờ; CI xanh trên 9fd3b28)
 
 Đặc tả `docs/dac-ta-0.14.md` (mục 7b tránh trùng, 7c khác đặc tả). Cờ 20 `kh_aph_trung_tam_ban` (Workspace "Trung tâm Bán hàng",
