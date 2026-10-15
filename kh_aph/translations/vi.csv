@@ -2177,3 +2177,6 @@ Bỏ tích để bỏ qua tỷ giá cũ hơn số ngày cho phép và lấy tỷ
 "Assign To","Giao việc cho"
 "Add Tags","Thêm thẻ"
 "Copy to Clipboard","Sao chép"
+"Delete","Xóa","Button in list view actions menu"
+"Delete","Xóa","Button in web form"
+"Submit","Xác nhận","Button in list view actions menu"
