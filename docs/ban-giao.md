@@ -1,6 +1,6 @@
 # Bàn giao dự án APH-VH
 
-## 0000000000. Lượt 0.13 (bản 0.13.0) — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+## 0000000000. Lượt 0.13 (bản 0.13.0) — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 15/10 ~11:45, ĐẠT, digest `e3136592…`, 19 cờ)
 
 Đặc tả `docs/dac-ta-0.13.md` (anh Tiến ok 09:28). Cờ 18 `kh_aph_kho_van_hanh` (Trung tâm Kho, chuyển kho khác R022, sửa SL nhập
 sai R024 bằng hủy-sửa, đề nghị bổ sung R057–R059, chênh lệch kiểm kê bước 2), cờ 19 `kh_aph_gia_san` (giá sàn có bảng người duyệt,
