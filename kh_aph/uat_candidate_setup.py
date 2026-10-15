@@ -19,11 +19,11 @@ def setup_uat():
     return schema()
 
 
-def schema():
+def schema(cho_phep_du_lieu=False):
     """Phần schema dùng chung cho UAT và bộ cài production (kh_aph.cai_dat_tinh_nang).
 
     Không tự kiểm site; người gọi phải kiểm Administrator và site đích. Vẫn đòi đủ cờ và site
-    chưa có dữ liệu nghiệp vụ.
+    chưa có dữ liệu nghiệp vụ, trừ khi `cho_phep_du_lieu` (0.14.2: site đã vận hành, chỉ gọi sau diễn tập bản sao).
     """
     flags = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery",
              "kh_aph_shared_sales_order", "kh_aph_global_credit_warning",
@@ -32,7 +32,7 @@ def schema():
         frappe.throw("Cần bật đủ flags candidate trên UAT trước khi setup")
     for dt in ("Customer", "Item", "Sales Order", "Delivery Note", "Sales Invoice",
                "Stock Entry", "Payment Entry", "GL Entry", "Stock Ledger Entry"):
-        if frappe.db.count(dt):
+        if not cho_phep_du_lieu and frappe.db.count(dt):
             frappe.throw("UAT phải là bản sao chưa có dữ liệu nghiệp vụ: " + dt)
     from kh_aph.constants import ROLE_NO_COST
     if not frappe.db.exists("Role", ROLE_NO_COST):

@@ -1,6 +1,17 @@
 # Bàn giao dự án APH-VH
 
-## 000000000000. Bản 0.14.1 — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+## 0000000000000. Bản 0.14.2 — 15/10/2026 (ĐANG KIỂM TRÊN CI) — diễn tập bản sao production
+
+Production đã có dữ liệu (1963 khách nhập lại giữ mã) nên bộ triển khai 0.14.1 dừng ở bước 1 "site không TRẮNG" (đúng thiết kế).
+Anh Tiến chọn làm quy trình diễn tập bản sao. Thêm `deploy/release/dien_tap_ban_sao.sh <PB> [cờ mới]`: sao lưu frontend, chạy
+image bản mới trong container TẠM cùng mạng/ổ sites, khôi phục vào site `dien-tap` (tắt lịch chạy, chép cờ + khóa mã hóa),
+migrate + bộ cài (`co_du_lieu=1`) + cây kho + `kiem_trien_khai`, so `tong` sổ với frontend, xóa site tạm, ghi dấu
+`~/dien-tap-<PB>.ok`. `trien_khai_frontend.sh`: site có dữ liệu thì đòi dấu diễn tập đúng bản, dưới 12 giờ, rồi chạy bộ cài chế độ
+có dữ liệu (`cai_dat_tinh_nang.cai/kiem(..., co_du_lieu=1)`; mặc định vẫn đòi site trắng). Cổng 3 có thêm khách + nhà cung
+cấp trên site CI, chạy chính script diễn tập bằng image ứng viên, và kiểm bộ cài từ chối khi thiếu `co_du_lieu`. 0.14.2 gồm
+luôn 0.14.1 (chưa lên production).
+
+## 000000000000. Bản 0.14.1 — 15/10/2026 (CI xanh, tag v0.14.1 phát hành; KHÔNG triển khai — gộp vào 0.14.2)
 
 Theo dữ liệu anh Tiến gửi 16:22: `khach.json` mục `ngan_hang` 15 tài khoản (VH 5, APH 7, MK 3; chỉ 4 số cuối, tệp gốc có số
 đầy đủ KHÔNG đưa vào repo). Đối chiếu sao kê đọc được tệp .xls (VietinBank), có sẵn mẫu cột ACB / MB / VietinBank, tự dò dòng

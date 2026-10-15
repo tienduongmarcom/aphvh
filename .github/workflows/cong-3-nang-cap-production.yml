@@ -101,6 +101,10 @@ jobs:
           ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
           ex frontend execute kh_aph.kho_chuan.dung --kwargs '{"duong_dan": "/tmp/khach.json", "xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-1c.txt"
           grep -q '"da_tao": \[".' "$RUNNER_TEMP/log-1c.txt"
+          # Production đã có danh mục khách / nhà cung cấp (từ 15/10/2026): site CI cũng phải có dữ liệu.
+          ex frontend execute frappe.client.insert --kwargs '{"doc": {"doctype": "Customer", "customer_name": "Khách diễn tập CI", "kh_aph_ma": "KH0000069"}}' > "$RUNNER_TEMP/log-1d.txt"
+          ex frontend execute frappe.client.insert --kwargs '{"doc": {"doctype": "Supplier", "supplier_name": "NCC diễn tập CI", "kh_aph_ma": "NCC0000001"}}' >> "$RUNNER_TEMP/log-1d.txt"
+          grep -q '"name": "KH0000069"' "$RUNNER_TEMP/log-1d.txt"
           dv frontend | tee "$RUNNER_TEMP/dv-0-truoc.txt"
           python3 - "$RUNNER_TEMP/dv-0-truoc.txt" <<'EOF'
           import json,sys
@@ -108,6 +112,20 @@ jobs:
           print(f"::notice title=Dấu vân trước nâng cấp (so với frontend thật)::schema {d['schema']['so_muc']} mục, sha {d['schema']['sha256'][:16]}")
           EOF
           grep -q '"kh_aph": "0.14.0"' "$RUNNER_TEMP/dv-0-truoc.txt"
+      - name: 1b. Diễn tập bản sao (dien_tap_ban_sao.sh) bằng image ứng viên; frontend không đổi
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          PB="$(grep -o '__version__ = "[^"]*"' "$GITHUB_WORKSPACE/kh_aph/__init__.py" | cut -d'"' -f2)"
+          # Không có dấu diễn tập thì bộ triển khai phải dừng ngay ở bước 1 (site có dữ liệu).
+          cd "$GITHUB_WORKSPACE"
+          BE="$(cd "$RUNNER_TEMP/erp/ci" && ./erpctl ps -q backend)" ERP_DIR="$RUNNER_TEMP/erp/ci" IMG=ghcr.io/tienduongmarcom/kh-aph-erpnext:ung-vien \
+            DAU_RA="$RUNNER_TEMP" bash deploy/release/dien_tap_ban_sao.sh "$PB" $FLAGS_MOI </dev/null 2>&1 | tee "$RUNNER_TEMP/log-1e.txt"
+          grep -q "DIỄN TẬP $PB: ĐẠT" "$RUNNER_TEMP/log-1e.txt"
+          test -s "$RUNNER_TEMP/dien-tap-$PB.ok"
+          cd "$RUNNER_TEMP/erp/ci"
+          dv frontend > "$RUNNER_TEMP/dv-0b-sau-dien-tap.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-0b-sau-dien-tap.txt" --phan schema,dem,tong,co,versions | tee "$RUNNER_TEMP/log-1f.txt"
+          if ./erpctl exec -T backend ls sites | grep -qx dien-tap; then echo "Site tạm còn sót"; exit 1; fi
       - name: 2. nang-cap.sh lên bản ứng viên (21 cờ cũ bật, cờ mới còn tắt)
         run: |
           source "$RUNNER_TEMP/ham.sh"
@@ -131,15 +149,20 @@ jobs:
           fi
           set +e
           ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "site-sai"}' > "$RUNNER_TEMP/log-3b.txt" 2>&1; rc2=$?
+          # Site có dữ liệu mà không khai co_du_lieu thì bộ cài từ chối.
+          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' > "$RUNNER_TEMP/log-3c.txt" 2>&1; rc3=$?
           set -e
+          tail -3 "$RUNNER_TEMP/log-3c.txt"
+          test "$rc3" -ne 0
+          grep -q "chưa có dữ liệu nghiệp vụ" "$RUNNER_TEMP/log-3c.txt"
           tail -5 "$RUNNER_TEMP/log-3b.txt"
           test "$rc2" -ne 0
       - name: 4. Bật cờ + cài + kiểm (chạy lại không đổi)
         run: |
           source "$RUNNER_TEMP/ham.sh"
-          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-4a.txt"
+          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend", "co_du_lieu": 1}' | tee "$RUNNER_TEMP/log-4a.txt"
           grep -q '"idempotent": true' "$RUNNER_TEMP/log-4a.txt"
-          ex frontend execute kh_aph.cai_dat_tinh_nang.kiem --kwargs '{"xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-4b.txt"
+          ex frontend execute kh_aph.cai_dat_tinh_nang.kiem --kwargs '{"xac_nhan_site": "frontend", "co_du_lieu": 1}' | tee "$RUNNER_TEMP/log-4b.txt"
           grep -q '"idempotent": true' "$RUNNER_TEMP/log-4b.txt"
           ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
           # Cây kho đã dựng ở bước 1 (như production): chạy lại bộ dựng của bản mới không tạo thêm kho nào.

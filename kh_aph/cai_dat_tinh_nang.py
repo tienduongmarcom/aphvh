@@ -47,21 +47,26 @@ def _kiem_dau_vao(xac_nhan_site):
         frappe.throw("Chưa bật đủ cờ trên site: " + ", ".join(thieu))
 
 
-def cai(xac_nhan_site=None):
-    """Cài schema tính năng (idempotent), rồi kiểm ngay. Trả về kết quả kiểm."""
+def cai(xac_nhan_site=None, co_du_lieu=0):
+    """Cài schema tính năng (idempotent), rồi kiểm ngay. Trả về kết quả kiểm.
+
+    co_du_lieu=1 (0.14.2): site đã có dữ liệu vận hành; chỉ dùng sau diễn tập bản sao
+    (deploy/release/dien_tap_ban_sao.sh) — trien_khai_frontend.sh đòi dấu diễn tập còn hạn.
+    """
     _kiem_dau_vao(xac_nhan_site)
     from kh_aph.uat_candidate_setup import schema
-    schema()
-    return kiem(xac_nhan_site)
+    schema(cho_phep_du_lieu=bool(cint(co_du_lieu)))
+    return kiem(xac_nhan_site, co_du_lieu)
 
 
-def kiem(xac_nhan_site=None):
+def kiem(xac_nhan_site=None, co_du_lieu=0):
     """Kiểm sau cài: chạy lại bộ cài phải không đổi gì; field, DocType, hook, quyền đúng như UAT."""
     _kiem_dau_vao(xac_nhan_site)
     from kh_aph.uat_candidate_setup import schema
     from kh_aph.uat_fresh_verify import kiem_schema
-    kq = kiem_schema(schema)
-    return {"trang_thai": "ĐẠT", "site": frappe.local.site, "idempotent": True,
+    co = bool(cint(co_du_lieu))
+    kq = kiem_schema(lambda: schema(cho_phep_du_lieu=co), can_trang=not co)
+    return {"trang_thai": "ĐẠT", "site": frappe.local.site, "idempotent": True, "co_du_lieu": int(co),
             "co": {f: cint(frappe.conf.get(f)) for f in FLAGS},
             **kq,
             "nghiem_thu_nghiep_vu": "NOT_TESTED"}

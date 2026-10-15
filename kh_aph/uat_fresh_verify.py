@@ -11,7 +11,7 @@ BLANK = ("Customer", "Item", "Sales Order", "Delivery Note", "Sales Invoice",
          "APH Shared Sales Order", "APH Credit Release")
 
 
-def kiem_schema(cai_lai):
+def kiem_schema(cai_lai, can_trang=True):
     """Chạy lại bộ cài `cai_lai()` để chứng minh idempotent rồi kiểm schema, hook, quyền. Trả về số liệu."""
     expected = {"APH", "VH", "MK", "TL"}
     assert set(frappe.get_all("Company", pluck="abbr")) == expected
@@ -39,7 +39,7 @@ def kiem_schema(cai_lai):
     filters = {"parent": "Delivery Note", "role": "Accounts Manager", "permlevel": 0, "if_owner": 0}
     assert frappe.db.get_value("Custom DocPerm", filters, "read") == 1
     blank = {dt: frappe.db.count(dt) for dt in BLANK}
-    assert not any(blank.values()), blank
+    assert not can_trang or not any(blank.values()), blank
     return {"companies": sorted(expected), "blank_counts": blank, "schema_counts": after}
 
 

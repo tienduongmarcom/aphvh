@@ -49,6 +49,10 @@ Không lấy dữ liệu test giả lập thay cho tài khoản Dũng/kế toán
 
 ## 3. Snapshot và rehearsal trên bản sao
 
+**Từ 0.14.2 (frontend đã có dữ liệu):** chạy `bash deploy/release/dien_tap_ban_sao.sh <PB> [cờ mới]` trong ~/trien-khai
+(đúng tag) ngay trước `trien_khai_frontend.sh`. Script làm tự động phần dưới trên site tạm `dien-tap` (image mới, scheduler
+tắt), so tổng sổ, rồi xóa site tạm; bộ triển khai đòi dấu `~/dien-tap-<PB>.ok` dưới 12 giờ. Cổng 3 chạy chính script này.
+
 Backup frontend bằng `bench --site frontend backup --with-files` trong backend với
 cwd /home/frappe/frappe-bench. Giữ database/public/private cùng thời điểm và cấu
 hình mã hóa ở nơi hạn chế truy cập; không gửi khóa lên chat/artifact công khai.

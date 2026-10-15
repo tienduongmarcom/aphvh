@@ -59,7 +59,8 @@ Bản 0.11.3 (đặc tả `docs/dac-ta-0.11.3.md`) thêm cờ thứ 14 `kh_aph_s
 **Điều kiện:**
 - Tag `v0.11.3` phát hành xanh: UAT candidate (b0111 14, b0112 13, b0113 13), Cổng 2, 2b, Cổng 3 (nâng cấp từ 0.11.2 theo
   digest).
-- Bước 1 phải TRẮNG.
+- Bước 1 phải TRẮNG. **Từ 0.14.2:** không trắng thì chạy trước `bash deploy/release/dien_tap_ban_sao.sh <PB> [cờ mới]` (ĐẠT,
+  dấu dưới 12 giờ); bộ triển khai khi đó chạy bộ cài chế độ có dữ liệu.
 
 **Chạy trên SSH vào máy chủ erpnext-prod** (user `tienduongmarcom`). Repo công khai nên không cần token:
 
