@@ -17,8 +17,10 @@ def kh(ten): return frappe.get_doc({"doctype": "Customer", "customer_name": p + 
 kh1, kh2, kh3 = kh("KH1"), kh("KH2"), kh("KH3")
 ncc = frappe.get_doc({"doctype": "Supplier", "supplier_name": p + "-NCC", "supplier_group": frappe.db.get_value("Supplier Group", {"is_group": 0})}).insert().name
 g = frappe.get_doc({"doctype": "Item Group", "item_group_name": p + "-HH", "parent_item_group": "HH - Hàng hóa", "is_group": 0}).insert().name
+t_aph = frappe.get_doc({"doctype": "Item Tax Template", "title": f"{p}-10", "company": aph,
+    "taxes": [{"tax_type": acc("33311", aph), "tax_rate": 10}]}).insert().name
 def mh(ma): return frappe.get_doc({"doctype": "Item", "item_code": p + "-" + ma, "item_name": p + "-" + ma, "item_group": g,
-    "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average"}).insert().name
+    "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average", "taxes": [{"item_tax_template": t_aph}]}).insert().name
 A, B = mh("A"), mh("B")
 kho = "Kho bán hàng Hà Nội - APH"
 kho2 = [w.name for w in frappe.get_all("Warehouse", {"company": aph, "is_group": 0, "name": ["!=", kho]}, ["name", "warehouse_type"])
