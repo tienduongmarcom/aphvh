@@ -33,7 +33,8 @@ dv() { docker exec -i -w $B/sites "$1" $B/env/bin/python - "$2" < deploy/release
 MANG="$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' "$BE" | awk '{print $1}')"
 OSITES="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/home/frappe/frappe-bench/sites"}}{{if .Name}}{{.Name}}{{else}}{{.Source}}{{end}}{{end}}{{end}}' "$BE")"
 [ -n "$MANG" ] && [ -n "$OSITES" ] || loi "không tìm thấy mạng / ổ sites của $BE"
-tam() { docker run --rm -i --network "$MANG" -v "$OSITES:$B/sites" -w $B -e DB_PASSWORD "$IMG" bash -c "$1"; }
+# --entrypoint bash: không để entrypoint của image chép tệp giao diện bản mới vào ổ sites dùng chung với production
+tam() { docker run --rm -i --network "$MANG" -v "$OSITES:$B/sites" -w $B -e DB_PASSWORD --entrypoint bash "$IMG" -c "$1"; }
 export DB_PASSWORD
 don_dep() {
   echo "== Dọn site tạm $TAM"

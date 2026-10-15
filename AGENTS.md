@@ -23,11 +23,11 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 | Đường dẫn | Nội dung |
 |---|---|
 | `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.8) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
-| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.14.2; production đang 0.14.0 (từ 15/10/2026 ~15:45)), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
+| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.14.2; production đang 0.14.2 (từ 15/10/2026 ~22:44)), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
 | `khach/<ten>/khach.json` | Cấu hình khách (một nguồn sự thật). `phien-ban.yaml`: image đang chạy + môi trường. |
 | `deploy/khach-hang/` | `dung.sh` (dựng mới), `nang-cap.sh` (nâng cấp, tự quay lui khi lỗi), `quay-lui.sh`, `compose.yaml`, `erpctl`. |
 | `deploy/cloud/` | Sao lưu 2 lần/ngày lên Google Cloud Storage (systemd timer). |
-| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`, 0.11.4 `b0114*.py`, lượt 0.12 `b012*.py`, lượt 0.13 `b013*.py`, lượt 0.14 `b014*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.14.0 theo digest, đã bật 21 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
+| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`, 0.11.4 `b0114*.py`, lượt 0.12 `b012*.py`, lượt 0.13 `b013*.py`, lượt 0.14 `b014*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.14.2 theo digest, đã bật 21 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
 | `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py`, `so_dau_van.py`), cổng phát hành, thủ tục triển khai frontend. |
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
