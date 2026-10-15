@@ -85,10 +85,24 @@ Mỗi vụ được xử lý nhiều lần đến khi 1381 / 3381 của vụ v�
   bán hàng; quyền duyệt chỉ theo bảng trên.
 - Kế toán trưởng xem giá vốn và lãi gộp ở báo cáo 0.11.4; Dũng không thấy giá vốn (giữ nguyên). Cảnh báo "dưới bảng giá" giữ nguyên.
 
+## 8. Quầy bán hàng của kế toán bán hàng (cờ `kh_aph_gia_san`, anh Tiến bổ sung 15/10)
+
+Quy trình hiện tại: nhận đơn (gọi, Zalo, khách đến) → lên đơn → in **phiếu xuất kho kiêm biên bản bàn giao** (2 tờ: kho lấy
+hàng giao ra xe ký, khách ký) → thu tiền mặt / kiểm tra chuyển khoản → nhập và in phiếu thu, khách ký → công nợ cộng trừ tay
+trong sổ cho khách ký → lúc rảnh gọi thu hồi nợ.
+
+| Việc | Cách làm |
+|---|---|
+| Phiếu xuất kho kiêm biên bản bàn giao | Giữ một chứng từ: phiếu giao (Delivery Note), mẫu in hiện có, nút in **2 liên** một lần. |
+| **Thu tiền nhanh** | Nút "Thu tiền" trên phiếu giao / hóa đơn / khách: một hộp thoại nhập **tiền mặt** và **chuyển khoản** (chọn tài khoản ngân hàng, ghi mã giao dịch hoặc nội dung CK); có thể trả cả nợ cũ. App lập phiếu thu (một phiếu cho mỗi hình thức), phân bổ vào hóa đơn theo kế hoạch đã chốt (không FIFO), in phiếu thu. |
+| Chuyển khoản | Kế toán bán hàng **nhận thông báo ngân hàng ngay** nên ghi thẳng phiếu thu đã xác nhận, không có bước chờ. Mã giao dịch / nội dung CK lưu trên phiếu để sau đối chiếu sao kê (R037) và chặn ghi trùng cùng mã. |
+| **Biên bản đối soát công nợ** | Mẫu in theo lần giao dịch (nợ cũ + phát sinh − đã thu = còn nợ) hoặc theo kỳ; chữ ký hai bên. In xong có nút ghi nhận là lần khách xác nhận công nợ (0.11.4). Thay sổ viết tay. |
+| **Thu hồi nợ** | Báo cáo "Khách cần gọi hôm nay" (quá hạn, đến hạn, đến ngày hẹn, lâu chưa xác nhận). Trên khách: ghi nhanh cuộc gọi (kết quả, ngày hẹn trả); đến hẹn tự lên danh sách. |
+
 ## 8. Kiểm thử
 
 - 19 cờ ở mọi danh sách; Cổng 3 nâng cấp từ **0.12.1** (digest `897f81c2…`, 17 cờ), bật 2 cờ mới.
 - Bộ UAT `b013` (dữ liệu giả): đổi ngày đầu kỳ bằng cấu hình; chốt chỉ khóa đến ngày đó, chứng từ sau ngày vẫn ghi được;
   dòng giá tạm chặn chốt; danh sách khách chưa có công nợ đầu kỳ; 3 lựa chọn hàng không giao được (tồn, công nợ đúng);
   sửa số lượng nhập sai 2 trường hợp + trường hợp bị từ chối; đề nghị bổ sung nhiều kho nguồn, không giữ hàng;
-  xử lý chênh lệch về 0 theo vụ; giá sàn: nhân viên bị chặn, không lộ con số; kế toán bán hàng tự duyệt trong mức, vượt mức bị chặn; trưởng phòng / KTT duyệt được; quyền Dũng.
+  xử lý chênh lệch về 0 theo vụ; thu tiền mặt + CK một lần, phân bổ đúng, mã CK trùng bị chặn; biên bản đối soát đúng số; danh sách gọi theo hẹn; giá sàn: nhân viên bị chặn, không lộ con số; kế toán bán hàng tự duyệt trong mức, vượt mức bị chặn; trưởng phòng / KTT duyệt được; quyền Dũng.
