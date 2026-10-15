@@ -98,6 +98,14 @@ Sau 0.14: **tạm dừng làm tính năng**, khách dùng một thời gian, gom
 - Dựng tài khoản ngân hàng: chạy tay `bench --site frontend execute kh_aph.tien_vay.dung_ngan_hang` sau khi anh gửi danh sách
   (khai vào `khach.json` mục `ngan_hang`).
 
+## 7d. Mã khách / mã nhà cung cấp giữ nguyên (anh Tiến 15/10 12:52, thay Q176 của 0.11.1)
+
+- Ô **"Mã khách"** (Customer) và **"Mã nhà cung cấp"** (Supplier), duy nhất. Mã đưa vào (nhập tay hoặc cột "Mã khách" trong tệp
+  Data Import, ví dụ KH0000069, KH0000112-1) **giữ nguyên** làm mã hệ thống. Trống thì app cấp mã tiếp theo cùng kiểu
+  (KH + 7 số, NCC + 7 số; tiền tố đổi được bằng site_config `kh_aph_tien_to_ma`). Mã trùng: báo lỗi đúng dòng, không tạo.
+- Lý do: Data Import của Frappe bỏ cột ID khi thêm mới (chỉ giữ khi đặt tên kiểu Prompt), nên mã MISA bị thay bằng KH-xxxxx.
+- Thuộc cờ `kh_aph_sales_adjust` (cờ của Q176). Quy tắc thuần: `lab9x.ma_doi_tuong`.
+
 ## 8. Kiểm thử
 
 - 21 cờ ở mọi danh sách; Cổng 3 nâng cấp từ 0.13.0, bật 2 cờ mới.

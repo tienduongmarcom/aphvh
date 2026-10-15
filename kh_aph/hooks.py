@@ -374,3 +374,11 @@ for _dt, _js in (("APH Shared Sales Order", "public/js/ban_014.js"), ("Delivery 
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + [_js]
+# 0.14 (cờ kh_aph_sales_adjust, thay Q176): mã khách / nhà cung cấp đưa vào giữ nguyên.
+for _dt in ("Customer", "Supplier"):
+    for _event, _handler in (("autoname", "kh_aph.sales_adjust.dat_ma"), ("validate", "kh_aph.sales_adjust.giu_ma")):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        if _handler not in _handlers:
+            _handlers.append(_handler)
+        doc_events[_dt][_event] = _handlers

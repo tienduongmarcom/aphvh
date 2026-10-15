@@ -61,7 +61,59 @@ def schema():
         ss.save(ignore_permissions=True)  # on_update đặt mặc định toàn hệ thống mà Customer.autoname đọc
     make_property_setter("Customer", "naming_series", "options", "KH-.#####", "Text", validate_fields_for_doctype=False)
     make_property_setter("Customer", "naming_series", "default", "KH-.#####", "Text", validate_fields_for_doctype=False)
-    return {"cust_master_name": "Naming Series"}
+    # 0.14 (đổi Q176 theo anh Tiến 15/10): mã khách / mã nhà cung cấp đưa vào giữ NGUYÊN (ô "Mã"); không có thì app cấp
+    # mã tiếp theo cùng kiểu (KH0000001, NCC0000001). Hook autoname chạy sau Customer/Supplier.autoname của ERPNext.
+    create_custom_fields(FIELDS_MA)
+    return {"cust_master_name": "Naming Series", "ma": "giữ nguyên mã đưa vào"}
+
+
+# ---------------------------------------------------------------- mã khách / nhà cung cấp (0.14, thay Q176)
+
+F_MA = "kh_aph_ma"
+TIEN_TO_MA = {"Customer": "KH", "Supplier": "NCC"}
+FIELDS_MA = {
+    "Customer": [{"fieldname": F_MA, "label": "Mã khách", "fieldtype": "Data", "insert_after": "customer_name", "unique": 1,
+                  "in_standard_filter": 1, "in_global_search": 1, "no_copy": 1, "bold": 1,
+                  "description": "Mã đưa vào (kể cả mã MISA như KH0000069) giữ nguyên làm mã khách. Để trống: hệ thống cấp mã tiếp theo."}],
+    "Supplier": [{"fieldname": F_MA, "label": "Mã nhà cung cấp", "fieldtype": "Data", "insert_after": "supplier_name", "unique": 1,
+                  "in_standard_filter": 1, "in_global_search": 1, "no_copy": 1, "bold": 1,
+                  "description": "Mã đưa vào giữ nguyên làm mã nhà cung cấp. Để trống: hệ thống cấp mã tiếp theo."}],
+}
+
+
+def _tien_to(doctype):
+    return ((frappe.conf.get("kh_aph_tien_to_ma") or {}).get(doctype)) or TIEN_TO_MA[doctype]
+
+
+def dat_ma(doc, method=None):
+    """Customer / Supplier autoname (sau ERPNext): mã đưa vào làm tên chứng từ; trống thì cấp mã tiếp theo."""
+    if not enabled() or not doc.meta.has_field(F_MA):
+        return
+    from lab9x import ma_doi_tuong as M
+    ma = M.chuan_hoa(doc.get(F_MA))
+    if ma:
+        loi = M.kiem(ma)
+        if loi:
+            frappe.throw(f"{loi}: {ma}")
+        if frappe.db.exists(doc.doctype, ma) or frappe.db.exists(doc.doctype, {F_MA: ma}):
+            frappe.throw(f"Mã {ma} đã có ({doc.doctype}); không tạo trùng", frappe.DuplicateEntryError)
+    else:
+        tt = _tien_to(doc.doctype)
+        ma = M.ma_tiep(tt, frappe.db.sql_list(f"SELECT name FROM `tab{doc.doctype}` WHERE name LIKE %s", tt + "%"))
+    doc.name = ma
+    doc.set(F_MA, ma)
+
+
+def giu_ma(doc, method=None):
+    """validate: ô Mã luôn bằng mã hệ thống (nhập Excel bằng cột ID cũng điền); không cho sửa mã sau khi tạo."""
+    if not enabled() or not doc.meta.has_field(F_MA) or not doc.name:
+        return
+    from lab9x import ma_doi_tuong as M
+    ma = M.chuan_hoa(doc.get(F_MA))
+    if not ma:
+        doc.set(F_MA, doc.name)
+    elif ma != doc.name:
+        frappe.throw(f"Mã {ma} khác mã hệ thống {doc.name}. Đổi mã dùng chức năng Đổi tên (Rename) của hệ thống.")
 
 
 # ---------------------------------------------------------------- R011/R084
