@@ -188,10 +188,20 @@ def chay(admin, phien, f, emit):
         assert r.get("valuation_rate") in (None, 0, 0.0) and r.get("gross_profit") in (None, 0, 0.0), r
     emit("HTTP_0111_GIA_VON_CHI_KE_TOAN", "PASS", {"ke_toan": "thấy", "nhan_vien_ban_hang": "không thấy, vẫn có cảnh báo bảng giá"})
 
-    # 9. Mã khách KH- (Q176)
+    # 9. Mã khách (Q176, đổi ở 0.14 theo anh Tiến 15/10): không ghi mã thì cấp KH + 7 số; mã đưa vào giữ nguyên; trùng thì chặn
+    import re
     kh = insert({"doctype": "Customer", "customer_name": f["p"] + "-moi", "customer_type": "Company"})
-    assert kh["name"].startswith("KH-"), kh["name"]
-    emit("HTTP_0111_MA_KHACH_KH", "PASS", {"ma": kh["name"]})
+    assert re.fullmatch(r"KH\d{7}", kh["name"]) and kh["kh_aph_ma"] == kh["name"], kh["name"]
+    ma = "KH" + f["p"][-6:].upper() + "-1"
+    kh2 = insert({"doctype": "Customer", "customer_name": f["p"] + "-misa", "customer_type": "Company", "kh_aph_ma": " " + ma + " "})
+    assert kh2["name"] == ma and kh2["kh_aph_ma"] == ma, kh2["name"]
+    try:
+        insert({"doctype": "Customer", "customer_name": f["p"] + "-trung", "customer_type": "Company", "kh_aph_ma": ma})
+        raise AssertionError("Mã trùng không bị chặn")
+    except urllib.error.HTTPError as exc:
+        body = json.loads(exc.read().decode(errors="replace"))
+        assert body.get("exc_type") in ("DuplicateEntryError", "UniqueValidationError"), body.get("exc_type")
+    emit("HTTP_0111_MA_KHACH_KH", "PASS", {"ma_cap": kh["name"], "ma_giu_nguyen": ma, "trung": "chặn"})
 
     # 10. Xe quay về (R016, R022, R024): ghi nợ lúc giao giữ nguyên; trả lại theo lượng thực chở về
     giao = rpc("kh_aph.delivery_status.confirm", {"name": f["dn"], "action": "handoff"})
