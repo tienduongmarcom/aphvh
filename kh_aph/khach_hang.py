@@ -68,6 +68,11 @@ def kiem_cau_hinh(cfg: dict) -> list:
         from lab9x.cay_kho import kiem_cau_hinh as kiem_cay
 
         loi += ["cay_kho: " + x for x in kiem_cay(cfg["cay_kho"], thay_abbr)]
+    if "ngan_hang" in cfg:
+        # 0.14: tài khoản ngân hàng (chỉ 4 số cuối; kh_aph.tien_vay.dung_ngan_hang dựng khi cờ kh_aph_tien_vay bật)
+        from lab9x.tien_vay import kiem_ngan_hang
+
+        loi += ["ngan_hang: " + x for x in kiem_ngan_hang(cfg["ngan_hang"], thay_abbr)]
     return loi
 
 

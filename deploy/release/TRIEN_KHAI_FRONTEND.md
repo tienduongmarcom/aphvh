@@ -1,6 +1,15 @@
-# Triển khai bản 0.11.4 lên `frontend` (máy erpnext-prod)
+# Triển khai bản mới lên `frontend` (máy erpnext-prod)
 
-Production đang chạy 0.11.4 (từ 14/10/2026 ~22:15, 15 cờ, digest `54bf5a99…`). Lượt 0.13 (bản 0.13.0) thêm cờ 18–19:
+Production đang chạy 0.13.0 (từ 15/10/2026 ~11:45, 19 cờ, digest `e3136592…`). Lượt 0.14 (bản 0.14.0) thêm cờ 20–21:
+
+```
+cd ~/trien-khai && git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.14.0 && git checkout -q --detach v0.14.0 && bash deploy/release/trien_khai_frontend.sh 0.14.0 kh_aph_trung_tam_ban kh_aph_tien_vay 2>&1 | tee ~/log-0.14.0-tong.txt
+```
+
+Sau khi có danh sách tài khoản ngân hàng trong `khach/aph-vh/khach.json` (mục `ngan_hang`, chỉ 4 số cuối) thì dựng tài khoản:
+`docker compose -p erp-aph-vh exec backend bench --site frontend execute kh_aph.tien_vay.dung_ngan_hang --kwargs '{"duong_dan": "/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json"}'`
+
+(Lịch sử) Lượt 0.13 (bản 0.13.0) thêm cờ 18–19:
 
 ```
 cd ~/trien-khai && git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.13.0 && git checkout -q --detach v0.13.0 && bash deploy/release/trien_khai_frontend.sh 0.13.0 kh_aph_kho_van_hanh kh_aph_gia_san 2>&1 | tee ~/log-0.13.0-tong.txt

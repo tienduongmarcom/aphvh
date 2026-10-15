@@ -43,6 +43,14 @@ class TestKhachHang(unittest.TestCase):
         self.assertTrue(any("YYYY-MM-DD" in x for x in K.kiem_cau_hinh({**co, "ngay_chot": "31/12/2025"})))
         self.assertTrue(any("YYYY-MM-DD" in x for x in K.kiem_cau_hinh({**co, "ngay_chot": "2026-02-30"})))
 
+    def test_ngan_hang(self):
+        """0.14: chỉ khai 4 số cuối tài khoản ngân hàng (repo công khai), đơn vị phải có trong cong_ty."""
+        co = {"khach_hang": "k", "cong_ty": [{"ten": "A", "abbr": "AB", "thong_tu": 99}]}
+        self.assertEqual(K.kiem_cau_hinh({**co, "ngan_hang": [{"don_vi": "AB", "ngan_hang": "ACB", "so_cuoi": "1234"}]}), [])
+        loi = K.kiem_cau_hinh({**co, "ngan_hang": [{"don_vi": "XY", "ngan_hang": "ACB", "so_cuoi": "0123456789"}]})
+        self.assertTrue(any(x.startswith("ngan_hang:") and "4 chữ số" in x for x in loi))
+        self.assertTrue(any("XY" in x for x in loi))
+
     def test_khach_dau_tien_hop_le(self):
         d = os.path.join(os.path.dirname(__file__), "..", "..", "khach")
         thay = 0

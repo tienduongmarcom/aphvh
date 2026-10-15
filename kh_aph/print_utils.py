@@ -311,3 +311,9 @@ def kh_aph_doi_soat(customer) -> dict:
     """Biên bản đối soát công nợ (lượt 0.13): số liệu theo đơn vị, ngày hôm nay."""
     from kh_aph.ban_quay import doi_soat
     return doi_soat(customer)
+
+
+def kh_aph_so_hoa_don_misa(doc) -> list:
+    """Lượt 0.14 (cờ kh_aph_trung_tam_ban): số hóa đơn MISA của hóa đơn bán lập từ phiếu giao; cờ tắt: []."""
+    from kh_aph.trung_tam_ban import so_hoa_don_misa
+    return so_hoa_don_misa(doc)

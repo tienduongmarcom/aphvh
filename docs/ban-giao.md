@@ -1,5 +1,14 @@
 # Bàn giao dự án APH-VH
 
+## 00000000000. Lượt 0.14 (bản 0.14.0) — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+
+Đặc tả `docs/dac-ta-0.14.md` (mục 7b tránh trùng, 7c khác đặc tả). Cờ 20 `kh_aph_trung_tam_ban` (Workspace "Trung tâm Bán hàng",
+giá sàn trên đơn chung theo đơn vị từng dòng, in lại phiếu xuất kho kèm số hóa đơn MISA + "In lại lần n"), cờ 21 `kh_aph_tien_vay`
+(tài khoản ngân hàng từ khach.json, sổ quỹ / sổ tiền gửi tồn sau từng phiếu, thu / chi hộ của giám đốc qua 1388 / 3388 đối tượng
+Nhân viên, khế ước vay + trích lãi 6351 / 3352 + dư nợ / lịch đến hạn + dòng tiền, đối chiếu sao kê .xlsx / .csv; Workspace "Tiền và vay").
+Mang theo sửa bản dịch sau 0.13.0 (Submit → xác nhận…). Thử cục bộ: bộ `b014` 8/8 ca. Chờ anh: danh sách tài khoản ngân hàng
+(đơn vị, ngân hàng, 4 số cuối, loại tiền), tên người thu / chi hộ, tệp sao kê mẫu. Sau 0.14: tạm dừng tính năng, gom vấn đề khi dùng.
+
 ## 0000000000. Lượt 0.13 (bản 0.13.0) — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 15/10 ~11:45, ĐẠT, digest `e3136592…`, 19 cờ)
 
 Đặc tả `docs/dac-ta-0.13.md` (anh Tiến ok 09:28). Cờ 18 `kh_aph_kho_van_hanh` (Trung tâm Kho, chuyển kho khác R022, sửa SL nhập

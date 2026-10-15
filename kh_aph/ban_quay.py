@@ -228,7 +228,9 @@ def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, m
         if not tk_ngan_hang:
             frappe.throw("Chọn tài khoản ngân hàng nhận chuyển khoản")
         _tk_ngan_hang_hop_le(company, tk_ngan_hang)
-        trung = frappe.db.get_value("Payment Entry", {"reference_no": ma_gd, "paid_to": tk_ngan_hang, "docstatus": ["<", 2]})
+        # chống ghi trùng chung với 0.14: phiếu thu / chi, bút toán, phiếu thực thu 0.10 trên cùng tài khoản
+        from kh_aph.tien_vay import ma_da_ghi
+        trung = ma_da_ghi(tk_ngan_hang, ma_gd)
         if trung:
             frappe.throw(f"Mã giao dịch {ma_gd} đã ghi ở phiếu thu {trung}")
     from erpnext.accounts.party import get_party_account

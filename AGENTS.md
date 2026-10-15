@@ -27,7 +27,7 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 | `khach/<ten>/khach.json` | Cấu hình khách (một nguồn sự thật). `phien-ban.yaml`: image đang chạy + môi trường. |
 | `deploy/khach-hang/` | `dung.sh` (dựng mới), `nang-cap.sh` (nâng cấp, tự quay lui khi lỗi), `quay-lui.sh`, `compose.yaml`, `erpctl`. |
 | `deploy/cloud/` | Sao lưu 2 lần/ngày lên Google Cloud Storage (systemd timer). |
-| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`, 0.11.4 `b0114*.py`, lượt 0.12 `b012*.py`, lượt 0.13 `b013*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.13.0 theo digest, đã bật 19 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
+| `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`, 0.11.4 `b0114*.py`, lượt 0.12 `b012*.py`, lượt 0.13 `b013*.py`, lượt 0.14 `b014*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.13.0 theo digest, đã bật 19 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
 | `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py`, `so_dau_van.py`), cổng phát hành, thủ tục triển khai frontend. |
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
@@ -50,15 +50,15 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 
 ```bash
 # Cổng 1 — unit test (không cần ERPNext; Python 3.11+)
-(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 90 test
-PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 217 test
+(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)          # 103 test
+PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .      # 219 test
 # Dựng image như CI
 docker build -t kh-aph-erpnext:dev .
 ```
 
 Cổng chạy trên GitHub Actions (Linux amd64): Cổng 2 tự chạy theo pull request đụng `kh_aph/**`, `apps/**`, `khach/**`,
 `Dockerfile`; UAT candidate và Cổng 3 tự chạy khi push nhánh PR; Cổng 2b chạy bằng tay hoặc khi phát hành. Số ca PASS kỳ
-vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13, b0113 13, b0114 7, b012 8, b013 10). **Không tuyên bố PASS khi
+vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13, b0113 13, b0114 7, b012 8, b013 10, b014 9). **Không tuyên bố PASS khi
 chưa có run xanh trên đúng SHA**; run FAIL giữ nguyên làm bằng chứng, không sửa assertion để che lỗi. Lỗi được in thành chú thích
 `::error::` — đọc qua `check-runs/<id>/annotations` của GitHub API.
 
@@ -123,8 +123,8 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   `after_request` (xem `dung_cost_policy.mask_cost_response`).
 - Mẫu in: sửa `.html` rồi chạy `python tools/build_print_formats.py` (tăng `MODIFIED`); hàm jinja mới phải nằm ở
   `kh_aph.print_utils` (có test).
-- 19 cờ (0.11.1 thêm `kh_aph_factory_costing`, `kh_aph_factory_cash`, `kh_aph_sales_adjust`, `kh_aph_data_review`;
-  0.11.2 thêm `kh_aph_kho_chuan`; 0.11.3 thêm `kh_aph_sales_p1`; 0.11.4 thêm `kh_aph_quan_tri`; 0.12 thêm `kh_aph_du_lieu`, `kh_aph_dau_ky`; 0.13 thêm `kh_aph_kho_van_hanh`, `kh_aph_gia_san`).
+- 21 cờ (0.11.1 thêm `kh_aph_factory_costing`, `kh_aph_factory_cash`, `kh_aph_sales_adjust`, `kh_aph_data_review`;
+  0.11.2 thêm `kh_aph_kho_chuan`; 0.11.3 thêm `kh_aph_sales_p1`; 0.11.4 thêm `kh_aph_quan_tri`; 0.12 thêm `kh_aph_du_lieu`, `kh_aph_dau_ky`; 0.13 thêm `kh_aph_kho_van_hanh`, `kh_aph_gia_san`; 0.14 thêm `kh_aph_trung_tam_ban`, `kh_aph_tien_vay`).
 - Accounting Period (khóa kỳ): ERPNext thêm " - <viết tắt>" vào cả `name` và `period_name`, chỉ cho khóa tháng đã
   kết thúc, và chặn cả lưu nháp chứng từ trong kỳ (ClosedAccountingPeriod). `bootstrap_doctypes_for_closing` lỗi với dict:
   tự dựng `closed_documents` từ hook `period_closing_doctypes`.
@@ -148,3 +148,7 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   phải có DocPerm Payment Entry (`ban_quay._quyen_ktbh`).
 - Accounting Period không được chồng nhau: khóa / chốt mới phải nới kỳ đã có (`dau_ky.khoa_den_ngay`).
 - Giá tạm (0.11.1) chỉ cho nhóm hàng có cờ, TRỪ phiếu tồn đầu kỳ (Opening Stock) — rà soát dòng 15/20.
+- Khế ước vay gắn bằng ô `kh_aph_khe_uoc` trên dòng bút toán (không dùng Accounting Dimension: thêm ô vào ~40 DocType).
+  Tạo Accounting Dimension thì ERPNext đẩy việc dựng ô vào hàng đợi `long` (không chạy ngay khi không có worker).
+- Tài khoản 1388 / 3388 không có loại (account_type) nên nhận đối tượng Nhân viên; tài khoản có loại khác Receivable / Payable /
+  Equity thì ERPNext chặn đối tượng (`validate_account_party_type`).

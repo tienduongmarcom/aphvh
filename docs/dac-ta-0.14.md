@@ -80,6 +80,24 @@ Một màn hình cho kế toán bán hàng và trưởng phòng bán hàng, gom 
 
 Sau 0.14: **tạm dừng làm tính năng**, khách dùng một thời gian, gom vấn đề rồi xử lý lượt sau.
 
+## 7c. Đã làm (15/10) — khác bản đặc tả ở đâu
+
+- **Khế ước trên bút toán là một ô "Khế ước vay" trên dòng bút toán** (Journal Entry Account), không dùng Accounting Dimension của
+  ERPNext: chiều phân tích thêm ô vào ~40 loại chứng từ, nặng và khó gỡ; ô riêng đủ cho báo cáo dư nợ / lãi theo khế ước.
+  Bắt buộc trên dòng 341x; dòng lãi 635 / 335 gắn khế ước để báo cáo lãi.
+- Trích lãi: app thêm **6351 "Chi phí lãi vay"** (dưới 635) và **3352 "Chi phí lãi vay phải trả"** (dưới 335) cho APH, VH
+  (rà soát pháp lý dòng 23). Lãi = dư nợ thực từng ngày × lãi suất / 365, trừ lãi đã ghi thẳng 635 trong tháng; mỗi đơn vị
+  mỗi tháng một bút toán nháp. HKD chưa trích lãi (không có 335/635).
+- Thu / chi hộ: ghi trên 1388 / 3388 có sẵn với đối tượng **Nhân viên** (không tạo tài khoản con). 5 loại: thu hộ khách,
+  chi hộ trả NCC, chi hộ chi phí, giám đốc nộp lại, công ty hoàn tiền.
+- Số hóa đơn MISA khi in lại lấy từ ô số / ký hiệu hóa đơn trên hóa đơn bán (hồ sơ MISA 0.11.3 cập nhật cả khi thay thế / hủy).
+- Workspace thứ hai **"Tiền và vay"** cho kế toán (sổ quỹ, khế ước, dư nợ, công nợ giám đốc, tài khoản ngân hàng, bút toán nháp).
+- Sao kê: tệp .xlsx / .csv (tệp .xls cũ lưu lại thành .xlsx); mẫu cột lưu trên thẻ **Ngân hàng**; dòng chưa ghi sổ mở phiếu
+  thu / chi nháp điền sẵn. Mã giao dịch: hàm chung `tien_vay.ma_da_ghi` (phiếu thu / chi, bút toán, phiếu thực thu 0.10),
+  quầy thu tiền 0.13 dùng luôn hàm này.
+- Dựng tài khoản ngân hàng: chạy tay `bench --site frontend execute kh_aph.tien_vay.dung_ngan_hang` sau khi anh gửi danh sách
+  (khai vào `khach.json` mục `ngan_hang`).
+
 ## 8. Kiểm thử
 
 - 21 cờ ở mọi danh sách; Cổng 3 nâng cấp từ 0.13.0, bật 2 cờ mới.

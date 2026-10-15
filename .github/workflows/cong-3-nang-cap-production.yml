@@ -32,7 +32,8 @@ env:
     kh_aph_kho_chuan kh_aph_sales_p1 kh_aph_quan_tri kh_aph_du_lieu kh_aph_dau_ky
     kh_aph_kho_van_hanh kh_aph_gia_san
   # cờ mới của lượt 0.14 (để trống thì bước 3 chỉ kiểm gõ sai site)
-  FLAGS_MOI: ""
+  FLAGS_MOI: >-
+    kh_aph_trung_tam_ban kh_aph_tien_vay
 jobs:
   dien-tap:
     runs-on: ubuntu-latest

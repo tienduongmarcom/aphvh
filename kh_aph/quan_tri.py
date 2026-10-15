@@ -256,6 +256,12 @@ def dong_tien_cong_ty(company, ngay):
             continue
         chi.append((r.due_date, r.con))
         ct_chi.append(r)
+    # 0.14 (cờ kh_aph_tien_vay): gốc vay còn nợ + lãi chưa trả đến hạn theo khế ước
+    from kh_aph.tien_vay import khoan_vay_den_han
+    for han, con, k in khoan_vay_den_han(company, ngay):
+        chi.append((han, con))
+        ct_chi.append(frappe._dict(name=k["name"], supplier=None, supplier_name="Vay: " + (k["ben_cho_vay"] or ""),
+                                   nb=0, due_date=han, con=con))
     return Q.dong_tien(so_du, thu, chi, ngay), ct_thu, ct_chi
 
 

@@ -69,6 +69,10 @@ def schema():
     from kh_aph import ban_quay, kho_van_hanh
     kho_van_hanh.schema()
     ban_quay.schema()
+    # 0.14: Trung tâm Bán hàng, tiền và vay (mỗi hàm tự đòi cờ của mình).
+    from kh_aph import tien_vay, trung_tam_ban
+    trung_tam_ban.schema()
+    tien_vay.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
     create_custom_fields({'Delivery Note': [

@@ -356,3 +356,21 @@ for _dt in ("Delivery Note", "Sales Order", "Sales Invoice", "Customer"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + (["public/js/kho_013.js"] if _dt == "Delivery Note" else []) + ["public/js/quay_013.js"]
+
+# Lượt 0.14 (cờ kh_aph_trung_tam_ban, kh_aph_tien_vay): Trung tâm Bán hàng, tiền và vay.
+jinja["methods"] += ["kh_aph.print_utils.kh_aph_so_hoa_don_misa"]
+has_permission["APH Khe uoc vay"] = "kh_aph.tien_vay.has_permission"
+for _dt, _event, _handler in (("APH Shared Sales Order", "validate", "kh_aph.trung_tam_ban.validate_chung"),
+                              ("APH Shared Sales Order", "before_submit", "kh_aph.trung_tam_ban.before_submit_chung"),
+                              ("APH Shared Sales Order", "on_submit", "kh_aph.trung_tam_ban.on_submit_chung"),
+                              ("Journal Entry", "validate", "kh_aph.tien_vay.validate_but_toan")):
+    _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if _handler not in _handlers:
+        _handlers.append(_handler)
+    doc_events[_dt][_event] = _handlers
+for _dt, _js in (("APH Shared Sales Order", "public/js/ban_014.js"), ("Delivery Note", "public/js/ban_014.js"),
+                 ("Bank Account", "public/js/tien_014.js")):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + [_js]

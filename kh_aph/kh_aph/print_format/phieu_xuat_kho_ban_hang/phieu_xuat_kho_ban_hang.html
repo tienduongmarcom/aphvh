@@ -19,6 +19,9 @@
     <div class="aph-name">{{ "PHIẾU NHẬP KHO" if tra else "PHIẾU XUẤT KHO" }}</div>
     <div class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
     <div>Số: {{ doc.name }}</div>
+    {%- if not tra %}{% set hd_misa = kh_aph_so_hoa_don_misa(doc) %}{% if hd_misa %}
+    <div>Hóa đơn {{ hd_misa | join("; ") }}</div>{% endif %}{% endif %}
+    {%- if doc.get("kh_aph_lan_in_lai") %}<div><b>In lại lần {{ doc.kh_aph_lan_in_lai }}</b></div>{% endif %}
   </td>
   <td class="aph-side"></td>
 </tr></table>

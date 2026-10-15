@@ -61,6 +61,8 @@ def _env(an):
         kh_aph_bbgn_an_gia=lambda doc: False,
         kh_aph_sl_hien_thi=lambda row: None,
         kh_aph_thuc_nhan=lambda doc: {},
+        # 0.14: mặc định như cờ kh_aph_trung_tam_ban tắt (không số hóa đơn MISA)
+        kh_aph_so_hoa_don_misa=lambda doc: [],
     )
     return env
 
@@ -208,6 +210,22 @@ class TestDeliveryNotePrints(unittest.TestCase):
                     kh_aph_bien_so_xe="29C-123.45")
         )
         self.assertIn("Lê Văn Xe – lái xe nhà xe Hùng Phát, biển số 29C-123.45", out)
+        self.assertNotIn("In lại", out)
+        self.assertNotIn("Hóa đơn ký hiệu", out)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_in_lai_so_hoa_don_misa(self):
+        """0.14 (Q197): bản in lại có dấu "In lại lần n" và số hóa đơn MISA; phiếu trả lại không in số hóa đơn."""
+        html = (ROOT / "phieu_xuat_kho_ban_hang" / "phieu_xuat_kho_ban_hang.html").read_text(encoding="utf-8")
+        env = _env(False)
+        env.globals.update(kh_aph_so_hoa_don_misa=lambda doc: ["ký hiệu 1C26TAA số 0000123 ngày 03/10/2026"])
+        doc = _dn()
+        doc.kh_aph_lan_in_lai = 2
+        out = env.from_string(html).render(doc=doc)
+        self.assertIn("Hóa đơn ký hiệu 1C26TAA số 0000123 ngày 03/10/2026", out)
+        self.assertIn("In lại lần 2", out)
+        out = env.from_string(html).render(doc=_dn(is_return=1, return_against="MAT-DN-2026-00001"))
+        self.assertNotIn("Hóa đơn ký hiệu", out)
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_phieu_nhap_hang_tra_lai(self):

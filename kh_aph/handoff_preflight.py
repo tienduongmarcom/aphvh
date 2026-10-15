@@ -9,7 +9,7 @@ FLAGS = (
     "kh_aph_high_risk_credit_guard", "kh_aph_quantity_valuation_mvp", "kh_aph_funds_workflow", "kh_aph_source_change",
     "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
     "kh_aph_kho_chuan", "kh_aph_sales_p1", "kh_aph_quan_tri",
-    "kh_aph_du_lieu", "kh_aph_dau_ky", "kh_aph_kho_van_hanh", "kh_aph_gia_san",
+    "kh_aph_du_lieu", "kh_aph_dau_ky", "kh_aph_kho_van_hanh", "kh_aph_gia_san", "kh_aph_trung_tam_ban", "kh_aph_tien_vay",
 )
 COUNTS = (
     "User", "Customer", "Supplier", "Item", "Warehouse", "Sales Order",

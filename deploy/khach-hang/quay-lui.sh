@@ -31,7 +31,8 @@ FLAGS = ("kh_aph_server_cost_guard", "kh_aph_post_receivable_on_delivery", "kh_a
          "kh_aph_funds_workflow", "kh_aph_source_change",
          "kh_aph_factory_costing", "kh_aph_factory_cash", "kh_aph_sales_adjust", "kh_aph_data_review",
          "kh_aph_kho_chuan", "kh_aph_sales_p1", "kh_aph_quan_tri",
-         "kh_aph_du_lieu", "kh_aph_dau_ky", "kh_aph_kho_van_hanh", "kh_aph_gia_san")
+         "kh_aph_du_lieu", "kh_aph_dau_ky", "kh_aph_kho_van_hanh", "kh_aph_gia_san",
+         "kh_aph_trung_tam_ban", "kh_aph_tien_vay")
 d = json.load(sys.stdin)
 for f in FLAGS:
     try: v = int(str(d.get(f) or 0).strip() or 0)
