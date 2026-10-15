@@ -45,7 +45,7 @@ ss.save()
 frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_type": "Bank", "is_group": 0}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "kh3": kh3, "ncc": ncc, "A": A, "B": B,
-    "kho": kho, "kho2": kho2, "pl": pl, "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "tp": tp, "dung": dung_u, "date": today(),
+    "kho": kho, "kho2": kho2, "t_aph": t_aph, "pl": pl, "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "tp": tp, "dung": dung_u, "date": today(),
     "acc": {"tam": acc("9990", aph), "tien": acc("1111", aph), "bank": bank}}, ensure_ascii=False, default=str))
 frappe.destroy()
 """

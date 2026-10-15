@@ -57,7 +57,8 @@ def chay(admin, phien, f, emit):
                        "transaction_date": ngay_ct or d, "delivery_date": ngay_ct or d,
                        "selling_price_list": f["pl"], "currency": "VND", "conversion_rate": 1,
                        "items": [{"item_code": item or f["A"], "qty": qty, "uom": "Kg", "conversion_factor": 1, "rate": rate,
-                                  "warehouse": f["kho"], "delivery_date": ngay_ct or d}]}, caller or ktt)
+                                  "warehouse": f["kho"], "delivery_date": ngay_ct or d,
+                                  "item_tax_template": f.get("t_aph")}]}, caller or ktt)
 
     def giao(so, caller=None):
         dn = rpc("erpnext.selling.doctype.sales_order.sales_order.make_delivery_note", {"source_name": so["name"]}, caller or ktt)
