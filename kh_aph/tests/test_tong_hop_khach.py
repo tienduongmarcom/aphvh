@@ -52,7 +52,9 @@ class TestTongHop(unittest.TestCase):
                                  # 0.11.3: hồ sơ hóa đơn MISA, lịch sử gia hạn (cờ kh_aph_sales_p1)
                                  "aph_hoa_don_ngoai", "aph_dong_hoa_don_ngoai", "aph_lich_su_gia_han",
                                  # 0.12.0–0.12.1: đề nghị số liệu (kh_aph_du_lieu), số dư đầu kỳ nguồn (kh_aph_dau_ky)
-                                 "aph_de_nghi_so_lieu", "aph_dong_de_nghi_so_lieu", "aph_so_du_dau_ky_nguon"})
+                                 "aph_de_nghi_so_lieu", "aph_dong_de_nghi_so_lieu", "aph_so_du_dau_ky_nguon",
+                                 # 0.13: giá sàn, người duyệt giá sàn (kh_aph_gia_san)
+                                 "aph_gia_san", "aph_nguoi_duyet_gia_san"})
 
 
 if __name__ == "__main__":

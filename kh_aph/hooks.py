@@ -341,3 +341,18 @@ for _dt in ("Customer", "Company"):
 has_permission["APH De nghi so lieu"] = "kh_aph.du_lieu.has_permission"
 has_permission["APH So du dau ky nguon"] = "kh_aph.dau_ky.has_permission"
 permission_query_conditions["APH So du dau ky nguon"] = "kh_aph.dau_ky.query_conditions"
+
+# Lượt 0.13 (cờ kh_aph_kho_van_hanh, kh_aph_gia_san): kho vận hành, giá sàn, quầy bán hàng.
+jinja["methods"] += ["kh_aph.print_utils.kh_aph_doi_soat"]
+has_permission["APH Gia san"] = "kh_aph.ban_quay.has_permission"
+for _dt in ("Sales Order", "Sales Invoice"):
+    for _event, _handler in (("validate", "kh_aph.ban_quay.validate"), ("before_submit", "kh_aph.ban_quay.before_submit")):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        if _handler not in _handlers:
+            _handlers.append(_handler)
+        doc_events[_dt][_event] = _handlers
+for _dt in ("Delivery Note", "Sales Order", "Sales Invoice", "Customer"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + (["public/js/kho_013.js"] if _dt == "Delivery Note" else []) + ["public/js/quay_013.js"]

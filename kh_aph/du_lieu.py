@@ -75,6 +75,7 @@ def _workspace():
         ("Nhập dữ liệu (Data Import)", "DocType", "Data Import"),
         ("Đối chiếu số dư đầu kỳ", "Report", "Doi chieu so du dau ky"),
         ("Số dư đầu kỳ theo bảng nguồn", "DocType", "APH So du dau ky nguon"),
+        ("Khách chưa có công nợ đầu kỳ", "Report", "Khach chua co cong no dau ky"),
         ("Tồn kho đầu kỳ (Điều chỉnh theo kiểm kê)", "DocType", "Stock Reconciliation"),
         ("Công nợ đầu kỳ (Opening Invoice Creation Tool)", "DocType", "Opening Invoice Creation Tool"),
         ("Tiền đầu kỳ (Bút toán)", "DocType", "Journal Entry"),

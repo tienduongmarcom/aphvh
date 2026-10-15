@@ -305,3 +305,9 @@ def kh_aph_sl_hien_thi(row):
 def kh_aph_thuc_nhan(doc):
     from kh_aph.sales_adjust import kh_aph_thuc_nhan as f
     return f(doc)
+
+
+def kh_aph_doi_soat(customer) -> dict:
+    """Biên bản đối soát công nợ (lượt 0.13): số liệu theo đơn vị, ngày hôm nay."""
+    from kh_aph.ban_quay import doi_soat
+    return doi_soat(customer)

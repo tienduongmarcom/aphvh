@@ -121,15 +121,36 @@ def doi_chieu(company, ngay):
     dong.append({"loai": f"Số dư tài khoản tạm {s['tk_tam']}", "so_so": s["du_tam"],
                  "chenh": D.can_bang_tk_tam(s["du_tam"], tong),
                  "trang_thai": "Về 0" if abs(s["du_tam"]) < 1 else "Còn số dư = phần chưa nạp"})
+    tam = phieu_gia_tam(company, ngay)
+    dong.append({"loai": f"Phiếu tồn đầu kỳ còn giá tạm: {len(tam)} phiếu", "so_so": sum(t.gia_tri for t in tam),
+                 "trang_thai": "Còn giá tạm — chưa chốt được" if tam else ""})
     lech_kho = round(s["so_kho"] - s["so_cai_kho"], 2)
     dong.append({"loai": "Kiểm: sổ kho − sổ cái tài khoản kho", "so_nguon": s["so_kho"], "so_so": s["so_cai_kho"],
                  "chenh": lech_kho, "trang_thai": D.KHOP if abs(lech_kho) < 1 else D.LECH})
     return dong
 
 
+def phieu_gia_tam(company, ngay):
+    """Phiếu tồn đầu kỳ (Stock Reconciliation mục đích Opening Stock) tại ngày đầu kỳ còn đánh dấu Giá tạm (rà soát dòng 15)."""
+    if not frappe.get_meta("Stock Reconciliation").has_field("kh_aph_gia_tam"):
+        return []
+    return frappe.db.sql("""SELECT sr.name, SUM(i.amount) AS gia_tri FROM `tabStock Reconciliation` sr
+        JOIN `tabStock Reconciliation Item` i ON i.parent=sr.name
+        WHERE sr.company=%s AND sr.docstatus=1 AND sr.purpose='Opening Stock' AND sr.posting_date=%s AND sr.kh_aph_gia_tam=1
+        GROUP BY sr.name""", (company, str(getdate(ngay))), as_dict=True)
+
+
+@frappe.whitelist()
+def ngay_dau_ky():
+    """Ngày đầu kỳ cho bộ lọc báo cáo (site_config kh_aph_ngay_dau_ky hoặc khach.json)."""
+    can_quyen()
+    return ngay_mac_dinh()
+
+
 @frappe.whitelist(methods=["POST"])
 def chot_dau_ky(company, ngay, ly_do):
-    """Bốn loại phải Khớp; rồi khóa tháng chứa ngày đầu kỳ (Accounting Period chuẩn, qua kh_aph.quan_tri.khoa_ky)."""
+    """Bốn loại phải Khớp, không còn phiếu tồn giá tạm; rồi khóa từ đầu tháng đến HẾT NGÀY đầu kỳ (Accounting Period chuẩn).
+    Chứng từ sau ngày đầu kỳ (kể cả cùng tháng) vẫn ghi được."""
     can_quyen()
     from kh_aph.constants import ROLE_NO_COST
     roles = set(frappe.get_roles())
@@ -139,11 +160,53 @@ def chot_dau_ky(company, ngay, ly_do):
         frappe.throw("Ghi lý do chốt")
     chua = [f"{d['loai']}: {d['trang_thai']}" for d in doi_chieu(company, ngay)
             if d["loai"] in D.LOAI_DAU_KY and d["trang_thai"] != D.KHOP]
+    tam = phieu_gia_tam(company, ngay)
+    if tam:
+        chua.append("phiếu tồn còn giá tạm: " + ", ".join(t.name for t in tam[:5]))
     if chua:
         frappe.throw("Chưa chốt được, còn: " + "; ".join(chua))
-    from kh_aph.quan_tri import khoa_ky
-    kq = khoa_ky(company, str(getdate(ngay))[:7], f"Chốt số dư đầu kỳ {ngay}. {ly_do.strip()}")
-    return {"chot": True, **kq}
+    return {"chot": True, **khoa_den_ngay(company, ngay, f"Chốt số dư đầu kỳ {ngay}. {ly_do.strip()}")}
+
+
+def khoa_den_ngay(company, ngay, ly_do):
+    """Accounting Period từ đầu tháng đến ngày đầu kỳ, khóa mọi loại chứng từ ghi sổ (như khóa kỳ 0.11.4)."""
+    cuoi = getdate(ngay)
+    dau = cuoi.replace(day=1)
+    # Kỳ đã có chồng lên khoảng này (khóa tháng 0.11.4 hoặc lần chốt trước): nới kỳ đó thay vì tạo kỳ chồng (ERPNext cấm).
+    co = frappe.db.sql("""SELECT name FROM `tabAccounting Period` WHERE company=%s AND start_date<=%s AND end_date>=%s
+        ORDER BY start_date LIMIT 1""", (company, cuoi, dau))
+    if co:
+        ap = frappe.get_doc("Accounting Period", co[0][0])
+        ap.start_date = min(getdate(ap.start_date), dau)
+        ap.end_date = max(getdate(ap.end_date), cuoi)
+        ap.disabled = 0
+        ap.save(ignore_permissions=True)
+    else:
+        loai = list(dict.fromkeys(frappe.get_hooks("period_closing_doctypes") or []))
+        ap = frappe.get_doc({"doctype": "Accounting Period", "period_name": f"Chốt đầu kỳ {cuoi}", "company": company,
+                             "start_date": dau, "end_date": cuoi,
+                             "closed_documents": [{"document_type": dt, "closed": 1} for dt in loai]})
+        ap.insert(ignore_permissions=True)  # quyền đã kiểm: kế toán trưởng
+    ap.add_comment("Comment", f"{ly_do} — bởi {frappe.session.user}")
+    return {"ky": ap.name, "da_khoa": True, "tu": str(getdate(ap.start_date)), "den": str(getdate(ap.end_date))}
+
+
+def khach_chua_co_cong_no(company, ngay):
+    """Khách có đơn / giao / hóa đơn / phiếu thu SAU ngày đầu kỳ mà chưa có hóa đơn đầu kỳ (is_opening) của công ty."""
+    ngay = str(getdate(ngay))
+    return frappe.db.sql("""SELECT k.customer, COUNT(*) AS so_ct, SUM(k.ban) AS tong_ban, SUM(k.thu) AS tong_thu,
+            MAX(k.ngay) AS lan_cuoi FROM (
+          SELECT customer, grand_total AS ban, 0 AS thu, posting_date AS ngay FROM `tabSales Invoice`
+            WHERE company=%(c)s AND docstatus=1 AND posting_date>%(d)s AND IFNULL(is_opening,'No')='No'
+          UNION ALL SELECT customer, 0, 0, posting_date FROM `tabDelivery Note`
+            WHERE company=%(c)s AND docstatus=1 AND posting_date>%(d)s
+          UNION ALL SELECT customer, 0, 0, transaction_date FROM `tabSales Order`
+            WHERE company=%(c)s AND docstatus=1 AND transaction_date>%(d)s
+          UNION ALL SELECT party, 0, paid_amount, posting_date FROM `tabPayment Entry`
+            WHERE company=%(c)s AND docstatus=1 AND party_type='Customer' AND posting_date>%(d)s
+        ) k WHERE NOT EXISTS (SELECT 1 FROM `tabSales Invoice` o WHERE o.customer=k.customer AND o.company=%(c)s
+            AND o.docstatus=1 AND o.is_opening='Yes')
+        GROUP BY k.customer ORDER BY tong_ban DESC""", {"c": company, "d": ngay}, as_dict=True)
 
 
 def has_permission(doc, ptype=None, user=None):

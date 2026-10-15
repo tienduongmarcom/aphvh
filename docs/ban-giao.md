@@ -1,5 +1,14 @@
 # Bàn giao dự án APH-VH
 
+## 0000000000. Lượt 0.13 (bản 0.13.0) — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+
+Đặc tả `docs/dac-ta-0.13.md` (anh Tiến ok 09:28). Cờ 18 `kh_aph_kho_van_hanh` (Trung tâm Kho, chuyển kho khác R022, sửa SL nhập
+sai R024 bằng hủy-sửa, đề nghị bổ sung R057–R059, chênh lệch kiểm kê bước 2), cờ 19 `kh_aph_gia_san` (giá sàn có bảng người duyệt,
+kế toán bán hàng tự duyệt trong mức; quầy bán hàng: thu nhanh TM + CK, in phiếu xuất 2 liên, biên bản đối soát, thu hồi nợ;
+vai trò "Kế toán bán hàng"). Đầu kỳ: ngày theo cấu hình, chốt khóa đến hết ngày đầu kỳ, phiếu tồn giá tạm chặn chốt, báo cáo
+khách chưa có công nợ đầu kỳ. Ngày đầu kỳ chưa chốt (anh Tiến báo sau): đặt `bench --site frontend set-config kh_aph_ngay_dau_ky YYYY-MM-DD`.
+Thử cục bộ: bộ `b013` 9/9 ca.
+
 ## 000000000. Lượt 0.12 (phát hành 0.12.1 = 0.11.5 + 0.12.0 + 0.12.1) — 14–15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 15/10 ~08:25, ĐẠT, digest `897f81c2…`)
 
 Đặc tả `docs/dac-ta-0.12.0-0.12.1.md` (anh Tiến chốt 14/10 22:40). Hai cờ mới (16, 17):

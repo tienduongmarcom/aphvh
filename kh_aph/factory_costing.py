@@ -146,9 +146,11 @@ def validate_gia_tam(doc, method=None):
     if not enabled() or not cint(doc.get(F_GIA_TAM)):
         return
     gia = "valuation_rate" if doc.doctype == "Stock Reconciliation" else "rate"
+    # Rà soát pháp lý dòng 15/20 (lượt 0.13): tồn ĐẦU KỲ chưa chắc được giá tạm với mọi nhóm hàng, sửa bằng hủy-sửa phiếu đầu kỳ.
+    dau_ky = doc.doctype == "Stock Reconciliation" and doc.get("purpose") == "Opening Stock"
     for d in doc.get("items") or []:
         nhom = frappe.get_cached_value("Item", d.item_code, "item_group")
-        if not nhom_co_co(nhom, IG_GIA_TAM):
+        if not dau_ky and not nhom_co_co(nhom, IG_GIA_TAM):
             frappe.throw(f"Dòng {d.idx} ({d.item_code}): nhóm hàng {nhom} không cho nhập giá tạm. "
                          "Hàng thương mại chưa rõ giá dùng phiếu Chờ định giá.", title="Không dùng giá tạm")
         if flt(d.get(gia)) <= 0:

@@ -1,6 +1,12 @@
 # Triển khai bản 0.11.4 lên `frontend` (máy erpnext-prod)
 
-Production đang chạy 0.11.4 (từ 14/10/2026 ~22:15, 15 cờ, digest `54bf5a99…`). Lượt 0.12 (bản 0.12.1, gồm 0.11.5) thêm cờ 16–17:
+Production đang chạy 0.11.4 (từ 14/10/2026 ~22:15, 15 cờ, digest `54bf5a99…`). Lượt 0.13 (bản 0.13.0) thêm cờ 18–19:
+
+```
+cd ~/trien-khai && git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.13.0 && git checkout -q --detach v0.13.0 && bash deploy/release/trien_khai_frontend.sh 0.13.0 kh_aph_kho_van_hanh kh_aph_gia_san 2>&1 | tee ~/log-0.13.0-tong.txt
+```
+
+(Lịch sử) Lượt 0.12 (bản 0.12.1, gồm 0.11.5) thêm cờ 16–17:
 
 ```
 cd ~/trien-khai && git fetch -q https://github.com/tienduongmarcom/aphvh.git tag v0.12.1 && git checkout -q --detach v0.12.1 && bash deploy/release/trien_khai_frontend.sh 0.12.1 kh_aph_du_lieu kh_aph_dau_ky 2>&1 | tee ~/log-0.12.1-tong.txt
