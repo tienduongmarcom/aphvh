@@ -31,6 +31,10 @@ def kiem_cong_ty(c: dict, ok):
     # 0.11.1: tài khoản do bộ cài tính năng giá thành tạo cho công ty TT133 (1548x, 6323) là chi tiết hợp lệ.
     from lab9x.gia_thanh import TK_KHONG_PHAN_BO, TK_YEU_TO_154
     tinh_nang = {t for t, _ in TK_YEU_TO_154} | {TK_KHONG_PHAN_BO[1]} if loai == "aph" else set()
+    if frappe.conf.get("kh_aph_tien_vay"):
+        # 0.14: chi tiết lãi vay (6351, 3352) và tài khoản từng ngân hàng (1121xx / 1122xx) do app dựng
+        from kh_aph.tien_vay import TK_LAI
+        tinh_nang = tinh_nang | set(TK_LAI) | {x for x in so if len(x) == 6 and x[:4] in ("1121", "1122")}
     thua = sorted(set(so) - {d["so"] for d in chuan} - {C.TK_TAM[0]} - set(CAN[loai]) - tinh_nang)
     ok(f"{ab}: không có tài khoản ngoài bảng chuẩn", not thua, thua[:10])
     cam = ["621", "622", "623", "627", "641", "3389"] if loai == "aph" else ["3389", "3385"] if loai == "vh" else ["33311", "1331"]

@@ -6,6 +6,15 @@ from frappe.utils import cint, getdate
 from kh_aph.shared_order_rules import plan_orders
 
 
+def _mau_thue(item_code, company):
+    """Mẫu thuế mặt hàng của đơn vị (như Desk tự điền khi chọn mã). Đơn con lập từ server không qua bước điền này của
+    trình duyệt, nên thiếu thì bộ kiểm thuế suất (invoice_flag.check_tax_rates) chặn xác nhận đơn con."""
+    for t in frappe.get_all("Item Tax", {"parent": item_code, "parenttype": "Item"}, ["item_tax_template"], order_by="idx"):
+        if frappe.db.get_value("Item Tax Template", t.item_tax_template, "company") == company:
+            return t.item_tax_template
+    return None
+
+
 class APHSharedSalesOrder(Document):
     def _require_enabled(self):
         if not cint(frappe.conf.get("kh_aph_shared_sales_order")):
@@ -92,7 +101,8 @@ class APHSharedSalesOrder(Document):
                                  "conversion_factor": 1, "delivery_date": self.delivery_date,
                                  "kh_aph_bags": r.get("kh_aph_bags"),
                                  "kh_aph_kg_per_bag": r.get("kh_aph_kg_per_bag"),
-                                 "kh_aph_shared_line": r["line_id"]} for r in rows]}
+                                 "kh_aph_shared_line": r["line_id"],
+                                 "item_tax_template": _mau_thue(r["item_code"], company)} for r in rows]}
             customer = frappe.get_doc("Customer", self.customer)
             if customer.get(INV_FLAG):
                 values[INV_FLAG] = customer.get(INV_FLAG)
