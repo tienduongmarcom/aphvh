@@ -1,7 +1,7 @@
 # Phiên bản image đang chạy cho khách này (đổi file này bằng pull request = nâng cấp).
 khach: aph-vh
-image_tag: "0.13.0"
-image_id: "sha256:e313659262389598d10b9f90c6005d753b377e6789ecc0114ac371a87e8214a2"  # docker images --digests trên VM, 15/10 11:45
+image_tag: "0.14.0"
+image_id: "sha256:3a259c9b239dc00dacb0fcb79c421c93306a9e9a6813fcd329fd122cc3192a02"  # docker images --digests trên VM, 15/10 15:45
 nguon_sha: "50b5822"
 nen: "frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d (ERPNext 16.50.0 + Frappe 16.51.0)"
-moi_truong: production   # site frontend trên erpnext-prod; 0.11.0 lúc 10:58, 0.11.1 lúc ~14:50, 0.11.2 lúc ~17:10 ngày 14/10/2026 (13 cờ, cây kho 55 kho), 0.11.3 lúc ~21:00 (14 cờ), 0.11.4 lúc ~22:15 (15 cờ), 0.12.1 lúc ~08:25 ngày 15/10 (17 cờ), 0.13.0 lúc ~11:45 (19 cờ)
+moi_truong: production   # site frontend trên erpnext-prod; 0.11.0 lúc 10:58, 0.11.1 lúc ~14:50, 0.11.2 lúc ~17:10 ngày 14/10/2026 (13 cờ, cây kho 55 kho), 0.11.3 lúc ~21:00 (14 cờ), 0.11.4 lúc ~22:15 (15 cờ), 0.12.1 lúc ~08:25 ngày 15/10 (17 cờ), 0.13.0 lúc ~11:45 (19 cờ), 0.14.0 lúc ~15:45 (21 cờ)

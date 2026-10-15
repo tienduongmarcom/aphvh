@@ -1,6 +1,6 @@
 # Bàn giao dự án APH-VH
 
-## 00000000000. Lượt 0.14 (bản 0.14.0) — 15/10/2026 (ĐANG KIỂM TRÊN CI)
+## 00000000000. Lượt 0.14 (bản 0.14.0) — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 15/10 ~15:45, ĐẠT, digest `3a259c9b…`, 21 cờ; CI xanh trên 9fd3b28)
 
 Đặc tả `docs/dac-ta-0.14.md` (mục 7b tránh trùng, 7c khác đặc tả). Cờ 20 `kh_aph_trung_tam_ban` (Workspace "Trung tâm Bán hàng",
 giá sàn trên đơn chung theo đơn vị từng dòng, in lại phiếu xuất kho kèm số hóa đơn MISA + "In lại lần n"), cờ 21 `kh_aph_tien_vay`
