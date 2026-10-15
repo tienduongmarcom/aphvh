@@ -14,13 +14,19 @@ const login = await fetch(base + '/api/method/login', {method:'POST', headers:{'
 if (!login.ok || (await login.json()).message !== 'Logged In') throw Error('UAT browser login failed');
 const cookies = login.headers.getSetCookie().map(s => s.split(';')[0]).map(s => {let n=s.indexOf('=');return {name:s.slice(0,n),value:s.slice(n+1),url:base}});
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aphvh-desk-uat-'));
-const chrome = spawn('google-chrome', ['--headless','--no-sandbox','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-address=127.0.0.1','--remote-debugging-port=19229','--user-data-dir='+profile,'about:blank'], {stdio:'ignore'});
+const startChrome = () => spawn('google-chrome', ['--headless','--no-sandbox','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-address=127.0.0.1','--remote-debugging-port=19229','--user-data-dir='+profile,'about:blank'], {stdio:'ignore'});
+// Máy CI đôi khi khởi động Chrome chậm hoặc Chrome thoát ngay (lỗi hạ tầng, không phải lỗi app): chờ lâu hơn và mở lại một lần.
+let chrome = startChrome();
 let ws, sequence=0;
 const waiting=new Map();
 const diagnostics=[];
 try {
     let tab;
-    for(let i=0;i<50;i++) {try {tab=(await (await fetch('http://127.0.0.1:19229/json/list')).json()).find(t=>t.type==='page');if(tab)break;} catch {} await pause(200);}
+    for(let i=0;i<300;i++) {
+        try {tab=(await (await fetch('http://127.0.0.1:19229/json/list')).json()).find(t=>t.type==='page');if(tab)break;} catch {}
+        if(i===150){try{chrome.kill('SIGKILL');}catch{} chrome=startChrome();}
+        await pause(200);
+    }
     if(!tab)throw Error('Chrome did not start');
     ws = new WebSocket(tab.webSocketDebuggerUrl);
     await new Promise((ok,no)=>{ws.addEventListener('open',ok,{once:true});ws.addEventListener('error',no,{once:true});});
