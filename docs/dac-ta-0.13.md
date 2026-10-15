@@ -73,10 +73,17 @@ Mỗi vụ được xử lý nhiều lần đến khi 1381 / 3381 của vụ v�
 ## 7. Giá sàn (R011, rà soát dòng 19; cờ `kh_aph_gia_san`)
 
 - Bảng giá nội bộ "Giá sàn" (theo mặt hàng, công ty). Kế toán trưởng nhập hoặc nạp bằng Data Import; nhân viên bán không đọc được.
-- Đơn bán / hóa đơn có dòng giá **dưới giá sàn**: nhân viên bán chỉ thấy "Dòng X dưới giá sàn, cần duyệt" (không hiện con số);
-  không xác nhận được cho đến khi **trưởng phòng bán hàng hoặc kế toán trưởng** bấm "Duyệt giá dưới sàn" (bắt buộc lý do, nhật ký).
-- Kế toán trưởng xem giá vốn và lãi gộp ở báo cáo 0.11.4; Dũng không thấy giá vốn (giữ nguyên).
-- Cảnh báo "dưới bảng giá" hiện có giữ nguyên.
+- Dòng giá **dưới giá sàn** trên đơn bán / hóa đơn: người không có quyền duyệt chỉ thấy "Dòng X dưới giá sàn, cần duyệt" (không hiện
+  con số) và không xác nhận được cho đến khi có người duyệt.
+- **Người duyệt** (anh Tiến bổ sung 15/10): trưởng phòng bán hàng, kế toán trưởng, **kế toán bán hàng**. Bắt buộc lý do, lưu nhật ký.
+- **Cấu hình linh hoạt** (bảng "Người duyệt giá dưới sàn" trong Thiết lập bán hàng), mỗi dòng một người:
+  - người dùng; mức dưới sàn tối đa được duyệt (%; để trống = không giới hạn); công ty áp dụng (trống = mọi công ty);
+  - **tự duyệt đơn mình lập**: có / không. Bật cho 2 kế toán bán hàng vì họ lên đơn hằng ngày cho khách mua trực tiếp và khách đặt
+    qua điện thoại: trong mức cho phép thì duyệt ngay trên đơn đang lập (ghi lý do), không phải chờ người khác.
+  - Vượt mức của người đó thì phải người có mức cao hơn (trưởng phòng / kế toán trưởng) duyệt.
+- Thêm / bớt người, đổi mức: kế toán trưởng sửa bảng, không cần bản mới. Vai trò mới **"Kế toán bán hàng"** để gán quyền màn hình
+  bán hàng; quyền duyệt chỉ theo bảng trên.
+- Kế toán trưởng xem giá vốn và lãi gộp ở báo cáo 0.11.4; Dũng không thấy giá vốn (giữ nguyên). Cảnh báo "dưới bảng giá" giữ nguyên.
 
 ## 8. Kiểm thử
 
@@ -84,4 +91,4 @@ Mỗi vụ được xử lý nhiều lần đến khi 1381 / 3381 của vụ v�
 - Bộ UAT `b013` (dữ liệu giả): đổi ngày đầu kỳ bằng cấu hình; chốt chỉ khóa đến ngày đó, chứng từ sau ngày vẫn ghi được;
   dòng giá tạm chặn chốt; danh sách khách chưa có công nợ đầu kỳ; 3 lựa chọn hàng không giao được (tồn, công nợ đúng);
   sửa số lượng nhập sai 2 trường hợp + trường hợp bị từ chối; đề nghị bổ sung nhiều kho nguồn, không giữ hàng;
-  xử lý chênh lệch về 0 theo vụ; giá sàn: nhân viên bị chặn, không lộ con số, quản lý duyệt được; quyền Dũng.
+  xử lý chênh lệch về 0 theo vụ; giá sàn: nhân viên bị chặn, không lộ con số; kế toán bán hàng tự duyệt trong mức, vượt mức bị chặn; trưởng phòng / KTT duyệt được; quyền Dũng.
