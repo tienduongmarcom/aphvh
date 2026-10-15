@@ -63,6 +63,23 @@ Một màn hình cho kế toán bán hàng và trưởng phòng bán hàng, gom 
 - App so với phiếu thu / chi đã ghi (theo mã giao dịch, số tiền, ngày ±2): **khớp / chưa ghi sổ / trùng**. Dòng chưa ghi sổ: nút lập
   phiếu thu / chi nháp. Không tự ghi sổ. Dùng chung chống trùng mã giao dịch của 0.13.
 
+## 7b. Tránh trùng — dùng lại cái đã có (rà soát 15/10)
+
+| Việc 0.14 | Đã có ở đâu | Cách làm |
+|---|---|---|
+| Đối chiếu sao kê (R037) | `funds.reconcile_rows` (0.10) so dòng sao kê JSON với APH Funds Receipt theo `external_key` | **Mở rộng** hàm này: thêm bộ đọc Excel/CSV + ánh xạ cột, so thêm Payment Entry `reference_no`. Không viết bộ so thứ hai. |
+| Chống trùng mã giao dịch | `ban_quay.thu_tien` (0.13) chỉ kiểm Payment Entry; Funds Receipt có `external_key` riêng | Một hàm chung kiểm **cả hai** nguồn; `thu_tien` và nhập sao kê cùng gọi. |
+| Dựng tài khoản ngân hàng | `tai_khoan_chuan.setup(company)` dựng tài khoản chuẩn | Thêm bước con theo cùng mẫu (chỉ thêm cái thiếu), không bộ dựng riêng. |
+| Dòng tiền có khoản vay | `quan_tri.dong_tien_cong_ty` (0.11.4) | Cộng thêm gốc + lãi đến hạn khi cờ `kh_aph_tien_vay` bật; không báo cáo dòng tiền mới. |
+| Thu chi hộ của giám đốc | `thu_ho.py` (0.4.20) là thu hộ **giữa các đơn vị** (chủ hàng ↔ khách) | Khác bản chất (đối tượng Nhân viên trên 1388/3388); dùng trường riêng, báo cáo "Công nợ với giám đốc" lọc theo party Employee để không lẫn số thu hộ nội bộ. |
+| Giá sàn đơn chung | `ban_quay` (0.13) kiểm SO/SI, bỏ qua SO sinh từ đơn chung | Gọi lại đúng hàm kiểm giá sàn theo từng dòng (dòng có `company` riêng) trên APH Shared Sales Order; đơn con mang dấu duyệt, không kiểm lại. |
+| Số hóa đơn MISA khi in lại | Dòng APH Hoa don ngoai (0.11.3: `sales_invoice`, `so`, `ky_hieu`) | Mẫu in đọc từ đó qua hàm jinja trong `print_utils`; không thêm ô số hóa đơn lên phiếu giao. |
+| Trung tâm Bán hàng | Báo cáo/lệnh đã có: khách cần gọi, xác nhận công nợ, quá hạn giao (Q189), hóa đơn chờ MISA | Workspace chỉ **gom lối vào**, không làm báo cáo mới trùng các báo cáo này. |
+
+Đã xong ở 0.11.x, bỏ khỏi lộ trình cũ: Q176 mã khách, R091 khóa giá thành phẩm, R046–48 quỹ nhà máy, Q189 quá hạn giao, in có / không giá.
+
+Sau 0.14: **tạm dừng làm tính năng**, khách dùng một thời gian, gom vấn đề rồi xử lý lượt sau.
+
 ## 8. Kiểm thử
 
 - 21 cờ ở mọi danh sách; Cổng 3 nâng cấp từ 0.13.0, bật 2 cờ mới.
