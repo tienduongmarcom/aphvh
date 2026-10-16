@@ -1,12 +1,12 @@
-"""Xuất bản dịch chốt (final_rows.json) ra aphvh/translations/vi.csv.
+"""Xuất bản dịch chốt (final_rows.json) ra kh_aph/translations/vi.csv.
 
-Frappe nạp translations/<lang>.csv của từng app theo thứ tự cài đặt (frappe → erpnext → aphvh), nên
-bản của aphvh đè bản chính thức. Chỉ ghi các chuỗi có bản chốt khác bản ERPNext đang hiện.
+Frappe nạp translations/<lang>.csv của từng app theo thứ tự cài đặt (frappe → erpnext → kh_aph), nên
+bản của kh_aph đè bản chính thức. Chỉ ghi các chuỗi có bản chốt khác bản ERPNext đang hiện.
 """
 import csv, json, os
 H = os.path.dirname(os.path.abspath(__file__))
 rows = json.load(open(os.path.join(H, 'final_rows.json')))
-out = os.path.join(H, '..', '..', 'aphvh', 'translations', 'vi.csv')
+out = os.path.join(H, '..', '..', 'kh_aph', 'translations', 'vi.csv')
 seen, n = set(), 0
 with open(out, 'w', newline='', encoding='utf-8') as f:
     w = csv.writer(f, lineterminator='\n', quoting=csv.QUOTE_ALL)

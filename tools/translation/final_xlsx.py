@@ -1,6 +1,6 @@
 import json, collections, openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-H='/home/claude/aphvh/tools/translation/'
+H='/home/claude/kh_aph/tools/translation/'
 o=json.load(open(H+'final_rows.json'))
 ns={}; src=open(H+'build_proposals.py').read()
 exec(src.split("# ---- Thuật ngữ chuẩn")[1].split("PROPOSE =")[0].split('\n',1)[1], ns)
@@ -29,7 +29,7 @@ L=[('Bản dịch chốt – màn hình kế toán trưởng (ERPNext APH)',),()
 ('Kết quả',f'{len(ch)} chuỗi đổi so với bản đang hiện, trong đó {len(biz)} lỗi sai nghiệp vụ (sheet 1). Không còn chuỗi nào dịch Stock thành cổ phiếu, Rate thành tỷ giá (trừ tỷ giá thật), Billing thành thanh toán, Credit thành ghi nợ; không mất placeholder {{0}}.'),
 ('Thuật ngữ đã chốt','Xác nhận / Đã xác nhận · Nháp · Hủy · Sửa đổi · Dòng · Đối tượng · Đơn giá vốn · Cộng tiền hàng · Tổng tiền thanh toán · Định mức nguyên vật liệu · Nguyên vật liệu · Ký hiệu chứng từ · Điều chỉnh theo kiểm kê · Nhập số dư đầu kỳ · Phiếu nhập mua hàng · Mặt hàng · Thêm dòng (xem sheet 3).'),
 ('Còn giới hạn','Mỗi chuỗi tiếng Anh chỉ có một bản dịch cho toàn hệ thống. Ví dụ "Opening Stock" hiện "Nhập số dư đầu kỳ" cả trên phiếu điều chỉnh lẫn ô số dư đầu kỳ khi tạo mã hàng; "Stock" để "Kho" vì dùng chung cho tên phân hệ.'),
-(),('Loại thay đổi','Số chuỗi')]+sorted(cnt.items(),key=lambda x:-x[1])+[(),('Tiếp theo','Đóng gói vào app aphvh 0.2.2 → thử 8080 → 8081 → cloud (mỗi người Ctrl+Shift+R). Sau đó mở rộng màn hình Dũng, rồi bán hàng, tiền, công nợ theo cùng bảng thuật ngữ.')]
+(),('Loại thay đổi','Số chuỗi')]+sorted(cnt.items(),key=lambda x:-x[1])+[(),('Tiếp theo','Đóng gói vào app kh_aph 0.2.2 → thử 8080 → 8081 → cloud (mỗi người Ctrl+Shift+R). Sau đó mở rộng màn hình Dũng, rồi bán hàng, tiền, công nợ theo cùng bảng thuật ngữ.')]
 for l in L: ws.append(list(l))
 ws['A1'].font=Font(name=F,bold=True,size=14)
 for r in ws.iter_rows(min_row=2):

@@ -2,6 +2,7 @@
 # Sao lưu site ERPNext (CSDL + tệp đính kèm công khai/riêng + cấu hình site) rồi chép lên Cloud Storage.
 # Chạy bằng root qua systemd (erpnext-backup.timer). Cấu hình ở /etc/erpnext-backup.conf:
 #   BUCKET=gs://<tên-bucket>
+#   CONTAINER=erp-<khach>-backend-1   VOLUME=erp-<khach>_sites   PREFIX=<khach>   (máy dựng bằng deploy/khach-hang/dung.sh)
 # Frappe tự xóa bản sao lưu cục bộ cũ hơn 23 giờ mỗi lần sao lưu, nên lịch sử dài hạn nằm trên bucket
 # (bucket tự xóa bản cũ theo quy tắc vòng đời).
 set -euo pipefail
@@ -31,6 +32,6 @@ for f in "${FILES[@]}"; do
     [ -s "$f" ] || { echo "Tệp rỗng: $f" >&2; exit 1; }
 done
 
-DEST="${BUCKET%/}/${SITE}/$(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d_%H%M)/"
+DEST="${BUCKET%/}/${PREFIX:-$SITE}/$(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d_%H%M)/"
 "$GCLOUD" storage cp "${FILES[@]}" "$DEST"
 echo "Đã chép ${#FILES[@]} tệp lên $DEST"

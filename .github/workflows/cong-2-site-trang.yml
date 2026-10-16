@@ -1,0 +1,69 @@
+# Cổng 2: với MỌI khách trong khach/<ten>/khach.json, dựng image, tạo site trắng, nạp cấu hình khách, chạy bộ kiểm.
+# Không dùng dữ liệu thật của khách. Gọi từ phat-hanh.yml (phải đạt mới phát hành) và chạy được độc lập.
+# CHƯA chạy thử trên GitHub Actions: lần đầu theo dõi và sửa nếu cần.
+name: Cổng 2 - site trắng theo khách
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+  pull_request:
+    paths: ["kh_aph/**", "apps/**", "khach/**", "Dockerfile", ".github/workflows/cong-2-site-trang.yml"]
+permissions:
+  contents: read
+env:
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d  # ERPNext 16.50.0 + Frappe 16.51.0
+jobs:
+  danh-sach:
+    runs-on: ubuntu-latest
+    outputs:
+      khach: ${{ steps.ds.outputs.khach }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ds
+        run: |
+          K=$(ls khach/*/khach.json | sed 's#khach/\(.*\)/khach.json#\1#' | python3 -c 'import sys,json;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          echo "khach=$K" >> "$GITHUB_OUTPUT"; echo "Khách: $K"
+  site-trang:
+    needs: danh-sach
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        khach: ${{ fromJSON(needs.danh-sach.outputs.khach) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+      - uses: docker/setup-buildx-action@v3
+      - name: Dựng image (không đẩy)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: kh-aph-erpnext:cong2
+          build-args: ERPNEXT_IMAGE=${{ env.ERPNEXT_IMAGE }}
+      - name: Khởi động MariaDB và Redis
+        run: |
+          docker run -d --name db --network host -e MARIADB_ROOT_PASSWORD=root mariadb:11.8 --port=13306 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+          docker run -d --name rd --network host redis:8.6-alpine redis-server --port 16379
+          for i in $(seq 1 40); do docker exec db mariadb -uroot -proot -P13306 -h127.0.0.1 -e 'select 1' >/dev/null 2>&1 && break; sleep 3; done
+      - name: Tạo site trắng, nạp cấu hình khách, kiểm
+        run: |
+          docker run --rm --network host -v "$PWD/khach/${{ matrix.khach }}/khach.json:/tmp/khach.json:ro" kh-aph-erpnext:cong2 bash -ec '
+            bench set-config -g db_host 127.0.0.1
+            bench set-config -g db_port 13306
+            bench set-config -g redis_cache redis://127.0.0.1:16379
+            bench set-config -g redis_queue redis://127.0.0.1:16379
+            bench set-config -g redis_socketio redis://127.0.0.1:16379
+            bench new-site test.localhost --db-root-username root --db-root-password root --admin-password admin --install-app erpnext --install-app lab9x --install-app kh_aph --mariadb-user-host-login-scope="%"
+            bench --site test.localhost execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}"
+            bench --site test.localhost execute kh_aph.kiem_trien_khai.chay --kwargs "{\"duong_dan\": \"/tmp/khach.json\"}" | tee /tmp/kiem.txt
+            grep -q "KHÔNG ĐẠT: 0" /tmp/kiem.txt
+          ' 2>&1 | tee "$RUNNER_TEMP/log-cong2.txt"
+      - name: Nhật ký khi lỗi
+        if: failure()
+        run: |
+          [ -f "$RUNNER_TEMP/log-cong2.txt" ] && echo "::error title=cong-2::$(tail -c 1500 "$RUNNER_TEMP/log-cong2.txt" | tr '\n\r' '  ' | sed 's/%/%25/g')" || true

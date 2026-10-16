@@ -1,0 +1,53 @@
+{
+ "name": "APH Nguoi duyet gia san",
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "creation": "2026-10-15 10:00:00.000000",
+ "modified": "2026-10-15 10:00:00.000000",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "user",
+   "label": "Người duyệt",
+   "fieldtype": "Link",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "muc",
+   "label": "Mức dưới sàn tối đa (%)",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Trống = không giới hạn"
+  },
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "in_list_view": 1,
+   "columns": 3,
+   "description": "Trống = mọi đơn vị"
+  },
+  {
+   "fieldname": "tu_duyet",
+   "label": "Tự duyệt đơn mình lập",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "columns": 2
+  }
+ ],
+ "field_order": [
+  "user",
+  "muc",
+  "company",
+  "tu_duyet"
+ ],
+ "permissions": [],
+ "istable": 1,
+ "editable_grid": 1
+}

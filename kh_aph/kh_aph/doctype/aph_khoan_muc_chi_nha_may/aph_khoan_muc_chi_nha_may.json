@@ -1,0 +1,76 @@
+{
+ "name": "APH Khoan muc chi nha may",
+ "autoname": "field:khoan_muc",
+ "naming_rule": "By fieldname",
+ "track_changes": 1,
+ "title_field": "khoan_muc",
+ "search_fields": "khoan_muc",
+ "fields": [
+  {
+   "fieldname": "khoan_muc",
+   "label": "Khoản mục",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "account",
+   "label": "Tài khoản chi phí",
+   "fieldtype": "Link",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cost_center",
+   "label": "Trung tâm chi phí",
+   "fieldtype": "Link",
+   "options": "Cost Center",
+   "reqd": 1
+  },
+  {
+   "fieldname": "disabled",
+   "label": "Ngừng dùng",
+   "fieldtype": "Check"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "field_order": [
+  "khoan_muc",
+  "company",
+  "account",
+  "cost_center",
+  "disabled"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 13:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 13:00:00.000000"
+}

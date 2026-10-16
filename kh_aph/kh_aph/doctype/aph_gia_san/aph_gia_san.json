@@ -1,0 +1,87 @@
+{
+ "name": "APH Gia san",
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "creation": "2026-10-15 10:00:00.000000",
+ "modified": "2026-10-15 10:00:00.000000",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "label": "Mặt hàng",
+   "fieldtype": "Link",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Trống = áp dụng mọi đơn vị"
+  },
+  {
+   "fieldname": "gia_san",
+   "label": "Giá sàn (theo đơn vị tồn kho)",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ghi_chu",
+   "label": "Ghi chú",
+   "fieldtype": "Small Text"
+  }
+ ],
+ "field_order": [
+  "item_code",
+  "company",
+  "gia_san",
+  "ghi_chu"
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "delete": 1,
+   "export": 1,
+   "import": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "delete": 1,
+   "export": 1,
+   "import": 1
+  },
+  {
+   "role": "Kế toán bán hàng",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "autoname": "hash",
+ "track_changes": 1,
+ "title_field": "item_code",
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

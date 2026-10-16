@@ -1,9 +1,9 @@
 [project]
-name = "aphvh"
+name = "kh_aph"
 authors = [
     { name = "An Phú Hưng - Vĩnh Hưng", email = "tienduongmarcom@gmail.com" }
 ]
-description = "Tùy biến nghiệp vụ ERPNext cho An Phú Hưng và Vĩnh Hưng"
+description = "App riêng của khách An Phú Hưng - Vĩnh Hưng trên lõi 9xLab"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]

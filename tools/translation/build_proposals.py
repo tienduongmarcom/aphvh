@@ -3,7 +3,7 @@
 import json, re, polib, openpyxl
 from collections import OrderedDict
 
-H = '/tmp/claude-0/-home-claude-aphvh/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
+H = '/tmp/claude-0/-home-claude-kh_aph/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
 WB = '/root/.claude/uploads/d2acb522-ba05-58f5-8225-01c43da2a258/219ec697-ERPNext2VI_Cumulative_Translation_Step2.9_FULL_AUDIT_2026-09-29.xlsx'
 
 def po(p):
@@ -11,7 +11,7 @@ def po(p):
 cur = {**po(H + 'frappe/frappe/locale/vi.po'), **po(H + 'erpnext/erpnext/locale/vi.po')}
 don = {**po(H + 'e2v/frappe_vi_v2.po'), **po(H + 'e2v/erpnext_vi_v2.po')}
 # 3 bản dịch riêng đang có trên cloud
-cur.update({'Ton kho so luong APH': 'Tồn kho số lượng APH', 'Lo nhap khau': 'Lô nhập khẩu', 'Lo Nhap Khau': 'Lô nhập khẩu'})
+cur.update({'Ton kho so luong': 'Tồn kho số lượng', 'Lo nhap khau': 'Lô nhập khẩu', 'Lo Nhap Khau': 'Lô nhập khẩu'})
 
 wb = openpyxl.load_workbook(WB, read_only=True)
 canon, ctx_only = {}, {}

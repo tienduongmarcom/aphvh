@@ -1,0 +1,19 @@
+{%- var f = filters || {}; -%}
+<h3 style="text-align:center;margin:0">{%= (f.account||"").indexOf("111") === 0 ? "SỔ QUỸ TIỀN MẶT" : "SỔ TIỀN GỬI NGÂN HÀNG" %}</h3>
+<p style="text-align:center;margin:2px 0 8px">{%= f.company %} — Tài khoản: {%= f.account %}<br>
+Từ ngày {%= frappe.datetime.str_to_user(f.tu_ngay) %} đến ngày {%= frappe.datetime.str_to_user(f.den_ngay) %}</p>
+<table class="table table-bordered" style="font-size:11px">
+<thead><tr><th>Ngày</th><th>Số phiếu</th><th>Diễn giải</th><th style="text-align:right">Thu / gửi vào</th>
+<th style="text-align:right">Chi / rút ra</th><th style="text-align:right">Tồn</th></tr></thead>
+<tbody>
+{% for (var i = 0; i < data.length; i++) { var r = data[i]; %}
+<tr{% if (r.bold) { %} style="font-weight:bold"{% } %}>
+<td>{%= r.ngay ? frappe.datetime.str_to_user(r.ngay) : "" %}</td><td>{%= r.so || "" %}</td><td>{%= r.dien_giai || "" %}</td>
+<td style="text-align:right">{%= r.thu ? format_number(r.thu, null, 0) : "" %}</td>
+<td style="text-align:right">{%= r.chi ? format_number(r.chi, null, 0) : "" %}</td>
+<td style="text-align:right">{%= (r.ton || r.ton === 0) && r.ton !== undefined ? format_number(r.ton, null, 0) : "" %}</td></tr>
+{% } %}
+</tbody></table>
+<table style="width:100%;margin-top:16px;text-align:center"><tr>
+<td><b>Người ghi sổ</b><br><i>(Ký, họ tên)</i></td><td><b>Kế toán trưởng</b><br><i>(Ký, họ tên)</i></td>
+<td><b>Giám đốc</b><br><i>(Ký, họ tên, đóng dấu)</i></td></tr></table>

@@ -1,0 +1,116 @@
+{
+  "doctype": "DocType",
+  "name": "APH Pending Receipt",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "company",
+      "label": "Đơn vị sở hữu",
+      "fieldtype": "Link",
+      "options": "Company",
+      "reqd": 1
+    },
+    {
+      "fieldname": "supplier",
+      "label": "Nhà cung cấp",
+      "fieldtype": "Link",
+      "options": "Supplier",
+      "reqd": 1
+    },
+    {
+      "fieldname": "received_date",
+      "label": "Ngày nhận thực tế",
+      "fieldtype": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "items",
+      "label": "Hàng chờ định giá",
+      "fieldtype": "Table",
+      "options": "APH Pending Receipt Item",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Trạng thái",
+      "fieldtype": "Select",
+      "options": "Chờ định giá\nĐã định giá",
+      "read_only": 1,
+      "default": "Chờ định giá"
+    },
+    {
+      "fieldname": "purchase_receipt",
+      "label": "Phiếu nhập đã định giá",
+      "fieldtype": "Link",
+      "options": "Purchase Receipt",
+      "read_only": 1
+    },
+    {
+      "fieldname": "valued_by",
+      "label": "Người chốt giá",
+      "fieldtype": "Link",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "valued_at",
+      "label": "Thời điểm chốt giá",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "valuation_reason",
+      "label": "Lý do chốt giá",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "company",
+    "supplier",
+    "received_date",
+    "items",
+    "status",
+    "purchase_receipt",
+    "valued_by",
+    "valued_at",
+    "valuation_reason"
+  ],
+  "is_submittable": 1,
+  "permissions": [
+    {
+      "role": "Accounts Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1
+    },
+    {
+      "role": "Stock Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1
+    },
+    {
+      "role": "Kế toán nhà máy",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1
+    },
+    {
+      "role": "System Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1
+    }
+  ]
+}

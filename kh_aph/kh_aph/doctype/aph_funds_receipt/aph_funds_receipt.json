@@ -1,0 +1,143 @@
+{
+  "doctype": "DocType",
+  "name": "APH Funds Receipt",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "track_changes": 1,
+  "is_submittable": 1,
+  "fields": [
+    {
+      "fieldname": "company",
+      "label": "Đơn vị thực nhận",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Company"
+    },
+    {
+      "fieldname": "posting_date",
+      "label": "Ngày thực nhận",
+      "fieldtype": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "bank_account",
+      "label": "Quỹ/ngân hàng thực nhận",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Account"
+    },
+    {
+      "fieldname": "route",
+      "label": "Tuyến giữ tiền đã duyệt",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "APH Funds Route"
+    },
+    {
+      "fieldname": "holding_account",
+      "label": "Tài khoản giữ tiền",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Account"
+    },
+    {
+      "fieldname": "amount",
+      "label": "Số tiền thực nhận",
+      "fieldtype": "Currency",
+      "reqd": 1,
+      "options": "VND"
+    },
+    {
+      "fieldname": "external_reference",
+      "label": "Mã giao dịch/voucher thực nhận",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "external_key",
+      "label": "Khóa chống trùng",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "customer",
+      "label": "Khách đã xác minh (để trống khi chưa biết)",
+      "fieldtype": "Link",
+      "read_only": 0,
+      "options": "Customer"
+    },
+    {
+      "fieldname": "reason",
+      "label": "Nội dung thực nhận",
+      "fieldtype": "Small Text",
+      "reqd": 1
+    },
+    {
+      "fieldname": "journal_entry",
+      "label": "Chứng từ ghi tiền",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "Journal Entry"
+    },
+    {
+      "fieldname": "identified_by",
+      "label": "Người xác minh",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "User"
+    },
+    {
+      "fieldname": "identified_at",
+      "label": "Thời điểm xác minh",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "identification_reason",
+      "label": "Căn cứ xác minh",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "company",
+    "posting_date",
+    "bank_account",
+    "route",
+    "holding_account",
+    "amount",
+    "external_reference",
+    "external_key",
+    "customer",
+    "reason",
+    "journal_entry",
+    "identified_by",
+    "identified_at",
+    "identification_reason"
+  ],
+  "permissions": [
+    {
+      "role": "Accounts Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1,
+      "print": 1,
+      "report": 1,
+      "export": 0
+    },
+    {
+      "role": "Accounts User",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "print": 1,
+      "report": 1,
+      "export": 0
+    }
+  ]
+}

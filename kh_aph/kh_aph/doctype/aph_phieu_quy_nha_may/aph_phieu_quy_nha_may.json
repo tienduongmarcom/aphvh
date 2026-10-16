@@ -1,0 +1,172 @@
+{
+ "name": "APH Phieu quy nha may",
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "title_field": "loai",
+ "search_fields": "loai,customer,nguoi_nhan",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "label": "Số phiếu",
+   "fieldtype": "Select",
+   "options": "PQNM-.YYYY.-.#####",
+   "default": "PQNM-.YYYY.-.#####",
+   "reqd": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "loai",
+   "label": "Loại phiếu",
+   "fieldtype": "Select",
+   "options": "Chi phí nhỏ\nThu tiền khách\nBàn giao tiền",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "label": "Ngày",
+   "fieldtype": "Date",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer",
+   "label": "Khách trả tiền",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "depends_on": "eval:doc.loai=='Thu tiền khách'"
+  },
+  {
+   "fieldname": "nguoi_nhan",
+   "label": "Người nhận tiền",
+   "fieldtype": "Link",
+   "options": "User",
+   "depends_on": "eval:doc.loai=='Bàn giao tiền'"
+  },
+  {
+   "fieldname": "dong",
+   "label": "Chi tiết",
+   "fieldtype": "Table",
+   "options": "APH Dong phieu quy nha may",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tong_tien",
+   "label": "Tổng tiền",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "trang_thai",
+   "label": "Trạng thái",
+   "fieldtype": "Select",
+   "options": "\nĐã ghi sổ\nChờ nhận\nĐã nhận\nChênh lệch chờ điều tra\nĐã hủy",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "so_thuc_nhan",
+   "label": "Số tiền người nhận đếm được",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nhan_boi",
+   "label": "Người xác nhận nhận",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nhan_luc",
+   "label": "Thời điểm nhận",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "label": "Bút toán",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "label": "Sửa từ",
+   "fieldtype": "Link",
+   "options": "APH Phieu quy nha may",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "field_order": [
+  "naming_series",
+  "loai",
+  "company",
+  "posting_date",
+  "customer",
+  "nguoi_nhan",
+  "dong",
+  "tong_tien",
+  "trang_thai",
+  "so_thuc_nhan",
+  "nhan_boi",
+  "nhan_luc",
+  "journal_entry",
+  "amended_from"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 13:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 13:00:00.000000"
+}

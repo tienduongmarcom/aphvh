@@ -1,0 +1,197 @@
+name: UAT candidate image verification
+on:
+  push:
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50"]
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  workflow_dispatch: {}
+  workflow_call: {}
+concurrency:
+  group: uat-candidate-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  verify-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+      - uses: docker/setup-buildx-action@v3
+      - name: Build candidate locally without publishing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: aphvh-uat:verification
+          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d
+      - name: Record versions and verified source hashes
+        run: |
+          expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
+          docker run --rm -e EXPECTED_SOURCE_HOOK_SHA="$expected_hook_sha" --entrypoint bash aphvh-uat:verification -ec '
+            cd /home/frappe/frappe-bench
+            bench version
+            sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
+            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
+            test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "$EXPECTED_SOURCE_HOOK_SHA"
+          ' > candidate-image-evidence.txt
+          cat candidate-image-evidence.txt
+      - name: Ghi phiên bản và digest ảnh nền thành chú thích
+        run: |
+          docker pull -q frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d >/dev/null 2>&1 || true
+          d=$(docker image inspect frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
+          v=$(docker run --rm --entrypoint bash aphvh-uat:verification -c 'cd /home/frappe/frappe-bench && bench version' | tr '\n' ' ')
+          echo "::notice title=Nền và phiên bản::$v | digest nền: $d"
+      - name: Create isolated database and Redis
+        run: |
+          docker network create aphvh-uat-net
+          docker run -d --name erp-aph-vh-db-1 --network aphvh-uat-net -e MARIADB_ROOT_PASSWORD=uat-fixture-only mariadb:11.8 --port=13306 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+          docker run -d --name uat-redis --network aphvh-uat-net redis:8.6-alpine redis-server --port 16379
+          ready=0
+          for i in $(seq 1 40); do
+            if docker exec erp-aph-vh-db-1 mariadb -uroot -puat-fixture-only -P13306 -h127.0.0.1 -e 'select 1' >/dev/null 2>&1; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1
+      - name: Prepare isolated site directory
+        run: |
+          uat_root=$(mktemp -d /tmp/aphvh-http-uat-XXXXXX)
+          mkdir "$uat_root/sites"
+          docker run --rm --entrypoint tar aphvh-uat:verification -C /home/frappe/frappe-bench/sites -cf - . | sudo tar -xf - -C "$uat_root/sites"
+          sudo chown -R 1000:1000 "$uat_root/sites"
+          chmod 755 "$uat_root"
+          echo "UAT_SITE_ROOT=$uat_root" >> "$GITHUB_ENV"
+      - name: Install and verify candidate on fresh UAT site
+        run: |
+          set -o pipefail
+          docker run --rm --network aphvh-uat-net -v "$UAT_SITE_ROOT/sites:/home/frappe/frappe-bench/sites" --entrypoint bash aphvh-uat:verification -ec '
+            cd /home/frappe/frappe-bench
+            bench set-config -g db_host erp-aph-vh-db-1
+            bench set-config -g db_port 13306
+            bench set-config -g redis_cache redis://uat-redis:16379
+            bench set-config -g redis_queue redis://uat-redis:16379
+            bench set-config -g redis_socketio redis://uat-redis:16379
+            bench new-site aphvh-web-uat --db-root-username root --db-root-password uat-fixture-only --admin-password uat-fixture-only --install-app erpnext --install-app lab9x --install-app kh_aph --mariadb-user-host-login-scope="%"
+            bench --site aphvh-web-uat disable-scheduler
+            bench --site aphvh-web-uat set-config mute_emails 1
+            bench --site aphvh-web-uat execute kh_aph.khach_hang.ap_dung --kwargs "{\"duong_dan\": \"/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json\"}"
+            for flag in kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp kh_aph_funds_workflow kh_aph_source_change kh_aph_factory_costing kh_aph_factory_cash kh_aph_sales_adjust kh_aph_data_review kh_aph_kho_chuan kh_aph_sales_p1 kh_aph_quan_tri kh_aph_du_lieu kh_aph_dau_ky kh_aph_kho_van_hanh kh_aph_gia_san kh_aph_trung_tam_ban kh_aph_tien_vay; do
+              bench --site aphvh-web-uat set-config "$flag" 1
+            done
+            bench --site aphvh-web-uat execute kh_aph.uat_candidate_setup.setup_uat
+            bench --site aphvh-web-uat execute kh_aph.uat_fresh_verify.verify
+            bench --site aphvh-web-uat execute kh_aph.handoff_preflight.inspect
+          ' 2>&1 | tee fresh-site-evidence.txt
+      - name: HTTP inventory, funds, cost, dispatch and 0.11.1 regression with restore
+        run: |
+          set -o pipefail
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          # Run newly extended inventory/source/COGS cases first; then full regressions.
+          set -o pipefail
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/inventory.py | tee http-inventory-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-inventory-evidence.txt)" = 33
+          if grep -q '"status": "FAIL"' http-inventory-evidence.txt; then echo "Có ca FAIL trong http-inventory-evidence.txt"; exit 1; fi
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/funds.py | tee http-funds-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-funds-evidence.txt)" = 19
+          if grep -q '"status": "FAIL"' http-funds-evidence.txt; then echo "Có ca FAIL trong http-funds-evidence.txt"; exit 1; fi
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-cost-evidence.txt)" = 16
+          if grep -q '"status": "FAIL"' http-cost-evidence.txt; then echo "Có ca FAIL trong http-cost-evidence.txt"; exit 1; fi
+          # Database restore leaves queued fixture contact jobs in disposable Redis.
+          # This Redis belongs only to this fresh CI site; no workers consume it.
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/dispatch.py | tee http-dispatch-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-dispatch-evidence.txt)" = 48
+          if grep -q '"status": "FAIL"' http-dispatch-evidence.txt; then echo "Có ca FAIL trong http-dispatch-evidence.txt"; exit 1; fi
+          # 0.11.1: 13 ca nghiệp vụ + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b0111.py | tee http-b0111-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b0111-evidence.txt)" = 14
+          if grep -q '"status": "FAIL"' http-b0111-evidence.txt; then echo "Có ca FAIL trong http-b0111-evidence.txt"; exit 1; fi
+          # 0.11.2: 12 ca nghiệp vụ (cây kho, dở dang theo định mức, đóng gói 2 công đoạn, kiểm kê có mốc) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b0112.py | tee http-b0112-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b0112-evidence.txt)" = 13
+          if grep -q '"status": "FAIL"' http-b0112-evidence.txt; then echo "Có ca FAIL trong http-b0112-evidence.txt"; exit 1; fi
+          # 0.11.3: 12 ca nghiệp vụ (trả hàng 2 chiều, giảm giá sau giao, hạn chung, địa chỉ, hồ sơ hóa đơn MISA) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b0113.py | tee http-b0113-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b0113-evidence.txt)" = 13
+          if grep -q '"status": "FAIL"' http-b0113-evidence.txt; then echo "Có ca FAIL trong http-b0113-evidence.txt"; exit 1; fi
+          # 0.11.4: 6 ca (lãi gộp cộng ngang, tạm tính, khóa kỳ, dòng tiền, xác nhận công nợ, quyền) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b0114.py | tee http-b0114-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b0114-evidence.txt)" = 7
+          if grep -q '"status": "FAIL"' http-b0114-evidence.txt; then echo "Có ca FAIL trong http-b0114-evidence.txt"; exit 1; fi
+          # Lượt 0.12: 7 ca (đề nghị số liệu có duyệt, trả lại/quyền, rà soát danh mục, nạp đầu kỳ, đối chiếu, chốt khóa) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b012.py | tee http-b012-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b012-evidence.txt)" = 9
+          if grep -q '"status": "FAIL"' http-b012-evidence.txt; then echo "Có ca FAIL trong http-b012-evidence.txt"; exit 1; fi
+          # Lượt 0.13: 9 ca (giá sàn, thu tiền nhanh, in 2 liên + đối soát, thu hồi nợ, sửa SL nhập sai, chuyển kho khác,
+          # đề nghị bổ sung, kiểm kê bước 2, đầu kỳ chốt đến ngày) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b013.py | tee http-b013-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b013-evidence.txt)" = 10
+          if grep -q '"status": "FAIL"' http-b013-evidence.txt; then echo "Có ca FAIL trong http-b013-evidence.txt"; exit 1; fi
+          # Lượt 0.14: 8 ca (tài khoản ngân hàng, sổ tiền gửi + chống trùng mã, thu / chi hộ giám đốc, khế ước vay + trích lãi,
+          # đối chiếu sao kê, giá sàn đơn chung, in lại kèm số hóa đơn MISA, màn hình) + khôi phục CSDL
+          docker exec uat-redis redis-cli -p 16379 FLUSHDB
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
+          sudo env HOME="$HOME" python3 deploy/uat/http/b014.py | tee http-b014-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 9
+          if grep -q '"status": "FAIL"' http-b014-evidence.txt; then echo "Có ca FAIL trong http-b014-evidence.txt"; exit 1; fi
+      - name: Render four-company quantity slip to PDF
+        run: |
+          google-chrome --version
+          # The native Desk suite runs as root; keep the PDF user's profile isolated.
+          chrome_root=$(mktemp -d /tmp/aphvh-pdf-XXXXXX)
+          trap 'rm -rf "$chrome_root"' EXIT
+          mkdir -p "$chrome_root/config" "$chrome_root/cache"
+          XDG_CONFIG_HOME="$chrome_root/config" XDG_CACHE_HOME="$chrome_root/cache" google-chrome --user-data-dir="$chrome_root/profile" --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/shared-four-company-slip.pdf" "file://$PWD/shared-four-company-slip.html"
+          test -s shared-four-company-slip.pdf
+          head -c 4 shared-four-company-slip.pdf | grep -q '%PDF'
+      - name: Nhật ký khi lỗi (chú thích đọc được qua API, không cần tải log thô)
+        if: failure()
+        run: |
+          for f in fresh-site-evidence.txt http-*-evidence.txt; do
+            [ -f "$f" ] || continue
+            grep '"status": "FAIL"' "$f" | head -3 | while IFS= read -r line; do
+              echo "::error title=FAIL $f::$(printf '%s' "$line" | cut -c1-3000 | sed 's/%/%25/g')"
+            done
+            echo "::error title=cuối $f::$(tail -c 2500 "$f" | tr '\n\r' '  ' | sed 's/%/%25/g')"
+          done
+          docker logs aphvh-p0-web-uat 2>&1 | grep -v 'uat-fixture-only' | tail -c 3000 | tr '\n\r' '  ' | sed 's/%/%25/g' | sed 's/^/::error title=web log::/' || true
+      - name: Stop disposable CI containers
+        if: always()
+        run: |
+          docker rm -f aphvh-p0-web-uat erp-aph-vh-backend-1 erp-aph-vh-db-1 uat-redis || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-image-evidence
+          path: |
+            candidate-image-evidence.txt
+            fresh-site-evidence.txt
+            http-*-evidence.txt
+            shared-four-company-slip.html
+            shared-four-company-slip.pdf
+

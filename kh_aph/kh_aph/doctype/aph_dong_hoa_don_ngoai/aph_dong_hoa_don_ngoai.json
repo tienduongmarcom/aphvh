@@ -1,0 +1,51 @@
+{
+ "name": "APH Dong hoa don ngoai",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "sales_invoice",
+   "label": "Hóa đơn bán (ERP)",
+   "fieldtype": "Link",
+   "options": "Sales Invoice",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer",
+   "label": "Khách",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "label": "Ngày",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "doanh_thu",
+   "label": "Doanh thu quản trị (gồm thuế)",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "in_list_view": 1,
+   "read_only": 1
+  }
+ ],
+ "field_order": [
+  "sales_invoice",
+  "customer",
+  "posting_date",
+  "doanh_thu"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 19:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 19:00:00.000000",
+ "permissions": []
+}

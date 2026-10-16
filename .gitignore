@@ -3,3 +3,9 @@ __pycache__/
 *.egg-info
 .DS_Store
 .ruff_cache/
+dump.rdb
+
+# tệp thử tạm trên máy phát triển
+kh_aph/_thu*.py
+kh_aph/_tam*.py
+kh_aph/_dbg*.py

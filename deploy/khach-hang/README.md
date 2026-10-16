@@ -1,0 +1,118 @@
+# Quy trình triển khai cho khách (hướng A: mỗi khách một máy + Docker image)
+
+Khách đầu tiên: **An Phú Hưng - Vĩnh Hưng** (`khach/aph-vh/`). Nguyên tắc: **mình không bao giờ chạm dữ liệu thật của khách**; mình giao hệ thống đúng cùng công cụ để khách tự nhập và tự kiểm.
+
+## PHƯƠNG ÁN FINAL (08/10/2026)
+1. **Một nguồn sự thật:** repo GitHub giữ app, `khach/<ten>/khach.json` và `phien-ban.yaml`.
+2. **Kiểm chứng tự động trên Linux amd64 của GitHub** (giống máy chủ khách): Cổng 1 unit test, Cổng 2 site trắng theo từng khách, **Cổng 2b diễn tập** `dung.sh` + `nang-cap.sh` (cả ca lỗi) + `quay-lui.sh`. Không đạt thì không gắn tag, không ra image.
+3. **Triển khai một lệnh:** workflow "Triển khai khách" chọn một khách hoặc tất cả, chờ duyệt, SSH vào VM chạy `nang-cap.sh` (tự giữ bản cũ / tự quay lui khi lỗi).
+4. **Mỗi khách hai máy Docker:** UAT (dữ liệu giả, nâng cấp trước, khách ký) và production (dữ liệu thật, nâng cấp sau, sao lưu 2 lần/ngày, mình không truy cập).
+5. **Dữ liệu:** `tu_nhap` hoặc `import_mot_phan` + `ngay_chot` (như mục Hai chế độ dữ liệu).
+6. **MacBook chỉ để xem giao diện**, không phải nơi kiểm chứng (khác kiến trúc chip và lệnh hệ thống so với máy chủ).
+
+Lộ trình: tuần 1 Cổng 2b + workflow triển khai + dựng UAT khách đầu tiên; tuần 2 công cụ import/kiểm dữ liệu + dữ liệu giả, khách UAT và ký, mở production; sau đó theme, `khach-moi`, cảnh báo.
+Cần anh chốt: nhà cung cấp máy ảo (UAT + production), `che_do_du_lieu` và `ngay_chot`, tên miền; anh tự thêm khóa SSH triển khai vào GitHub Secrets.
+
+## Quyết định khách đầu tiên (08/10/2026)
+- Đơn vị: APH (TT133, MST 2601002157), VH (TT99, MST 0500470349, tên "CÔNG TY CỔ PHẦN THƯƠNG MẠI VĨNH HƯNG"), HKD Minh Khang (`thong_tu: 152`), TL (`noi_bo: true`, không MST, không VAT). Tên đầy đủ của Minh Khang và TL cần xác nhận.
+- **Ngày chốt 30/09/2026**: số dư đến hết 30/09 mang sang; chứng từ từ 01/10 nhập từng phiếu (các phiếu 01/10 đến ngày đi vào sử dụng phải nhập bù).
+- Máy chủ: dùng lại `erpnext-prod` trên GCloud (chưa có dữ liệu thật, được xóa để dựng lại bằng quy trình mới).
+- Ô "Khách lấy hóa đơn" mở cho khách dùng trước, đóng khi khách hoàn thiện. Hóa đơn điện tử vẫn lập trên MISA.
+- Thuế GTGT mua vào: phiếu mua tự có dòng "Thuế GTGT mua vào" (1331) nhưng **kế toán tự chọn thuế suất** từng dòng theo hóa đơn nhà cung cấp (chưa chọn thì thuế = 0). App chặn nhầm chiều: 33311 trên phiếu mua, 1331 trên phiếu bán. Tắt "tự thêm dòng thuế theo mẫu thuế mặt hàng" của ERPNext để không tính thuế hai lần.
+- Nhóm hàng (lõi `lab9x`): nhóm con tự lấy tài khoản kho của cha; cảnh báo nhóm chưa có tài khoản; cho đổi nhóm cùng tài khoản; chặn đổi tài khoản của nhóm đã có phát sinh; `loai_hinh: thuong_mai` chỉ tạo Hàng hóa, CCDC, Dịch vụ, Tài sản; mã hàng mới mặc định nhóm Hàng hóa.
+- Phát hành phải qua Cổng 1 (unit test), Cổng 2 (site trắng), **Cổng 2b** (diễn tập dung.sh, nang-cap.sh, ca lỗi, quay-lui.sh trên Linux amd64).
+
+## Cấu trúc app (từ 0.8.0)
+- **`lab9x` (9xLab)**: lõi dùng chung, ở `apps/lab9x` của repo: hệ thống tài khoản TT133/TT99, thuế GTGT, hộ kinh doanh TT152, quy tắc mẫu in, kiểm soát kế toán, cảnh báo bán hàng, bên thứ ba, thu hộ, tồn kho theo tài khoản, đọc số bằng chữ.
+- **`kh_aph`**: app riêng của khách An Phú Hưng - Vĩnh Hưng (đổi tên từ `aphvh`), phụ thuộc `lab9x`. Khách sau đặt tên `kh_<ten>`.
+- **Dữ liệu trắng:** app không tạo kho; khách tự tạo cây kho trên giao diện. Cấu hình khách không còn mục kho (`nha_may`, `kho_them`). App vẫn dựng hệ thống tài khoản chuẩn, nhóm hàng cấp 1 gắn tài khoản kho, mẫu thuế, tài khoản mặc định, bỏ kho/nhóm/tài khoản mẫu của ERPNext.
+- Vai trò, mẫu in, báo cáo không còn chữ "APH": Kế toán nhà máy, Nhân viên bán hàng, Thủ kho bán hàng; Phiếu nhập kho, Phiếu kho, Phiếu xuất kho bán hàng, Biên bản giao nhận, Phiếu thu chi, Phiếu bán hàng; Tồn kho số lượng, Bán hàng có hóa đơn, Tổng hợp bán hàng theo khách.
+- **`kh_aph` chỉ cài mới trên site trắng.** Site cũ chạy `aphvh` (8086, 8081, máy chủ erpnext-prod) giữ nguyên image cũ, không nâng cấp lên `kh_aph`. Image mới tên `kh-aph-erpnext`.
+- Đợt sau: chuyển phần gắn vào ERPNext dùng chung (doc_events, custom field, mẫu in, báo cáo) từ `kh_aph` sang `lab9x`; tách phần chỉ APH có (đơn vị chuyển tiếp TL).
+
+## Vai trò từng phần
+| Phần | Ở đâu | Việc |
+|---|---|---|
+| App `aphvh` + bộ cài | repo GitHub | chuẩn thông tư, kho, thu hộ, in ấn, bộ cài bản trắng |
+| Cấu hình + phiên bản của khách | `khach/<khach>/khach.json`, `phien-ban.yaml` | công ty, thông tư 133/99, `che_do_du_lieu`, `ngay_chot`; image tag đang chạy |
+| Cổng 2 | `.github/workflows/cong-2-site-trang.yml` | với MỌI thư mục khách: dựng site trắng theo config rồi chạy bộ kiểm |
+| Phát hành image | `.github/workflows/phat-hanh.yml` | tag `v0.6.2` -> unit test -> **Cổng 2 phải đạt** -> image `ghcr.io/<chủ>/aphvh-erpnext:0.6.2` |
+| Khuôn máy chủ | `deploy/khach-hang/` | compose, `dung.sh`, `nang-cap.sh` (tự quay lui), `quay-lui.sh`, `erpctl` |
+| Sao lưu tự động | `deploy/cloud/erpnext-backup.*` | 2 lần/ngày lên bucket, giữ 90 ngày |
+
+## Hai chế độ dữ liệu (`che_do_du_lieu` trong khach.json)
+| | `tu_nhap` | `import_mot_phan` |
+|---|---|---|
+| Khách đưa mình | chỉ yêu cầu nghiệp vụ | file mẫu danh mục + số dư đầu kỳ |
+| Mình làm | giao site trắng + file mẫu + công cụ kiểm | import thử (không ghi) -> báo cáo đối chiếu -> import thật |
+| Khách làm | nhập tất cả | nhập phiếu từ `ngay_chot` trở đi |
+
+Chung cho cả hai: ngày chốt (`ngay_chot`, trước = số dư, sau = phiếu; bắt buộc ở chế độ import), khách tự chạy bộ "Kiểm tra dữ liệu" chỉ đọc, môi trường **UAT** (dữ liệu giả, khách thử và ký biên bản) rồi mới mở **production trắng**. Tài khoản của mình trên production tắt, chỉ bật khi khách cho phép. Dữ liệu gốc khách gửi (chế độ import) xóa theo thời hạn thỏa thuận, giữ báo cáo đối chiếu.
+
+## Khách mới (khoảng 20–30 phút phần dựng, phần lớn là chờ)
+1. Sao `khach/aph-vh/` thành `khach/<khach>/`, sửa `khach.json` (tên, viết tắt, `thong_tu`, `che_do_du_lieu`, `ngay_chot`) và `phien-ban.yaml`. Mở pull request: Cổng 2 tự chạy cho khách mới.
+2. Tạo máy ảo (Ubuntu 22.04/24.04, amd64, 4 GB RAM+, ổ 50 GB, mở cổng 80/443), cài Docker, `docker login ghcr.io` bằng token chỉ đọc gói.
+3. Chép `deploy/khach-hang/` và `khach.json` lên máy, chạy `./dung.sh <khach> <phien-ban> ./khach.json [ten-mien]` (tạo `.env` mật khẩu ngẫu nhiên, dựng dịch vụ, tạo site, cài `erpnext` + `aphvh`, nạp cấu hình, chạy bộ kiểm). Dựng **UAT** trước, production sau khi khách ký.
+4. Cài sao lưu tự động (`deploy/cloud/README.md`), thêm tên miền (HTTPS tự động).
+5. Gửi khách báo cáo `sao-luu/kiem-trien-khai.txt`.
+
+## Phát hành phiên bản mới
+1. Sửa code, `python3 -m unittest discover -s aphvh/tests -t .`.
+2. Tăng `__version__`, commit, `git tag v<phiên bản>`, `git push --tags`.
+3. GitHub Actions: unit test -> Cổng 2 (mọi khách) -> dựng và đẩy image. Không dùng nhãn `latest` khi triển khai.
+4. Nâng cấp khách bằng cách sửa `image_tag` trong `khach/<khach>/phien-ban.yaml` (pull request), rồi chạy nâng cấp. Thứ tự: UAT của khách trước, production sau.
+
+## Nâng cấp một khách (không dùng dữ liệu thật của khách để thử)
+`./nang-cap.sh <phien-ban-moi>` (trong thư mục khách): (tùy chọn `SNAPSHOT_CMD` chụp snapshot ổ VM) -> sao lưu -> đổi phiên bản -> kéo image -> `migrate` -> bộ kiểm.
+**Migrate lỗi hoặc kiểm không đạt thì tự quay lui** (khôi phục bản sao lưu vừa chụp) rồi báo mã lỗi 3 hoặc 4; tắt bằng `TU_QUAY_LUI=0`. Nên nâng cấp ngoài giờ làm việc.
+
+## Quay lui bằng tay
+`./quay-lui.sh <thư-mục-sao-lưu>`: đổi lại phiên bản cũ, khôi phục CSDL + tệp (hỏi gõ `CO`; dữ liệu phát sinh sau nâng cấp sẽ mất). `--tu-dong` bỏ hỏi (do `nang-cap.sh` dùng).
+
+## Quy tắc tùy biến giao diện (để nâng cấp không lỗi)
+Trên hệ thống của khách (UAT và production) chỉ can thiệp giao diện theo đúng hai nhóm dưới đây. Cả hai lưu trong cơ sở dữ liệu, không sửa mã nguồn, nên `migrate` giữ nguyên và bản sao lưu mang theo.
+
+**Nhóm 1: Không lập trình (No-Code), an toàn nhất**
+| Công cụ | Dùng để |
+|---|---|
+| Customize Form | ẩn/hiện trường, đổi nhãn, đổi vị trí, bắt buộc nhập / chỉ đọc |
+| Workspace và Dashboard | đổi trang chủ phân hệ: biểu đồ, thẻ báo cáo, lối tắt |
+| Giao diện (màu, logo, font, CSS nhỏ) | chủ đề giao diện cho cả hệ thống |
+
+**Nhóm 2: Lập trình nhẹ (Low-Code)**
+| Công cụ | Dùng để |
+|---|---|
+| Client Script (JavaScript, tạo trên giao diện) | nút tùy chỉnh, đổi màu trường, ẩn/hiện tab theo điều kiện, cảnh báo động |
+
+**Ngoài hai nhóm này thì không làm trên giao diện:** không sửa mã ERPNext hay Frappe, không tạo Server Script, không tạo DocType mới. Nhu cầu cần mã phía máy chủ do mình làm trong app (`aphvh` hoặc `kh_<khach>`), đi qua phát hành image và Cổng 2.
+
+**Ghi chú về "Frappe Theme":** bản ERPNext/Frappe v16 mà mình dùng không có DocType tên "Frappe Theme". Phần giao diện có sẵn là Website Theme (chỉ trang web công khai) và chọn sáng/tối cho từng người dùng. Muốn đổi màu, logo, font cho toàn bộ giao diện làm việc thì cần một app giao diện bổ sung hoặc CSS qua mã app; việc này cần thống nhất riêng, chưa đưa vào quy trình.
+
+**Đưa tùy biến vào quy trình**
+1. Khách (hoặc mình, khi khách cho phép) tùy biến trên **UAT** trước, khách thử rồi ký.
+2. Tùy biến thuộc phạm vi mình giao cho khách (không phải tinh chỉnh riêng của khách) thì xuất thành fixtures vào app khách (`kh_<khach>`: Custom Field, Property Setter, Client Script, Workspace), commit và phát hành bằng image. Như vậy production, UAT và máy dựng mới đều có cùng một bộ, kiểm tra được ở Cổng 2.
+3. Tinh chỉnh riêng của khách làm trực tiếp trên production được phép, không cần phát hành; chỉ nằm trong CSDL và sao lưu.
+4. Trước mỗi nâng cấp, chạy trên UAT của khách để xem tùy biến có vỡ không (Client Script gọi trường bị đổi tên là nguyên nhân hay gặp nhất).
+
+## Quyết định giao diện (06/10/2026)
+- **Giữ kiểu Frappe**, không bắt chước bố cục MISA AMIS. Nhận diện bằng **bản sắc riêng** của công ty tư vấn.
+- **Theme = app riêng `aphvh_theme`**, chỉ ghi đè biến CSS (màu, font, bo góc, mật độ). Không đè bộ chọn, không ghi đè hàm JS nội bộ của Frappe. Logo, tên, trang đăng nhập, mẫu in đặt bằng cấu hình trên giao diện.
+- Hai tầng nhận diện: bản sắc chung của mình + lớp riêng từng khách (logo, màu nhấn) khai trong `khach.json`.
+- **Cổng 2 kiểm theme:** mọi biến CSS theme dùng phải còn tồn tại trong bản Frappe đang đóng gói; chụp màn hình vài trang chính để so sánh. Lệch thì chặn phát hành.
+- Theme là code trong app (đi qua phát hành image), là ngoại lệ có kiểm soát so với hai nhóm No-Code / Low-Code trên giao diện.
+- Workspace theo vai trò (trang Tổng quan, lối tắt) làm theo nhu cầu từng khách, không áp thứ tự menu của phần mềm khác.
+- **Chưa làm:** app theme, bước kiểm biến + chụp màn hình trong Cổng 2. Cần từ anh: màu chính, font, logo.
+
+## Quy tắc an toàn
+- Một khách một máy, một `.env` (quyền 600, không đưa vào Git). `site_config_backup.json` có `encryption_key`: giữ bucket sao lưu riêng tư.
+- Không chạy lệnh dọn Docker tổng quát trên máy có khách.
+- Bộ cài bản trắng chỉ bỏ tài khoản mẫu khi công ty chưa có bút toán nào.
+
+## Trạng thái kiểm chứng (06/10/2026)
+- **Đã chạy thật** (sandbox, site trắng): cấu hình khách -> `ap_dung` -> `kiem_trien_khai` 30/30; kiểm cấu hình có chế độ dữ liệu và ngày chốt (unit test).
+- **Chưa chạy thật**: Cổng 2 và workflow phát hành trên GitHub Actions, `dung.sh`, `nang-cap.sh` (kể cả tự quay lui), `quay-lui.sh`, HTTPS Caddy (không có Docker daemon). Diễn tập trước khi dùng cho khách thật.
+- **Chưa xây**: bộ kiểm tùy biến chỉ đọc (liệt kê Server Script, DocType mới, Client Script của khách để phát hiện vượt quy tắc), bộ file mẫu nhập, công cụ import có chế độ thử + báo cáo đối chiếu, công cụ "Kiểm tra dữ liệu" cho khách, bộ sinh dữ liệu giả cho UAT, lệnh `khach-moi`, restore thử hằng tuần, cảnh báo.
+- **Cần anh chốt cho khách đầu tiên**: `che_do_du_lieu` (hiện đặt `tu_nhap`), `ngay_chot`, tên miền, nhà cung cấp cloud.
+
+## Diễn tập (làm một lần, trên MacBook hoặc máy thử)
+`HTTP_BIND=127.0.0.1 HTTP_PORT=18090 ERP_HOME=$HOME/erp-thu ./dung.sh thu <phien-ban> ./khach.json`, rồi `./nang-cap.sh` lên phiên bản kế tiếp (thử cả ca lỗi: đặt phiên bản không tồn tại để xem tự quay lui), và `./quay-lui.sh`. Cả ba đạt mới dùng cho khách thật.
