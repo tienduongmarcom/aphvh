@@ -9,11 +9,10 @@
 #  - Lỗi ở BẤT KỲ bước nào sau khi bật bảo trì: giữ bảo trì, in nơi lưu bằng chứng + lệnh quay lui. Bước nâng cấp lỗi thì
 #    nang-cap.sh tự quay lui.
 #  - So sổ trước / sau: tổng, số bản ghi, chi tiết theo công ty / tài khoản / đối tượng, mã hàng / kho, chứng từ, số bao.
-# Biến môi trường (CI): BE, ERP_DIR, TAG (tag image, mặc định = phiên bản), SAO_LUU_CLOUD=0, DAU_RA, LOG_RA.
+# Biến môi trường (CI): ERP_DIR, TAG (tag image, mặc định = phiên bản), SAO_LUU_CLOUD=0, DAU_RA, LOG_RA.
 set -euo pipefail
 [ $# -ge 1 ] || { echo "Dùng: $0 <phiên bản> [cờ mới ...]"; exit 2; }
 PB="$1"; shift; CO_MOI=("$@")
-BE="${BE:-erp-aph-vh-backend-1}"
 ERP_DIR="${ERP_DIR:-$HOME/erp/aph-vh}"
 TAG="${TAG:-$PB}"
 DAU_RA="${DAU_RA:-$HOME}"
@@ -33,12 +32,14 @@ trap 'loi "lệnh lỗi ở dòng $LINENO"' ERR
 TK="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$TK"
 grep -q "__version__ = \"$PB\"" kh_aph/__init__.py || loi "thư mục $TK không phải tag v$PB"
-dv() { docker exec -i -w /home/frappe/frappe-bench/sites "$BE" /home/frappe/frappe-bench/env/bin/python - frontend < deploy/release/dau_van_site.py; }
+# Container backend tìm lại mỗi lần (nâng cấp tạo lại container; tên có thể đổi ID).
+be() { (cd "$ERP_DIR" && ./erpctl ps -q backend | head -1); }
+dv() { docker exec -i -w /home/frappe/frappe-bench/sites "$(be)" /home/frappe/frappe-bench/env/bin/python - frontend < "$TK/deploy/release/dau_van_site.py"; }
 set -a; source "$ERP_DIR/.env"; set +a
 IMG="${CUSTOM_IMAGE:-frappe/erpnext}:$TAG"
 
 echo "== 1. Dấu vân (thăm dò) + digest image đang chạy + điều kiện diễn tập"
-docker image inspect "$(docker inspect -f '{{.Image}}' "$BE")" -f '{{json .RepoDigests}}'
+docker image inspect "$(docker inspect -f '{{.Image}}' "$(be)")" -f '{{json .RepoDigests}}'
 dv > "$L/dv-$PB-tham-do.txt"
 CO_DL=0
 if ! python3 deploy/release/kiem_trang.py "$L/dv-$PB-tham-do.txt"; then
