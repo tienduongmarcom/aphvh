@@ -1,5 +1,15 @@
 # Bàn giao dự án APH-VH
 
+## 16/10/2026 — Ứng viên 0.15.0, bước bán hàng/lập phiếu xuất nhanh
+
+Nhánh `feat/ban-hang-nhanh-20261016` dựa trên nhánh nâng nền `thu/erpnext-v16.51.1` (PR #2). Không phát hành/triển khai. Cờ hiện có `kh_aph_trung_tam_ban` (mặc định tắt); schema mới chỉ qua bộ cài rõ ràng, không after_migrate.
+
+Đã viết: Dialog “Lập phiếu xuất & In” trên đơn chung đã xác nhận; facade `ban_nhanh.preview/create_drafts/print_batch`; phiếu nháp theo đơn nguồn × kho, chống lặp theo mã yêu cầu/nội dung, trừ lượng đã lập nháp khi chọn giao đợt tiếp; giữ bao nguyên theo snapshot. Không submit/commit/ghi sổ trong facade. Mẫu in số lượng có ô ký thực giao/thực nhận và nhãn CHỜ XUẤT. Bổ sung quyền lập nháp Delivery Note cho Kế toán bán hàng, không thêm quyền submit/hủy/xóa. Sửa 7 bản dịch sai nghĩa rõ từ audit 15/10; không áp bừa 137 đề xuất phụ thuộc ngữ cảnh.
+
+Kiểm cục bộ: lab9x 107 ca; kh_aph 232 ca khi có Jinja2. HTTP/Chrome mới nằm trong `deploy/uat/http/b014_ban_nhanh_cases.py` + `ban-nhanh-desk.mjs`; chạy chung b014, mong 12 PASS gồm restore. Chưa kết luận HTTP/Chrome PASS trước Actions đúng SHA. Chi tiết `docs/ban-hang-nhanh-tiep-quan.md`.
+
+ĐANG DỞ: đợi CI và xử lý lỗi thực. Chưa làm hồ sơ bản ký/đối chiếu, ca tiền mặt/custodian, phần nhà máy/tài chính mới, phần lớn bản dịch còn lại. Thứ tự người dùng chốt: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính. Tiếp theo mở rộng ký nhận và cảnh báo phiếu thiếu hồ sơ; không coi bản in có ô ký là đã có chữ ký.
+
 ## 16/10/2026 — Codex tiếp nhận, ứng viên nâng nền 0.14.4
 
 Anh Tiến đã cho phép phát triển tiếp: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính; cải thiện UI, bản dịch, tự tạo dữ liệu giả lập. Chỉ dẫn này thay quyết định tạm dừng tính năng ở bản bàn giao cũ bên dưới. Không chạm production.

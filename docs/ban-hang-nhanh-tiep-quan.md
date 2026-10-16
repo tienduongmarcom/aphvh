@@ -1,0 +1,43 @@
+# Bán hàng nhanh — trạng thái để agent khác tiếp quản
+
+Ứng viên 0.15.0, chưa phát hành/triển khai. Nguồn yêu cầu anh Tiến 16/10: tự tạo dữ liệu giả, làm lần lượt nghiệp vụ, chú ý UI, kèm bản dịch. Cờ `kh_aph_trung_tam_ban` hiện có; không sửa core.
+
+## Luồng đã viết
+
+1. Lập và xác nhận đơn chung bằng form chuẩn (giá sàn/hạn mức/thuế giữ nguyên).
+2. Bấm **Lập phiếu xuất & In**. Dialog hiển thị lượng còn lập phiếu, kho, quy cách; mở dòng xem lượng đặt/đã giao/nháp. Điền lượng kg đợt này hoặc “Điền toàn bộ phần còn lại”. Bao phải nguyên theo snapshot.
+3. Server kiểm quyền đơn chung, Customer, SO con, Company, Warehouse, Item và quyền tạo DN. Khóa đơn chung rồi nguồn SO; kiểm lại lượng, gồm mọi DN nháp chưa hủy từ cùng dòng nguồn. Tạo một DN nháp cho từng SO × kho trong cùng transaction. Không ghi GL/SLE/SI.
+4. Mã yêu cầu giữ trong Dialog khi mạng lỗi. Cùng mã/cùng nội dung trả đúng phiếu cũ; cùng mã/nội dung khác bị từ chối. Không nuốt lỗi/commit giữa các kho. Mở lại Dialog sẽ đọc lượng đã lập, tránh hiểu nhầm là chưa có phiếu.
+5. In một trang mỗi DN: chỉ lượng, kho, bao/kg, mã DN/đơn chung, chữ ký thực giao/thực nhận; nháp ghi **CHỜ XUẤT — CHƯA GHI SỔ KHO/CÔNG NỢ**. Không thay Print Settings toàn hệ thống để cho phép in nháp. In không tự submit; kho tiếp tục dùng luồng xác nhận đã có.
+
+Không coi lượng trên phiếu nháp là giữ tồn vật lý. API chuẩn khác vẫn có thể lập nháp; khi xác nhận xuất tiếp tục qua kiểm native và khóa nguồn hiện có. Chưa đo tải đồng thời/phối hợp mở nhiều cửa sổ. Chưa tạo nhóm điều phối giao có trạng thái riêng.
+
+## Vị trí code
+
+- `kh_aph/ban_nhanh.py`: facade, schema 3 liên kết DN, kiểm quyền, tạo nháp/in.
+- `kh_aph/dispatch_plan.py`: quy tắc thuần lượng còn lại/bao nguyên/không nhận NaN/Inf/dòng trùng hoặc ngoài nguồn.
+- JS form đơn chung: Dialog chuẩn Frappe, không Page/SPA, không thêm bước build. Sinh token bằng `crypto.getRandomValues` chạy được cả HTTP; không dùng `randomUUID` bắt buộc secure context.
+- Schema gọi qua `trung_tam_ban.schema` trong bộ cài rõ ràng. Kế toán bán hàng thêm DN create/write để lập nháp, không thêm submit/cancel/delete; không reset quyền đang có.
+- Mẫu in `templates/ban_nhanh/phieu_dot_xuat.html`: facade truyền allowlist, escape tên người/hàng/kho; không truyền nguyên chứng từ có giá.
+
+## Kiểm độc lập
+
+```
+(cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)
+PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .
+node --check kh_aph/kh_aph/doctype/aph_shared_sales_order/aph_shared_sales_order.js
+```
+
+Image có Jinja2; máy cục bộ cần Jinja2 để chạy đủ các ca mẫu in. Không đánh đồng unit với UAT.
+
+UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 12 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
+
+Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatch nhiều công ty cũ vẫn có UAT), hai request đồng thời, một kho lỗi rollback cả đợt, native quyền chỉ riêng Company/Warehouse, mất kết nối sau commit, sửa nháp thủ công. Cần bổ sung trước phát hành tính năng. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
+
+## Bản dịch
+
+Đã sửa 7 chuỗi sai nghĩa rõ: Base Total Billed Amount, Tax Withholding, chênh lệch làm tròn hóa đơn đầu kỳ, diễn giải quyền, Chart of Accounts, lấy bút toán, số kỳ khấu hao. Giữ placeholder/HTML và mọi dòng không đổi. Audit 15/10 có 326 đề xuất, không phải 326 lỗi đã xác nhận. 182 diễn đạt và 137 phụ thuộc ngữ cảnh chưa được áp toàn bộ.
+
+## Phần tiếp theo
+
+Hồ sơ ký nhận (tải bản ký, người đối chiếu/thời gian, thiếu hồ sơ/chênh lệch); ca giữ tiền/bàn giao/đối soát chuyển khoản/cọc/thu hộ; nhà máy; tổng hợp tài chính. Bản in có ô ký chưa phải bằng chứng hồ sơ đã ký. Giữ dữ liệu nguồn ERPNext, không xây sổ tiền/kho/công nợ thứ hai.

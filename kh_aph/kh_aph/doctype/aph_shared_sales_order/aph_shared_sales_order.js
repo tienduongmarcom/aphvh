@@ -1,4 +1,72 @@
-// Warehouse ownership is a preview; the server verifies every line on save.
+// Kho nguồn trên giao diện chỉ để xem trước; server kiểm lại khi lưu.
+frappe.ui.form.on("APH Shared Sales Order", {
+    refresh(frm) {
+        if (!frappe.boot?.kh_aph?.trung_tam_ban || frappe.boot.kh_aph.price_restricted ||
+            frm.doc.docstatus !== 1 || !frappe.model.can_create("Delivery Note")) return;
+        frm.add_custom_button("Lập phiếu xuất & In", () => kh_aph_lap_dot_xuat(frm));
+    },
+});
+
+async function kh_aph_lap_dot_xuat(frm) {
+    if (frm.is_dirty()) return frappe.msgprint("Lưu thay đổi trên đơn trước khi lập phiếu xuất.");
+    const response = await frappe.call({method: "kh_aph.ban_nhanh.preview", args: {shared_order: frm.doc.name}, freeze: true});
+    const rows = response.message.rows.filter(r => r.remaining_qty > 0);
+    if (!rows.length) return frappe.msgprint("Đã giao hoặc đã lập phiếu chờ xuất hết đơn. Kiểm tra các phiếu chờ xuất trước khi lập thêm.");
+    // Giữ mã yêu cầu khi lỗi mạng để lần bấm lại không lập thêm phiếu.
+    const request_id = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, "0")).join("");
+    const dialog = new frappe.ui.Dialog({title: "Lập phiếu xuất theo lượng giao đợt này", size: "extra-large",
+        fields: [
+            {fieldtype: "HTML", options: '<div class="alert alert-info">Chọn lượng giao bằng kg; hàng theo bao phải đủ bao theo quy cách đã lưu. Phiếu được tạo ở trạng thái <b>Chờ xuất</b>. Kho xác nhận thực giao mới trừ tồn và ghi công nợ.</div>'},
+            {fieldname: "rows", label: "Hàng giao đợt này", fieldtype: "Table", cannot_add_rows: true,
+                cannot_delete_rows: true, in_place_edit: true,
+                data: rows.map(r => ({...r, qty: 0})), fields: [
+                    {fieldname: "source_row", fieldtype: "Data", hidden: 1},
+                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 2},
+                    {fieldname: "warehouse", label: "Kho nguồn", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 3},
+                    {fieldname: "remaining_qty", label: "Còn lập (kg)", fieldtype: "Float", in_list_view: 1, read_only: 1, columns: 2},
+                    {fieldname: "kg_per_bag", label: "Kg/bao", fieldtype: "Float", in_list_view: 1, read_only: 1, columns: 1},
+                    {fieldname: "qty", label: "Giao đợt này (kg)", fieldtype: "Float", in_list_view: 1, columns: 2},
+                    {fieldname: "ordered_qty", label: "Đặt (kg)", fieldtype: "Float", read_only: 1},
+                    {fieldname: "delivered_qty", label: "Đã giao (kg)", fieldtype: "Float", read_only: 1},
+                    {fieldname: "draft_qty", label: "Đã lập chờ xuất (kg)", fieldtype: "Float", read_only: 1},
+                ]},
+        ],
+        primary_action_label: "Lập phiếu & Mở bản in",
+        async primary_action(values) {
+            const selections = (values.rows || []).filter(r => Number(r.qty) > 0)
+                .map(r => ({source_row: r.source_row, qty: Number(r.qty)}));
+            if (!selections.length) return frappe.msgprint("Nhập lượng giao cho ít nhất một dòng.");
+            const preview = window.open("", "_blank");
+            if (!preview) return frappe.msgprint("Cho phép mở cửa sổ in trong trình duyệt rồi bấm lại.");
+            preview.opener = null;
+            dialog.disable_primary_action();
+            let created = false;
+            try {
+                const made = await frappe.call({method: "kh_aph.ban_nhanh.create_drafts", freeze: true,
+                    args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id}});
+                created = true;
+                const names = made.message.delivery_notes.map(n => n.name);
+                const print = await frappe.call({method: "kh_aph.ban_nhanh.print_batch",
+                    args: {shared_order: frm.doc.name, request_id}});
+                preview.document.open(); preview.document.write(print.message.html); preview.document.close();
+                preview.focus(); preview.print(); dialog.hide();
+                frappe.msgprint({title: "Đã lập phiếu chờ xuất", indicator: "green",
+                    message: names.map(n => frappe.utils.get_form_link("Delivery Note", n, true)).join("<br>") +
+                        "<br>In chưa ghi sổ. Chuyển phiếu cho kho đối chiếu và xác nhận xuất."});
+            } catch (error) {
+                preview.close();
+                if (created) frappe.msgprint("Đã lập phiếu chờ xuất nhưng chưa mở được bản in. Bấm lại cùng lượng để mở bản in; hệ thống sẽ dùng lại phiếu đã lập.");
+                throw error;
+            } finally { dialog.enable_primary_action(); }
+        },
+        secondary_action_label: "Điền toàn bộ phần còn lại",
+        secondary_action() {
+            dialog.fields_dict.rows.df.data.forEach(r => { r.qty = r.remaining_qty; });
+            dialog.fields_dict.rows.grid.refresh();
+        },
+    });
+    dialog.show();
+}
 frappe.ui.form.on("APH Shared Sales Order", {
     async refresh(frm) {
         if (!frappe.boot?.kh_aph?.funds_workflow || frappe.boot.kh_aph.price_restricted || frm.doc.docstatus !== 1) return;

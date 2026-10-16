@@ -1,7 +1,7 @@
 name: UAT candidate image verification
 on:
   push:
-    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1"]
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016"]
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -169,7 +169,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/b014.py | tee http-b014-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 9
+          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 12
           if grep -q '"status": "FAIL"' http-b014-evidence.txt; then echo "Có ca FAIL trong http-b014-evidence.txt"; exit 1; fi
       - name: Render four-company quantity slip to PDF
         run: |
@@ -206,6 +206,7 @@ jobs:
             core-candidate.json
             core-integrity-evidence.txt
             base-versions-evidence.txt
+            ban-nhanh-dialog.png
             fresh-site-evidence.txt
             http-*-evidence.txt
             shared-four-company-slip.html
