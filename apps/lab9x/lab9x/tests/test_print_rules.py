@@ -52,10 +52,11 @@ if __name__ == "__main__":
 
 
 class MauMacDinhERPNext(unittest.TestCase):
-    def test_nhan_ca_hai_kieu_ten(self):
+    def test_nhan_ca_ba_kieu_ten(self):
         from lab9x.print_rules import la_mau_mac_dinh_erpnext as f
         self.assertTrue(f("Sales Invoice", "Sales Invoice with Item Image"))
         self.assertTrue(f("Sales Invoice", "Sales Invoice Modern with Images"))
+        self.assertTrue(f("Sales Invoice", "Sales Invoice Classic"))
         self.assertTrue(f("Sales Invoice", None))
         self.assertTrue(f("Sales Invoice", ""))
 
@@ -63,4 +64,5 @@ class MauMacDinhERPNext(unittest.TestCase):
         from lab9x.print_rules import la_mau_mac_dinh_erpnext as f
         self.assertFalse(f("Sales Invoice", "Phiếu bán hàng"))
         self.assertFalse(f("Sales Invoice", "Delivery Note Modern with Images"))
-        self.assertFalse(f("Sales Invoice", "Sales Invoice Classic"))
+        self.assertFalse(f("Sales Invoice", "Delivery Note Classic"))
+        self.assertFalse(f("Sales Invoice", "Sales Invoice Classic riêng"))
