@@ -51,6 +51,8 @@ jobs:
       HTTP_PORT: "18092"
     steps:
       - uses: actions/checkout@v4
+      - name: Kiểm ranh giới ngoại lệ mẫu in trên checkout
+        run: python3 deploy/release/test_print_defaults_gate.py
       - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
         run: |
           df -h / | tail -1

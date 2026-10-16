@@ -1,5 +1,9 @@
 # Bàn giao dự án APH-VH
 
+## 16/10/2026 22:40 — Sửa vị trí ca kiểm workflow
+
+CI SHA 25974b9 / bd66e95 dừng build: test mới đọc `.github/workflows` nhưng Docker loại `.github` khỏi image. Chuyển nguyên ca kiểm ranh giới sang `deploy/release/test_print_defaults_gate.py`, chạy bắt buộc ngay sau checkout Cổng 3; test bộ cài vẫn chạy trong image. Không skip ca, không nới assertion, không thêm workflow vào image production. ĐANG DỞ: kiểm cục bộ rồi đẩy hai PR, đọc CI SHA mới; frontend không đổi.
+
 ## 16/10/2026 22:20 — Sửa lỗi Cổng 3 mẫu in Classic trên ERPNext 16.51.1
 
 PR #2 tại 3b01cc7 và PR #3 tại 8952265: UAT/Cổng 2 đạt, Cổng 3 lỗi bước 5 (runs 38897717545 / 38897741846). So sổ khớp trong CI; bước quay lui phía sau chưa chạy. Không lấy run SHA cũ làm nghiệm thu SHA mới.
