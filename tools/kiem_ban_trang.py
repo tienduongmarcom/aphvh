@@ -49,7 +49,9 @@ for ab, co in cty.items():
     tro = sorted({r.default_warehouse for r in frappe.get_all("Item Default", {"company": co, "default_warehouse": ["is", "set"]}, ["default_warehouse"])
                   if frappe.db.get_value("Warehouse", r.default_warehouse, "disabled") or frappe.db.get_value("Warehouse", r.default_warehouse, "company") != co})
     ok(f"B7 {ab}: kho mặc định nhóm hàng không trỏ vào kho ngừng dùng / khác công ty", not tro, tro)
-    ok(f"B8 {ab}: Cài đặt kho không trỏ vào kho mẫu", frappe.db.get_single_value("Stock Settings", "default_warehouse") not in {f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT}, frappe.db.get_single_value("Stock Settings", "default_warehouse"))
+    from kh_aph.kiem_trien_khai import kho_mac_dinh_stock_settings
+    kmd = kho_mac_dinh_stock_settings()
+    ok(f"B8 {ab}: Cài đặt kho không trỏ vào kho mẫu", kmd not in {f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT}, kmd)
     con = [f"{t} - {ab}" for t in C.KHO_MAC_DINH_ERPNEXT if frappe.db.exists("Warehouse", f"{t} - {ab}")]
     ok(f"B9 {ab}: không còn kho mẫu ERPNext (kể cả kho đã ngừng dùng)", not con, con)
     nh = {}

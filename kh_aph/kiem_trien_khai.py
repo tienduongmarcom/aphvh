@@ -12,6 +12,14 @@ from lab9x.bang_tai_khoan import bang
 from kh_aph.tai_khoan_chuan import CAN
 
 
+def kho_mac_dinh_stock_settings():
+    """Nền mới đã bỏ ô này; giá trị cũ còn trong Singles không phải trường đang hiệu lực."""
+    import frappe
+    if not frappe.get_meta("Stock Settings").has_field("default_warehouse"):
+        return None
+    return frappe.db.get_single_value("Stock Settings", "default_warehouse")
+
+
 def kiem_cong_ty(c: dict, ok):
     """c: cấu hình một công ty; ok(ma, dat, ghi) ghi kết quả. Cần Frappe."""
     import frappe
@@ -83,7 +91,7 @@ def chay(duong_dan: str = None, ra: str = None, cfg: dict = None) -> list:
 
     ok("Đã cài app kh_aph", "kh_aph" in frappe.get_installed_apps(), kh_aph.__version__)
     ok("Bước thiết lập ban đầu xong", frappe.is_setup_complete())
-    kmd = frappe.db.get_single_value("Stock Settings", "default_warehouse")
+    kmd = kho_mac_dinh_stock_settings()
     ok("Cài đặt kho: kho mặc định trống hoặc là kho đang dùng", not kmd or not frappe.db.get_value("Warehouse", kmd, "disabled"), kmd or "")
     hong = [f"{d.defkey}={d.defvalue}" for d in frappe.get_all("DefaultValue", {"defkey": ["like", "%warehouse%"]}, ["defkey", "defvalue"])
             if d.defvalue and (not frappe.db.exists("Warehouse", d.defvalue) or frappe.db.get_value("Warehouse", d.defvalue, "disabled"))]

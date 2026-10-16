@@ -40,7 +40,7 @@ Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatc
 
 ## Kiểm riêng bản vá nền
 
-`deploy/uat/native_16511.py` chạy trước HTTP trên site CI trắng: ngày tương lai/thiếu Company/phiếu chốt nháp bị chặn, số dư đầu kỳ lọc đúng mã–kho và khớp cách bỏ chốt, phiếu chốt sau chặn hủy/tái tạo phiếu trước, phiếu hủy không sinh lại số dư; rollback số đếm và series. Bốn ca kỳ vọng, chưa PASS trước run đúng SHA. Số dư chốt chứa giá/FIFO nên thêm hook quyền cho cả Stock Closing Entry/Balance; ca HTTP Dũng được cộng Stock User vẫn bị chặn đọc/query, kế toán trưởng vẫn đọc được. Lớp che JSON cũng bỏ fifo_queue/stock_queue.
+`deploy/uat/native_16511.py` chạy trước HTTP trên site CI trắng: ngày tương lai/thiếu Company/phiếu chốt nháp bị chặn, số dư đầu kỳ lọc đúng mã–kho và khớp cách bỏ chốt, phiếu chốt sau chặn hủy/tái tạo phiếu trước, phiếu hủy không sinh lại số dư; rollback số đếm và series. Bốn ca kỳ vọng, chưa PASS trước run đúng SHA. Image nền đã đo trong CI: ERPNext 16.51.1 + Frappe 16.52.0. UAT nền cũ đạt nhưng Cổng 3 bắt lỗi ô default_warehouse không còn trong Stock Settings; helper mới kiểm meta, nền cũ vẫn đọc cấu hình bình thường. Số dư chốt chứa giá/FIFO nên thêm hook quyền cho cả Stock Closing Entry/Balance; ca HTTP Dũng được cộng Stock User vẫn bị chặn đọc/query, kế toán trưởng vẫn đọc được. Lớp che JSON cũng bỏ fifo_queue/stock_queue.
 
 ## Phần tiếp theo
 
