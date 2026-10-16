@@ -1,5 +1,26 @@
 # Bàn giao dự án APH-VH
 
+## 000000000000000. BÀN GIAO 16/10/2026 17:50 — Claude → Codex (kiểm chéo, phát triển tiếp)
+
+Trạng thái: production `frontend` chạy **0.14.3** (digest `706bf959…`, commit `b14ad8d`), CI xanh trên đúng commit; HEAD nhánh
+`fix/p0-uat-v091-20261010` = commit ghi nhận triển khai (chỉ tài liệu + mốc Cổng 3). Không có việc dở dang trong code.
+Người dùng bắt đầu dùng thử **18/10/2026**; chủ dự án đã chốt **tạm dừng tính năng mới**, chỉ vá lỗi phát sinh.
+
+Việc mở (theo thứ tự ưu tiên):
+1. **ubuntu-latest chuyển sang Ubuntu 26 từ 19/10/2026** (thông báo trên mọi run): CI có thể đổi hành vi (docker, python, bash).
+   Nên ghim `runs-on: ubuntu-24.04` trong mọi workflow trước 19/10, rồi mới thử nâng có kiểm soát.
+2. Cảnh báo Node.js 20 của actions (checkout@v4, upload-artifact@v4, docker/*): nâng phiên bản action khi rảnh, không gấp.
+3. ERPNext **16.51.1** (sửa Stock Closing Entry + Stock Balance; app chưa dùng Stock Closing Entry): CHƯA nâng. Gộp vào bản vá
+   sau đợt dùng thử; nhảy 16.50.0 → 16.51.1 kéo theo cả 16.51.0 — đổi digest nền ở Dockerfile + Cổng 2/3, chạy đủ CI, diễn tập.
+4. Lỗi người dùng báo từ 18/10: mỗi lỗi → ca kiểm (UAT HTTP / unit) tái hiện TRƯỚC khi sửa; bản vá theo thủ tục
+   `dien_tap_ban_sao.sh` → `trien_khai_frontend.sh` (xem TRANG_THAI.md).
+5. Pháp lý: dòng 12–23 `docs/bang-ra-soat-phap-ly-APH-VH.md` chờ chị Dung (kế toán trưởng) xác nhận.
+6. Đề xuất chưa làm: kịch bản nghiệm thu theo vai trò (bán hàng → kho → Dũng → kế toán trưởng: đơn → cọc → giao từng phần →
+   đổi nguồn → trả hàng → thu tiền → đối chiếu) chạy trên production bằng người dùng thật.
+
+Cách kiểm chéo nhanh: đọc `AGENTS.md` mục "Nhận bàn giao / kiểm độc lập"; chạy Cổng 1; đọc run CI trên SHA `b14ad8d`
+(UAT 38840547684, Cổng 2 38840552352, Cổng 3 38840547719) và 4 run FAIL trước đó (bằng chứng các lỗi đã sửa ở 0.14.3).
+
 ## 00000000000000. Bản 0.14.3 — 16/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND ~16:29, ĐẠT, digest `706bf959…`; diễn tập tách biệt ĐẠT 16:23, tong + dem + chi_tiet khớp) — an toàn nâng cấp khi production có dữ liệu
 
 Theo rà soát của Codex (16/10, 6 điểm P0/P1 về triển khai, đã đối chiếu code: đúng cả). Không thêm tính năng.
