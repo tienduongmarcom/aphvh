@@ -18,11 +18,12 @@ if [ "${2:-}" != "--tu-dong" ]; then read -r -p "Gõ CO để tiếp tục: " X;
 set -a; source .env; set +a
 sed -i.bak "s/^CUSTOM_TAG=.*/CUSTOM_TAG=$TRUOC/" .env && rm -f .env.bak
 ./erpctl pull; ./erpctl up -d; sleep 20
+# Tệp đưa vào container qua stdin (không docker cp): giữ quyền đọc cho user frappe dù bản sao lưu là 600 (umask 077).
 DB="$(ls "$S"/*-database.sql.gz | head -1)"; PUB="$(ls "$S"/*-files.tar | grep -v private | head -1 || true)"; PRI="$(ls "$S"/*-private-files.tar | head -1 || true)"
-./erpctl cp "$DB" backend:/tmp/db.sql.gz
+./erpctl exec -T backend bash -c 'cat > /tmp/db.sql.gz' < "$DB"
 ARGS=(/tmp/db.sql.gz)
-[ -n "$PUB" ] && { ./erpctl cp "$PUB" backend:/tmp/pub.tar; ARGS+=(--with-public-files /tmp/pub.tar); }
-[ -n "$PRI" ] && { ./erpctl cp "$PRI" backend:/tmp/pri.tar; ARGS+=(--with-private-files /tmp/pri.tar); }
+[ -n "$PUB" ] && { ./erpctl exec -T backend bash -c 'cat > /tmp/pub.tar' < "$PUB"; ARGS+=(--with-public-files /tmp/pub.tar); }
+[ -n "$PRI" ] && { ./erpctl exec -T backend bash -c 'cat > /tmp/pri.tar' < "$PRI"; ARGS+=(--with-private-files /tmp/pri.tar); }
 ./erpctl exec -T backend bench --site frontend --force restore "${ARGS[@]}" --db-root-username root --db-root-password "$DB_PASSWORD"
 ./erpctl exec -T backend bench --site frontend migrate
 # Khôi phục CSDL không đụng site_config: trả các cờ tính năng kh_aph_* về đúng như lúc sao lưu
