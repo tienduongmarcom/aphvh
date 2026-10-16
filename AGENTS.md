@@ -18,6 +18,20 @@ chủ kho, ghi nợ lúc giao, trạng thái giao/nhận, bao + kg (giá/kg × k
 sản xuất/phụ phẩm theo kg, tiền thực thu/cọc/phân bổ theo kế hoạch (không FIFO), APH nhận hộ TL, đổi nguồn phần chưa
 giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "APH Không xem giá vốn" (Dũng) xem giá vốn ở mọi lối.
 
+## Nhận bàn giao / kiểm độc lập (đọc trước khi làm gì)
+
+Mọi agent (Claude, Codex, …) phải tiếp tục được việc tại bất kỳ thời điểm nào mà không cần lịch sử hội thoại:
+
+1. **Đang ở đâu:** `deploy/release/TRANG_THAI.md` (production đang chạy bản nào, digest, ứng viên, CI, quay lui về đâu) và mục
+   đầu tiên của `docs/ban-giao.md` (việc vừa làm, việc còn mở). Cập nhật CẢ HAI mỗi khi phát hành / triển khai / dừng giữa chừng.
+2. **Kiểm không cần máy chủ:** Cổng 1 (unit test, lệnh ở dưới) chạy được ngay. Cổng 2 / 2b / 3 / UAT chạy trên GitHub Actions;
+   bằng chứng = artifact `cong-3-bang-chung`, log `http-*-evidence.txt`, chú thích `::error::` của run. Không tin lời tuyên bố,
+   đọc run trên đúng SHA.
+3. **Kiểm script triển khai:** `deploy/release/dien_tap_ban_sao.sh` và `trien_khai_frontend.sh` nhận biến môi trường (`BE`,
+   `ERP_DIR`, `TAG`, `IMG`, `SAO_LUU_CLOUD=0`, `DAU_RA`, `LOG_RA`) để chạy trên máy CI / máy thử y như trên VM — xem Cổng 3.
+4. **Quyết định đã chốt** nằm trong `docs/` (không hỏi lại); điểm pháp lý chưa chắc ghi `docs/bang-ra-soat-phap-ly-APH-VH.md`.
+5. Dừng giữa chừng thì commit phần đã xong (CI không cần xanh) và ghi "ĐANG DỞ: …, bước tiếp theo: …" vào `docs/ban-giao.md`.
+
 ## Cấu trúc repo
 
 | Đường dẫn | Nội dung |

@@ -23,7 +23,8 @@ Theo rà soát của Codex (16/10, 6 điểm P0/P1 về triển khai, đã đố
 - **Cổng 3** chạy đúng các script trên: diễn tập tách biệt (kiểm không sót tài nguyên, tệp giao diện production không đổi),
   dấu sai bị từ chối trước khi bật bảo trì, `trien_khai_frontend.sh` thật, và ca cố ý làm hỏng bước kiểm → tự quay lui, giữ
   bảo trì, dữ liệu như trước.
-- Bảng trạng thái phát hành một nơi: `deploy/release/TRANG_THAI.md`.
+- Bảng trạng thái phát hành một nơi: `deploy/release/TRANG_THAI.md`; AGENTS.md có mục "Nhận bàn giao / kiểm độc lập".
+- Bước tiếp theo: CI xanh trên đúng SHA → anh Tiến gắn tag `v0.14.3` → diễn tập → triển khai (trước 18/10, người dùng bị chặn ~15 phút).
 
 ## 0000000000000. Bản 0.14.2 — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 22:44, ĐẠT, digest `0f528c3c…`; diễn tập bản sao ĐẠT 22:35: kiểm triển khai đạt, tong + dem khớp) — diễn tập bản sao production
 
