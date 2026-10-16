@@ -106,6 +106,8 @@ jobs:
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          docker exec -i -w /home/frappe/frappe-bench/sites aphvh-p0-web-uat /home/frappe/frappe-bench/env/bin/python < deploy/uat/native_16511.py | tee http-native-16511-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-native-16511-evidence.txt)" = 4
           # Run newly extended inventory/source/COGS cases first; then full regressions.
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB

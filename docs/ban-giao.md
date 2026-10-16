@@ -6,7 +6,7 @@ Anh Tiến đã cho phép phát triển tiếp: bán hàng → xuất kho/ký nh
 
 Ứng viên nền tách riêng tại `thu/erpnext-v16.51.1`: ghim image ERPNext 16.51.1, app 0.14.4, Ubuntu CI 24.04; thêm gate so checksum toàn bộ tệp core image nền/ứng viên. Giữ mốc production 0.14.3 và digest quay lui. Cổng 3 vẫn diễn tập nâng từ đúng production 0.14.3.
 
-ĐANG DỞ: chờ CI trên SHA ứng viên. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
+Cổng 2 và UAT nền đầu tiên đạt; Cổng 3 run 38893460847 FAIL: kiem_trien_khai đọc Stock Settings.default_warehouse đã bị upstream bỏ. Đã thêm ca tái hiện và sửa kiểm theo meta, giữ giá trị cấu hình trên nền cũ. Bổ sung guard Stock Closing Entry/Balance cho mọi hồ sơ ẩn vốn và xóa FIFO/stock queue khỏi phản hồi. Thêm 4 ca đặc hiệu native chốt kho/báo cáo và rollback. ĐANG DỞ: chạy lại CI trên SHA sửa tương thích; chưa nâng production. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
 
 ## 000000000000000. BÀN GIAO 16/10/2026 17:50 — Claude → Codex (kiểm chéo, phát triển tiếp)
 
