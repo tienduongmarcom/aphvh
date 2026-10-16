@@ -78,6 +78,30 @@ def chay(admin, phien, f, emit):
     denied(lambda: de_nghi([{"truong": "kg_tinh", "mat_hang": f["NL"], "gia_tri_moi": "1"}], ban))
     emit("HTTP_012_TRA_LAI_QUYEN", "PASS", "trả lại có lý do; nhân viên bán hàng bị chặn")
 
+    # 3b (0.14.3). Hai lần bấm duyệt CÙNG LÚC một đề nghị: đúng một lần áp dụng, chỉ thêm MỘT bản định mức.
+    import threading
+    dem_bom = lambda: rpc("frappe.client.get_count", {"doctype": "BOM", "filters": json.dumps({"item": f["TP"]})})
+    truoc = dem_bom()
+    dn3 = de_nghi([{"truong": "san_luong_me", "dinh_muc": moi, "gia_tri_moi": "90"}], dung)
+    rpc("kh_aph.du_lieu.gui", {"name": dn3["name"]}, dung)
+    kq3 = []
+
+    def bam():
+        try:
+            kq3.append(("ok", rpc("kh_aph.du_lieu.duyet", {"name": dn3["name"]}, ktt)))
+        except urllib.error.HTTPError as exc:
+            kq3.append(("chan", exc.read().decode(errors="replace")[:300]))
+
+    luong = [threading.Thread(target=bam) for _ in range(2)]
+    for t in luong:
+        t.start()
+    for t in luong:
+        t.join(120)
+    assert sorted(k for k, _ in kq3) == ["chan", "ok"], kq3
+    assert dem_bom() == truoc + 1, (truoc, dem_bom())
+    assert get("APH De nghi so lieu", dn3["name"])["trang_thai"] == "Đã áp dụng"
+    emit("HTTP_012_DUYET_DONG_THOI", "PASS", {"de_nghi": dn3["name"], "ket_qua": [k for k, _ in kq3], "bom_them": 1})
+
     # 4. Danh sách rà soát nhóm Danh mục: hai khách trùng MST.
     rows = bao_cao("Du lieu can ra soat", {"nhom": "Danh mục"}, ktt)
     trung = {r["ten"] for r in rows if r.get("loai") == "Customer" and "Trùng MST" in (r.get("mo_ta") or "")}

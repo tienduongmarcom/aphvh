@@ -1,84 +1,104 @@
 #!/bin/bash
-# Diễn tập nâng cấp trên BẢN SAO production (0.14.2). Bắt buộc trước trien_khai_frontend.sh khi site `frontend` đã có dữ liệu.
+# Diễn tập nâng cấp trên BẢN SAO production, TÁCH BIỆT HOÀN TOÀN (0.14.3). Bắt buộc trước trien_khai_frontend.sh khi `frontend` có dữ liệu.
 # Chạy TRÊN SSH vào máy chủ, trong ~/trien-khai đã checkout đúng tag:
-#   bash deploy/release/dien_tap_ban_sao.sh 0.14.2 [cờ mới ...]
-# Làm gì (KHÔNG đổi site frontend, không đổi image/container đang chạy):
-#   1. Sao lưu frontend bằng container đang chạy, lấy dấu vân frontend.
-#   2. Kéo image bản mới; chạy container TẠM (docker run --rm) cùng mạng + cùng ổ sites với backend.
-#   3. Khôi phục bản sao lưu vào site tạm `dien-tap` (tắt lịch chạy), chép cờ kh_aph_* + khóa mã hóa từ frontend.
-#   4. migrate, bật cờ mới, bộ cài (co_du_lieu=1), cây kho, kiểm triển khai.
-#   5. So tổng sổ frontend (trước) với dien-tap (sau). Xóa site tạm. Ghi dấu ~/dien-tap-<PB>.ok.
-# Biến môi trường: IMG (mặc định ghcr.io/tienduongmarcom/kh-aph-erpnext:<PB>), BE (backend), ERP_DIR (thư mục compose),
-# SITE_GOC (mặc định frontend), DAU_RA (thư mục ghi dấu, mặc định $HOME).
+#   bash deploy/release/dien_tap_ban_sao.sh 0.14.3 [cờ mới ...]
+# Đụng production ở đúng hai chỗ, đều chỉ đọc: lấy dấu vân + tạo một bản sao lưu (`bench backup`) trong container đang chạy.
+# Mọi thứ còn lại chạy trên tài nguyên RIÊNG của lượt này (mã lượt ngẫu nhiên $RID, gắn nhãn vn.9xlab.dien-tap=$RID):
+#   mạng docker riêng, MariaDB riêng (mật khẩu ngẫu nhiên), Redis riêng, ổ sites riêng, site tên dt-$RID. Không chung ổ / mạng /
+#   hàng đợi với production, nên worker production không thấy việc của bản sao, tệp giao diện không bị ghi đè.
+#   Bản sao: tắt lịch chạy, tắt gửi thư (mute_emails), không có worker, không có web.
+#   Dọn dẹp chỉ xóa đúng container / ổ / mạng mang nhãn của lượt này.
+# Đạt thì ghi dấu ~/dien-tap-<PB>.ok ràng buộc: phiên bản, image ID, commit nguồn, sha256 khach.json, cờ mới, site đích (12 giờ).
+# Biến môi trường: IMG, BE, SITE_GOC, DAU_RA, BO_KIEM_TAG (chỉ CI), GIU_BAN_SAO=1 (không dọn, để điều tra).
 set -euo pipefail
 [ $# -ge 1 ] || { echo "Dùng: $0 <phiên bản> [cờ mới ...]"; exit 2; }
 PB="$1"; shift; CO_MOI=("$@")
 loi() { echo "!!! DỪNG: $1"; exit 1; }
 BE="${BE:-erp-aph-vh-backend-1}"
-ERP_DIR="${ERP_DIR:-$HOME/erp/aph-vh}"
 SITE_GOC="${SITE_GOC:-frontend}"
 IMG="${IMG:-ghcr.io/tienduongmarcom/kh-aph-erpnext:$PB}"
 DAU_RA="${DAU_RA:-$HOME}"
-TAM=dien-tap
 B=/home/frappe/frappe-bench
 TK="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$TK"
 grep -q "__version__ = \"$PB\"" kh_aph/__init__.py || [ -n "${BO_KIEM_TAG:-}" ] || loi "thư mục $TK không phải tag v$PB"
-DB_PASSWORD="$(grep '^DB_PASSWORD=' "$ERP_DIR/.env" | head -1 | cut -d= -f2-)"
-[ -n "$DB_PASSWORD" ] || loi "không đọc được DB_PASSWORD trong $ERP_DIR/.env"
+RID="$(date +%m%d%H%M)$(head -c 3 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+NHAN="vn.9xlab.dien-tap=$RID"
+MANG="dt-$RID"; DB="dt-$RID-db"; RD="dt-$RID-redis"; OSITES="dt-$RID-sites"; TAM="dt-$RID"
 LOG="$DAU_RA/log-dien-tap-$PB"
-rm -f "$DAU_RA/dien-tap-$PB.ok"
+DAU="$DAU_RA/dien-tap-$PB.ok"
+rm -f "$DAU"
+DT_ROOT="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)"
+export DT_ROOT
 
 dv() { docker exec -i -w $B/sites "$1" $B/env/bin/python - "$2" < deploy/release/dau_van_site.py; }
-MANG="$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' "$BE" | awk '{print $1}')"
-OSITES="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/home/frappe/frappe-bench/sites"}}{{if .Name}}{{.Name}}{{else}}{{.Source}}{{end}}{{end}}{{end}}' "$BE")"
-[ -n "$MANG" ] && [ -n "$OSITES" ] || loi "không tìm thấy mạng / ổ sites của $BE"
-# --entrypoint bash: không để entrypoint của image chép tệp giao diện bản mới vào ổ sites dùng chung với production
-tam() { docker run --rm -i --network "$MANG" -v "$OSITES:$B/sites" -w $B -e DB_PASSWORD --entrypoint bash "$IMG" -c "$1"; }
-export DB_PASSWORD
+# Container tạm: image bản mới, entrypoint bash (không chạy entrypoint của image), mạng + ổ sites RIÊNG.
+tam() { docker run --rm -i --label "$NHAN" --network "$MANG" -v "$OSITES:$B/sites" -w $B -e DT_ROOT --entrypoint bash "$IMG" -c "$1"; }
 don_dep() {
-  echo "== Dọn site tạm $TAM"
-  tam "bench drop-site $TAM --force --no-backup --db-root-username root --db-root-password \"\$DB_PASSWORD\" >/dev/null 2>&1 || true; rm -rf sites/$TAM sites/archived_sites/$TAM* /tmp/dien-tap.sql" </dev/null || true
+  if [ "${GIU_BAN_SAO:-0}" = 1 ]; then echo "== GIỮ bản sao lượt $RID để điều tra (dọn sau: docker rm -f $DB $RD; docker volume rm $OSITES; docker network rm $MANG)"; return; fi
+  echo "== Dọn tài nguyên lượt $RID"
+  docker ps -aq --filter "label=$NHAN" | xargs -r docker rm -f >/dev/null 2>&1 || true
+  docker volume ls -q --filter "label=$NHAN" | xargs -r docker volume rm >/dev/null 2>&1 || true
+  docker network ls -q --filter "label=$NHAN" | xargs -r docker network rm >/dev/null 2>&1 || true
 }
 trap don_dep EXIT
 
-echo "== 1. Sao lưu + dấu vân $SITE_GOC (container đang chạy, chỉ đọc)"
+echo "== 1. Dấu vân + sao lưu $SITE_GOC (chỉ đọc, container đang chạy)"
 docker image inspect "$(docker inspect -f '{{.Image}}' "$BE")" -f '{{json .RepoDigests}}'
+DUAN="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$BE")"
+DBGOC="$(docker ps -q --filter "label=com.docker.compose.project=$DUAN" --filter label=com.docker.compose.service=db | head -1)"
+RDGOC="$(docker ps -q --filter "label=com.docker.compose.project=$DUAN" --filter label=com.docker.compose.service=redis-cache | head -1)"
+[ -n "$DBGOC" ] && [ -n "$RDGOC" ] || loi "không tìm thấy container db / redis của dự án $DUAN"
+IMG_DB="$(docker inspect -f '{{.Config.Image}}' "$DBGOC")"; IMG_RD="$(docker inspect -f '{{.Config.Image}}' "$RDGOC")"
 dv "$BE" "$SITE_GOC" > "$LOG-truoc.txt"
 grep -q '^DAU_VAN ' "$LOG-truoc.txt" || loi "không lấy được dấu vân"
 docker exec "$BE" bench --site "$SITE_GOC" backup </dev/null > "$LOG-sao-luu.txt" 2>&1 || loi "sao lưu lỗi"
 BK="$(docker exec "$BE" bash -c "ls -t sites/$SITE_GOC/private/backups/*-database.sql.gz | head -1" </dev/null | tr -d '\r')"
 [ -n "$BK" ] || loi "không thấy bản sao lưu"
+docker exec "$BE" gzip -t "$BK" </dev/null || loi "bản sao lưu hỏng (gzip)"
 echo "Bản sao lưu: $BK"
 
 echo "== 2. Image bản mới: $IMG"
 docker image inspect "$IMG" >/dev/null 2>&1 || docker pull "$IMG"
+IMG_ID="$(docker image inspect "$IMG" -f '{{.Id}}')"
 docker image inspect "$IMG" -f '{{json .RepoDigests}} {{.Id}}'
-tam "grep -o '__version__ = \"[^\"]*\"' apps/kh_aph/kh_aph/__init__.py" </dev/null
 
-echo "== 3. Khôi phục vào site tạm $TAM"
-tam "bench drop-site $TAM --force --no-backup --db-root-username root --db-root-password \"\$DB_PASSWORD\" >/dev/null 2>&1 || true
-  rm -rf sites/$TAM
-  gunzip -c '$BK' > /tmp/dien-tap.sql
-  bench new-site $TAM --source_sql /tmp/dien-tap.sql --mariadb-user-host-login-scope='172.%.%.%' \
-    --db-root-username root --db-root-password \"\$DB_PASSWORD\" --admin-password \"\$(head -c 24 /dev/urandom | base64)\" --force
-  rm -f /tmp/dien-tap.sql
+echo "== 3. Dựng môi trường riêng lượt $RID ($IMG_DB, $IMG_RD)"
+docker network create --label "$NHAN" "$MANG" >/dev/null
+docker volume create --label "$NHAN" "$OSITES" >/dev/null
+docker run -d --label "$NHAN" --name "$DB" --network "$MANG" --network-alias db -e MARIADB_ROOT_PASSWORD="$DT_ROOT" \
+  "$IMG_DB" --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --skip-character-set-client-handshake >/dev/null
+docker run -d --label "$NHAN" --name "$RD" --network "$MANG" --network-alias redis "$IMG_RD" >/dev/null
+for i in $(seq 1 60); do docker exec "$DB" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1 && break; sleep 2; done
+docker exec "$DB" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1 || loi "MariaDB riêng không lên"
+tam 'ls -1 apps > sites/apps.txt
+  printf "%s" "{\"db_host\": \"db\", \"db_port\": 3306, \"redis_cache\": \"redis://redis:6379\", \"redis_queue\": \"redis://redis:6379\", \"redis_socketio\": \"redis://redis:6379\", \"socketio_port\": 9000}" > sites/common_site_config.json' </dev/null
+# Bản sao lưu + site_config gốc chảy qua stdin vào ổ riêng (không docker cp, không in nội dung).
+docker exec "$BE" cat "$BK" </dev/null | tam 'cat > sites/goc.sql.gz'
+docker exec "$BE" cat "sites/$SITE_GOC/site_config.json" </dev/null | tam 'cat > sites/goc_site_config.json'
+
+echo "== 4. Khôi phục vào site $TAM"
+tam "set -e
+  gunzip -c sites/goc.sql.gz > /tmp/goc.sql
+  bench new-site $TAM --source_sql /tmp/goc.sql --mariadb-user-host-login-scope='%' \
+    --db-root-username root --db-root-password \"\$DT_ROOT\" --admin-password \"\$(head -c 24 /dev/urandom | base64)\" --force
+  rm -f /tmp/goc.sql sites/goc.sql.gz
   env/bin/python - <<'PY'
 import json
-g = json.load(open('sites/$SITE_GOC/site_config.json'))
+g = json.load(open('sites/goc_site_config.json'))
 p = 'sites/$TAM/site_config.json'
 t = json.load(open(p))
 for k, v in g.items():
     if k.startswith('kh_aph_') or k == 'encryption_key':
         t[k] = v
-t['pause_scheduler'] = 1
-t['maintenance_mode'] = 0
+t.update(pause_scheduler=1, mute_emails=1, maintenance_mode=0)
 json.dump(t, open(p, 'w'), indent=1)
-print('Đã chép', sum(1 for k in g if k.startswith('kh_aph_')), 'cờ kh_aph_*')
-PY" </dev/null > "$LOG-khoi-phuc.txt" 2>&1 || { tail -20 "$LOG-khoi-phuc.txt"; loi "khôi phục bản sao lỗi"; }
-tail -2 "$LOG-khoi-phuc.txt"
+print('Đã chép', sum(1 for k in g if k.startswith('kh_aph_')), 'cờ kh_aph_*; tắt lịch chạy + thư')
+PY
+  rm -f sites/goc_site_config.json" </dev/null > "$LOG-khoi-phuc.txt" 2>&1 || { tail -20 "$LOG-khoi-phuc.txt"; loi "khôi phục bản sao lỗi"; }
+tail -1 "$LOG-khoi-phuc.txt"
 
-echo "== 4. migrate + cờ mới + bộ cài + cây kho + kiểm trên $TAM (image mới)"
+echo "== 5. migrate + cờ mới + bộ cài + cây kho + kiểm trên $TAM (image mới)"
 CO="${CO_MOI[*]:-}"
 tam "set -e
   bench --site $TAM migrate
@@ -94,16 +114,15 @@ grep "^Cây kho" "$LOG-nang-cap.txt" || true
 tail -1 "$LOG-nang-cap.txt"
 grep -q "KHÔNG ĐẠT: 0" "$LOG-nang-cap.txt" || { grep -i "không đạt" "$LOG-nang-cap.txt" | head -20; loi "kiểm triển khai bản sao có mục KHÔNG ĐẠT"; }
 
-echo "== 5. So tổng sổ $SITE_GOC (trước) với $TAM (sau)"
+echo "== 6. So sổ $SITE_GOC (trước) với $TAM (sau): tổng, số bản ghi, chi tiết theo công ty / tài khoản / đối tượng / mã hàng / kho / bao"
 tam "cd sites && ../env/bin/python - $TAM" < deploy/release/dau_van_site.py > "$LOG-sau.txt" 2>/dev/null || true
 grep -q '^DAU_VAN ' "$LOG-sau.txt" || loi "không lấy được dấu vân bản sao"
-python3 deploy/release/so_dau_van.py "$LOG-truoc.txt" "$LOG-sau.txt" --phan tong || loi "tổng sổ bản sao lệch"
-python3 deploy/release/so_dau_van.py "$LOG-truoc.txt" "$LOG-sau.txt" --phan dem || true
+# Thay đổi số bản ghi được duyệt trước (vd bản mới thêm tài khoản / kho): DUOC_DOI='dem\.(Account|Warehouse)$'
+BOQUA=(); [ -n "${DUOC_DOI:-}" ] && BOQUA=(--bo-qua "$DUOC_DOI")
+python3 deploy/release/so_dau_van.py "$LOG-truoc.txt" "$LOG-sau.txt" --phan tong,dem,chi_tiet "${BOQUA[@]}" > "$LOG-so.txt" \
+  || { grep -v ": khớp\|lệch 0$" "$LOG-so.txt" | head -60; loi "sổ bản sao lệch"; }
+grep "^tong\|^dem\|^chi_tiet:\|KẾT QUẢ" "$LOG-so.txt"
 
-don_dep; trap - EXIT
-python3 - "$LOG-truoc.txt" "$PB" "$IMG" > "$DAU_RA/dien-tap-$PB.ok" <<'PY'
-import json, sys, time
-d = json.loads([l for l in open(sys.argv[1]) if l.startswith("DAU_VAN ")][0][8:])
-print(json.dumps({"phien_ban": sys.argv[2], "image": sys.argv[3], "luc": int(time.time()), "tong": d.get("tong")}, ensure_ascii=False))
-PY
-echo "=== DIỄN TẬP $PB: ĐẠT (dấu $DAU_RA/dien-tap-$PB.ok, còn hạn 12 giờ) ==="
+python3 deploy/release/dau_dien_tap.py tao "$DAU" --pb "$PB" --image "$IMG_ID" --nguon "$(git -C "$TK" rev-parse HEAD)" \
+  --khach khach/aph-vh/khach.json --site "$SITE_GOC" --co ${CO_MOI[@]+"${CO_MOI[@]}"}
+echo "=== DIỄN TẬP $PB: ĐẠT (lượt $RID, dấu $DAU, còn hạn 12 giờ, chỉ dùng được cho đúng image / commit / khach.json / cờ này) ==="

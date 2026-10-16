@@ -102,6 +102,31 @@ def _tong():
     return t
 
 
+def _chi_tiet():
+    """Sổ chi tiết theo nhóm (0.14.3): tổng khớp chưa đủ, phải khớp từng công ty / tài khoản / đối tượng, mã hàng / kho, số bao."""
+    q = frappe.db.sql
+    ct = {}
+    ct["gl"] = {f"{r[0]}|{r[1]}|{r[2] or ''}|{r[3] or ''}": [int(r[4]), _so(r[5]), _so(r[6])] for r in q(
+        "select company, account, party_type, party, count(*), sum(debit), sum(credit) from `tabGL Entry` "
+        "where is_cancelled=0 group by company, account, party_type, party")}
+    ct["sle"] = {f"{r[0]}|{r[1]}": [int(r[2]), _so(r[3]), _so(r[4])] for r in q(
+        "select item_code, warehouse, count(*), sum(actual_qty), sum(stock_value_difference) from `tabStock Ledger Entry` "
+        "where is_cancelled=0 group by item_code, warehouse")}
+    ct["bin"] = {f"{r[0]}|{r[1]}": [_so(r[2]), _so(r[3])] for r in q(
+        "select item_code, warehouse, sum(actual_qty), sum(stock_value) from `tabBin` group by item_code, warehouse")}
+    ct["ple"] = {f"{r[0]}|{r[1]}|{r[2] or ''}|{r[3] or ''}": [int(r[4]), _so(r[5])] for r in q(
+        "select company, account, party_type, party, count(*), sum(amount) from `tabPayment Ledger Entry` "
+        "where delinked=0 group by company, account, party_type, party")}
+    ct["chung_tu"] = {f"{r[0]}|{r[1]}": [int(r[2]), _so(r[3])] for r in q(
+        "select voucher_type, company, count(distinct voucher_no), sum(debit) from `tabGL Entry` "
+        "where is_cancelled=0 group by voucher_type, company")}
+    if frappe.db.exists("DocType", "APH Bag Movement"):
+        ct["bao"] = {f"{r[0]}|{r[1]}": [int(r[2]), _so(r[3]), _so(r[4])] for r in q(
+            "select item_code, warehouse, count(*), sum(bags), sum(kg) from `tabAPH Bag Movement` "
+            "where ifnull(inactive, 0)=0 group by item_code, warehouse")}
+    return ct
+
+
 frappe.init(site=SITE, sites_path=".")
 try:
     frappe.connect()
@@ -115,6 +140,7 @@ try:
         "co": {f: int(str(frappe.conf.get(f) or 0).strip() or 0) for f in FLAGS},
         "dem": {d: frappe.db.count(d) if frappe.db.exists("DocType", d) else None for d in DEM},
         "tong": _tong(),
+        "chi_tiet": _chi_tiet(),
         "schema": _schema(),
         "cai_dat": _cai_dat(),
         "giao_dien": _giao_dien(),

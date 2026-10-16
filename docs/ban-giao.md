@@ -1,5 +1,30 @@
 # Bàn giao dự án APH-VH
 
+## 00000000000000. Bản 0.14.3 — 16/10/2026 (ĐANG KIỂM TRÊN CI) — an toàn nâng cấp khi production có dữ liệu
+
+Theo rà soát của Codex (16/10, 6 điểm P0/P1 về triển khai, đã đối chiếu code: đúng cả). Không thêm tính năng.
+- **Diễn tập tách biệt:** `dien_tap_ban_sao.sh` dựng mạng, MariaDB (mật khẩu ngẫu nhiên), Redis, ổ sites RIÊNG cho từng lượt
+  (mã lượt ngẫu nhiên, nhãn `vn.9xlab.dien-tap=<mã>`), site `dt-<mã>`; tắt lịch chạy + thư; chỉ dọn tài nguyên mang nhãn của lượt.
+  Production chỉ bị đọc (dấu vân + `bench backup`).
+- **Dấu diễn tập ràng buộc** phiên bản, image ID, commit nguồn, sha256 `khach.json`, cờ mới, site đích, 12 giờ
+  (`deploy/release/dau_dien_tap.py`, có test).
+- **Bảo trì xuyên suốt:** `nang-cap.sh` kéo trước image, bật `maintenance_mode` + dừng lịch chạy + dừng worker TRƯỚC khi sao lưu,
+  chỉ dựng lại web khi đổi image, migrate + kiểm trong bảo trì; lỗi thì tự quay lui và GIỮ bảo trì. `trien_khai_frontend.sh`
+  giữ bảo trì tới hết bước so sổ; lỗi ở bất kỳ bước nào in nơi lưu bằng chứng + lệnh quay lui / mở lại.
+- **Sao lưu kiểm đủ:** 4 thành phần (CSDL, tệp, tệp riêng, site_config) phải có, không rỗng, `gzip -t` / `tar -t` / JSON đọc được,
+  ghi `sha256.txt`; `quay-lui.sh` kiểm sha256 trước khi ghi đè. Thiếu thì dừng trước khi đổi phiên bản.
+- **So sổ chi tiết:** dấu vân thêm `chi_tiet` (GL theo công ty–tài khoản–đối tượng, PLE, SLE/Bin theo mã hàng–kho, chứng từ theo
+  loại–công ty, số bao theo mã hàng–kho). Diễn tập và triển khai chặn khi lệch `tong`, `dem`, `chi_tiet` (thay đổi được duyệt
+  trước khai bằng `DUOC_DOI`).
+- **Duyệt đồng thời:** `du_lieu.duyet/tra_lai/gui` khóa dòng đề nghị (`SELECT … FOR UPDATE`); UAT b012 thêm ca hai lần bấm
+  duyệt cùng lúc (9 ca).
+- **Nhãn thẻ ngân hàng** (Bank Account) dịch theo ngữ cảnh: "Tài khoản kế toán (112x)", "Số tài khoản ngân hàng", "Chi nhánh",
+  "4 số cuối", "Loại TK ngân hàng (không bắt buộc)"…
+- **Cổng 3** chạy đúng các script trên: diễn tập tách biệt (kiểm không sót tài nguyên, tệp giao diện production không đổi),
+  dấu sai bị từ chối trước khi bật bảo trì, `trien_khai_frontend.sh` thật, và ca cố ý làm hỏng bước kiểm → tự quay lui, giữ
+  bảo trì, dữ liệu như trước.
+- Bảng trạng thái phát hành một nơi: `deploy/release/TRANG_THAI.md`.
+
 ## 0000000000000. Bản 0.14.2 — 15/10/2026 (ĐÃ TRIỂN KHAI LÊN FRONTEND 22:44, ĐẠT, digest `0f528c3c…`; diễn tập bản sao ĐẠT 22:35: kiểm triển khai đạt, tong + dem khớp) — diễn tập bản sao production
 
 Production đã có dữ liệu (1963 khách nhập lại giữ mã) nên bộ triển khai 0.14.1 dừng ở bước 1 "site không TRẮNG" (đúng thiết kế).

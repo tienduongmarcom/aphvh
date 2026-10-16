@@ -138,8 +138,12 @@ def validate(doc, method=None):
                 frappe.throw(f"Dòng {d.idx}: định mức {d.doi_tuong} phải đã xác nhận và đang dùng mới đặt làm mặc định")
 
 
-def _lay(name):
+def _lay(name, khoa=False):
+    """khoa=True (0.14.3): khóa dòng đề nghị (SELECT … FOR UPDATE) tới hết giao dịch, rồi mới đọc trạng thái —
+    hai người bấm duyệt / trả lại cùng lúc thì người sau chờ, đọc lại trạng thái mới và bị từ chối (không tạo hai bản định mức)."""
     _can_bat()
+    if khoa:
+        frappe.db.get_value(DT, name, "name", for_update=True)
     doc = frappe.get_doc(DT, name)
     doc.check_permission("read")
     return doc
@@ -147,7 +151,7 @@ def _lay(name):
 
 @frappe.whitelist(methods=["POST"])
 def gui(name):
-    doc = _lay(name)
+    doc = _lay(name, khoa=True)
     if doc.trang_thai not in ("Nháp", "Trả lại"):
         frappe.throw(f"Đề nghị đang ở trạng thái {doc.trang_thai}")
     if not _co_vai_tro(VAI_TRO_LAP):
@@ -161,7 +165,7 @@ def gui(name):
 
 @frappe.whitelist(methods=["POST"])
 def tra_lai(name, ly_do):
-    doc = _lay(name)
+    doc = _lay(name, khoa=True)
     if not co_quyen_duyet():
         frappe.throw("Chỉ kế toán trưởng được trả lại đề nghị", frappe.PermissionError)
     if doc.trang_thai != "Chờ duyệt":
@@ -176,7 +180,7 @@ def tra_lai(name, ly_do):
 @frappe.whitelist(methods=["POST"])
 def duyet(name):
     """Duyệt và áp dụng từng dòng. Một dòng lỗi thì không dòng nào được ghi (cả yêu cầu chạy trong một giao dịch)."""
-    doc = _lay(name)
+    doc = _lay(name, khoa=True)
     if not co_quyen_duyet():
         frappe.throw("Chỉ kế toán trưởng được duyệt đề nghị", frappe.PermissionError)
     if doc.trang_thai != "Chờ duyệt":

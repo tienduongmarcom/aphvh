@@ -143,7 +143,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/b012.py | tee http-b012-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b012-evidence.txt)" = 8
+          test "$(grep -c '"status": "PASS"' http-b012-evidence.txt)" = 9
           if grep -q '"status": "FAIL"' http-b012-evidence.txt; then echo "Có ca FAIL trong http-b012-evidence.txt"; exit 1; fi
           # Lượt 0.13: 9 ca (giá sàn, thu tiền nhanh, in 2 liên + đối soát, thu hồi nợ, sửa SL nhập sai, chuyển kho khác,
           # đề nghị bổ sung, kiểm kê bước 2, đầu kỳ chốt đến ngày) + khôi phục CSDL

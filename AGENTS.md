@@ -23,12 +23,12 @@ giao, hạn mức chung + duyệt khách rủi ro cao, chặn người dùng "AP
 | Đường dẫn | Nội dung |
 |---|---|
 | `apps/lab9x/` | App **lõi 9xLab** (`lab9x`, bản 0.2.8) dùng chung mọi khách: hệ thống tài khoản TT133/TT99, HKD TT152, quy tắc thuế GTGT, mẫu in, kiểm soát kế toán, nhóm hàng/tài khoản kho, đọc số bằng chữ. |
-| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.14.2; production đang 0.14.2 (từ 15/10/2026 ~22:44)), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
+| `kh_aph/` (gốc repo là app) | App **riêng khách APH-VH** (`kh_aph`, bản 0.14.3; production đang 0.14.2 (từ 15/10/2026 ~22:44)), `required_apps = ["erpnext", "lab9x"]`. Hook vào chứng từ, custom field, mẫu in, báo cáo, JS màn hình, cài bản trắng, bộ kiểm triển khai. |
 | `khach/<ten>/khach.json` | Cấu hình khách (một nguồn sự thật). `phien-ban.yaml`: image đang chạy + môi trường. |
 | `deploy/khach-hang/` | `dung.sh` (dựng mới), `nang-cap.sh` (nâng cấp, tự quay lui khi lỗi), `quay-lui.sh`, `compose.yaml`, `erpctl`. |
 | `deploy/cloud/` | Sao lưu 2 lần/ngày lên Google Cloud Storage (systemd timer). |
 | `.github/workflows/` | UAT candidate (ca nghiệp vụ HTTP/Chrome trên site `aphvh-web-uat`, gồm bộ 0.11.1 `deploy/uat/http/b0111*.py`, 0.11.2 `b0112*.py`, 0.11.3 `b0113*.py`, 0.11.4 `b0114*.py`, lượt 0.12 `b012*.py`, lượt 0.13 `b013*.py`, lượt 0.14 `b014*.py`), Cổng 2 (site trắng mỗi khách), Cổng 2b (diễn tập dung/nang-cap/quay-lui), **Cổng 3** (nâng cấp từ image production 0.14.2 theo digest, đã bật 21 cờ + bộ cài + cây kho + quay lui), Phát hành image (tag `v*`, cần tất cả). |
-| `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py`, `so_dau_van.py`), cổng phát hành, thủ tục triển khai frontend. |
+| `deploy/release/` | Kiểm kê chỉ đọc VM (`collect_frontend_inventory.py`), dấu vân site (`dau_van_site.py` có phần `chi_tiet` theo công ty/tài khoản/đối tượng, mã hàng/kho, bao; `so_dau_van.py`), diễn tập bản sao tách biệt (`dien_tap_ban_sao.sh`, dấu `dau_dien_tap.py`), triển khai một lệnh có bảo trì xuyên suốt (`trien_khai_frontend.sh`), bảng `TRANG_THAI.md`. |
 | `deploy/uat/`, `uat/` | Bộ chạy UAT HTTP/Desk của CI và biên bản UAT của Codex (lịch sử 11–13/10). |
 | `tools/` | `kiem_ban_trang.py`, `build_print_formats.py`, công cụ dịch. |
 | `docs/` | Quy trình, rà soát pháp lý, đối chiếu tài khoản thông tư, thu hộ. |
@@ -58,7 +58,7 @@ docker build -t kh-aph-erpnext:dev .
 
 Cổng chạy trên GitHub Actions (Linux amd64): Cổng 2 tự chạy theo pull request đụng `kh_aph/**`, `apps/**`, `khach/**`,
 `Dockerfile`; UAT candidate và Cổng 3 tự chạy khi push nhánh PR; Cổng 2b chạy bằng tay hoặc khi phát hành. Số ca PASS kỳ
-vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13, b0113 13, b0114 7, b012 8, b013 10, b014 9). **Không tuyên bố PASS khi
+vọng của UAT ghi cứng trong `uat-candidate.yml` (inventory 33, funds 19, cost 16, dispatch 48, b0111 14, b0112 13, b0113 13, b0114 7, b012 9, b013 10, b014 9). **Không tuyên bố PASS khi
 chưa có run xanh trên đúng SHA**; run FAIL giữ nguyên làm bằng chứng, không sửa assertion để che lỗi. Lỗi được in thành chú thích
 `::error::` — đọc qua `check-runs/<id>/annotations` của GitHub API.
 
@@ -97,6 +97,10 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
 7. Không xóa dữ liệu/máy/container ngoài phạm vi được yêu cầu.
 
 ## Bẫy đã gặp (đừng lặp lại)
+
+- **Triển khai (0.14.3):** container tạm chạy image mới KHÔNG được dùng chung ổ `sites`/mạng/Redis với production (entrypoint
+  image chép tệp giao diện vào ổ, worker production nhận việc của site tạm). Diễn tập dùng tài nguyên riêng gắn nhãn
+  `vn.9xlab.dien-tap=<mã lượt>`. Nâng cấp luôn trong chế độ bảo trì từ trước sao lưu tới khi kiểm xong; lỗi thì giữ bảo trì.
 
 - Frappe `BaseDocument.update` nhận mapping, không nhận kwargs. Update-after-submit không gọi `before_validate`: giá trị
   dẫn xuất (giá/bao) phải tính lại ở server.

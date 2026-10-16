@@ -8,6 +8,11 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 N="${1:?thư mục sao lưu}"; S="sao-luu/$N"
 [ -f "$S/phien-ban-truoc.txt" ] && compgen -G "$S/*-database.sql.gz" >/dev/null || { echo "Thiếu bản sao lưu đầy đủ trong $S"; exit 1; }
 TRUOC="$(cat "$S/phien-ban-truoc.txt")"
+# 0.14.3: bản sao lưu có sha256.txt (nang-cap.sh ghi) thì phải khớp trước khi ghi đè.
+if [ -f "$S/sha256.txt" ]; then
+  if command -v sha256sum >/dev/null; then (cd "$S" && sha256sum -c --quiet sha256.txt); else (cd "$S" && shasum -a 256 -c --quiet sha256.txt); fi \
+    || { echo "Bản sao lưu $S không khớp sha256.txt: KHÔNG khôi phục"; exit 1; }
+fi
 echo "Sẽ quay về phiên bản $TRUOC và GHI ĐÈ dữ liệu hiện tại bằng bản sao lưu $N."
 if [ "${2:-}" != "--tu-dong" ]; then read -r -p "Gõ CO để tiếp tục: " X; [ "$X" = CO ] || { echo "Hủy"; exit 1; }; fi
 set -a; source .env; set +a
