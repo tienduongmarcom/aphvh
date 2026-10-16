@@ -176,17 +176,18 @@ jobs:
           so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-1-sau-nang-cap.txt" --phan tong,dem,chi_tiet | tee "$RUNNER_TEMP/log-2b.txt"
       - name: 3. Bộ cài production từ chối khi gõ sai site / site có dữ liệu mà không khai co_du_lieu
         run: |
+          trap 'echo "::error title=Bước 3 dòng $LINENO::$BASH_COMMAND (mã $?)"' ERR
           source "$RUNNER_TEMP/ham.sh"
-          set +e
-          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "site-sai"}' > "$RUNNER_TEMP/log-3b.txt" 2>&1; rc2=$?
-          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' > "$RUNNER_TEMP/log-3c.txt" 2>&1; rc3=$?
-          set -e
-          tail -3 "$RUNNER_TEMP/log-3b.txt" "$RUNNER_TEMP/log-3c.txt"
-          echo "::notice title=Bước 3::mã thoát gõ sai site = $rc2, site có dữ liệu không khai co_du_lieu = $rc3"
-          [ "$rc2" -ne 0 ] || { echo "::error title=Bước 3::bộ cài KHÔNG từ chối khi gõ sai site"; exit 1; }
-          [ "$rc3" -ne 0 ] || { echo "::error title=Bước 3::bộ cài KHÔNG từ chối site có dữ liệu"; exit 1; }
-          grep -q "chưa có dữ liệu nghiệp vụ" "$RUNNER_TEMP/log-3c.txt" \
-            || { echo "::error title=Bước 3::thiếu thông báo 'chưa có dữ liệu nghiệp vụ' ($(grep -c . "$RUNNER_TEMP/log-3c.txt") dòng, $(grep -o 'ValidationError: [^ ]* [^ ]* [^ ]*' "$RUNNER_TEMP/log-3c.txt" | head -1 | od -c | head -2 | tr '\n' ' '))"; exit 1; }
+          if ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "site-sai"}' > "$RUNNER_TEMP/log-3b.txt" 2>&1; then
+            echo "::error title=Bước 3::bộ cài KHÔNG từ chối khi gõ sai site"; exit 1
+          fi
+          if ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' > "$RUNNER_TEMP/log-3c.txt" 2>&1; then
+            echo "::error title=Bước 3::bộ cài KHÔNG từ chối site có dữ liệu"; exit 1
+          fi
+          if ! grep -q "chưa có dữ liệu nghiệp vụ" "$RUNNER_TEMP/log-3c.txt"; then
+            echo "::error title=Bước 3::thiếu thông báo 'chưa có dữ liệu nghiệp vụ'"; exit 1
+          fi
+          echo "::notice title=Bước 3::bộ cài từ chối đúng cả hai trường hợp"
       - name: 4. Chạy lại bộ cài + cây kho + kiểm (không đổi gì)
         run: |
           source "$RUNNER_TEMP/ham.sh"
