@@ -16,8 +16,10 @@ def emit(case, detail):
 def rejected(fn, kinds=(frappe.ValidationError,)):
     try:
         fn()
-    except kinds:
-        return
+    except kinds as exc:
+        if isinstance(exc, frappe.TimestampMismatchError):
+            raise  # Không nhầm đối tượng kiểm thử cũ với guard nghiệp vụ thực sự.
+        return exc
     raise AssertionError("Native guard không từ chối")
 
 
@@ -89,9 +91,14 @@ try:
     later.submit()
     prepare_closing_stock_balance(later.name)
     count = frappe.db.count("Stock Closing Balance", {"stock_closing_entry": draft.name})
-    rejected(draft.regenerate_closing_balance)
-    rejected(draft.cancel)
+    draft.reload()  # Bộ xử lý native cập nhật status/modified bằng một instance khác.
+    error = rejected(draft.regenerate_closing_balance)
+    assert later.name in str(error), error
+    draft.reload()
+    error = rejected(draft.cancel)
+    assert later.name in str(error), error
     assert frappe.db.count("Stock Closing Balance", {"stock_closing_entry": draft.name}) == count
+    later.reload()
     later.cancel()
     draft.reload()
     draft.cancel()
