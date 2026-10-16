@@ -10,7 +10,7 @@
 4. Mã yêu cầu giữ trong Dialog khi mạng lỗi. Cùng mã/cùng nội dung trả đúng phiếu cũ; cùng mã/nội dung khác bị từ chối. Không nuốt lỗi/commit giữa các kho. Mở lại Dialog sẽ đọc lượng đã lập, tránh hiểu nhầm là chưa có phiếu.
 5. In một trang mỗi DN: chỉ lượng, kho, bao/kg, mã DN/đơn chung, chữ ký thực giao/thực nhận; nháp ghi **CHỜ XUẤT — CHƯA GHI SỔ KHO/CÔNG NỢ**. Không thay Print Settings toàn hệ thống để cho phép in nháp. In không tự submit; kho tiếp tục dùng luồng xác nhận đã có.
 
-Không coi lượng trên phiếu nháp là giữ tồn vật lý. API chuẩn khác vẫn có thể lập nháp; khi xác nhận xuất tiếp tục qua kiểm native và khóa nguồn hiện có. Chưa đo tải đồng thời/phối hợp mở nhiều cửa sổ. Chưa tạo nhóm điều phối giao có trạng thái riêng.
+Không coi lượng trên phiếu nháp là giữ tồn vật lý. API chuẩn khác vẫn có thể lập nháp; khi xác nhận xuất tiếp tục qua kiểm native và khóa nguồn hiện có. Đã có ca hai request cùng mã và kiểm chỉ một phiếu; chưa đo tải lớn/phối hợp nhiều cửa sổ. Chưa tạo nhóm điều phối giao có trạng thái riêng.
 
 ## Vị trí code
 
@@ -30,13 +30,17 @@ node --check kh_aph/kh_aph/doctype/aph_shared_sales_order/aph_shared_sales_order
 
 Image có Jinja2; máy cục bộ cần Jinja2 để chạy đủ các ca mẫu in. Không đánh đồng unit với UAT.
 
-UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 12 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
+UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 13 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
 
-Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatch nhiều công ty cũ vẫn có UAT), hai request đồng thời, một kho lỗi rollback cả đợt, native quyền chỉ riêng Company/Warehouse, mất kết nối sau commit, sửa nháp thủ công. Cần bổ sung trước phát hành tính năng. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
+Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatch nhiều công ty cũ vẫn có UAT), một kho lỗi rollback cả đợt, native quyền chỉ riêng Company/Warehouse, mất kết nối sau commit, sửa nháp thủ công. Cần bổ sung trước phát hành tính năng. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
 
 ## Bản dịch
 
 Đã sửa 7 chuỗi sai nghĩa rõ: Base Total Billed Amount, Tax Withholding, chênh lệch làm tròn hóa đơn đầu kỳ, diễn giải quyền, Chart of Accounts, lấy bút toán, số kỳ khấu hao. Giữ placeholder/HTML và mọi dòng không đổi. Audit 15/10 có 326 đề xuất, không phải 326 lỗi đã xác nhận. 182 diễn đạt và 137 phụ thuộc ngữ cảnh chưa được áp toàn bộ.
+
+## Kiểm riêng bản vá nền
+
+`deploy/uat/native_16511.py` chạy trước HTTP trên site CI trắng: ngày tương lai/thiếu Company/phiếu chốt nháp bị chặn, số dư đầu kỳ lọc đúng mã–kho và khớp cách bỏ chốt, phiếu chốt sau chặn hủy/tái tạo phiếu trước, phiếu hủy không sinh lại số dư; rollback số đếm và series. Bốn ca kỳ vọng, chưa PASS trước run đúng SHA.
 
 ## Phần tiếp theo
 

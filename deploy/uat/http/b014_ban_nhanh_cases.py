@@ -4,9 +4,11 @@ import uuid
 import os
 from pathlib import Path
 import subprocess
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 
 
-def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit):
+def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien):
     def ledger_counts():
         return {dt: len(lst(dt, {}, ["name"], ktt)) for dt in ("GL Entry", "Stock Ledger Entry", "Sales Invoice")}
 
@@ -55,3 +57,23 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit):
         evidence = json.loads(next(line for line in result.stdout.splitlines() if line.startswith('{"case":')))
         assert evidence["status"] == "PASS", evidence
         emit(evidence["case"], "PASS", evidence["detail"])
+
+    callers = [phien(f["ktbh"]), phien(f["ktbh"])]
+    concurrent_payload = {**payload, "request_id": uuid.uuid4().hex,
+                          "selections": json.dumps([{**selected[0], "qty": 4}])}
+    def create(caller):
+        try:
+            return rpc("kh_aph.ban_nhanh.create_drafts", concurrent_payload, caller)
+        except urllib.error.HTTPError as exc:
+            data = json.loads(exc.read().decode())
+            assert data.get("exc_type") == "QueryDeadlockError", data
+            return None  # Deadlock không được ghi thêm; thử lại cùng mã sau khi request kia hoàn tất.
+    with ThreadPoolExecutor(2) as pool:
+        results = list(pool.map(create, callers))
+    assert any(results), "Cả hai yêu cầu đều lỗi"
+    results = [r or rpc("kh_aph.ban_nhanh.create_drafts", concurrent_payload, ktbh) for r in results]
+    assert results[0]["delivery_notes"] == results[1]["delivery_notes"], results
+    final = rpc("kh_aph.ban_nhanh.preview", args, ktbh)["rows"][0]
+    assert (final["draft_qty"], final["remaining_qty"]) == (9, 11), final
+    assert ledger_counts() == before
+    emit("HTTP_014_BAN_NHANH_CONCURRENT", "PASS", {"single_new_note": True, "draft_kg": 9, "remaining_kg": 11})

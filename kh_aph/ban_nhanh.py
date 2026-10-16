@@ -50,7 +50,7 @@ def schema():
 def _order(name, lock=False):
     if lock:
         frappe.db.sql("SELECT name FROM `tabAPH Shared Sales Order` WHERE name=%s FOR UPDATE", name)
-    doc = frappe.get_doc("APH Shared Sales Order", name)
+    doc = frappe.get_doc("APH Shared Sales Order", name, for_update=lock)
     doc.check_permission("read")
     if doc.docstatus != 1:
         frappe.throw("Xác nhận đơn chung trước khi lập phiếu xuất")
@@ -60,12 +60,12 @@ def _order(name, lock=False):
 
 def _rows(doc, lock=False):
     result = []
-    orders = frappe.get_all("Sales Order", {"kh_aph_shared_order": doc.name, "docstatus": 1},
-                            pluck="name", order_by="name")
+    orders = frappe.db.sql_list("""SELECT name FROM `tabSales Order`
+        WHERE kh_aph_shared_order=%s AND docstatus=1 ORDER BY name""" + (" FOR UPDATE" if lock else ""), doc.name)
     for name in orders:
         if lock:
             frappe.db.sql("SELECT name FROM `tabSales Order` WHERE name=%s FOR UPDATE", name)
-        so = frappe.get_doc("Sales Order", name)
+        so = frappe.get_doc("Sales Order", name, for_update=lock)
         so.check_permission("read")
         frappe.get_doc("Company", so.company).check_permission("read")
         if so.status in ("Closed", "Cancelled", "On Hold"):
@@ -128,9 +128,11 @@ def create_drafts(shared_order, selections, request_id):
         frappe.throw("Dữ liệu dòng giao không hợp lệ")
     signature = hashlib.sha256(json.dumps(canonical, sort_keys=True).encode()).hexdigest()
     doc = _order(shared_order, lock=True)
-    existing = frappe.get_all("Delivery Note", {F_ORDER: doc.name, F_BATCH: request_id}, pluck="name", order_by="name")
+    # Current read: không dùng snapshot SELECT thường sau khi đã chờ khóa ở request khác.
+    existing = frappe.db.sql_list(f"""SELECT name FROM `tabDelivery Note`
+        WHERE {F_ORDER}=%s AND {F_BATCH}=%s ORDER BY name FOR UPDATE""", (doc.name, request_id))
     if existing:
-        notes = [frappe.get_doc("Delivery Note", name) for name in existing]
+        notes = [frappe.get_doc("Delivery Note", name, for_update=True) for name in existing]
         if any(n.get(F_HASH) != signature for n in notes):
             frappe.throw("Đợt này đã lập phiếu với nội dung khác; mở lại để lập đợt mới")
         return {"delivery_notes": _summaries(notes), "reused": True}
