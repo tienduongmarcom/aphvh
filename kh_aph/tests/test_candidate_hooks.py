@@ -21,3 +21,7 @@ class CandidateHooks(unittest.TestCase):
  def test_no_automatic_candidate_setup(self):
   for key in ('after_install','before_migrate','after_migrate'):
    self.assertNotIn('uat_candidate_setup',str(self.h.get(key)))
+ def test_stock_closing_costs_are_guarded(self):
+  for dt in ('Stock Closing Entry','Stock Closing Balance'):
+   self.assertEqual(self.h['has_permission'][dt],'kh_aph.dung_cost_policy.closing_has_permission')
+   self.assertEqual(self.h['permission_query_conditions'][dt],'kh_aph.dung_cost_policy.closing_query_conditions')

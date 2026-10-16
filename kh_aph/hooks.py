@@ -201,6 +201,9 @@ for _dt in ("Bin", "Stock Ledger Entry", "GL Entry", "Purchase Invoice",
     has_permission[_dt] = "kh_aph.dung_cost_policy.has_permission"
     permission_query_conditions[_dt] = "kh_aph.dung_cost_policy.query_conditions"
 after_request = ["kh_aph.dung_cost_policy.after_request"]
+for _dt in ("Stock Closing Entry", "Stock Closing Balance"):
+    has_permission[_dt] = "kh_aph.dung_cost_policy.closing_has_permission"
+    permission_query_conditions[_dt] = "kh_aph.dung_cost_policy.closing_query_conditions"
 
 # Opt-in quantity/pending-valuation MVP; same native transaction owns all ledgers.
 extend_doctype_class["Landed Cost Voucher"] = ["kh_aph.landed_cost_kg.LandedCostKg"]

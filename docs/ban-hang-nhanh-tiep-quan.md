@@ -30,7 +30,7 @@ node --check kh_aph/kh_aph/doctype/aph_shared_sales_order/aph_shared_sales_order
 
 Image có Jinja2; máy cục bộ cần Jinja2 để chạy đủ các ca mẫu in. Không đánh đồng unit với UAT.
 
-UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 13 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
+UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 14 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
 
 Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatch nhiều công ty cũ vẫn có UAT), một kho lỗi rollback cả đợt, native quyền chỉ riêng Company/Warehouse, mất kết nối sau commit, sửa nháp thủ công. Cần bổ sung trước phát hành tính năng. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
 
@@ -40,7 +40,7 @@ Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatc
 
 ## Kiểm riêng bản vá nền
 
-`deploy/uat/native_16511.py` chạy trước HTTP trên site CI trắng: ngày tương lai/thiếu Company/phiếu chốt nháp bị chặn, số dư đầu kỳ lọc đúng mã–kho và khớp cách bỏ chốt, phiếu chốt sau chặn hủy/tái tạo phiếu trước, phiếu hủy không sinh lại số dư; rollback số đếm và series. Bốn ca kỳ vọng, chưa PASS trước run đúng SHA.
+`deploy/uat/native_16511.py` chạy trước HTTP trên site CI trắng: ngày tương lai/thiếu Company/phiếu chốt nháp bị chặn, số dư đầu kỳ lọc đúng mã–kho và khớp cách bỏ chốt, phiếu chốt sau chặn hủy/tái tạo phiếu trước, phiếu hủy không sinh lại số dư; rollback số đếm và series. Bốn ca kỳ vọng, chưa PASS trước run đúng SHA. Số dư chốt chứa giá/FIFO nên thêm hook quyền cho cả Stock Closing Entry/Balance; ca HTTP Dũng được cộng Stock User vẫn bị chặn đọc/query, kế toán trưởng vẫn đọc được. Lớp che JSON cũng bỏ fifo_queue/stock_queue.
 
 ## Phần tiếp theo
 

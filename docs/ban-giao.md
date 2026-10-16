@@ -6,7 +6,7 @@ Nhánh `feat/ban-hang-nhanh-20261016` dựa trên nhánh nâng nền `thu/erpnex
 
 Đã viết: Dialog “Lập phiếu xuất & In” trên đơn chung đã xác nhận; facade `ban_nhanh.preview/create_drafts/print_batch`; phiếu nháp theo đơn nguồn × kho, chống lặp theo mã yêu cầu/nội dung, trừ lượng đã lập nháp khi chọn giao đợt tiếp; giữ bao nguyên theo snapshot. Không submit/commit/ghi sổ trong facade. Mẫu in số lượng có ô ký thực giao/thực nhận và nhãn CHỜ XUẤT. Bổ sung quyền lập nháp Delivery Note cho Kế toán bán hàng, không thêm quyền submit/hủy/xóa. Sửa 7 bản dịch sai nghĩa rõ từ audit 15/10; không áp bừa 137 đề xuất phụ thuộc ngữ cảnh.
 
-Kiểm cục bộ: lab9x 107 ca; kh_aph 232 ca khi có Jinja2. HTTP/Chrome mới nằm trong `deploy/uat/http/b014_ban_nhanh_cases.py` + `ban-nhanh-desk.mjs`; chạy chung b014, mong 13 PASS gồm restore. Chưa kết luận HTTP/Chrome PASS trước Actions đúng SHA. Chi tiết `docs/ban-hang-nhanh-tiep-quan.md`.
+Kiểm cục bộ: lab9x 107 ca; kh_aph 233 ca khi có Jinja2. HTTP/Chrome mới nằm trong `deploy/uat/http/b014_ban_nhanh_cases.py` + `ban-nhanh-desk.mjs`; chạy chung b014, mong 14 PASS gồm restore. Chưa kết luận HTTP/Chrome PASS trước Actions đúng SHA. Chi tiết `docs/ban-hang-nhanh-tiep-quan.md`.
 
 ĐANG DỞ: đợi CI và xử lý lỗi thực. Chưa làm hồ sơ bản ký/đối chiếu, ca tiền mặt/custodian, phần nhà máy/tài chính mới, phần lớn bản dịch còn lại. Thứ tự người dùng chốt: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính. Tiếp theo mở rộng ký nhận và cảnh báo phiếu thiếu hồ sơ; không coi bản in có ô ký là đã có chữ ký.
 
@@ -162,7 +162,7 @@ Kiểm thử:
 - **Hồ sơ hóa đơn MISA** (`APH Hoa don ngoai`): hàng đợi "Hoa don cho xuat", khóa người xử lý chống trùng, Gốc / Điều chỉnh / Thay thế / Hủy; chênh lệch với doanh thu quản trị chỉ hiển thị, không chặn (Q148).
 
 Kiểm thử và triển khai:
-- CI xanh trên `dc6aa1b`: UAT candidate `38567486172` (đủ các bộ, gồm b0113 13 PASS), Cổng 3 `38567486151` (nâng cấp từ 0.11.2), Cổng 2 `38567493935`.
+- CI xanh trên `dc6aa1b`: UAT candidate `38567486172` (đủ các bộ, gồm b0113 14 PASS), Cổng 3 `38567486151` (nâng cấp từ 0.11.2), Cổng 2 `38567493935`.
 - Ba lần đỏ trước đó được giữ làm bằng chứng:
   - Phiếu trả bắt buộc chọn hai ô làm hỏng bộ inventory → đổi sang điền mặc định.
   - ERPNext 16.50 đòi ngày dạng chuỗi ở `get_payment_terms`.

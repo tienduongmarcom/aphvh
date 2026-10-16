@@ -77,3 +77,9 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     assert (final["draft_qty"], final["remaining_qty"]) == (9, 11), final
     assert ledger_counts() == before
     emit("HTTP_014_BAN_NHANH_CONCURRENT", "PASS", {"single_new_note": True, "draft_kg": 9, "remaining_kg": 11})
+
+    closing = insert({"doctype": "Stock Closing Entry", "company": f["aph"], "to_date": f["date"]}, ktt)
+    denied(lambda: get("Stock Closing Entry", closing["name"], dung), ("PermissionError",))
+    denied(lambda: lst("Stock Closing Entry", {}, ["name"], dung), ("PermissionError",))
+    assert get("Stock Closing Entry", closing["name"], ktt)["docstatus"] == 0
+    emit("HTTP_014_STOCK_CLOSING_NO_COST", "PASS", {"denied_even_with_stock_user": True, "chief_read": True})

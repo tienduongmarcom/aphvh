@@ -56,8 +56,10 @@ try:
     entry.submit()
     rejected(lambda: frappe.get_doc({"doctype": "Stock Closing Entry", "company": company.name,
                                      "to_date": add_days(today(), 1)}).insert())
-    rejected(lambda: frappe.get_doc({"doctype": "Stock Closing Entry", "to_date": add_days(today(), -5)}).insert(),
-             (frappe.MandatoryError,))
+    missing = frappe.new_doc("Stock Closing Entry")
+    missing.company = None  # Không để user default tự điền công ty và che mất ca thiếu dữ liệu.
+    missing.to_date = add_days(today(), -5)
+    rejected(missing._validate_mandatory, (frappe.MandatoryError,))
     draft = frappe.get_doc({"doctype": "Stock Closing Entry", "company": company.name,
                             "to_date": add_days(today(), -5)}).insert()
     rejected(draft.enqueue_job)
