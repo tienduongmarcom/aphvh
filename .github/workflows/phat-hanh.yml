@@ -10,7 +10,7 @@ permissions:
   packages: write
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/kh-aph-erpnext
-  ERPNEXT_IMAGE: frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d  # ERPNext 16.50.0 + Frappe 16.51.0
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
 jobs:
   candidate-uat:
     uses: ./.github/workflows/uat-candidate.yml
@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/cong-3-nang-cap-production.yml
   phat-hanh:
     needs: [candidate-uat, cong-2, cong-2b, cong-3]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)

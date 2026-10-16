@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 16/10/2026 — Codex tiếp nhận, ứng viên nâng nền 0.14.4
+
+Anh Tiến đã cho phép phát triển tiếp: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính; cải thiện UI, bản dịch, tự tạo dữ liệu giả lập. Chỉ dẫn này thay quyết định tạm dừng tính năng ở bản bàn giao cũ bên dưới. Không chạm production.
+
+Ứng viên nền tách riêng tại `thu/erpnext-v16.51.1`: ghim image ERPNext 16.51.1, app 0.14.4, Ubuntu CI 24.04; thêm gate so checksum toàn bộ tệp core image nền/ứng viên. Giữ mốc production 0.14.3 và digest quay lui. Cổng 3 vẫn diễn tập nâng từ đúng production 0.14.3.
+
+ĐANG DỞ: chờ CI trên SHA ứng viên. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
+
 ## 000000000000000. BÀN GIAO 16/10/2026 17:50 — Claude → Codex (kiểm chéo, phát triển tiếp)
 
 Trạng thái: production `frontend` chạy **0.14.3** (digest `706bf959…`, commit `b14ad8d`), CI xanh trên đúng commit; HEAD nhánh
