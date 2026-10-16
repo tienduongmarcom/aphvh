@@ -268,7 +268,8 @@ jobs:
           # GitHub chỉ giữ 10 chú thích mỗi bước: in log mới nhất trước.
           for f in $(ls -t "$RUNNER_TEMP"/log-*.txt 2>/dev/null | head -8); do
             [ -f "$f" ] || continue
-            echo "::error title=$(basename "$f")::$(tail -c 1500 "$f" | tr '\n\r' '  ' | sed 's/%/%25/g')"
+            loi_dong="$(grep -E "Error|Exception|LỖI|DỪNG|lỗi" "$f" | grep -v "During handling" | tail -4 | tr '\n\r' '  ' | cut -c1-900)"
+            echo "::error title=$(basename "$f")::${loi_dong:+[dòng lỗi] $loi_dong · }$(tail -c 600 "$f" | tr '\n\r' '  ' | sed 's/%/%25/g')"
           done
           cd "$RUNNER_TEMP/erp/ci" 2>/dev/null && ./erpctl ps -a && ./erpctl logs --tail 80 backend 2>&1 | tail -80 || true
       - name: Gom bằng chứng
