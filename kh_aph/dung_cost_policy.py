@@ -10,7 +10,7 @@ from kh_aph.constants import ROLE_NO_COST, REPORT_QTY
 
 SENSITIVE = ("Bin", "Stock Ledger Entry", "GL Entry", "Purchase Invoice",
              "Landed Cost Voucher", "Stock Reconciliation", "BOM", "Work Order",
-             "Repost Item Valuation", "Item Price")
+             "Repost Item Valuation", "Item Price", "Stock Closing Entry", "Stock Closing Balance")
 
 # 0.11.1: danh sách phiếu Dũng được xem (quyền if_owner chuẩn vẫn áp dụng; không có giá vốn trên các DocType này).
 DANH_SACH_DUOC_XEM = ("APH Phieu quy nha may", "APH Khoan muc chi nha may")
@@ -29,6 +29,18 @@ def has_permission(doc, ptype=None, user=None, **kwargs):
 
 def query_conditions(user=None, **kwargs):
     return "1=0" if restricted(user) else ""
+
+
+def closing_has_permission(doc, ptype=None, user=None, **kwargs):
+    """Số dư chốt chứa cả hàng đợi FIFO có giá; chặn mọi hồ sơ bị ẩn vốn, kể cả cộng quyền kho."""
+    if not cint(frappe.conf.get("kh_aph_server_cost_guard")):
+        return True
+    from kh_aph.price_visibility import is_cost_restricted
+    return not is_cost_restricted(user)
+
+
+def closing_query_conditions(user=None, **kwargs):
+    return "" if closing_has_permission(None, user=user) else "1=0"
 
 def before_request():
     if not restricted():
@@ -97,7 +109,7 @@ def mask_response(value):
         # Controller helpers can return untyped dicts alongside a masked document.
         for field in ("basic_rate", "basic_amount", "valuation_rate", "incoming_rate",
                       "outgoing_rate", "last_purchase_rate", "gross_profit",
-                      "stock_value", "stock_value_difference", "stock_value_change"):
+                      "stock_value", "stock_value_difference", "stock_value_change", "fifo_queue", "stock_queue"):
             if field in value:
                 value[field] = None
         if value.get("doctype") == "Stock Entry Detail":
@@ -126,7 +138,7 @@ def mask_response(value):
             mask_response(child)
 
 GIA_VON = ("valuation_rate", "incoming_rate", "outgoing_rate", "gross_profit", "last_purchase_rate",
-           "stock_value", "stock_value_difference", "stock_value_change")
+           "stock_value", "stock_value_difference", "stock_value_change", "fifo_queue", "stock_queue")
 
 
 def mask_cost_response(value):

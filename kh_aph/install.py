@@ -834,7 +834,7 @@ def reload_print_formats():
 def ensure_default_print_formats():
     """Đặt mẫu in mặc định của app, trừ khi đã có người chọn mẫu khác.
 
-    Mẫu ERPNext tự đặt lúc cài ("<chứng từ> with Item Image", từ 16.50 "<chứng từ> Modern with Images") coi như chưa chọn.
+    Mẫu ERPNext tự đặt (with Item Image, Modern with Images, Classic) coi như chưa chọn.
     """
     from lab9x.print_rules import la_mau_mac_dinh_erpnext
 

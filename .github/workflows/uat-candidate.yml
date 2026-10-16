@@ -1,7 +1,7 @@
 name: UAT candidate image verification
 on:
   push:
-    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50"]
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1"]
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   verify-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,19 @@ jobs:
           load: true
           push: false
           tags: aphvh-uat:verification
-          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d
+          build-args: ERPNEXT_IMAGE=frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268
+      - name: Kiểm toàn vẹn core so với image nền ghim digest
+        run: |
+          set -euo pipefail
+          base=frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268
+          docker run --rm -i --entrypoint python "$base" < deploy/release/kiem_toan_core.py > core-base.json
+          docker run --rm -i --entrypoint python aphvh-uat:verification < deploy/release/kiem_toan_core.py > core-candidate.json
+          python3 deploy/release/kiem_toan_core.py --compare core-base.json core-candidate.json | tee core-integrity-evidence.txt
+          docker run --rm --entrypoint bash aphvh-uat:verification -ec '
+            cd /home/frappe/frappe-bench
+            ./env/bin/python -c "import erpnext; assert erpnext.__version__ == \"16.51.1\", erpnext.__version__"
+            bench version
+          ' | tee base-versions-evidence.txt
       - name: Record versions and verified source hashes
         run: |
           expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
@@ -45,8 +57,8 @@ jobs:
           cat candidate-image-evidence.txt
       - name: Ghi phiên bản và digest ảnh nền thành chú thích
         run: |
-          docker pull -q frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d >/dev/null 2>&1 || true
-          d=$(docker image inspect frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
+          docker pull -q frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268 >/dev/null 2>&1 || true
+          d=$(docker image inspect frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268 --format '{{json .RepoDigests}}' 2>/dev/null || echo "?")
           v=$(docker run --rm --entrypoint bash aphvh-uat:verification -c 'cd /home/frappe/frappe-bench && bench version' | tr '\n' ' ')
           echo "::notice title=Nền và phiên bản::$v | digest nền: $d"
       - name: Create isolated database and Redis
@@ -94,6 +106,8 @@ jobs:
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           python3 deploy/uat/http/prepare.py | tee http-prepare-evidence.txt
+          docker exec -i -w /home/frappe/frappe-bench/sites aphvh-p0-web-uat /home/frappe/frappe-bench/env/bin/python < deploy/uat/native_16511.py | tee http-native-16511-evidence.txt
+          test "$(grep -c '"status": "PASS"' http-native-16511-evidence.txt)" = 4
           # Run newly extended inventory/source/COGS cases first; then full regressions.
           set -o pipefail
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
@@ -190,6 +204,10 @@ jobs:
           name: candidate-image-evidence
           path: |
             candidate-image-evidence.txt
+            core-base.json
+            core-candidate.json
+            core-integrity-evidence.txt
+            base-versions-evidence.txt
             fresh-site-evidence.txt
             http-*-evidence.txt
             shared-four-company-slip.html

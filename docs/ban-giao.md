@@ -1,5 +1,25 @@
 # Bàn giao dự án APH-VH
 
+## 16/10/2026 22:40 — Sửa vị trí ca kiểm workflow
+
+CI SHA 25974b9 / bd66e95 dừng build: test mới đọc `.github/workflows` nhưng Docker loại `.github` khỏi image. Chuyển nguyên ca kiểm ranh giới sang `deploy/release/test_print_defaults_gate.py`, chạy bắt buộc ngay sau checkout Cổng 3; test bộ cài vẫn chạy trong image. Không skip ca, không nới assertion, không thêm workflow vào image production. ĐANG DỞ: kiểm cục bộ rồi đẩy hai PR, đọc CI SHA mới; frontend không đổi.
+
+## 16/10/2026 22:20 — Sửa lỗi Cổng 3 mẫu in Classic trên ERPNext 16.51.1
+
+PR #2 tại 3b01cc7 và PR #3 tại 8952265: UAT/Cổng 2 đạt, Cổng 3 lỗi bước 5 (runs 38897717545 / 38897741846). So sổ khớp trong CI; bước quay lui phía sau chưa chạy. Không lấy run SHA cũ làm nghiệm thu SHA mới.
+
+Nguyên nhân: bộ cài chưa nhận mẫu native `<DocType> Classic`; site mới giữ Classic thay vì mẫu tiếng Việt của app. Sửa lab9x 0.2.10 nhận đúng tên Classic của chính DocType, giữ mẫu khách chọn khác và idempotent. Cổng 3 chỉ cho phép khác biệt tên native của 6 DocType không có mẫu app; bỏ regex rộng cũ, bắt buộc tên mẫu khớp DocType. 5 DocType app quản lý vẫn so nghiêm ngặt, không bỏ qua. Kiểm cục bộ: kh_aph 237 ca + lab9x 107 ca đạt (có Jinja2). Thêm test chạy hàm bộ cài trên trạng thái cài mới/nâng cấp/mẫu khách + test ranh giới ngoại lệ schema.
+
+ĐANG DỞ: đưa sửa vào cả hai nhánh và chờ CI mới. Chưa tag, phát hành, diễn tập VM hay thay frontend. Bước tiếp: đọc Cổng 3 đúng SHA, xử lý lỗi thực nếu còn; sau đó mở rộng ca nhiều kho/scope trước phát hành bán hàng nhanh. Thời gian ghi mục này là thời gian làm việc, không phải thời gian triển khai.
+
+## 16/10/2026 — Codex tiếp nhận, ứng viên nâng nền 0.14.4
+
+Anh Tiến đã cho phép phát triển tiếp: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính; cải thiện UI, bản dịch, tự tạo dữ liệu giả lập. Chỉ dẫn này thay quyết định tạm dừng tính năng ở bản bàn giao cũ bên dưới. Không chạm production.
+
+Ứng viên nền tách riêng tại `thu/erpnext-v16.51.1`: ghim image ERPNext 16.51.1, app 0.14.4, Ubuntu CI 24.04; thêm gate so checksum toàn bộ tệp core image nền/ứng viên. Giữ mốc production 0.14.3 và digest quay lui. Cổng 3 vẫn diễn tập nâng từ đúng production 0.14.3.
+
+Cổng 2 và UAT nền đầu tiên đạt; Cổng 3 run 38893460847 FAIL: kiem_trien_khai đọc Stock Settings.default_warehouse đã bị upstream bỏ. Đã thêm ca tái hiện và sửa kiểm theo meta, giữ giá trị cấu hình trên nền cũ. Bổ sung guard Stock Closing Entry/Balance cho mọi hồ sơ ẩn vốn và xóa FIFO/stock queue khỏi phản hồi. Thêm 4 ca đặc hiệu native chốt kho/báo cáo và rollback. ĐANG DỞ: chạy lại CI trên SHA sửa tương thích; chưa nâng production. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
+
 ## 000000000000000. BÀN GIAO 16/10/2026 17:50 — Claude → Codex (kiểm chéo, phát triển tiếp)
 
 Trạng thái: production `frontend` chạy **0.14.3** (digest `706bf959…`, commit `b14ad8d`), CI xanh trên đúng commit; HEAD nhánh

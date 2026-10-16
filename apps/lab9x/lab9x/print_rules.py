@@ -153,8 +153,9 @@ def nhan_thue_suat(template_title, rate=None) -> str:
 
 
 # Mẫu in mặc định ERPNext tự đặt lúc cài (không phải người dùng chọn). Tên đổi theo phiên bản:
-# ERPNext ≤ 16.36 "<chứng từ> with Item Image"; ERPNext 16.50 "<chứng từ> Modern with Images".
-MAU_MAC_DINH_ERPNEXT = ("{dt} with Item Image", "{dt} Modern with Images")
+# ERPNext ≤ 16.36 dùng with Item Image, 16.50 Modern with Images, 16.51.1 Classic.
+# Chỉ nhận đúng tên của chính DocType; mẫu người dùng tự chọn khác vẫn được giữ.
+MAU_MAC_DINH_ERPNEXT = ("{dt} with Item Image", "{dt} Modern with Images", "{dt} Classic")
 
 
 def la_mau_mac_dinh_erpnext(doctype: str, ten_mau: str | None) -> bool:
