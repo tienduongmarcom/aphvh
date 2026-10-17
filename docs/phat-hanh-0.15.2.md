@@ -16,7 +16,7 @@ Không đổi nền: ERPNext 16.51.1/Frappe 16.52.0, lab9x 0.2.10. Không thêm 
 
 ## Bằng chứng
 
-Trước khi đổi nhãn phiên bản: mã `267ce9f64df9cb5cc124f194f8e8d5bba888778c` đủ bốn cổng (UAT39020061567, Cổng239020065621, Cổng2b39020061544, Cổng339020061545). Mốc nghiệp vụ `96ce98d` có 375 unit đạt và artifact UAT215 PASS/0 FAIL. Ứng viên 0.15.2 phải đọc CI theo đúng SHA mới; các kết quả trước không thay cho kiểm bản đóng gói.
+Trước khi đổi nhãn phiên bản: mã `267ce9f64df9cb5cc124f194f8e8d5bba888778c` đủ bốn cổng (UAT39020061567, Cổng239020065621, Cổng2b39020061544, Cổng339020061545). Mốc nghiệp vụ `96ce98d` có 375 unit đạt và artifact UAT215 PASS/0 FAIL. Bản đóng gói `24b795cc28f47ca2f31aef8edbbd8e5984c12ee3` đã đủ bốn cổng xanh: UAT39028411357 (215 PASS/0 FAIL), Cổng239028414365, Cổng2b39028411350, Cổng339028411353. Cục bộ375 ca đạt. Artifact Cổng3 khớp số lượng/tổng/chi tiết và schema; ca lỗi tự quay lui đạt. Gắn tag vào SHA này, không tự chọn commit khác.
 
 ## Phát hành và triển khai
 
@@ -26,7 +26,7 @@ Trên VM, trong phiên SSH đang dùng (không chạy trên máy Mac):
 
 ```bash
 cd ~/trien-khai
-git fetch origin tag v0.15.2
+git fetch https://github.com/tienduongmarcom/aphvh.git tag v0.15.2
 git checkout --detach v0.15.2
 bash deploy/release/dien_tap_ban_sao.sh 0.15.2
 ```
