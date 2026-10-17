@@ -23,6 +23,7 @@
 
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
+			frm.toggle_display("kh_aph_ho_so_giao_nhan", !!bat() && frm.doc.docstatus === 1 && !frm.doc.is_return);
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
 			if (frm.doc.kh_aph_ban_ky && frm.perm[0] && frm.perm[0].write) {
 				frm.add_custom_button(__("Gỡ bản ký khỏi phiếu"), () => {

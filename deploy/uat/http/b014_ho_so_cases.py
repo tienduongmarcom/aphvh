@@ -24,7 +24,7 @@ def chay(rpc, get, insert, lst, denied, ktt, dn, emit):
     doc["kh_aph_ban_ky"] = file["file_url"]
     doc = save(doc)
     assert not doc.get("kh_aph_doi_chieu_boi")
-    denied(lambda: rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": "2000-01-01 00:00:00"}, ktt))
+    denied(lambda: rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": "2000-01-01 00:00:00"}, ktt), ("TimestampMismatchError",))
     result = rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": doc["modified"]}, ktt)
     assert result["doi_chieu_boi"] == doc["modified_by"] and result["doi_chieu_luc"], result
     denied(lambda: rpc("frappe.client.delete", {"doctype": "File", "name": file["name"]}, ktt))
