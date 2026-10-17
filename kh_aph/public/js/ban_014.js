@@ -24,6 +24,13 @@
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
+			if (frm.doc.kh_aph_ban_ky && frm.perm[0] && frm.perm[0].write) {
+				frm.add_custom_button(__("Gỡ bản ký khỏi phiếu"), () => {
+					frappe.confirm(__("Gỡ bản ký sẽ bỏ dấu đối chiếu. Tệp vẫn giữ trong hồ sơ đính kèm."), () => {
+						frm.set_value("kh_aph_ban_ky", "").then(() => frm.save("Update"));
+					});
+				}, __("Hồ sơ giao nhận"));
+			}
 			if (!frm.doc.kh_aph_ban_ky && frm.doc.kh_aph_delivery_state === "Khách đã nhận") {
 				frm.dashboard.set_headline_alert(__("Đã nhận hàng, còn thiếu bản phiếu có chữ ký"), "orange");
 			} else if (frm.doc.kh_aph_ban_ky && !frm.doc.kh_aph_doi_chieu_boi) {
