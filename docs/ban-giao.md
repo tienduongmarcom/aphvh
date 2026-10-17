@@ -537,4 +537,3 @@ Repo trên máy chủ là private; máy chủ không còn token `repo`, muốn `
 - `deploy/cloud/README.md`: sao lưu.
 - `NGHIEM_THU.md`: biên bản nghiệm thu các bản 0.1–0.2.
 - Dữ liệu sổ MISA mẫu của khách nằm trong Project claude.ai "Hơp nhất APH - VH" (không có trong repo; không dùng làm dữ liệu thử ngoài máy khách).
-
