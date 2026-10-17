@@ -96,6 +96,18 @@ class DeliveryInfoBoundary(unittest.TestCase):
         self.m.validate(current)
         with self.assertRaises(ValueError): self.m.validate(self.doc(old=old, kh_aph_ban_giao_boi="giả"))
 
+    def test_optional_address_does_not_erase_source_snapshot(self):
+        address_module = types.ModuleType("frappe.contacts.doctype.address.address")
+        address_module.get_address_display = Mock(return_value="Địa chỉ nguồn")
+        with patch.dict(sys.modules, {"frappe.contacts.doctype.address.address": address_module}):
+            d = self.doc(docstatus=0)
+            self.m.apply(d, normalize({"delivery_method": "Vận chuyển", "recipient": "Nam"}))
+            self.assertEqual(d.get("shipping_address_name"), "DC")
+            address_module.get_address_display.assert_called_once_with("DC")
+            self.assertEqual(d.shipping_address, "Địa chỉ nguồn")
+            self.m.apply(d, normalize({"delivery_method": "Vận chuyển", "recipient": "Nam", "shipping_address_name": "DC-moi"}))
+            self.assertEqual(d.get("shipping_address_name"), "DC-moi")
+
     def test_flag_off_does_not_change_old_docs(self):
         self.f.conf = {}
         self.m.validate(self.doc()); self.m.before_submit(self.doc(kh_aph_nguoi_thuc_giao=""))

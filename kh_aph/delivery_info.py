@@ -52,11 +52,15 @@ def parse(values, customer):
 
 
 def apply(doc, values):
+    if not values:
+        return
     for key, value in values.items():
+        if key == "shipping_address_name" and not value:
+            continue  # Khi lập đợt, để trống nghĩa là giữ địa chỉ đã có từ từng SO nguồn.
         doc.set(MAPPING[key], value)
-    if "shipping_address_name" in values:
-        from frappe.contacts.doctype.address.address import get_address_display
-        doc.shipping_address = get_address_display(values["shipping_address_name"]) if values["shipping_address_name"] else ""
+    from frappe.contacts.doctype.address.address import get_address_display
+    name = doc.get("shipping_address_name")
+    doc.shipping_address = get_address_display(name) if name else ""
 
 
 def validate(doc, method=None):

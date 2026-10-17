@@ -14,7 +14,7 @@ Kế toán bán hàng mở đơn chung → Lập phiếu xuất & In → chọn 
 
 ## 4. Quy tắc và ngoại lệ
 
-- Thông tin nhập mới có cách giao và người nhận bắt buộc. Điện thoại/lái xe/biển số/địa chỉ có thể trống nếu chưa có; không ép điền giả.
+- Thông tin nhập mới có cách giao và người nhận bắt buộc. Điện thoại/lái xe/biển số/địa chỉ có thể trống nếu chưa có; không ép điền giả. Khi lập đợt mà không chọn địa chỉ thay thế, giữ địa chỉ từ từng SO nguồn; thông tin đó vẫn phải qua kiểm Customer và quyền. Có unit kiểm fallback, chưa có ca HTTP riêng cho fallback SO.
 - Địa chỉ phải có quyền đọc, đang sử dụng và liên kết Customer của đơn. Bộ lọcLink chỉ là gợi ý, server kiểm lại.
 - Tên/số liên hệ chỉ nhận chuỗi, có giới hạn độ dài; chặn ký tự điều khiển và field ngoài allowlist.
 - Cùng request_id nhưng khác lượng hoặc thông tin giao nhận bị từ chối. Dữ liệu chuẩn hóa trước tính hash. Khi không truyền thông tin mới, giữ nguyên cách tính hash0.15.2 cho tương thích retry.
