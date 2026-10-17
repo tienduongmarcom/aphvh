@@ -7,6 +7,7 @@ import frappe
 from frappe.utils import cint, flt
 
 from kh_aph.dispatch_plan import plan
+from kh_aph import delivery_info
 
 F_ORDER = "kh_aph_don_chung_xuat"
 F_BATCH = "kh_aph_dot_xuat"
@@ -120,6 +121,8 @@ def _summaries(notes):
 def _note_scope(dn):
     """Kiểm lại liên kết trên phiếu cũ khi in/thử lại, kể cả quyền vừa bị thu hẹp."""
     dn.check_permission("read")
+    if dn.get(delivery_info.METHOD):
+        delivery_info.check_address(dn.customer, dn.get("shipping_address_name"))
     frappe.get_doc("Company", dn.company).check_permission("read")
     for row in dn.items:
         frappe.get_doc("Item", row.item_code).check_permission("read")
@@ -130,7 +133,7 @@ def _note_scope(dn):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_drafts(shared_order, selections, request_id):
+def create_drafts(shared_order, selections, request_id, delivery=None):
     _guard()
     if not re.fullmatch(r"[a-zA-Z0-9-]{16,64}", request_id or ""):
         frappe.throw("Mã yêu cầu không hợp lệ; mở lại hộp thoại lập phiếu")
@@ -140,8 +143,11 @@ def create_drafts(shared_order, selections, request_id):
                            key=lambda c: c["source_row"])
     except (TypeError, KeyError):
         frappe.throw("Dữ liệu dòng giao không hợp lệ")
-    signature = hashlib.sha256(json.dumps(canonical, sort_keys=True).encode()).hexdigest()
     doc = _order(shared_order, lock=True)
+    info = delivery_info.parse(delivery, doc.customer)
+    # Giữ hash cũ khi không truyền thông tin giao nhận để retry phiếu trước nâng cấp vẫn hợp lệ.
+    content = {"rows": canonical, "delivery": info} if info else canonical
+    signature = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
     # Current read: không dùng snapshot SELECT thường sau khi đã chờ khóa ở request khác.
     existing = frappe.db.sql_list(f"""SELECT name FROM `tabDelivery Note`
         WHERE {F_ORDER}=%s AND {F_BATCH}=%s ORDER BY name FOR UPDATE""", (doc.name, request_id))
@@ -171,6 +177,7 @@ def create_drafts(shared_order, selections, request_id):
             row.qty = choice["qty"]
             row.kh_aph_bags = choice["bags"]
             row.kh_aph_kg_per_bag = choice["kg_per_bag"]
+        delivery_info.apply(dn, info)
         dn.set(F_ORDER, doc.name)
         dn.set(F_BATCH, request_id)
         dn.set(F_HASH, signature)
@@ -196,6 +203,11 @@ def print_batch(shared_order, request_id):
             frappe.throw("Đợt có phiếu đã hủy; không in làm căn cứ xuất hàng")
         notes.append({"name": dn.name, "company": dn.company, "posting_date": dn.posting_date,
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
+                      "delivery_method": dn.get(delivery_info.METHOD), "recipient": dn.get(delivery_info.RECIPIENT),
+                      "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),
+                      "driver_name": dn.get("driver_name"), "vehicle_no": dn.get("vehicle_no"),
+                      "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),
+                      "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": dn.get(delivery_info.HANDED_AT),
                       "items": [{"item_code": r.item_code, "item_name": r.item_name, "warehouse": r.warehouse,
                                  "qty": r.qty, "bags": r.get("kh_aph_bags"),
                                  "kg_per_bag": r.get("kh_aph_kg_per_bag")} for r in dn.items]})

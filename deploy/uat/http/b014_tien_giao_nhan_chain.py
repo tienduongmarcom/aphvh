@@ -38,6 +38,8 @@ def chay(rpc, get, insert, submit, lst, ktt, f, chain, emit):
     near(figures()["undelivered_value"], 577500)
     def counts():
         return {dt: len(lst(dt, {}, ["name"], ktt)) for dt in ("GL Entry", "Stock Ledger Entry", "Sales Invoice")}
+    handoff = get("Delivery Note", note, ktt)
+    assert handoff["kh_aph_ban_giao_boi"] == f["ktt"] and handoff["kh_aph_ban_giao_luc"]
     before_receive = counts()
     call("kh_aph.delivery_status.confirm", {"name": note, "action": "receive"})
     file = insert({"doctype": "File", "file_name": prefix + ".txt", "content": "UAT bản ký của chuỗi có VAT",
@@ -46,6 +48,9 @@ def chay(rpc, get, insert, submit, lst, ktt, f, chain, emit):
     doc["kh_aph_ban_ky"] = file["file_url"]
     doc = call("frappe.client.save", {"doc": json.dumps(doc)})
     call("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": note, "modified": doc["modified"]})
+    after_sign = get("Delivery Note", note, ktt)
+    assert after_sign["kh_aph_ban_giao_luc"] == handoff["kh_aph_ban_giao_luc"]
+    assert after_sign["kh_aph_ban_giao_boi"] == handoff["kh_aph_ban_giao_boi"]
     assert counts() == before_receive, "Nhận hàng/lưu bản ký đã ghi sổ lần hai"
     remainder = receive(92500, "-balance")
     action(remainder, "Cấn hóa đơn", 92500, invoice=name)

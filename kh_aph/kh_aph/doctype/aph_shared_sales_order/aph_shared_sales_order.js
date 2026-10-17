@@ -17,6 +17,19 @@ async function kh_aph_lap_dot_xuat(frm) {
     const dialog = new frappe.ui.Dialog({title: "Lập phiếu xuất theo lượng giao đợt này", size: "extra-large",
         fields: [
             {fieldtype: "HTML", options: '<div class="alert alert-info">Chọn lượng giao bằng kg; hàng theo bao phải đủ bao theo quy cách đã lưu. Phiếu được tạo ở trạng thái <b>Chờ xuất</b>. Kho xác nhận thực giao mới trừ tồn và ghi công nợ.</div>'},
+            {fieldname: "delivery_method", label: "Cách giao đợt này", fieldtype: "Select",
+                options: ["Vận chuyển", "Khách đến lấy"], default: "Vận chuyển", reqd: 1},
+            {fieldname: "recipient", label: "Người thực nhận hàng tại kho", fieldtype: "Data", reqd: 1,
+                description: "Người nhận/lái xe ký nhận tại kho, không bắt buộc có tài khoản phần mềm."},
+            {fieldname: "phone", label: "Điện thoại liên hệ", fieldtype: "Data"},
+            {fieldtype: "Column Break"},
+            {fieldname: "driver_name", label: "Tên lái xe (nếu khác người nhận)", fieldtype: "Data"},
+            {fieldname: "vehicle_no", label: "Biển số xe", fieldtype: "Data"},
+            {fieldname: "shipping_address_name", label: "Địa chỉ giao thay thế", fieldtype: "Link", options: "Address",
+                description: "Để trống để giữ địa chỉ từ từng đơn nguồn, nếu đã có.",
+                get_query: () => ({query: "frappe.contacts.doctype.address.address.address_query",
+                    filters: {link_doctype: "Customer", link_name: response.message.customer, disabled: 0}})},
+            {fieldtype: "Section Break"},
             {fieldname: "rows", label: "Hàng giao đợt này", fieldtype: "Table", cannot_add_rows: true,
                 cannot_delete_rows: true, in_place_edit: true,
                 data: rows.map(r => ({...r, qty: 0})), fields: [
@@ -43,7 +56,9 @@ async function kh_aph_lap_dot_xuat(frm) {
             let created = false;
             try {
                 const made = await frappe.call({method: "kh_aph.ban_nhanh.create_drafts", freeze: true,
-                    args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id}});
+                    args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id,
+                        delivery: JSON.stringify(Object.fromEntries(["delivery_method", "recipient", "phone", "driver_name", "vehicle_no", "shipping_address_name"]
+                            .map(key => [key, values[key] || ""])))}});
                 created = true;
                 const names = made.message.delivery_notes.map(n => n.name);
                 const print = await frappe.call({method: "kh_aph.ban_nhanh.print_batch",

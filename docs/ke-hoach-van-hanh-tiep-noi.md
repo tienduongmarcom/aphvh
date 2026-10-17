@@ -106,4 +106,6 @@ HD01 hóa đơn một phần: yêu cầu từng dòng/lượng, gắn lần giao
 
 ## Điểm dừng hiện tại
 
-Đã lập kế hoạch truy nguyên và rà sâu đợt 1; chưa sửa mã nghiệp vụ kể từ0.15.2 trong lượt này. Bước tiếp theo là kiểm meta chuẩn, viết phần thông tin giao nhận theo GN03–GN04 và token GN01, bổ sung bản inGN06, rồi thiết kế/triển khaiGN09 với chứng từ nguồn. Các yêu cầu chưa kiểm phải giữ mở; không lấy 375 unit/215 UAT cũ để đóng tính năng mới. Sửa tiếngViệt theo ngữ cảnh ngay trong từng đợt; phần công cụ dịch được tách riêng để không trộn phạm vi sổ tiền.
+Đã triển khai lát 1A trên nhánh `feat/thong-tin-giao-nhan-20261017`, PR #5: GN01 bổ sung thông tin vào token chống trùng; GN03 thông tin nhận hàng/địa chỉ theo đợt; GN04 người thực giao và dấu xác nhận do server ghi; GN06 bản in nhanh hai liên. Có đặc tả 9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md`. Kết quả CI và SHA được cập nhật ở đầu `docs/ban-giao.md` và `deploy/release/TRANG_THAI.md`; production vẫn 0.15.2.
+
+Đợt 1 chưa đóng: GN09 còn vòng người phụ trách/kết quả/chứng từ xử lý chênh lệch; GN10 chưa có xuất ngay trong Dialog; GN06 cần đối chiếu các đường in còn lại và máy in thật; GN11 chưa mô phỏng cắt kết nối trình duyệt ở thời điểm server commit. Tiếp theo thiết kế GN09 trên phiếu nguồn, phân biệt ghi chú/đối chiếu hồ sơ với hoàn tất xử lý; tái dùng chứng từ điều chỉnh đúng bản chất, không tạo trả kho giả cho mất hàng hoặc lỗi nhập liệu. Giữ các đợt tiền/nhà máy/tài chính và hóa đơn một phần ở phạm vi riêng đã ghi trên.

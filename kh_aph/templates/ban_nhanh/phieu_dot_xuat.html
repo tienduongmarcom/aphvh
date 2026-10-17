@@ -8,18 +8,25 @@ table { width: 100%; border-collapse: collapse; margin: 14px 0; } th, td { borde
 .number { text-align: right; } .signatures { display: flex; justify-content: space-around; min-height: 110px; }
 @page { size: A4; margin: 14mm; }
 </style></head><body>
-{% for note in notes %}<section>
+{% for note in notes %}{% for copy in ["Lưu kho", "Giao nhận"] %}<section>
 <h1>PHIẾU XUẤT KHO</h1>
-<p class="state">{% if note.docstatus == 0 %}CHỜ XUẤT — CHƯA GHI SỔ KHO/CÔNG NỢ{% else %}ĐÃ XÁC NHẬN XUẤT{% endif %}</p>
+<p class="state">Liên: {{ copy | e }}</p>
+<p class="state">{% if note.docstatus == 0 %}CHỜ XUẤT — CHƯA GHI SỔ KHO/CÔNG NỢ{% else %}ĐÃ XÁC NHẬN XUẤT — BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA{% endif %}</p>
 <p>Đơn vị: {{ note.company | e }}<br>Phiếu: <b>{{ note.name | e }}</b> · Ngày: {{ note.posting_date | e }}<br>
-Đơn bán chung: {{ shared_order | e }}<br>Khách hàng: {{ note.customer_name | e }}</p>
-<table><thead><tr><th>Hàng hóa</th><th>Kho xuất</th><th>Số bao</th><th>Kg/bao</th><th>Kg xuất</th></tr></thead><tbody>
+Đơn bán chung: {{ shared_order | e }}<br>Khách hàng: {{ note.customer_name | e }}<br>
+Người lập: {{ (note.created_by or '') | e }}<br>
+Cách giao: {{ (note.delivery_method or '') | e }}<br>
+Địa chỉ giao: {{ (note.address or '') | e }}</p>
+<table><thead><tr><th>Hàng hóa</th><th>Kho xuất</th><th>Số bao</th><th>Kg/bao</th><th>{% if note.docstatus == 0 %}Kg dự kiến{% else %}Kg đã xuất{% endif %}</th></tr></thead><tbody>
 {% for row in note['items'] %}<tr><td>{{ row.item_code | e }} — {{ row.item_name | e }}</td><td>{{ row.warehouse | e }}</td>
 <td class="number">{{ row.bags or '' }}</td><td class="number">{{ row.kg_per_bag or '' }}</td><td class="number">{{ row.qty }}</td></tr>{% endfor %}
 </tbody></table>
-<p>Người nhận / người vận chuyển: .................................. Điện thoại: ........................<br>
-Biển số xe: ........................ Thời điểm bàn giao thực tế: ..................................</p>
+<p>Người nhận tại kho: {{ (note.recipient or '..................................') | e }}<br>
+Điện thoại: {{ (note.phone or '........................') | e }}<br>
+Tên lái xe: {{ (note.driver_name or '........................') | e }} · Biển số xe: {{ (note.vehicle_no or '........................') | e }}<br>
+Người thực giao: {{ (note.dispatcher or '..................................') | e }}<br>
+Thời điểm xác nhận xuất tại kho: {{ (note.handoff_time or '..................................') | e }}</p>
 <div class="signatures"><div><b>Người thực giao hàng</b><br>(Ký, ghi rõ họ tên)</div><div><b>Người thực nhận hàng</b><br>(Ký, ghi rõ họ tên)</div></div>
 <p>Ghi chú / chênh lệch thực giao: ................................................................................</p>
 <p>In phiếu không xác nhận xuất hàng. Kho đối chiếu lượng thực giao và xác nhận xuất trên hệ thống.</p>
-</section>{% endfor %}</body></html>
+</section>{% endfor %}{% endfor %}</body></html>
