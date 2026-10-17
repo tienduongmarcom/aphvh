@@ -1,7 +1,10 @@
-# Phiên bản image đang chạy cho khách này (đổi file này bằng pull request = nâng cấp).
+# Phiên bản đã triển khai; ứng viên 0.15.2 chưa phải production.
 khach: aph-vh
-image_tag: "0.14.3"
-image_id: "sha256:706bf959addeca5bcb255fee0437ae7aeb355d910d1fc0625ae93fe66367ebc8"  # docker images --digests trên VM, 16/10 16:29
-nguon_sha: "b14ad8d"
-nen: "frappe/erpnext@sha256:ac5b4591e80b52d2e22f6f5cad5d5e7e300f9764dbfeb3f92d325e86baede08d (ERPNext 16.50.0 + Frappe 16.51.0)"
-moi_truong: production   # site frontend trên erpnext-prod; 0.11.0 lúc 10:58, 0.11.1 lúc ~14:50, 0.11.2 lúc ~17:10 ngày 14/10/2026 (13 cờ, cây kho 55 kho), 0.11.3 lúc ~21:00 (14 cờ), 0.11.4 lúc ~22:15 (15 cờ), 0.12.1 lúc ~08:25 ngày 15/10 (17 cờ), 0.13.0 lúc ~11:45 (19 cờ), 0.14.0 lúc ~15:45 (21 cờ), 0.14.2 lúc ~22:44 (21 cờ, sau diễn tập bản sao ĐẠT), 0.14.3 lúc ~16:29 ngày 16/10 (diễn tập tách biệt ĐẠT 16:23, bảo trì xuyên suốt)
+image_tag: "0.15.1"
+image_id: "sha256:c4b61eb4b2924d50f64bbeaf83623da3e7259f9484b28d6f3e228939912edf47"
+nguon_sha: "b803c7a95e13c57af3a0f58da6e0c8ea48079db2"
+nen: "frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268 (ERPNext 16.51.1 + Frappe 16.52.0)"
+moi_truong: production
+# Người vận hành xác nhận trên erpnext-prod/frontend ngày 17/10/2026 13:22:
+# diễn tập tách biệt đạt; triển khai báo === XONG 0.15.1: ĐẠT ===.
+# Giữ bản này cho tới khi có log xác nhận triển khai phiên bản kế tiếp.
