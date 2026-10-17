@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 — Phát triển tiếp, gom nghiệm thu thực tế sau khi có dữ liệu
+
+Anh Tiến xác nhận chưa có danh mục hàng/tồn kho nên chưa thử thực tế; yêu cầu tiếp tục hoàn thiện và nghiệm thu tổng thể sau. Không chặn phát triển vì thiếu dữ liệu thật. Nhánh `feat/ho-so-giao-nhan-20261017` từ mốc bàn giao 6fe0cd7; production vẫn 0.15.1, chưa tag/triển khai mới.
+
+Đã viết hồ sơ bản ký trên Delivery Note, dùng cờ Trung tâm Bán hàng hiện có: tệp riêng gắn đúng phiếu, ghi chú chênh lệch, người/thời điểm đối chiếu có kiểm quyền write và chống phiếu cũ. Thay tệp/ghi chú làm mất dấu đối chiếu; không bắt buộc đính kèm khi giao/nhận, không ghi GL/SLE. Workspace có phiếu đã nhận thiếu bản ký / bản ký chưa đối chiếu. Chặn xóa tệp đang là bản ký. Có 7 ca unit và ca HTTP mới trong b014 (mong 20 PASS gồm restore). Cổng 3 nâng baseline lên digest production 0.15.1 đúng mốc VM.
+
+ĐANG DỞ: chạy UAT/Cổng 2/2b/3 trên SHA mới, xử lý lỗi thực nếu có; kiểm UI hồ sơ. Tiếp theo hoàn thiện tiền/đối soát, nhà máy, tổng hợp tài chính theo thứ tự đã chốt. Nghiệm thu nhân sự và máy in thật chưa làm; không tuyên bố toàn dự án hoàn tất.
+
 ## 17/10/2026 13:22 (Việt Nam) — Production 0.15.1 đã triển khai theo log anh Tiến
 
 Anh Tiến trực tiếp chạy thủ tục trên VM `erpnext-prod`, site `frontend`; Codex không có phiên SSH. Diễn tập lượt `10170555e7bc7c` báo tong/dem/chi_tiet khớp, dấu `~/dien-tap-0.15.1.ok`, sau đó triển khai báo `=== XONG 0.15.1: ĐẠT ===`. Đây là bằng chứng log người vận hành gửi, chưa phải Codex kiểm độc lập giao diện production.

@@ -214,6 +214,9 @@ def chay(admin, phien, f, emit):
     assert get("Delivery Note", dn["name"], ktt)["kh_aph_so_lan_in"] == 2
     emit("HTTP_014_IN_LAI", "PASS", {"phieu_giao": dn["name"], "so_hd": "1C26TAP 0000321", "lan": 2})
 
+    from b014_ho_so_cases import chay as ho_so_cases
+    ho_so_cases(rpc, get, insert, lst, denied, ktt, dn, emit)
+
     # 8. Hai màn hình điều hướng có đủ lối vào; bộ đếm in không cho sửa tay.
     tb = get("Workspace", "Trung tâm Bán hàng", ktt)
     tv = get("Workspace", "Tiền và vay", ktt)
