@@ -54,9 +54,13 @@ B = frappe.get_doc({"doctype": "Item", "item_code": p + "-B", "item_name": p + "
     "taxes": [{"item_tax_template": t_vh}]}).insert().name
 scope_co = user("scope-co", ["Kế toán bán hàng", "Sales User", "Stock User"])
 scope_wh = user("scope-wh", ["Kế toán bán hàng", "Sales User", "Stock User"])
-for u, dt, value in ((scope_co, "Company", aph), (scope_wh, "Warehouse", kho)):
-    frappe.get_doc({"doctype": "User Permission", "user": u, "allow": dt, "for_value": value,
-                    "apply_to_all_doctypes": 1}).insert()
+frappe.get_doc({"doctype": "User Permission", "user": scope_co, "allow": "Company", "for_value": aph,
+                "apply_to_all_doctypes": 1}).insert()
+# Kho mặc định của Company là cấu hình chung, không phải kho nguồn trên đơn/phiếu.
+# Giới hạn kho trên đúng các DocType cần xử lý; không cấp thêm kho ngoài phạm vi.
+for target in ("Warehouse", "Sales Order", "Delivery Note", "APH Shared Sales Order"):
+    frappe.get_doc({"doctype": "User Permission", "user": scope_wh, "allow": "Warehouse", "for_value": kho,
+                    "apply_to_all_doctypes": 0, "applicable_for": target}).insert()
 ss = frappe.get_doc("Selling Settings")
 ss.set("kh_aph_nguoi_duyet_gia_san", [{"user": tp, "muc": 0, "tu_duyet": 0}])
 ss.save()

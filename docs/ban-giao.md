@@ -1,5 +1,11 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 09:20 — UAT phạm vi kho: chỉnh cấu hình tài khoản thử
+
+SHA 76f6bde: Cổng 2 38987997088 và Cổng 3 38987993537 đạt; UAT 38987993529 lỗi tại đối chứng dương của scope_wh. Native Frappe chặn đọc Company do Warehouse User Permission áp mọi DocType, gồm trường Company.default_in_transit_warehouse. Ba ca mới trước đó đạt: 3 kho/2 pháp nhân không ghi sổ, sửa nháp cập nhật lượng, Company scope; restore đạt. Ca lỗi nhóm sau chưa chạy, không tuyên bố đủ 19 ca.
+
+Sửa fixture để Warehouse User Permission áp đúng Warehouse/Sales Order/Delivery Note/APH Shared Sales Order, không áp lên cấu hình Company có kho chuyển tiếp chung. Không thêm kho được phép, không bypass quyền server và không nới assertion đối chứng dương/âm. Company scope giữ apply_all. ĐANG DỞ: chạy lại CI SHA mới; production không đổi.
+
 ## 17/10/2026 — Hoàn thiện kiểm nhiều kho và quyền bán hàng nhanh
 
 Mốc CI đã xác minh 16/10 23:40: PR #2 a271099 đủ ba cổng xanh (UAT 38925577491, Cổng 2 38925582784, Cổng 3 38925578136); PR #3 8705848 cũng đủ (38925615925 / 38925623196 / 38925615939), cả bước quay lui và cố ý nâng lỗi đều chạy đạt. Production chưa đổi. Các mục ĐANG DỞ cũ bên dưới là lịch sử.
