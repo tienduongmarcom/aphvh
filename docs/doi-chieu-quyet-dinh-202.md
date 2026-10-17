@@ -1,5 +1,25 @@
 # Đối chiếu quyết định nghiệp vụ ↔ code/UAT (14/10/2026)
 
+## Cập nhật trạng thái 17/10/2026 — đọc trước bảng lịch sử
+
+Các mục 1–8 bên dưới ghi trạng thái ngày 14/10, KHÔNG phải danh sách việc chưa làm hiện tại. Code và đặc tả mới đã khép nhiều mục trong bảng; không hỏi lại các quyết định đã chốt hoặc xây lại chức năng theo dấu ⬜ cũ.
+
+| Nhóm đã bổ sung | Code / bằng chứng trong bộ UAT hiện tại |
+|---|---|
+| Quỹ nhà máy, chi nhỏ, bàn giao, khóa giá Dũng | `factory_cash`, `HTTP_0111_QUY_NHA_MAY`, `HTTP_0111_KHOA_GIA_THANH_PHAM` |
+| Giá tạm theo nhóm, phân bổ tháng, vét bồn | `factory_costing`, `HTTP_0111_GIA_TAM_THEO_NHOM`, `HTTP_0111_PHAN_BO_CUOI_THANG`, `HTTP_0111_VET_BON` |
+| Dở dang/định mức, kiểm kê có mốc | `kho_chuan`, `HTTP_0112_PHONG_TOM_DINH_MUC`, `HTTP_0112_KIEM_KE_MOC` |
+| Hạn chung/gia hạn, địa chỉ, hàng trả, giảm giá, MISA | `sales_p1`, bộ `b0113_cases` |
+| Lãi gộp, dòng tiền, khóa kỳ, xác nhận nợ | `quan_tri`, bộ `b0114_cases` |
+| Dữ liệu/đầu kỳ, kho vận hành, giá sàn | `du_lieu`, `dau_ky`, `kho_van_hanh`, `ban_quay`, bộ `b012_cases` / `b013_cases` |
+| Tiền/ngân hàng, vay, sao kê, in lại kèm MISA | `tien_vay`, `trung_tam_ban`, bộ `b014_cases` |
+| Phiếu xuất nháp và in nhanh, nhiều kho/pháp nhân/quyền | `ban_nhanh`, `b014_ban_nhanh_cases`, `b014_ban_nhanh_scope` |
+| Hồ sơ bản ký/đối chiếu (ứng viên PR #4, chưa triển khai) | `ho_so_giao_nhan`, `HTTP_014_HO_SO_BAN_KY`, `NATIVE_DESK_HO_SO_GIAO_NHAN` |
+
+Mốc mã nguồn `7827add`: UAT [39011438406](https://github.com/tienduongmarcom/aphvh/actions/runs/39011438406) đạt, artifact có 209 kết quả PASS/0 FAIL (gồm restore và chuẩn bị), đủ 21 kết quả b014. Đây là kiểm tự động bằng dữ liệu giả, chưa phải nghiệm thu nhân sự/máy in hoặc xác nhận đủ nguyên văn 202 câu. Kịch bản gom nghiệm thu: `docs/nghiem-thu-tong-the.md`; việc tiếp quản xem `docs/ban-giao.md`.
+
+---
+
 Nguồn quyết định: `docs/quyet-dinh-202-khoi-phuc.md` (bản khôi phục — R001–R105 theo chủ đề, Q172–Q202 có số câu;
 **không** phải nguyên văn 202 câu). Bằng chứng: tên ca UAT HTTP/Desk trong `deploy/uat/http/*` (run xanh trên SHA
 `55b4491`, 110 ca) và code `kh_aph`. Bảng này **không** tuyên bố nghiệm thu; chỉ cho biết đã có gì để kiểm.
