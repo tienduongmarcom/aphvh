@@ -21,6 +21,7 @@ F_QUY = "kh_aph_quy_nha_may"
 IG_KHOA_GIA = "kh_aph_khoa_gia_nha_may"
 DT = "APH Phieu quy nha may"
 DT_KM = "APH Khoan muc chi nha may"
+KET_QUA_NHAN = ("trang_thai", "so_thuc_nhan", "nhan_boi", "nhan_luc", "journal_entry")
 
 
 def enabled():
@@ -77,6 +78,12 @@ def _quy(company):
 
 def validate_phieu(doc):
     _can_bat()
+    old = doc.get_doc_before_save()
+    for field in KET_QUA_NHAN:
+        current = doc.get(field)
+        previous = old.get(field) if old else None
+        if str(current or "") != str(previous or ""):
+            frappe.throw("Không sửa trực tiếp kết quả ghi sổ/nhận tiền; dùng thao tác xác nhận nhận tiền")
     loi = kiem_phieu(doc.loai, [(d.dien_giai, d.khoan_muc, d.so_tien) for d in doc.dong], doc.customer, doc.nguoi_nhan)
     if loi:
         frappe.throw("<br>".join(loi), title="Phiếu quỹ nhà máy")
@@ -142,12 +149,21 @@ def xac_nhan_nhan(name, so_thuc_nhan, tai_khoan_nhan):
     _can_bat()
     frappe.db.sql(f"SELECT name FROM `tab{DT}` WHERE name=%s FOR UPDATE", name)
     doc = frappe.get_doc(DT, name)
+    doc.check_permission("read")
+    # Người nhận có thể chỉ có quyền đọc phiếu; vẫn phải nằm trong phạm vi
+    # Company được cấp. Không đòi quyền đọc GL/Account của hồ sơ nhà máy.
+    company_doc = frappe.get_doc("Company", doc.company)
+    company_doc.check_permission("read")
     roles = set(frappe.get_roles())
     if frappe.session.user != doc.nguoi_nhan and not roles & {"Accounts Manager", "System Manager"}:
         frappe.throw("Chỉ người nhận hoặc kế toán trưởng xác nhận", frappe.PermissionError)
     if doc.docstatus != 1 or doc.loai != LOAI_BAN_GIAO or doc.trang_thai != TT_CHO_NHAN:
         frappe.throw("Phiếu không ở trạng thái chờ nhận")
-    so = flt(so_thuc_nhan)
+    from kh_aph.funds_rules import money
+    try:
+        so = float(money(so_thuc_nhan))
+    except ValueError as exc:
+        frappe.throw(str(exc))
     if so <= 0:
         frappe.throw("Số tiền nhận phải lớn hơn 0")
     quy = _quy(doc.company)
@@ -181,3 +197,8 @@ def validate_khoa_gia(doc, method=None):
     loi = vi_pham_khoa_gia(dong)
     if loi:
         frappe.throw("<br>".join(loi), title="Giá thành phẩm chính do Hà Nội chốt")
+
+
+def protect_submitted(doc):
+    """Kết quả nhận/ghi sổ do server cập nhật; không mở đường sửa tay sau submit."""
+    frappe.throw("Phiếu quỹ đã gửi không được sửa trực tiếp; dùng xác nhận nhận tiền hoặc hủy theo quyền")

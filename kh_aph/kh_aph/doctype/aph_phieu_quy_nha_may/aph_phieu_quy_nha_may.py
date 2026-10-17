@@ -13,3 +13,6 @@ class APHPhieuquynhamay(Document):
 
     def before_cancel(self):
         F.truoc_huy(self)
+
+    def before_update_after_submit(self):
+        F.protect_submitted(self)

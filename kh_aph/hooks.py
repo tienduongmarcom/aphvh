@@ -385,3 +385,13 @@ for _dt in ("Customer", "Supplier"):
         if _handler not in _handlers:
             _handlers.append(_handler)
         doc_events[_dt][_event] = _handlers
+
+# Hồ sơ giao nhận dùng cờ Trung tâm Bán hàng và quyền phiếu giao hiện có.
+for _event in ("validate", "before_update_after_submit"):
+    doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.ho_so_giao_nhan.validate")
+extend_doctype_class.setdefault("File", []).append("kh_aph.ho_so_giao_nhan.HoSoFileMixin")
+doc_events.setdefault("File", {})["before_validate"] = "kh_aph.ho_so_giao_nhan.protect_file_update"
+
+# Chống ghi hai lần một mã thực thu/chi qua PE, JE và phiếu tiền/cọc.
+for _dt in ("Payment Entry", "Journal Entry"):
+    doc_events[_dt]["validate"].append("kh_aph.money_reference.validate")

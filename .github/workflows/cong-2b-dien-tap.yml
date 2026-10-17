@@ -7,7 +7,7 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   push:
-    branches: ["feat/ban-hang-nhanh-20261016"]
+    branches: ["feat/ban-hang-nhanh-20261016", "feat/ho-so-giao-nhan-20261017"]
 permissions:
   contents: read
 env:

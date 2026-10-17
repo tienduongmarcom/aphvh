@@ -23,7 +23,31 @@
 
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
+			for (const field of ["kh_aph_ho_so_giao_nhan", "kh_aph_ban_ky", "kh_aph_ghi_chu_ban_ky", "kh_aph_doi_chieu_boi", "kh_aph_doi_chieu_luc"]) {
+				frm.toggle_display(field, !!bat() && frm.doc.docstatus === 1 && !frm.doc.is_return);
+			}
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
+			if (frm.doc.kh_aph_ban_ky && frm.perm[0] && frm.perm[0].write) {
+				frm.add_custom_button(__("Gỡ bản ký khỏi phiếu"), () => {
+					frappe.confirm(__("Gỡ bản ký sẽ bỏ dấu đối chiếu. Tệp vẫn giữ trong hồ sơ đính kèm."), () => {
+						frm.set_value("kh_aph_ban_ky", "").then(() => frm.save("Update"));
+					});
+				}, __("Hồ sơ giao nhận"));
+			}
+			if (!frm.doc.kh_aph_ban_ky && frm.doc.kh_aph_delivery_state === "Khách đã nhận") {
+				frm.dashboard.set_headline_alert(__("Đã nhận hàng, còn thiếu bản phiếu có chữ ký"), "orange");
+			} else if (frm.doc.kh_aph_ban_ky && !frm.doc.kh_aph_doi_chieu_boi) {
+				frm.dashboard.set_headline_alert(__("Đã có bản ký, cần đối chiếu nội dung và ghi chú chênh lệch"), "orange");
+				if (frm.perm[0] && frm.perm[0].write && frm.doc.kh_aph_delivery_state === "Khách đã nhận") {
+					frm.add_custom_button(__("Đối chiếu bản ký"), () => {
+						if (frm.is_dirty()) return frappe.msgprint(__("Lưu phiếu trước khi đối chiếu bản ký"));
+						frappe.confirm(__("Bạn đã mở bản ký, kiểm tra lượng thực nhận và ghi chú các chênh lệch?"), () =>
+							frappe.call({method: "kh_aph.ho_so_giao_nhan.doi_chieu",
+								args: {name: frm.doc.name, modified: frm.doc.modified}, freeze: true
+							}).then(() => frm.reload_doc()));
+					}, __("Hồ sơ giao nhận"));
+				}
+			}
 			frm.add_custom_button(__("In lại phiếu xuất kho"), () => frappe.call({method: "kh_aph.trung_tam_ban.in_lai",
 				args: {delivery_note: frm.doc.name}}).then((r) => {
 				const w = window.open("", "_blank");

@@ -141,6 +141,20 @@ print('LEDGER:'+json.dumps(out));frappe.destroy()
     emit('HTTP_FUNDS_UNKNOWN_ACTUAL_CASH','PASS','One bank receipt, holding liability; no old debt or anonymous credit-limit deduction')
     snapshot0=ledger();deny(lambda:submit(insert(receipt_doc)));assert ledger()==snapshot0
     emit('HTTP_FUNDS_RECEIPT_DUPLICATE','PASS','Duplicate stable bank reference rejected without cash/ledger changes')
+    # Không cho cùng khoản thực thu đi thêm qua JE chuẩn hoặc ngược lại.
+    snap_cross=ledger()
+    def native_doc(reference):
+        return {'doctype':'Journal Entry','company':f['companies']['APH'],'posting_date':f['date'],
+            'cheque_no':reference,'cheque_date':f['date'],'accounts':[
+                {'account':f['bank'],'debit_in_account_currency':1},
+                {'account':f['holding'],'credit_in_account_currency':1}]}
+    deny(lambda:insert(native_doc(f['ref'])))
+    assert ledger()==snap_cross
+    draft=insert(native_doc(f['ref']+'-native-first'))
+    deny(lambda:insert({**receipt_doc,'external_reference':f['ref']+'-native-first'}))
+    admin('/api/method/frappe.client.delete',{'doctype':'Journal Entry','name':draft['name']})
+    assert ledger()==snap_cross
+    emit('HTTP_FUNDS_CROSS_SOURCE_DUPLICATE','PASS','Native JE and Funds Receipt share one bank reference guard; no ledger drift')
     def action(kind,amount,**kw):
         return rpc('kh_aph.funds.create_action',{'values':json.dumps({'receipt':receipt['name'],'action_type':kind,
             'amount':amount,'posting_date':f['date'],'reason':'UAT explicit agreement',**kw})})

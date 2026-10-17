@@ -84,6 +84,12 @@ def schema():
 
 def _workspace():
     loi_vao = [
+        ("Tiền thực nhận", "DocType", "APH Funds Receipt", {"docstatus": 1}),
+        ("Tiền chưa rõ khách", "DocType", "APH Funds Receipt", {"docstatus": 1, "customer": ["is", "not set"]}),
+        ("Phân bổ tiền và cọc còn nháp", "DocType", "APH Funds Action", {"docstatus": 0}),
+        ("Tuyến thu tiền đã duyệt", "DocType", "APH Funds Route", {"docstatus": 1}),
+        ("Bàn giao tiền nhà máy chờ nhận", "DocType", "APH Phieu quy nha may", {"docstatus": 1, "loai": "Bàn giao tiền", "trang_thai": "Chờ nhận"}),
+        ("Bàn giao tiền có chênh lệch", "DocType", "APH Phieu quy nha may", {"docstatus": 1, "trang_thai": "Chênh lệch chờ điều tra"}),
         ("Sổ quỹ và tiền gửi", "Report", "So quy va tien gui", None),
         ("Khế ước vay", "DocType", DT_VAY, {"trang_thai": "Đang vay"}),
         ("Dư nợ vay theo khế ước", "Report", "Du no vay theo khe uoc", None),
@@ -197,6 +203,8 @@ def dung_ngan_hang(duong_dan=None, cfg=None):
 # ---------------------------------------------------------------- sổ quỹ / sổ tiền gửi
 
 def so_quy(company, account, tu_ngay, den_ngay):
+    frappe.get_doc("Company", company).check_permission("read")
+    frappe.get_doc("Account", account).check_permission("read")
     tu, den = getdate(tu_ngay), getdate(den_ngay)
     if tu > den:
         frappe.throw("Từ ngày phải trước đến ngày")
@@ -265,10 +273,13 @@ def thu_chi_ho(company, loai, nhan_vien, so_tien, noi_dung, khach=None, nha_cung
 
 
 def cong_no_giam_doc(company=None, nhan_vien=None, den_ngay=None):
-    dk, gt = "", {"d": str(getdate(den_ngay or nowdate()))}
-    if company:
-        dk += " AND g.company=%(c)s"
-        gt["c"] = company
+    allowed = tuple(frappe.get_list("Company", pluck="name", limit_page_length=0))
+    if company and company not in allowed:
+        frappe.throw("Không có quyền xem đơn vị đã chọn", frappe.PermissionError)
+    if not allowed:
+        return []
+    dk, gt = " AND g.company IN %(companies)s", {"d": str(getdate(den_ngay or nowdate())),
+        "companies": (company,) if company else allowed}
     if nhan_vien:
         dk += " AND g.party=%(nv)s"
         gt["nv"] = nhan_vien
@@ -324,12 +335,14 @@ def bien_dong(ten, den=None):
 
 def du_no_vay(company=None, ngay=None, chi_dang_vay=True):
     hom_nay = getdate(ngay or nowdate())
+    if company:
+        frappe.get_doc("Company", company).check_permission("read")
     loc = {"company": company} if company else {}
     if chi_dang_vay:
         loc["trang_thai"] = "Đang vay"
     out = []
-    for k in frappe.get_all(DT_VAY, loc, ["name", "company", "so_khe_uoc", "ben_cho_vay", "so_tien", "lai_suat", "ngay_vay",
-                                           "ngay_den_han", "ky_han", "trang_thai"], order_by="ngay_den_han"):
+    for k in frappe.get_list(DT_VAY, loc, ["name", "company", "so_khe_uoc", "ben_cho_vay", "so_tien", "lai_suat", "ngay_vay",
+                                           "ngay_den_han", "ky_han", "trang_thai"], order_by="ngay_den_han", limit_page_length=0):
         bd = bien_dong(k.name, hom_nay)
         nhan = sum(t for _n, t in bd if t > 0)
         tra = -sum(t for _n, t in bd if t < 0)
@@ -391,29 +404,38 @@ def khoan_vay_den_han(company, ngay):
 
 # ---------------------------------------------------------------- mã giao dịch / sao kê
 
-def ma_da_ghi(tk, ma, bo_qua=None):
+def ma_da_ghi(tk, ma, bo_qua=None, lock=False):
     """Chứng từ đã ghi mã giao dịch `ma` trên tài khoản ngân hàng `tk` (phiếu thu / chi, bút toán, phiếu thực thu 0.10)."""
     ma = (ma or "").strip()
     if not ma:
         return None
+    suffix = " FOR UPDATE" if lock else ""
     v = frappe.db.sql("""SELECT name FROM `tabPayment Entry` WHERE docstatus<2 AND reference_no=%s
-        AND (paid_to=%s OR paid_from=%s) AND name!=%s LIMIT 1""", (ma, tk, tk, bo_qua or ""))
+        AND (paid_to=%s OR paid_from=%s) AND name!=%s LIMIT 1""" + suffix, (ma, tk, tk, bo_qua or ""))
     if v:
         return v[0][0]
     v = frappe.db.sql("""SELECT je.name FROM `tabJournal Entry` je JOIN `tabJournal Entry Account` d ON d.parent=je.name
-        WHERE je.docstatus<2 AND je.cheque_no=%s AND d.account=%s AND je.name!=%s LIMIT 1""", (ma, tk, bo_qua or ""))
+        WHERE je.docstatus<2 AND je.cheque_no=%s AND d.account=%s AND je.name!=%s LIMIT 1""" + suffix, (ma, tk, bo_qua or ""))
     if v:
         return v[0][0]
     if frappe.db.exists("DocType", "APH Funds Receipt"):
         key = hashlib.sha256((tk + "\0" + ma).encode()).hexdigest()
-        v = frappe.db.get_value("APH Funds Receipt", {"external_key": key, "docstatus": ["<", 2]})
+        v = frappe.db.get_value("APH Funds Receipt", {"external_key": key, "docstatus": ["<", 2], "name": ["!=", bo_qua or ""]}, for_update=lock)
         if v:
             return v
+    if frappe.db.exists("DocType", "APH Funds Action"):
+        v = frappe.db.sql("""SELECT name FROM `tabAPH Funds Action` WHERE docstatus<2 AND name!=%s
+            AND ((bank_account=%s AND external_reference=%s) OR (owner_bank_account=%s AND owner_external_reference=%s))
+            AND action_type IN ('Hoàn tiền', 'Trả tiền thu hộ') LIMIT 1""" + suffix,
+            (bo_qua or "", tk, ma, tk, ma))
+        if v:
+            return v[0][0]
     return None
 
 
 def _bang_tu_tep(file_url):
     f = frappe.get_doc("File", {"file_url": file_url})
+    f.check_permission("read")
     noi_dung = f.get_content()
     ten = (f.file_name or file_url).lower()
     if ten.endswith((".xlsx", ".xlsm")):
@@ -464,6 +486,14 @@ def doi_chieu_sao_ke(bank_account, file_url, anh_xa=None, luu_mau=0):
     ba.check_permission("read")
     if not ba.account or not ba.company:
         frappe.throw("Thẻ tài khoản ngân hàng chưa gắn tài khoản kế toán / đơn vị")
+    account_doc = frappe.get_doc("Account", ba.account)
+    account_doc.check_permission("read")
+    if account_doc.company != ba.company:
+        frappe.throw("Tài khoản kế toán không thuộc đơn vị của thẻ ngân hàng")
+    bank = None
+    if cint(luu_mau) and anh_xa:
+        bank = frappe.get_doc("Bank", ba.bank)
+        bank.check_permission("write")
     if anh_xa:
         mau = frappe.parse_json(anh_xa) if isinstance(anh_xa, str) else anh_xa
     else:
@@ -478,7 +508,8 @@ def doi_chieu_sao_ke(bank_account, file_url, anh_xa=None, luu_mau=0):
     if loi and not dong:
         frappe.throw("; ".join(loi))
     if cint(luu_mau) and anh_xa:
-        frappe.db.set_value("Bank", ba.bank, F_MAU, json.dumps(mau, ensure_ascii=False))
+        bank.set(F_MAU, json.dumps(mau, ensure_ascii=False))
+        bank.save()
     if not dong:
         return {"dong": [], "loi": loi, "tong": {}}
     tu, den = min(d["ngay"] for d in dong), max(d["ngay"] for d in dong)

@@ -153,6 +153,20 @@ def chay(admin, phien, f, emit):
     assert f["kh0"] not in ds2 and f["kh1"] in ds2, ds2
     emit("HTTP_0114_XAC_NHAN_CONG_NO", "PASS", {"canh_bao_mem": True, "chenh_lech": xn["chenh_lech"]})
 
+    scoped = phien(f["scope_aph"])
+    scoped_profit = bao_cao("Lai gop quan tri", {"tu_ngay": d, "den_ngay": d, "theo": "Công ty"}, scoped)
+    assert scoped_profit["result"] and all(x["khoa"] == f["aph"] for x in scoped_profit["result"]), scoped_profit["result"]
+    assert not any(c.get("fieldname", "").startswith("VH_") for c in scoped_profit["columns"])
+    denied(lambda: bao_cao("Lai gop quan tri", {"tu_ngay": d, "den_ngay": d, "company": f["vh"]}, scoped), ("PermissionError",))
+    scoped_cash = bao_cao("Dong tien 7 30 ngay", {"ngay": d}, scoped)["result"]
+    assert len(scoped_cash) == 2 and scoped_cash[0]["don_vi"].startswith("APH —"), scoped_cash
+    near(scoped_cash[0]["so_du"], scoped_cash[1]["so_du"])
+    scoped_debt = bao_cao("Khach chua xac nhan cong no", {}, scoped)
+    assert all(r.get("so_du_xn") is None and r.get("chenh") is None for r in scoped_debt["result"])
+    denied(lambda: rpc("kh_aph.quan_tri.ghi_nhan_xac_nhan", {"customer": f["kh0"], "ngay": d,
+        "so_du_xac_nhan": 1, "ghi_chu": "Không ghi số dư một đơn vị thành xác nhận toàn khách"}, scoped), ("PermissionError",))
+    emit("HTTP_0114_COMPANY_SCOPE", "PASS", {"profit": "APH only", "cash": "APH only", "outside_filter": "denied"})
+
     # 6. Dũng và nhân viên bán hàng không xem được báo cáo quản trị
     for nguoi in (dung, ban):
         for ten in ("Lai gop quan tri", "Dong tien 7 30 ngay", "Khach chua xac nhan cong no"):

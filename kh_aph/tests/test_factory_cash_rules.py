@@ -17,6 +17,10 @@ class TestPhieuQuy(unittest.TestCase):
         self.assertTrue(R.kiem_phieu("Khác", [("x", None, 1)]))
         self.assertTrue(R.kiem_phieu(R.LOAI_CHI, []))
 
+    def test_so_tien_nan_inf_va_qua_le_bi_chan(self):
+        for amount in ("NaN", "Infinity", "-Infinity", "1.001", "abc", "1e100000"):
+            self.assertTrue(R.kiem_phieu(R.LOAI_BAN_GIAO, [("nop", None, amount)], nguoi_nhan="u"))
+
     def test_trang_thai_nhan(self):
         self.assertEqual(R.trang_thai_nhan(5_000_000, 5_000_000), R.TT_DA_NHAN)
         self.assertEqual(R.trang_thai_nhan(5_000_000, 4_800_000), R.TT_CHENH)

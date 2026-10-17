@@ -202,7 +202,9 @@ def kiem_lech_repack(doc, kg_vao, kg_ra):
 def _can_ke_toan():
     if not enabled():
         frappe.throw("Tính năng giá thành nhà máy chưa được bật")
-    if frappe.session.user != "Administrator" and not (set(frappe.get_roles()) & {"Accounts Manager", "System Manager"}):
+    from kh_aph.constants import ROLE_NO_COST
+    roles = set(frappe.get_roles())
+    if frappe.session.user != "Administrator" and (ROLE_NO_COST in roles or not (roles & {"Accounts Manager", "System Manager"})):
         frappe.throw("Cần quyền Kế toán trưởng (Accounts Manager)", frappe.PermissionError)
 
 

@@ -1,7 +1,7 @@
 name: UAT candidate image verification
 on:
   push:
-    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016"]
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016", "feat/ho-so-giao-nhan-20261017"]
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -116,7 +116,7 @@ jobs:
           if grep -q '"status": "FAIL"' http-inventory-evidence.txt; then echo "Có ca FAIL trong http-inventory-evidence.txt"; exit 1; fi
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/funds.py | tee http-funds-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-funds-evidence.txt)" = 19
+          test "$(grep -c '"status": "PASS"' http-funds-evidence.txt)" = 20
           if grep -q '"status": "FAIL"' http-funds-evidence.txt; then echo "Có ca FAIL trong http-funds-evidence.txt"; exit 1; fi
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           sudo env HOME="$HOME" python3 deploy/uat/http/cost.py | tee http-cost-evidence.txt
@@ -133,7 +133,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/b0111.py | tee http-b0111-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b0111-evidence.txt)" = 14
+          test "$(grep -c '"status": "PASS"' http-b0111-evidence.txt)" = 15
           if grep -q '"status": "FAIL"' http-b0111-evidence.txt; then echo "Có ca FAIL trong http-b0111-evidence.txt"; exit 1; fi
           # 0.11.2: 12 ca nghiệp vụ (cây kho, dở dang theo định mức, đóng gói 2 công đoạn, kiểm kê có mốc) + khôi phục CSDL
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
@@ -151,7 +151,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" python3 deploy/uat/http/b0114.py | tee http-b0114-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b0114-evidence.txt)" = 7
+          test "$(grep -c '"status": "PASS"' http-b0114-evidence.txt)" = 8
           if grep -q '"status": "FAIL"' http-b0114-evidence.txt; then echo "Có ca FAIL trong http-b0114-evidence.txt"; exit 1; fi
           # Lượt 0.12: 7 ca (đề nghị số liệu có duyệt, trả lại/quyền, rà soát danh mục, nạp đầu kỳ, đối chiếu, chốt khóa) + khôi phục CSDL
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
@@ -171,7 +171,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/b014.py | tee http-b014-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 19
+          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 24
           if grep -q '"status": "FAIL"' http-b014-evidence.txt; then echo "Có ca FAIL trong http-b014-evidence.txt"; exit 1; fi
       - name: Render four-company quantity slip to PDF
         run: |
@@ -209,6 +209,7 @@ jobs:
             core-integrity-evidence.txt
             base-versions-evidence.txt
             ban-nhanh-dialog.png
+            ho-so-giao-nhan.png
             fresh-site-evidence.txt
             http-*-evidence.txt
             shared-four-company-slip.html
