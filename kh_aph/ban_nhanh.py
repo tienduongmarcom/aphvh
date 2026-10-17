@@ -109,10 +109,24 @@ def preview(shared_order):
 def _summaries(notes):
     result = []
     for dn in notes:
-        dn.check_permission("read")
+        _note_scope(dn)
+        if dn.docstatus == 2:
+            frappe.throw("Đợt có phiếu đã hủy; mở lại để lập đợt mới")
         result.append({"name": dn.name, "company": dn.company, "warehouse": dn.items[0].warehouse,
                        "docstatus": dn.docstatus})
     return result
+
+
+def _note_scope(dn):
+    """Kiểm lại liên kết trên phiếu cũ khi in/thử lại, kể cả quyền vừa bị thu hẹp."""
+    dn.check_permission("read")
+    frappe.get_doc("Company", dn.company).check_permission("read")
+    for row in dn.items:
+        frappe.get_doc("Item", row.item_code).check_permission("read")
+        wh = frappe.get_doc("Warehouse", row.warehouse)
+        wh.check_permission("read")
+        if wh.company != dn.company:
+            frappe.throw("Kho trên phiếu không thuộc đơn vị xuất hàng")
 
 
 @frappe.whitelist(methods=["POST"])
@@ -176,7 +190,7 @@ def print_batch(shared_order, request_id):
     notes = []
     for name in names:
         dn = frappe.get_doc("Delivery Note", name)
-        dn.check_permission("read")
+        _note_scope(dn)
         dn.check_permission("print")
         if dn.docstatus == 2:
             frappe.throw("Đợt có phiếu đã hủy; không in làm căn cứ xuất hàng")

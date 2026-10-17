@@ -40,6 +40,23 @@ ktbh = user("ktbh", ["Kế toán bán hàng", "Sales User", "Stock User"])
 tp = user("tp", ["Sales Manager", "Sales User"])
 nvbh = user("nvbh", ["Sales Manager", "Sales User", "Stock User"])
 dung_u = user("dung", [ROLE_FACTORY, ROLE_NO_COST, "Accounts Manager", "Sales User", "Stock User"])
+# Nguồn và tài khoản có phạm vi hẹp để kiểm facade nhiều kho/pháp nhân.
+vh = frappe.db.get_value("Company", {"abbr": "VH"}, "name")
+def wh_test(suffix, company):
+    parent = frappe.db.get_value("Warehouse", {"company": company, "is_group": 1, "parent_warehouse": ["is", "not set"]}, "name")
+    return frappe.get_doc({"doctype": "Warehouse", "warehouse_name": p + suffix,
+                          "company": company, "parent_warehouse": parent, "is_group": 0}).insert().name
+kho2, kho_vh = wh_test("-APH2", aph), wh_test("-VH", vh)
+t_vh = frappe.get_doc({"doctype": "Item Tax Template", "title": p + "-VH10", "company": vh,
+    "taxes": [{"tax_type": acc("33311", vh), "tax_rate": 10}]}).insert().name
+B = frappe.get_doc({"doctype": "Item", "item_code": p + "-B", "item_name": p + "-B", "item_group": g,
+    "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",
+    "taxes": [{"item_tax_template": t_vh}]}).insert().name
+scope_co = user("scope-co", ["Kế toán bán hàng", "Sales User", "Stock User"])
+scope_wh = user("scope-wh", ["Kế toán bán hàng", "Sales User", "Stock User"])
+for u, dt, value in ((scope_co, "Company", aph), (scope_wh, "Warehouse", kho)):
+    frappe.get_doc({"doctype": "User Permission", "user": u, "allow": dt, "for_value": value,
+                    "apply_to_all_doctypes": 1}).insert()
 ss = frappe.get_doc("Selling Settings")
 ss.set("kh_aph_nguoi_duyet_gia_san", [{"user": tp, "muc": 0, "tu_duyet": 0}])
 ss.save()
@@ -50,6 +67,7 @@ frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
     "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
+    "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),
     "acc": {"tien": acc("1111"), "bank": bank, "vay": acc("3411"), "cp": acc("6422"), "lai": acc("6351"), "lai_tra": acc("3352")}},
@@ -66,7 +84,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)

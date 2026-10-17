@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 — Hoàn thiện kiểm nhiều kho và quyền bán hàng nhanh
+
+Mốc CI đã xác minh 16/10 23:40: PR #2 a271099 đủ ba cổng xanh (UAT 38925577491, Cổng 2 38925582784, Cổng 3 38925578136); PR #3 8705848 cũng đủ (38925615925 / 38925623196 / 38925615939), cả bước quay lui và cố ý nâng lỗi đều chạy đạt. Production chưa đổi. Các mục ĐANG DỞ cũ bên dưới là lịch sử.
+
+Theo yêu cầu anh Tiến 17/10, mở rộng PR #3: b014 thêm 5 ca (3 kho/2 pháp nhân; sửa DN nháp; User Permission Company và Warehouse có đối chứng dương; lỗi native ở nhóm sau rollback cả đợt). Kiểm lại quyền liên kết trên phiếu khi in/thử lại và chặn dùng lại đợt có phiếu hủy. Mong 19 PASS b014 gồm restore; bổ sung User Permission vào snapshot. Tài khoản/dữ liệu giả, giữ framework native, không sửa core.
+
+ĐANG DỞ: chạy CI trên SHA mới; chưa dùng kết quả mốc 8705848 để kết luận thay đổi này đạt. Sau CI rà ảnh Dialog và chốt phạm vi phát hành; hồ sơ chữ ký số hóa/ca tiền/nhà máy/tài chính mới còn là việc tiếp theo, không tuyên bố cả dự án xong. Không tag, phát hành image hay chạm frontend.
+
 ## 16/10/2026 22:40 — Sửa vị trí ca kiểm workflow
 
 CI SHA 25974b9 / bd66e95 dừng build: test mới đọc `.github/workflows` nhưng Docker loại `.github` khỏi image. Chuyển nguyên ca kiểm ranh giới sang `deploy/release/test_print_defaults_gate.py`, chạy bắt buộc ngay sau checkout Cổng 3; test bộ cài vẫn chạy trong image. Không skip ca, không nới assertion, không thêm workflow vào image production. ĐANG DỞ: kiểm cục bộ rồi đẩy hai PR, đọc CI SHA mới; frontend không đổi.

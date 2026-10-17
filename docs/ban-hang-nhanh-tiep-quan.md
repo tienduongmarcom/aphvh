@@ -32,7 +32,9 @@ Image có Jinja2; máy cục bộ cần Jinja2 để chạy đủ các ca mẫu 
 
 UAT Actions chạy b014: kế toán bán hàng tạo/xác nhận đơn, lập 5/20 kg, kiểm nháp không đổi GL/SLE/SI; lặp cùng request không thêm phiếu, đổi nội dung token cũ bị chặn, lập vượt 15kg còn lại bị chặn. Dũng có role cộng thêm bị từ chối. In số lượng không ghi sổ. Chrome mở form thật, bấm nút, kiểm Dialog lượng nháp/còn lại, lưu ảnh `ban-nhanh-dialog.png`. Khôi phục cùng baseline do runner b014 đảm nhiệm. Mong 14 PASS cả b014 cũ và restore; chưa kết luận đạt cho tới run đúng SHA xanh.
 
-Chưa kiểm mới: nhiều kho/công ty trong chính facade (luồng SO/dispatch nhiều công ty cũ vẫn có UAT), một kho lỗi rollback cả đợt, native quyền chỉ riêng Company/Warehouse, mất kết nối sau commit, sửa nháp thủ công. Cần bổ sung trước phát hành tính năng. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
+Đã bổ sung ngày 17/10 (chờ CI SHA mới): `b014_ban_nhanh_scope.py` kiểm 3 kho/2 pháp nhân qua facade, sửa nháp bằng endpoint chuẩn cập nhật lượng còn lại, tài khoản chỉ Company APH và tài khoản chỉ kho chính (có đối chứng dương cùng endpoint), chặn preview/tạo mới/thử lại mã cũ/in ngoài phạm vi; Item VH bị ngừng sau xác nhận SO gây lỗi native ở nhóm sau, không để lại DN/GL/SLE/SI. b014 nay mong 19 PASS cả restore. `_note_scope` kiểm lại Company/Warehouse/Item khi thử lại và in, không chỉ dựa quyền DN. Phiếu hủy không được trả như đợt còn dùng được.
+
+Mất kết nối sau commit được mô phỏng bằng gọi lại cùng mã và kiểm phiếu giữ nguyên; chưa cắt mạng thật. Sửa nháp sau khi in vẫn theo quyền native và lịch sử chứng từ; hồ sơ bản ký chưa thuộc luồng này. Chưa quan sát hình UI thật; ảnh CI cần được xem lại.
 
 ## Bản dịch
 
