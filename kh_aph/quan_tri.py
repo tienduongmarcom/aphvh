@@ -88,6 +88,7 @@ def _ky(company, thang):
 def khoa_ky(company, thang, ly_do):
     """Khóa tháng `thang` (YYYY-MM) của `company`: Accounting Period chuẩn, khóa mọi loại chứng từ ghi sổ."""
     can_quyen({"Accounts Manager"})
+    frappe.get_doc("Company", company).check_permission("read")
     if not (ly_do or "").strip():
         frappe.throw("Ghi lý do khóa kỳ")
     dau, cuoi = _thang(thang)
@@ -112,6 +113,7 @@ def khoa_ky(company, thang, ly_do):
 @frappe.whitelist(methods=["POST"])
 def mo_khoa_ky(company, thang, ly_do):
     can_quyen({"Accounts Manager"})
+    frappe.get_doc("Company", company).check_permission("read")
     if not (ly_do or "").strip():
         frappe.throw("Ghi lý do mở khóa kỳ")
     _ten, co = _ky(company, thang)

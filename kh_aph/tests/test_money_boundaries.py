@@ -125,3 +125,16 @@ class MoneyBoundaries(unittest.TestCase):
         m.check.reset_mock()
         m.validate(doc)
         m.check.assert_not_called()
+
+    def test_so_quy_va_khoa_ky_kiem_company_truoc_truy_van(self):
+        denied = types.SimpleNamespace(check_permission=Mock(side_effect=ValueError("ngoai pham vi")))
+        self.f.get_doc = Mock(return_value=denied)
+        m = self.load("tien_vay")
+        with self.assertRaises(ValueError): m.so_quy("VH", "1121", "2026-10-01", "2026-10-31")
+        self.f.db.sql.assert_not_called()
+        q = self.load("quan_tri")
+        q.can_quyen = Mock()
+        q._ky = Mock()
+        for fn in (q.khoa_ky, q.mo_khoa_ky):
+            with self.assertRaises(ValueError): fn("VH", "2026-09", "kiem quyen")
+        q._ky.assert_not_called()

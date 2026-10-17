@@ -203,6 +203,8 @@ def dung_ngan_hang(duong_dan=None, cfg=None):
 # ---------------------------------------------------------------- sổ quỹ / sổ tiền gửi
 
 def so_quy(company, account, tu_ngay, den_ngay):
+    frappe.get_doc("Company", company).check_permission("read")
+    frappe.get_doc("Account", account).check_permission("read")
     tu, den = getdate(tu_ngay), getdate(den_ngay)
     if tu > den:
         frappe.throw("Từ ngày phải trước đến ngày")
@@ -271,10 +273,13 @@ def thu_chi_ho(company, loai, nhan_vien, so_tien, noi_dung, khach=None, nha_cung
 
 
 def cong_no_giam_doc(company=None, nhan_vien=None, den_ngay=None):
-    dk, gt = "", {"d": str(getdate(den_ngay or nowdate()))}
-    if company:
-        dk += " AND g.company=%(c)s"
-        gt["c"] = company
+    allowed = tuple(frappe.get_list("Company", pluck="name", limit_page_length=0))
+    if company and company not in allowed:
+        frappe.throw("Không có quyền xem đơn vị đã chọn", frappe.PermissionError)
+    if not allowed:
+        return []
+    dk, gt = " AND g.company IN %(companies)s", {"d": str(getdate(den_ngay or nowdate())),
+        "companies": (company,) if company else allowed}
     if nhan_vien:
         dk += " AND g.party=%(nv)s"
         gt["nv"] = nhan_vien
@@ -330,12 +335,14 @@ def bien_dong(ten, den=None):
 
 def du_no_vay(company=None, ngay=None, chi_dang_vay=True):
     hom_nay = getdate(ngay or nowdate())
+    if company:
+        frappe.get_doc("Company", company).check_permission("read")
     loc = {"company": company} if company else {}
     if chi_dang_vay:
         loc["trang_thai"] = "Đang vay"
     out = []
-    for k in frappe.get_all(DT_VAY, loc, ["name", "company", "so_khe_uoc", "ben_cho_vay", "so_tien", "lai_suat", "ngay_vay",
-                                           "ngay_den_han", "ky_han", "trang_thai"], order_by="ngay_den_han"):
+    for k in frappe.get_list(DT_VAY, loc, ["name", "company", "so_khe_uoc", "ben_cho_vay", "so_tien", "lai_suat", "ngay_vay",
+                                           "ngay_den_han", "ky_han", "trang_thai"], order_by="ngay_den_han", limit_page_length=0):
         bd = bien_dong(k.name, hom_nay)
         nhan = sum(t for _n, t in bd if t > 0)
         tra = -sum(t for _n, t in bd if t < 0)

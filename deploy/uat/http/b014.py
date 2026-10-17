@@ -52,7 +52,7 @@ t_vh = frappe.get_doc({"doctype": "Item Tax Template", "title": p + "-VH10", "co
 B = frappe.get_doc({"doctype": "Item", "item_code": p + "-B", "item_name": p + "-B", "item_group": g,
     "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",
     "taxes": [{"item_tax_template": t_vh}]}).insert().name
-scope_co = user("scope-co", ["Kế toán bán hàng", "Sales User", "Stock User"])
+scope_co = user("scope-co", ["Kế toán bán hàng", "Sales User", "Stock User", "Accounts Manager", "Accounts User"])
 scope_wh = user("scope-wh", ["Kế toán bán hàng", "Sales User", "Stock User"])
 frappe.get_doc({"doctype": "User Permission", "user": scope_co, "allow": "Company", "for_value": aph,
                 "apply_to_all_doctypes": 1}).insert()
@@ -74,6 +74,7 @@ print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, 
     "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),
+    "bank_vh": frappe.db.get_value("Account", {"company": vh, "account_name": "MB 3333"}, "name"),
     "acc": {"tien": acc("1111"), "bank": bank, "vay": acc("3411"), "cp": acc("6422"), "lai": acc("6351"), "lai_tra": acc("3352")}},
     ensure_ascii=False, default=str))
 frappe.destroy()

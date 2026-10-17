@@ -201,6 +201,14 @@ def chay(admin, phien, f, emit):
     saved = rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": own_file["file_url"],
         "anh_xa": json.dumps(mau), "luu_mau": 1}, ktt)
     assert saved["tong"] == kq["tong"]
+    scoped_bank = phien(f["scope_co"])
+    # scope_co chỉ được APH; thêm Accounts Manager qua fixture để gọi các báo cáo tài chính.
+    for report in ("Cong no voi giam doc", "Du no vay theo khe uoc"):
+        view = bao_cao(report, {}, scoped_bank)
+        assert all(r.get("company") == f["aph"] for r in view)
+        denied(lambda report=report: bao_cao(report, {"company": f["vh"]}, scoped_bank), ("PermissionError",))
+    assert f["bank_vh"], "Thiếu tài khoản ngân hàng VH đối chứng"
+    denied(lambda: bao_cao("So quy va tien gui", {"company": f["vh"], "account": f["bank_vh"]}, scoped_bank), ("PermissionError",))
     emit("HTTP_014_SAO_KE_QUYEN", "PASS", {"file_private": True, "bank_mapping_write": True})
     # mẫu đã lưu cho ngân hàng: lần sau không cần khai cột
     kq2 = rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": fl["file_url"]}, ktt2)
