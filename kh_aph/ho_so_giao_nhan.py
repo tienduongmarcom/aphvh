@@ -15,17 +15,17 @@ def enabled():
 def fields():
     condition = "eval:doc.docstatus==1 && !doc.is_return"
     return [
-        {"fieldname": "kh_aph_ho_so_giao_nhan", "label": "Hồ sơ giao nhận", "fieldtype": "Section Break",
+        {"fieldname": "kh_aph_ho_so_giao_nhan", "label": "Hồ sơ giao nhận", "fieldtype": "HTML", "options": "<strong>Hồ sơ giao nhận</strong>",
          "insert_after": "kh_aph_delivery_at", "depends_on": condition},
         {"fieldname": FILE, "label": "Bản phiếu đã ký", "fieldtype": "Attach",
-         "insert_after": "kh_aph_ho_so_giao_nhan", "allow_on_submit": 1, "no_copy": 1,
+         "insert_after": "kh_aph_ho_so_giao_nhan", "allow_on_submit": 1, "no_copy": 1, "depends_on": condition,
          "description": "Tải tệp riêng tư gắn với chính phiếu này. Có tệp chưa đồng nghĩa đã đối chiếu."},
         {"fieldname": NOTE, "label": "Ghi chú / chênh lệch trên bản ký", "fieldtype": "Small Text",
-         "insert_after": FILE, "allow_on_submit": 1, "no_copy": 1},
+         "insert_after": FILE, "allow_on_submit": 1, "no_copy": 1, "depends_on": condition},
         {"fieldname": ACTOR, "label": "Người đã đối chiếu bản ký", "fieldtype": "Link", "options": "User",
-         "insert_after": NOTE, "allow_on_submit": 1, "read_only": 1, "no_copy": 1},
+         "insert_after": NOTE, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
         {"fieldname": TIME, "label": "Thời điểm đối chiếu bản ký", "fieldtype": "Datetime",
-         "insert_after": ACTOR, "allow_on_submit": 1, "read_only": 1, "no_copy": 1},
+         "insert_after": ACTOR, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
     ]
 
 

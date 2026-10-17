@@ -139,3 +139,8 @@ class HoSoGiaoNhan(unittest.TestCase):
         with self.assertRaises(ValueError): self.m.doi_chieu("DN-1", d.modified)
         self.assertIsNone(self.f.flags.get("kh_aph_doi_chieu_ban_ky"))
         d.add_comment.assert_not_called()
+
+    def test_ho_so_khong_doi_bo_cuc_cac_truong_chuan(self):
+        fields = self.m.fields()
+        self.assertFalse(any(f["fieldtype"] in ("Section Break", "Tab Break", "Column Break") for f in fields))
+        self.assertTrue(all(f.get("depends_on") for f in fields))
