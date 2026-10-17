@@ -7,7 +7,7 @@ import {setTimeout as pause} from 'node:timers/promises';
 if (process.env.GITHUB_ACTIONS !== 'true') throw Error('Disposable GitHub UAT only');
 const state = JSON.parse(fs.readFileSync(fs.readFileSync(path.join(os.homedir(), 'APHVH_HTTP_UAT_STATE_PATH.txt'), 'utf8').trim(), 'utf8'));
 if (state.site !== 'aphvh-web-uat' || state.container !== 'aphvh-p0-web-uat' || state.port !== 18091) throw Error('Wrong UAT');
-const [source] = process.argv.slice(2);
+const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 const login = await fetch(base + '/api/method/login', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({usr:'Administrator',pwd:state.admin_password})});
@@ -29,6 +29,16 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
+    if (mode === 'ho-so') {
+        await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "Delivery Note" && cur_frm.doc.docstatus === 1');
+        await until('!!cur_frm.custom_buttons["Đối chiếu bản ký"]');
+        const view = await evaluate('({file:cur_frm.doc.kh_aph_ban_ky,reviewer:cur_frm.doc.kh_aph_doi_chieu_boi,section:cur_frm.fields_dict.kh_aph_ho_so_giao_nhan.$wrapper.is(":visible"),remove:!!cur_frm.custom_buttons["Gỡ bản ký khỏi phiếu"]})');
+        if(!view.file?.startsWith('/private/files/') || view.reviewer || !view.section || !view.remove)throw Error('Sai hồ sơ trên form: '+JSON.stringify(view));
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('ho-so-giao-nhan.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_HO_SO_GIAO_NHAN',status:'PASS',detail:view}));
+    } else {
     await command('Page.navigate',{url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(source)});
     await until('!!window.cur_frm && cur_frm.doctype === "APH Shared Sales Order" && cur_frm.doc.docstatus === 1');
     await until('!!cur_frm.custom_buttons["Lập phiếu xuất & In"]');
@@ -40,6 +50,8 @@ try {
     const screenshot=await command('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync('ban-nhanh-dialog.png',Buffer.from(screenshot.data,'base64'));
     console.log(JSON.stringify({case:'NATIVE_DESK_BAN_NHANH_DIALOG',status:'PASS',detail:view}));
+
+    }
 
 } finally {
     if(ws)ws.close();
