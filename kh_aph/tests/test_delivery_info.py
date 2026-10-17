@@ -30,12 +30,14 @@ class DeliveryInfoBoundary(unittest.TestCase):
         self.f.conf = {"kh_aph_trung_tam_ban": 1}
         self.f.PermissionError = PermissionError
         self.f.flags = {}
+        self.f.session = types.SimpleNamespace(user="kho")
         self.f.has_permission = Mock(return_value=True)
         self.f.throw = lambda msg, exc=ValueError: (_ for _ in ()).throw(exc(msg))
         self.address = types.SimpleNamespace(disabled=0, check_permission=Mock(),
                     links=[types.SimpleNamespace(link_doctype="Customer", link_name="KH")])
         self.f.get_doc = Mock(return_value=self.address)
         utils = types.ModuleType("frappe.utils"); utils.cint = lambda v: int(v or 0)
+        utils.now_datetime = lambda: "2026-10-17 21:00:00"
         self.mods = patch.dict(sys.modules, {"frappe": self.f, "frappe.utils": utils})
         self.mods.start(); sys.modules.pop("kh_aph.delivery_info", None)
         self.m = importlib.import_module("kh_aph.delivery_info")
@@ -83,6 +85,16 @@ class DeliveryInfoBoundary(unittest.TestCase):
         self.m.before_submit(self.doc(kh_aph_cach_giao="Khách đến lấy"))
         self.f.flags = {}
         self.m.before_submit(self.doc())
+
+    def test_handoff_stamp_is_server_owned_and_kept_on_receive(self):
+        d = self.doc()
+        self.m.before_submit(d)
+        self.assertEqual(d.get(self.m.HANDED_BY), "kho")
+        self.assertEqual(d.get(self.m.HANDED_AT), "2026-10-17 21:00:00")
+        old = self.doc(kh_aph_ban_giao_boi="kho", kh_aph_ban_giao_luc=d.get(self.m.HANDED_AT))
+        current = self.doc(old=old, kh_aph_ban_giao_boi="kho", kh_aph_ban_giao_luc=d.get(self.m.HANDED_AT))
+        self.m.validate(current)
+        with self.assertRaises(ValueError): self.m.validate(self.doc(old=old, kh_aph_ban_giao_boi="giả"))
 
     def test_flag_off_does_not_change_old_docs(self):
         self.f.conf = {}

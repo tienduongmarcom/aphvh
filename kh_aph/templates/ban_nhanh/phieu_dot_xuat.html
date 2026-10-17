@@ -25,7 +25,7 @@ Cách giao: {{ (note.delivery_method or '') | e }}<br>
 Điện thoại: {{ (note.phone or '........................') | e }}<br>
 Tên lái xe: {{ (note.driver_name or '........................') | e }} · Biển số xe: {{ (note.vehicle_no or '........................') | e }}<br>
 Người thực giao: {{ (note.dispatcher or '..................................') | e }}<br>
-Thời điểm bàn giao thực tế: ..................................</p>
+Thời điểm xác nhận xuất tại kho: {{ (note.handoff_time or '..................................') | e }}</p>
 <div class="signatures"><div><b>Người thực giao hàng</b><br>(Ký, ghi rõ họ tên)</div><div><b>Người thực nhận hàng</b><br>(Ký, ghi rõ họ tên)</div></div>
 <p>Ghi chú / chênh lệch thực giao: ................................................................................</p>
 <p>In phiếu không xác nhận xuất hàng. Kho đối chiếu lượng thực giao và xác nhận xuất trên hệ thống.</p>

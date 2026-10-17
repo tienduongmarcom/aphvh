@@ -25,7 +25,7 @@ Kế toán bán hàng mở đơn chung → Lập phiếu xuất & In → chọn 
 
 ## 5. Dữ liệu và trạng thái
 
-Custom Field trên Delivery Note: `kh_aph_cach_giao` (Select), `kh_aph_nguoi_nhan_tai_kho` (Data), `kh_aph_dien_thoai_nhan` (Data), `kh_aph_nguoi_thuc_giao` (Data). `no_copy=1`, không cho cập nhật tùy ý sau submit. Giữ ba trạng thái Chờ xuất → Đang giao → Khách đã nhận. Cách giao là thông tin của đợt, không phải trạng thái thứ tư. Dấu đối chiếu bản ký vẫn là hồ sơ độc lập.
+Custom Field trên Delivery Note: `kh_aph_cach_giao` (Select), `kh_aph_nguoi_nhan_tai_kho` (Data), `kh_aph_dien_thoai_nhan` (Data), `kh_aph_nguoi_thuc_giao` (Data), `kh_aph_ban_giao_luc` (Datetime), `kh_aph_ban_giao_boi` (Link User). Hai dấu bàn giao do server ghi lúc xuất, không thay khi khách nhận hàng; không sửa tay. `no_copy=1`, không cho cập nhật tùy ý sau submit. Giữ ba trạng thái Chờ xuất → Đang giao → Khách đã nhận. Cách giao là thông tin của đợt, không phải trạng thái thứ tư. Dấu đối chiếu bản ký vẫn là hồ sơ độc lập.
 
 Địa chỉ hiển thị lấy bằng renderer chuẩn Frappe từ Address đã kiểm quyền, không nhận HTML địa chỉ từ client. Khi cập nhật hồ sơ trên phiếu đã xuất, không tái tạo địa chỉ theo danh mục mới (giữ snapshot của phiếu).
 
@@ -43,4 +43,4 @@ Unit: chuẩn hóa/kiểu dữ liệu/field thừa, địa chỉ theo khách/quy
 
 ## 9. Cài đặt và khôi phục
 
-Schema thêm bốn ô qua `trung_tam_ban.schema`, dùng cờ hiện có, không after_migrate. JS qua hook, không build frontend. Template in nhanh render trực tiếp theo image; bộ sinh JSON Print Format chuẩn được chạy kiểm và không có diff vì không sửa mẫu chuẩn. Cổng3 baseline cập nhật đúng digest production0.15.2 đã có log xác nhận. Chưa tăng version/tag/image, chưa đổi VM. Trước phát hành cần đủ cổng; trên VM phải diễn tập bản sao dữ liệu hiện tại và giữ bảo trì khi nâng, quay lui theo snapshot tương ứng; không restore tùy ý sau khi đã mở nhập liệu.
+Schema thêm sáu ô qua `trung_tam_ban.schema`, dùng cờ hiện có, không after_migrate. JS qua hook, không build frontend. Template in nhanh render trực tiếp theo image; bộ sinh JSON Print Format chuẩn được chạy kiểm và không có diff vì không sửa mẫu chuẩn. Cổng3 baseline cập nhật đúng digest production0.15.2 đã có log xác nhận. Chưa tăng version/tag/image, chưa đổi VM. Trước phát hành cần đủ cổng; trên VM phải diễn tập bản sao dữ liệu hiện tại và giữ bảo trì khi nâng, quay lui theo snapshot tương ứng; không restore tùy ý sau khi đã mở nhập liệu.

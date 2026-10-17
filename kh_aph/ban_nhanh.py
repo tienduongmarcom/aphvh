@@ -207,7 +207,7 @@ def print_batch(shared_order, request_id):
                       "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),
                       "driver_name": dn.get("driver_name"), "vehicle_no": dn.get("vehicle_no"),
                       "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),
-                      "created_by": frappe.utils.get_fullname(dn.owner),
+                      "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": dn.get(delivery_info.HANDED_AT),
                       "items": [{"item_code": r.item_code, "item_name": r.item_name, "warehouse": r.warehouse,
                                  "qty": r.qty, "bags": r.get("kh_aph_bags"),
                                  "kg_per_bag": r.get("kh_aph_kg_per_bag")} for r in dn.items]})

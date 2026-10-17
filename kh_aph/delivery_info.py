@@ -1,12 +1,14 @@
 """Thông tin giao nhận gắn phiếu nguồn, dùng cờ Trung tâm Bán hàng hiện có."""
 import frappe
-from frappe.utils import cint
+from frappe.utils import cint, now_datetime
 from kh_aph.delivery_info_rules import normalize
 
 METHOD = "kh_aph_cach_giao"
 RECIPIENT = "kh_aph_nguoi_nhan_tai_kho"
 PHONE = "kh_aph_dien_thoai_nhan"
 DISPATCHER = "kh_aph_nguoi_thuc_giao"
+HANDED_AT = "kh_aph_ban_giao_luc"
+HANDED_BY = "kh_aph_ban_giao_boi"
 MAPPING = {"delivery_method": METHOD, "recipient": RECIPIENT, "phone": PHONE,
            "driver_name": "driver_name", "vehicle_no": "vehicle_no", "shipping_address_name": "shipping_address_name"}
 
@@ -23,6 +25,10 @@ def fields():
         {"fieldname": PHONE, "label": "Điện thoại người nhận", "fieldtype": "Data", "insert_after": RECIPIENT, "no_copy": 1},
         {"fieldname": DISPATCHER, "label": "Người thực giao hàng tại kho", "fieldtype": "Data", "insert_after": PHONE, "no_copy": 1,
          "description": "Kho ghi họ tên người trực tiếp giao, khác tài khoản nhập/xác nhận trên phần mềm."},
+        {"fieldname": HANDED_AT, "label": "Thời điểm xác nhận xuất tại kho", "fieldtype": "Datetime", "insert_after": DISPATCHER,
+         "read_only": 1, "no_copy": 1},
+        {"fieldname": HANDED_BY, "label": "Người xác nhận xuất trên hệ thống", "fieldtype": "Link", "options": "User",
+         "insert_after": HANDED_AT, "read_only": 1, "no_copy": 1},
     ]
 
 
@@ -57,6 +63,8 @@ def validate(doc, method=None):
     if not enabled() or cint(doc.is_return) or not doc.meta.has_field(METHOD):
         return
     old = doc.get_doc_before_save()
+    if any(str(doc.get(f) or "") != str((old.get(f) if old else None) or "") for f in (HANDED_AT, HANDED_BY)):
+        frappe.throw("Thời điểm và người xác nhận xuất do hệ thống ghi; không sửa trực tiếp")
     if old and old.get(METHOD) and not doc.get(METHOD):
         frappe.throw("Không xóa cách giao của phiếu đã có thông tin giao nhận")
     if not doc.get(METHOD):
@@ -88,3 +96,6 @@ def before_submit(doc, method=None):
     pickup = frappe.flags.get("kh_aph_delivery_pickup") == doc.name
     if pickup != (doc.get(METHOD) == "Khách đến lấy"):
         frappe.throw("Thao tác xác nhận không khớp cách giao trên phiếu; kiểm lại Vận chuyển/Khách đến lấy")
+
+    doc.set(HANDED_AT, now_datetime())
+    doc.set(HANDED_BY, frappe.session.user)
