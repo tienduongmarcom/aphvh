@@ -45,7 +45,7 @@ def validate(doc, method=None):
         return
     old = doc.get_doc_before_save()
     reviewed = frappe.flags.get("kh_aph_doi_chieu_ban_ky") == doc.name
-    if not reviewed and any(doc.get(f) != (old.get(f) if old else None) for f in (ACTOR, TIME)):
+    if not reviewed and any(str(doc.get(f) or "") != str((old.get(f) if old else None) or "") for f in (ACTOR, TIME)):
         frappe.throw("Dùng thao tác Đối chiếu bản ký để ghi người và thời điểm xác nhận")
     changed = any((doc.get(f) or "") != ((old.get(f) if old else None) or "") for f in (FILE, NOTE))
     if changed:

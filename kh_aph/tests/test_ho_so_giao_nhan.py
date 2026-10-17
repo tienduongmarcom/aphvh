@@ -88,3 +88,10 @@ class HoSoGiaoNhan(unittest.TestCase):
         for change in ({"is_private": 0}, {"attached_to_name": "DN-2"}, {"content": "ghi de"}):
             d = self.doc(old, **{"file_url": old.file_url, "is_private": 1, "attached_to_name": "DN-1", **change})
             with self.assertRaises(ValueError): self.m.protect_file_update(d)
+
+    def test_moc_thoi_gian_json_va_db_la_cung_gia_tri(self):
+        from datetime import datetime
+        stamp = datetime(2026, 10, 17, 15, 0, 0, 123456)
+        old = self.doc(kh_aph_doi_chieu_boi="kt", kh_aph_doi_chieu_luc=stamp)
+        d = self.doc(old, kh_aph_doi_chieu_boi="kt", kh_aph_doi_chieu_luc=str(stamp))
+        self.m.validate(d)
