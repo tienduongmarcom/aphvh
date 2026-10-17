@@ -44,3 +44,21 @@ class FundsRulesTest(unittest.TestCase):
             with self.assertRaises(ValueError): money(value)
         with self.assertRaises(ValueError): position(10, [row('a','Hoàn tiền',11)])
         with self.assertRaises(ValueError): position(10, [row('a','Chuyển cọc',1,'a')])
+
+
+class PayableTotalTest(unittest.TestCase):
+    def test_vat_cung_co_so_voi_hoa_don(self):
+        from kh_aph.funds_rules import payable_total
+        total = payable_total([{"name": "SO", "status": "To Deliver", "grand_total": 770000}], [])
+        f = order_figures(total, 192500, 92500, 0)
+        self.assertEqual((f["remaining_to_pay"], f["undelivered_value"]), (670000, 577500))
+
+    def test_doi_het_nguon_khong_cong_lai_nguon_dong(self):
+        from kh_aph.funds_rules import payable_total
+        sources = [{"name": "old", "status": "Closed", "grand_total": 770000},
+                   {"name": "new", "status": "To Deliver", "grand_total": 770000}]
+        self.assertEqual(payable_total(sources, []), 770000)
+        sources[1]["grand_total"] = 577500
+        self.assertEqual(payable_total(sources, [{"source_orders": ["old"], "grand_total": 192500}]), 770000)
+        with self.assertRaises(ValueError):
+            payable_total(sources, [{"source_orders": ["old", "new"], "grand_total": 192500}])

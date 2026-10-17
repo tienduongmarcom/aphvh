@@ -273,4 +273,6 @@ def chay(admin, phien, f, emit):
     emit("HTTP_014_MAN_HINH", "PASS", {"trung_tam_ban": len(nhan_tb), "tien_va_vay": len(nhan_tv)})
 
     from b014_ban_nhanh_cases import chay as ban_nhanh_cases
-    ban_nhanh_cases(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
+    chain = ban_nhanh_cases(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
+    from b014_tien_giao_nhan_chain import chay as tien_chain
+    tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)

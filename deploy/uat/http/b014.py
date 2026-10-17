@@ -75,7 +75,7 @@ print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, 
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),
     "bank_vh": frappe.db.get_value("Account", {"company": vh, "account_name": "MB 3333"}, "name"),
-    "acc": {"tien": acc("1111"), "bank": bank, "vay": acc("3411"), "cp": acc("6422"), "lai": acc("6351"), "lai_tra": acc("3352")}},
+    "acc": {"holding": acc("3388"), "tien": acc("1111"), "bank": bank, "vay": acc("3411"), "cp": acc("6422"), "lai": acc("6351"), "lai_tra": acc("3352")}},
     ensure_ascii=False, default=str))
 frappe.destroy()
 """

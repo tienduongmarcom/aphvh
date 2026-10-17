@@ -93,3 +93,5 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
 
     from b014_ban_nhanh_scope import chay as scope_cases
     scope_cases(rpc, get, insert, submit, lst, denied, ktbh, ktt, f, emit, phien)
+
+    return {"shared_order": root["name"], "delivery_note": note["name"]}

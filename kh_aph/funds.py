@@ -9,7 +9,7 @@ import json
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, now
-from kh_aph.funds_rules import money, position, check_action, order_figures
+from kh_aph.funds_rules import money, position, check_action, order_figures, payable_total
 
 FLAG = "kh_aph_funds_workflow"
 KINDS = ("Giữ cọc", "Chuyển cọc", "Giải phóng cọc", "Cấn hóa đơn", "Hoàn tiền", "Trả tiền thu hộ")
@@ -450,18 +450,24 @@ def shared_financials(name):
         frappe.throw("Không có quyền xem số tiền", frappe.PermissionError)
     order = checked("APH Shared Sales Order", name)
     orders = frappe.get_all("Sales Order", filters={"kh_aph_shared_order": name, "docstatus": 1}, pluck="name")
+    sources = []
     for so in orders:
-        checked("Sales Order", so)
+        source = checked("Sales Order", so)
+        if source.currency != order.currency:
+            frappe.throw("Đơn nguồn không cùng tiền tệ với đơn chung")
+        sources.append({"name": so, "status": source.status, "grand_total": source.grand_total})
     invoices = set(frappe.get_all("Sales Invoice Item", filters={"sales_order": ["in", orders]}, pluck="parent")) if orders else set()
     delivered, debt = money(0), money(0)
+    invoice_totals = []
     for inv_name in invoices:
         inv = checked("Sales Invoice", inv_name)
         if inv.docstatus != 1:
             continue
-        if inv.customer != order.customer or invoice_orders(inv) != {name}:
+        if inv.customer != order.customer or invoice_orders(inv) != {name} or inv.currency != order.currency:
             frappe.throw("Hóa đơn gộp nhiều đơn cần tách số công nợ theo nguồn trước")
         delivered += money(inv.grand_total)
         debt += money(inv.outstanding_amount)
+        invoice_totals.append({"source_orders": {r.sales_order for r in inv.items if r.sales_order}, "grand_total": inv.grand_total})
     reserved = money(0)
     for r in frappe.get_all("APH Funds Action", filters={"docstatus": 1, "shared_order": name,
         "action_type": ["in", ["Giữ cọc", "Chuyển cọc"]]}, fields=["name", "receipt"]):
@@ -470,6 +476,6 @@ def shared_financials(name):
             frappe.throw("Cọc và đơn không khớp khách/trạng thái")
         reserved += position(receipt.amount, actions(receipt.name))["reservations"].get(r.name, money(0))
     try:
-        return {k: str(v) for k, v in order_figures(order.net_total, delivered, debt, reserved).items()}
+        return {k: str(v) for k, v in order_figures(payable_total(sources, invoice_totals), delivered, debt, reserved).items()}
     except ValueError as exc:
         frappe.throw(str(exc))
