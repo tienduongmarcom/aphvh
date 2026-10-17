@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 11:25 — Ứng viên 0.15.1, sửa ranh giới readiness của Cổng 2b
+
+Tag v0.15.0 do anh Tiến đẩy = c236b27; KHÔNG di chuyển hoặc ghi đè. Phát hành run 38998723309: attempt 1 và 2 UAT/Cổng 2/Cổng 3 đạt, Cổng 2b lỗi HTTP503 bước 3 nên job đẩy image bị skip. Logs: mã thoát kéo image không tồn tại=2 và CUSTOM_TAG=ci-b đã đúng, backend/frontend vẫn health starting ~50 giây sau nâng. Rerun một lần tái hiện; không tiếp tục rerun cùng tag.
+
+Sửa Cổng 2b: sau nâng B phải đợi HTTP200 đúng JSON message=pong (hạn chót 180 giây) TRƯỚC khi thử kéo image không tồn tại. Sau thử lỗi vẫn kiểm HTTP ngay, không retry để che downtime do chính hành động thử. Probe có 3 test HTTP localhost thật:503→200,503 vĩnh viễn và200 sai body. Thêm trigger Cổng 2b khi push nhánh tính năng để đóng cổng này trước khi nhờ anh gắn tag. Không thay bộ kiểm nghiệp vụ, không sửa core. App ứng viên 0.15.1; chưa có tag mới và không tự phát hành.
+
+ĐANG DỞ: đẩy sửa vào PR #3 và chạy đủ UAT/Cổng2/Cổng2b/Cổng3 trên SHA mới; nếu readiness vẫn503 phải đọc log thêm, không kết luận đã sửa. Production frontend vẫn0.14.3 theo mốc bàn giao, phiên này không chạm VM.
+
 ## 17/10/2026 09:20 — UAT phạm vi kho: chỉnh cấu hình tài khoản thử
 
 SHA 76f6bde: Cổng 2 38987997088 và Cổng 3 38987993537 đạt; UAT 38987993529 lỗi tại đối chứng dương của scope_wh. Native Frappe chặn đọc Company do Warehouse User Permission áp mọi DocType, gồm trường Company.default_in_transit_warehouse. Ba ca mới trước đó đạt: 3 kho/2 pháp nhân không ghi sổ, sửa nháp cập nhật lượng, Company scope; restore đạt. Ca lỗi nhóm sau chưa chạy, không tuyên bố đủ 19 ca.
