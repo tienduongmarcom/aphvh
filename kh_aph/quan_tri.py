@@ -59,13 +59,15 @@ def schema():
 def can_quyen(vai_tro=VAI_TRO_XEM):
     if not enabled():
         frappe.throw("Tính năng quản trị 0.11.4 chưa được bật")
-    if frappe.session.user != "Administrator" and not (set(frappe.get_roles()) & set(vai_tro)):
+    from kh_aph.constants import ROLE_NO_COST
+    roles = set(frappe.get_roles())
+    if frappe.session.user != "Administrator" and (ROLE_NO_COST in roles or not (roles & set(vai_tro))):
         frappe.throw("Cần quyền kế toán trưởng", frappe.PermissionError)
 
 
 def cac_cong_ty():
     """[(abbr, tên)] theo thứ tự tạo."""
-    return [(c.abbr, c.name) for c in frappe.get_all("Company", fields=["name", "abbr"], order_by="creation")]
+    return [(c.abbr, c.name) for c in frappe.get_list("Company", fields=["name", "abbr"], order_by="creation", limit_page_length=0)]
 
 
 # ---------------------------------------------------------------- R105 khóa kỳ
@@ -154,6 +156,9 @@ def ghi_nhan_xac_nhan(customer, ngay, so_du_xac_nhan, ghi_chu=None):
     can_quyen({"Accounts User", "Accounts Manager", "System Manager"})
     kh = frappe.get_doc("Customer", customer)
     kh.check_permission("read")
+    kh.check_permission("write")
+    if {n for _a, n in cac_cong_ty()} != set(frappe.get_all("Company", pluck="name")):
+        frappe.throw("Xác nhận công nợ chung cần quyền xem đủ các đơn vị; không ghi xác nhận toàn khách từ số dư một phần", frappe.PermissionError)
     ngay = getdate(ngay)
     so = so_du_khach(customer, ngay=ngay)
     lech = flt(so_du_xac_nhan) - so
@@ -182,13 +187,19 @@ def canh_bao_xac_nhan(doc, method=None):
 def dong_lai_gop(tu, den, company=None):
     """Dòng chi tiết cho báo cáo lãi gộp: mỗi dòng hóa đơn bán (kể cả trả lại), cộng giảm giá sau giao và chi phí trực tiếp."""
     tu, den = getdate(tu), getdate(den)
-    dk = "AND si.company=%(c)s" if company else ""
+    companies = tuple(n for _a, n in cac_cong_ty())
+    if company and company not in companies:
+        frappe.throw("Không có quyền xem đơn vị đã chọn", frappe.PermissionError)
+    if not companies:
+        return []
+    companies = (company,) if company else companies
+    dk = "AND si.company IN %(ctys)s"
     rows = frappe.db.sql(f"""SELECT si.name AS si, si.company, si.customer, si.posting_date, i.name AS dong,
             i.item_code, i.warehouse, i.sales_order, i.base_net_amount AS dt, i.stock_qty, i.dn_detail,
             si.update_stock
         FROM `tabSales Invoice` si JOIN `tabSales Invoice Item` i ON i.parent=si.name
         WHERE si.docstatus=1 AND si.posting_date BETWEEN %(tu)s AND %(den)s {dk}""",
-                         {"tu": tu, "den": den, "c": company}, as_dict=True)
+                         {"tu": tu, "den": den, "ctys": companies}, as_dict=True)
     # Giá vốn: giá trị xuất trên sổ kho của dòng phiếu giao (hoặc dòng hóa đơn xuất kho), theo tỷ lệ số lượng đã lập hóa đơn.
     ma_dong = [r.dn_detail for r in rows if r.dn_detail and not r.update_stock] + [r.dong for r in rows if r.update_stock]
     sle = {}
@@ -226,7 +237,7 @@ def dong_lai_gop(tu, den, company=None):
                 FROM `tabJournal Entry` je JOIN `tabJournal Entry Account` a ON a.parent=je.name
                 WHERE je.docstatus=1 AND je.posting_date BETWEEN %(tu)s AND %(den)s AND IFNULL(a.{F_DON_BAN},'')!=''
                   AND IFNULL(je.kh_aph_giam_gia_hd,'')='' {dk.replace('si.', 'je.')} GROUP BY a.{F_DON_BAN}, je.company""",
-                               {"tu": tu, "den": den, "c": company}, as_dict=True):
+                               {"tu": tu, "den": den, "ctys": companies}, as_dict=True):
             so = frappe.db.get_value("Sales Order", c.so, ["customer"], as_dict=True) or {}
             out.append({"si": None, "company": c.company, "customer": so.get("customer"), "posting_date": den,
                         "item_code": None, "warehouse": None, "sales_order": c.so, "doanh_thu": 0.0, "gia_von": 0.0,
@@ -236,7 +247,11 @@ def dong_lai_gop(tu, den, company=None):
 
 def dong_tien_cong_ty(company, ngay):
     ngay = getdate(ngay)
-    ten_cty = [n for _a, n in cac_cong_ty()]
+    if company not in {n for _a, n in cac_cong_ty()}:
+        frappe.throw("Không có quyền xem đơn vị đã chọn", frappe.PermissionError)
+    # Phân loại nội bộ vẫn xét tất cả đơn vị, kể cả đơn vị người xem
+    # không được xem sổ; chỉ truy vấn tiền/công nợ của company đã kiểm.
+    ten_cty = frappe.get_all("Company", pluck="name")
     so_du = flt(frappe.db.sql("""SELECT SUM(g.debit - g.credit) FROM `tabGL Entry` g JOIN `tabAccount` a ON a.name=g.account
         WHERE g.company=%s AND g.is_cancelled=0 AND g.posting_date<=%s AND a.account_type IN ('Cash','Bank')""",
                               (company, ngay))[0][0])

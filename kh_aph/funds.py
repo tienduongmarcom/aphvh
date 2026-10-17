@@ -93,6 +93,13 @@ def native_journal(receipt, rows, action=None, owner=None):
                       posting_date=action.posting_date, kh_aph_funds_action=action.name)
     if owner:
         values["company"] = owner
+    reference = None
+    if not action:
+        reference = receipt.external_reference
+    elif action.action_type in ("Hoàn tiền", "Trả tiền thu hộ"):
+        reference = action.owner_external_reference if owner else action.external_reference
+    if reference:
+        values.update(cheque_no=reference, cheque_date=values["posting_date"])
     frappe.flags.funds_internal = True
     try:
         doc = frappe.get_doc(values).insert()
@@ -163,6 +170,8 @@ class FundsReceipt(Document):
             frappe.throw("Cần số tiền dương, tham chiếu giao dịch thực nhận và lý do")
         self.external_reference = self.external_reference.strip()
         self.external_key = hashlib.sha256((self.bank_account + "\0" + self.external_reference).encode()).hexdigest()
+        from kh_aph.money_reference import check
+        check(self.bank_account, self.external_reference, self.name)
         if self.customer:
             checked("Customer", self.customer)
         if self.is_new() and self.journal_entry:
@@ -286,6 +295,11 @@ class FundsAction(Document):
         if self.action_type == "Cấn hóa đơn":
             frappe.db.sql("SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE", self.invoice)
         self.validate()
+        if self.action_type in ("Hoàn tiền", "Trả tiền thu hộ"):
+            from kh_aph.money_reference import check
+            check(self.bank_account, self.external_reference, self.name)
+            if self.action_type == "Trả tiền thu hộ":
+                check(self.owner_bank_account, self.owner_external_reference, self.name)
         try:
             check_action(receipt.amount, actions(receipt.name, self.name), self.as_dict())
         except ValueError as exc:
@@ -347,7 +361,7 @@ def invoice_orders(inv):
                for row in inv.items if row.sales_order) - {None, ""}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def identify_receipt(name, customer, reason):
     require(True)
     if not (reason or "").strip():
@@ -380,7 +394,7 @@ def receipt_position(name):
             for k, v in position(receipt.amount, actions(name)).items()}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def create_action(values):
     """Approve a new plan atomically; normal saved drafts remain separately usable."""
     require(True)

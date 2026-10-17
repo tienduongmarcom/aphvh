@@ -151,6 +151,24 @@ def chay(admin, phien, f, emit):
     denied(lambda: get("Journal Entry", chi["journal_entry"], dung), ("PermissionError",))
     denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 1,
                                                               "tai_khoan_nhan": f["acc"]["1111"]}, dung2), ("PermissionError",))
+    # Phạm vi Company vẫn áp dụng kể cả người gọi có Accounts Manager.
+    scope = phien(f["scope_vh"])
+    assert get("Company", f["vh"], scope)["name"] == f["vh"]
+    before_guard = gl(f["quy"])
+    denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 1,
+                                                             "tai_khoan_nhan": f["acc"]["1111"]}, scope), ("PermissionError",))
+    forged = {**get("APH Phieu quy nha may", bg["name"], ktt), "so_thuc_nhan": 1, "trang_thai": "Đã nhận"}
+    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(forged)}, ktt), text="không được sửa trực tiếp")
+    fake_link = {"doctype": "APH Phieu quy nha may", "loai": "Bàn giao tiền", "company": co, "posting_date": d,
+                 "nguoi_nhan": f["ktt"], "journal_entry": chi["journal_entry"],
+                 "dong": [{"dien_giai": "Không được gắn bút toán có sẵn", "so_tien": 10}]}
+    denied(lambda: insert(fake_link, ktt), text="Không sửa trực tiếp")
+    for invalid in ("NaN", "Infinity", "1.001"):
+        denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": invalid,
+                                                                 "tai_khoan_nhan": f["acc"]["1111"]}, ktt))
+    near(gl(f["quy"]), before_guard)
+    assert get("APH Phieu quy nha may", bg["name"], ktt)["trang_thai"] == "Chờ nhận"
+    emit("HTTP_0111_QUY_GUARDS", "PASS", {"company_scope": True, "forged_result": "denied", "nonfinite": "denied"})
     nhan = rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 950000,
                                                        "tai_khoan_nhan": f["acc"]["1111"]}, ktt)
     assert nhan["trang_thai"] == "Chênh lệch chờ điều tra", nhan

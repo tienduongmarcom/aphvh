@@ -5,10 +5,10 @@ from decimal import Decimal, InvalidOperation
 def money(value):
     try:
         value = Decimal(str(value or 0))
+        if not value.is_finite() or value != value.quantize(Decimal("0.01")):
+            raise ValueError("Số tiền cần hữu hạn, tối đa hai chữ số thập phân")
     except InvalidOperation as exc:
         raise ValueError("Số tiền không hợp lệ") from exc
-    if not value.is_finite() or value != value.quantize(Decimal("0.01")):
-        raise ValueError("Số tiền cần hữu hạn, tối đa hai chữ số thập phân")
     return value
 
 

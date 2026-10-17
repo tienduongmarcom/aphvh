@@ -43,10 +43,13 @@ ktt = user("ktt", ["Accounts Manager", "Accounts User", "Sales User", "Sales Man
 ktt2 = user("ktt2", ["Accounts User", "Sales User", "Stock User"])
 ban = user("ban", ["Nhân viên bán hàng", "Sales User"])
 dung_u = user("dung", [ROLE_FACTORY, ROLE_NO_COST, "Sales User"])
+scope_aph=user("scope-aph", ["Accounts Manager", "Accounts User", "Stock Manager", "Stock User"])
+frappe.get_doc({"doctype": "User Permission", "user": scope_aph, "allow": "Company", "for_value": aph,
+                "apply_to_all_doctypes": 1}).insert()
 frappe.db.commit()
 cp = acc("6421", aph) or frappe.db.get_value("Account", {"company": aph, "root_type": "Expense", "is_group": 0}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "vh": vh, "kh0": kh0, "kh1": kh1, "kh2": kh2, "noi_bo": noi_bo,
-    "A": A, "t_aph": t_aph, "t_vh": t_vh, "kho": kho, "khov": khov, "pl": pl, "ktt": ktt, "ktt2": ktt2, "ban": ban,
+    "A": A, "t_aph": t_aph, "t_vh": t_vh, "kho": kho, "khov": khov, "pl": pl, "scope_aph": scope_aph, "ktt": ktt, "ktt2": ktt2, "ban": ban,
     "dung": dung_u, "date": today(), "acc": {"cp": cp, "tien": acc("1111", aph)}}, ensure_ascii=False, default=str))
 frappe.destroy()
 """
@@ -60,7 +63,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period"]
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","User Permission"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)

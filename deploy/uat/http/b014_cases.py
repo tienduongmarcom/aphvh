@@ -6,6 +6,7 @@ không sửa assertion để che lỗi.
 import calendar
 import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor
 import urllib.error
 
 
@@ -77,6 +78,29 @@ def chay(admin, phien, f, emit):
     submit(je_ck, ktt)
     denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh2"], "chuyen_khoan": 1_000_000,
                                                     "tk_ngan_hang": acc["bank"], "ma_gd": ma[2]}, ktbh), text=je_ck["name"])
+    for reference in (ma[1], ma[2]):
+        denied(lambda: insert({"doctype": "Journal Entry", "company": f["aph"], "posting_date": d,
+            "cheque_no": reference, "cheque_date": d, "accounts": [
+                {"account": acc["bank"], "credit_in_account_currency": 1},
+                {"account": acc["cp"], "debit_in_account_currency": 1}]}, ktt), text="Mã giao dịch đã được dùng")
+    # Hai phiên đồng thời không tạo được hai JE nháp với cùng mã trên cùng ngân hàng.
+    race_doc = {"doctype": "Journal Entry", "company": f["aph"], "posting_date": d,
+        "cheque_no": f["p"] + "-race-native", "cheque_date": d, "accounts": [
+            {"account": acc["bank"], "credit_in_account_currency": 1}, {"account": acc["cp"], "debit_in_account_currency": 1}]}
+    def raced(caller):
+        try:
+            return insert(race_doc, caller)["name"]
+        except urllib.error.HTTPError as exc:
+            error = json.loads(exc.read())
+            assert error.get("exc_type") in ("ValidationError", "QueryDeadlockError"), error
+            return None
+    with ThreadPoolExecutor(2) as pool:
+        race_results = list(pool.map(raced, [phien(f["ktt"]), phien(f["ktt"])]))
+    winners = [name for name in race_results if name]
+    assert len(winners) == 1, race_results
+    denied(lambda: insert(race_doc, ktt), text="Mã giao dịch đã được dùng")
+    rpc("frappe.client.delete", {"doctype": "Journal Entry", "name": winners[0]}, ktt)
+    emit("HTTP_014_MA_GD_NATIVE", "PASS", {"cross_pe_je": True, "concurrent_single_draft": True})
     so = bao_cao("So quy va tien gui", {"company": f["aph"], "account": acc["bank"], "tu_ngay": d, "den_ngay": d}, ktt2)
     dong = [r for r in so if r.get("so")]
     assert [r["so"] for r in dong] == [pe, je_ck["name"]], dong
@@ -162,13 +186,22 @@ def chay(admin, phien, f, emit):
     fl = insert({"doctype": "File", "file_name": f["p"] + "-saoke.csv", "content": csv, "is_private": 1}, ktt2)
     mau = {"dong_tieu_de": 2, "ngay": "Ngày GD", "ma": "Số tham chiếu", "noi_dung": "Diễn giải", "ghi_no": "Ghi nợ", "ghi_co": "Ghi có"}
     kq = rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": fl["file_url"],
-                                                  "anh_xa": json.dumps(mau), "luu_mau": 1}, ktt2)
+                                                  "anh_xa": json.dumps(mau)}, ktt2)
     tt = {(r["ma"], r["trang_thai"]) for r in kq["dong"]}
     assert tt == {(f["p"] + "-GN", "Khớp"), (f["p"] + "-TG", "Khớp"), (ma[1], "Khớp"), (ma[2], "Lệch"),
                   (ma[9], "Trùng"), (ma[8], "Chưa ghi sổ")}, tt
     assert kq["tong"] == {"Khớp": 3, "Lệch": 1, "Trùng": 2, "Chưa ghi sổ": 1}, kq["tong"]
     khop = {r["ma"]: r["chung_tu"] for r in kq["dong"] if r["trang_thai"] == "Khớp"}
     assert khop[ma[1]] == pe and khop[f["p"] + "-GN"] == nhan["name"], khop
+    denied(lambda: rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": fl["file_url"],
+        "anh_xa": json.dumps(mau), "luu_mau": 1}, ktt2), ("PermissionError",))
+    denied(lambda: rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": fl["file_url"],
+        "anh_xa": json.dumps(mau)}, ktt), ("PermissionError",))
+    own_file = insert({"doctype": "File", "file_name": f["p"] + "-saoke-manager.csv", "content": csv + "\n", "is_private": 1}, ktt)
+    saved = rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": own_file["file_url"],
+        "anh_xa": json.dumps(mau), "luu_mau": 1}, ktt)
+    assert saved["tong"] == kq["tong"]
+    emit("HTTP_014_SAO_KE_QUYEN", "PASS", {"file_private": True, "bank_mapping_write": True})
     # mẫu đã lưu cho ngân hàng: lần sau không cần khai cột
     kq2 = rpc("kh_aph.tien_vay.doi_chieu_sao_ke", {"bank_account": f["bank_account"], "file_url": fl["file_url"]}, ktt2)
     assert kq2["tong"] == kq["tong"]

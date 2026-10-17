@@ -1,6 +1,7 @@
 """Phần thuần của kh_aph.factory_cash (không import frappe) để unit test."""
 
 from lab9x.vn_words import so_vn
+from kh_aph.funds_rules import money
 
 
 LOAI_CHI = "Chi phí nhỏ"
@@ -21,8 +22,11 @@ def kiem_phieu(loai, dong, customer=None, nguoi_nhan=None):
     if not dong:
         loi.append("Phiếu cần ít nhất một dòng")
     for i, (_dg, km, tien) in enumerate(dong, 1):
-        if float(tien or 0) <= 0:
-            loi.append(f"Dòng {i}: số tiền phải lớn hơn 0")
+        try:
+            if money(tien) <= 0:
+                loi.append(f"Dòng {i}: số tiền phải lớn hơn 0")
+        except ValueError:
+            loi.append(f"Dòng {i}: số tiền không hợp lệ, cần hữu hạn và tối đa hai chữ số thập phân")
         if loai == LOAI_CHI and not km:
             loi.append(f"Dòng {i}: chọn khoản mục chi phí")
         if loai != LOAI_CHI and km:

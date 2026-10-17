@@ -397,29 +397,38 @@ def khoan_vay_den_han(company, ngay):
 
 # ---------------------------------------------------------------- mã giao dịch / sao kê
 
-def ma_da_ghi(tk, ma, bo_qua=None):
+def ma_da_ghi(tk, ma, bo_qua=None, lock=False):
     """Chứng từ đã ghi mã giao dịch `ma` trên tài khoản ngân hàng `tk` (phiếu thu / chi, bút toán, phiếu thực thu 0.10)."""
     ma = (ma or "").strip()
     if not ma:
         return None
+    suffix = " FOR UPDATE" if lock else ""
     v = frappe.db.sql("""SELECT name FROM `tabPayment Entry` WHERE docstatus<2 AND reference_no=%s
-        AND (paid_to=%s OR paid_from=%s) AND name!=%s LIMIT 1""", (ma, tk, tk, bo_qua or ""))
+        AND (paid_to=%s OR paid_from=%s) AND name!=%s LIMIT 1""" + suffix, (ma, tk, tk, bo_qua or ""))
     if v:
         return v[0][0]
     v = frappe.db.sql("""SELECT je.name FROM `tabJournal Entry` je JOIN `tabJournal Entry Account` d ON d.parent=je.name
-        WHERE je.docstatus<2 AND je.cheque_no=%s AND d.account=%s AND je.name!=%s LIMIT 1""", (ma, tk, bo_qua or ""))
+        WHERE je.docstatus<2 AND je.cheque_no=%s AND d.account=%s AND je.name!=%s LIMIT 1""" + suffix, (ma, tk, bo_qua or ""))
     if v:
         return v[0][0]
     if frappe.db.exists("DocType", "APH Funds Receipt"):
         key = hashlib.sha256((tk + "\0" + ma).encode()).hexdigest()
-        v = frappe.db.get_value("APH Funds Receipt", {"external_key": key, "docstatus": ["<", 2]})
+        v = frappe.db.get_value("APH Funds Receipt", {"external_key": key, "docstatus": ["<", 2], "name": ["!=", bo_qua or ""]}, for_update=lock)
         if v:
             return v
+    if frappe.db.exists("DocType", "APH Funds Action"):
+        v = frappe.db.sql("""SELECT name FROM `tabAPH Funds Action` WHERE docstatus<2 AND name!=%s
+            AND ((bank_account=%s AND external_reference=%s) OR (owner_bank_account=%s AND owner_external_reference=%s))
+            AND action_type IN ('Hoàn tiền', 'Trả tiền thu hộ') LIMIT 1""" + suffix,
+            (bo_qua or "", tk, ma, tk, ma))
+        if v:
+            return v[0][0]
     return None
 
 
 def _bang_tu_tep(file_url):
     f = frappe.get_doc("File", {"file_url": file_url})
+    f.check_permission("read")
     noi_dung = f.get_content()
     ten = (f.file_name or file_url).lower()
     if ten.endswith((".xlsx", ".xlsm")):
@@ -470,6 +479,14 @@ def doi_chieu_sao_ke(bank_account, file_url, anh_xa=None, luu_mau=0):
     ba.check_permission("read")
     if not ba.account or not ba.company:
         frappe.throw("Thẻ tài khoản ngân hàng chưa gắn tài khoản kế toán / đơn vị")
+    account_doc = frappe.get_doc("Account", ba.account)
+    account_doc.check_permission("read")
+    if account_doc.company != ba.company:
+        frappe.throw("Tài khoản kế toán không thuộc đơn vị của thẻ ngân hàng")
+    bank = None
+    if cint(luu_mau) and anh_xa:
+        bank = frappe.get_doc("Bank", ba.bank)
+        bank.check_permission("write")
     if anh_xa:
         mau = frappe.parse_json(anh_xa) if isinstance(anh_xa, str) else anh_xa
     else:
@@ -484,7 +501,8 @@ def doi_chieu_sao_ke(bank_account, file_url, anh_xa=None, luu_mau=0):
     if loi and not dong:
         frappe.throw("; ".join(loi))
     if cint(luu_mau) and anh_xa:
-        frappe.db.set_value("Bank", ba.bank, F_MAU, json.dumps(mau, ensure_ascii=False))
+        bank.set(F_MAU, json.dumps(mau, ensure_ascii=False))
+        bank.save()
     if not dong:
         return {"dong": [], "loi": loi, "tong": {}}
     tu, den = min(d["ngay"] for d in dong), max(d["ngay"] for d in dong)
