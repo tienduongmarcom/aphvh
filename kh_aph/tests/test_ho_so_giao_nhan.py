@@ -144,3 +144,18 @@ class HoSoGiaoNhan(unittest.TestCase):
         fields = self.m.fields()
         self.assertFalse(any(f["fieldtype"] in ("Section Break", "Tab Break", "Column Break") for f in fields))
         self.assertTrue(all(f.get("depends_on") for f in fields))
+
+    def test_chan_truoc_khi_native_xoa_blob(self):
+        called = []
+        class NativeFile:
+            def on_trash(self):
+                called.append("da xoa")
+        class File(self.m.HoSoFileMixin, NativeFile):
+            file_url = "/private/files/ky.pdf"
+        self.f.get_meta = lambda dt: types.SimpleNamespace(has_field=lambda f: True)
+        self.f.db.exists.return_value = True
+        with self.assertRaises(ValueError): File().on_trash()
+        self.assertEqual(called, [])
+        self.f.db.exists.return_value = False
+        File().on_trash()
+        self.assertEqual(called, ["da xoa"])

@@ -389,5 +389,5 @@ for _dt in ("Customer", "Supplier"):
 # Hồ sơ giao nhận dùng cờ Trung tâm Bán hàng và quyền phiếu giao hiện có.
 for _event in ("validate", "before_update_after_submit"):
     doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.ho_so_giao_nhan.validate")
-doc_events.setdefault("File", {})["on_trash"] = "kh_aph.ho_so_giao_nhan.protect_file"
-doc_events["File"]["before_validate"] = "kh_aph.ho_so_giao_nhan.protect_file_update"
+extend_doctype_class.setdefault("File", []).append("kh_aph.ho_so_giao_nhan.HoSoFileMixin")
+doc_events.setdefault("File", {})["before_validate"] = "kh_aph.ho_so_giao_nhan.protect_file_update"

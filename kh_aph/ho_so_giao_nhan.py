@@ -104,3 +104,11 @@ def protect_file_update(doc, method=None):
         return
     if any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")) or doc.get("content"):
         frappe.throw("Tệp đang là bản ký. Tải tệp mới và thay trên phiếu để đối chiếu lại")
+
+
+class HoSoFileMixin:
+    def on_trash(self):
+        # File.on_trash xóa blob trước doc_events; phải kiểm trước super(),
+        # vì rollback CSDL không khôi phục được nội dung đã xóa trên đĩa.
+        protect_file(self)
+        return super().on_trash()

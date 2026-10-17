@@ -22,7 +22,7 @@ def chay(rpc, get, insert, lst, denied, ktt, dn, emit):
         denied(lambda: save(bad))
     file = insert({"doctype": "File", "file_name": "uat-ban-ky-" + uuid.uuid4().hex + ".txt", "is_private": 1,
                    "attached_to_doctype": "Delivery Note", "attached_to_name": name,
-                   "content": "Bản ký giả lập kiểm thử. Không phải hồ sơ khách hàng."}, ktt)
+                   "content": json.dumps({"uat": "ban-ky-gia-lap"})}, ktt)
     doc = get("Delivery Note", name, ktt)
     doc["kh_aph_ban_ky"] = file["file_url"]
     doc = save(doc)
@@ -37,6 +37,7 @@ def chay(rpc, get, insert, lst, denied, ktt, dn, emit):
     result = rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": doc["modified"]}, ktt)
     assert result["doi_chieu_boi"] == doc["modified_by"] and result["doi_chieu_luc"], result
     denied(lambda: rpc("frappe.client.delete", {"doctype": "File", "name": file["name"]}, ktt))
+    assert ktt(file["file_url"]) == {"uat": "ban-ky-gia-lap"}, "Blob bản ký đã bị xóa dù thao tác bị chặn"
     public = {**get("File", file["name"], ktt), "is_private": 0}
     denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(public)}, ktt))
     doc = get("Delivery Note", name, ktt)
