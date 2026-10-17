@@ -39,7 +39,7 @@ Tạo nháp và in không ghi GL/SLE/PLE/SI. Xác nhận kho đi qua `delivery_s
 
 ## 8. Kiểm thử
 
-Unit: chuẩn hóa/kiểu dữ liệu/field thừa, địa chỉ theo khách/quyền, người giao cần submit, chặn sửa đè và không render lại địa chỉ đã xuất; kiểm escape và hai liên/dấu bản sao. HTTP b014 thêm `HTTP_014_GIAO_NHAN_METADATA`: tạo đúng địa chỉ, chặn sai khách và User Permission, mã lặp khác nội dung, người bán giả tên người giao, thiếu người giao, xác nhận sai cách giao; số phiếu/sổ không đổi khi bị chặn. Chuỗi VAT/cọc/giao/bản ký/thu nốt cũ tiếp tục chạy trên phiếu có thông tin mới. b014 mong25 PASS gồm restore, toàn artifact dự kiến216 PASS. Chỉ xác nhận khi run đúngSHA đạt, chưa ký nghiệm thu máy in thật.
+Unit: chuẩn hóa/kiểu dữ liệu/field thừa, địa chỉ theo khách/quyền, người giao cần submit, chặn sửa đè và không render lại địa chỉ đã xuất; kiểm escape và hai liên/dấu bản sao. HTTP b014 thêm `HTTP_014_GIAO_NHAN_METADATA`: tạo đúng địa chỉ, chặn sai khách và User Permission, mã lặp khác nội dung, người thiếu quyền submit giả tên người giao, thiếu người giao, xác nhận sai cách giao; số phiếu/sổ không đổi khi bị chặn. Chuỗi VAT/cọc/giao/bản ký/thu nốt cũ tiếp tục chạy trên phiếu có thông tin mới. b014 mong25 PASS gồm restore, toàn artifact dự kiến216 PASS. Chỉ xác nhận khi run đúngSHA đạt, chưa ký nghiệm thu máy in thật.
 
 ## 9. Cài đặt và khôi phục
 

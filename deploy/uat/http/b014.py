@@ -37,6 +37,7 @@ def user(ten, roles):
 ktt = user("ktt", ["Accounts Manager", "Accounts User", "Sales User", "Sales Manager", "Stock Manager", "Stock User", "System Manager", "Item Manager"])
 ktt2 = user("ktt2", ["Accounts User", "Sales User", "Stock User"])
 ktbh = user("ktbh", ["Kế toán bán hàng", "Sales User", "Stock User"])
+ktbh_no_submit = user("ktbh-no-submit", ["Kế toán bán hàng", "Accounts User"])
 tp = user("tp", ["Sales Manager", "Sales User"])
 nvbh = user("nvbh", ["Sales Manager", "Sales User", "Stock User"])
 dung_u = user("dung", [ROLE_FACTORY, ROLE_NO_COST, "Accounts Manager", "Sales User", "Stock User"])
@@ -70,7 +71,7 @@ nv = frappe.get_doc({"doctype": "Employee", "first_name": p + " Giám đốc", "
 frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
-    "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
+    "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
     "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),

@@ -53,9 +53,11 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     denied(lambda: rpc("kh_aph.ban_nhanh.create_drafts", {**payload, "request_id": uuid.uuid4().hex}, ktbh), ("PermissionError",))
     ktt("/api/method/frappe.client.delete", {"doctype": "User Permission", "name": permitted["name"]})
     # Người bán không giả tên người thực giao; kho điền, chọn đúng cách giao rồi mới xuất.
-    fake = get("Delivery Note", note["name"], ktbh)
+    limited = phien(f["ktbh_no_submit"])
+    fake = get("Delivery Note", note["name"], limited)
+    denied(lambda: rpc("frappe.client.submit", {"doc": json.dumps(fake)}, limited), ("PermissionError",))
     fake["kh_aph_nguoi_thuc_giao"] = "Giả người giao"
-    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(fake)}, ktbh), ("PermissionError",))
+    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(fake)}, limited), ("PermissionError",))
     denied(lambda: rpc("kh_aph.delivery_status.confirm", {"name": note["name"], "action": "handoff"}, ktt))
     actual = get("Delivery Note", note["name"], ktt)
     actual["kh_aph_nguoi_thuc_giao"] = "Anh kho vệ tinh"
