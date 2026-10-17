@@ -31,11 +31,12 @@ def _can_bat():
 def _fields():
     from kh_aph.ban_quay import _duyet_fields
     from kh_aph.ho_so_giao_nhan import fields as ho_so_fields
+    from kh_aph.delivery_info import fields as delivery_fields
     return {
         DT_CHUNG: _duyet_fields("customer"),
         "Delivery Note": [
             {"fieldname": F_LAN_IN, "label": "Số lần in lại", "fieldtype": "Int", "insert_after": "kh_aph_delivery_at",
-             "read_only": 1, "no_copy": 1, "allow_on_submit": 1}] + ho_so_fields(),
+             "read_only": 1, "no_copy": 1, "allow_on_submit": 1}] + ho_so_fields() + delivery_fields(),
     }
 
 

@@ -47,7 +47,8 @@ class DispatchPrint(unittest.TestCase):
     def test_draft_quantity_and_untrusted_text(self):
         source = Path(__file__).resolve().parents[1] / "templates/ban_nhanh/phieu_dot_xuat.html"
         note = {"name": "DN-1", "company": "APH", "posting_date": "2026-10-16",
-                "customer_name": "Khách <script>", "docstatus": 0,
+                "customer_name": "Khách <script>", "docstatus": 0, "recipient": "Nhận <script>",
+                "address": "Kho <img>", "created_by": "Người lập", "dispatcher": "Kho A",
                 "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": 50,
                            "bags": 2, "kg_per_bag": 25}]}
         html = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
@@ -57,3 +58,13 @@ class DispatchPrint(unittest.TestCase):
         self.assertIn("Người thực giao hàng", html)
         self.assertIn("50", html)
         self.assertNotIn("Giá bán", html)
+        self.assertIn("Nhận &lt;script&gt;", html)
+        self.assertIn("Kho &lt;img&gt;", html)
+        self.assertEqual(html.count("<h1>PHIẾU XUẤT KHO</h1>"), 2)
+        self.assertIn("Liên: Lưu kho", html)
+        self.assertIn("Liên: Giao nhận", html)
+        self.assertIn("Kg dự kiến", html)
+        note["docstatus"] = 1
+        printed = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
+        self.assertIn("BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA", printed)
+        self.assertIn("Kg đã xuất", printed)

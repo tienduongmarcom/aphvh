@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 — Đang kiểm đợt1A: thông tin giao nhận và bản in nhanh
+
+Nhánh mới `feat/thong-tin-giao-nhan-20261017` từ mốc0c1e104 đã giữ kế hoạch5 đợt. Viết thông tin theo đợt trong Dialog lập phiếu: cách giao, người nhận, số liên hệ, lái xe/biển số/địa chỉ; dùng trường native đã kiểm meta16.51.1 và thêm4 ô thật sự thiếu. Kiểm Address theo quyền và Customer; đưa thông tin mới vào hash request, giữ hash cũ nếu không truyền thông tin mới. Kho ghi người giao thực tế (server kiểm submit quyền), xác nhận đúng cách giao. Phiếu đã xuất không sửa đè thông tin; cập nhật hồ sơ ký không tính lại địa chỉ đã lưu. Bản in nhanh có2 liên, escape dữ liệu và dấu bản sao sau xuất. Không thay sổ/tài chính/quyền cơ bản hoặc trạng thái giao hàng.
+
+Cục bộ276 kh_aph +107 lab9x=383 ca đạt; cú phápPython/JS và diff kiểm được. Bộ sinh Print Format chạy không đổiJSON chuẩn (template nhanh render riêng). HTTP b014 thêm ca thông tin giao nhận và kiểm chuỗi VAT cũ trên phiếu mới; mong25 PASS gồm restore, tổng artifact dự kiến216. Cổng3 đổi baseline từ0.15.1 sang đúng0.15.2/digest production đã xác nhận. Các kết quả CI cũ không xác nhận mã mới.
+
+ĐANG DỞ: chờ CI trên đúngSHA, sửa nguyên nhân nếu lỗi; đọc artifact/ảnhDialog và bằng chứng nâng cấp. Chi tiết9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md`. Chưa hoàn tất GN09 xử lý chênh lệch hoặc GN10 xuất ngay trongDialog; chốt ca/người giữ tiền/nhà máy vẫn ở kế hoạch tiếp theo. Production giữ0.15.2, chưa tăngversion/tag/merge/phát hành/triển khai.
+
 ## 17/10/2026 — Khôi phục mạch kế hoạch vận hành, đọc lại quy tắc GitHub
 
 Theo yêu cầu anh Tiến, đã đọc lại AGENTS.md trên origin/feat/ho-so-giao-nhan-20261017 và đối chiếu bàn giao, quyết định nghiệp vụ, kiến trúc, quy trình khách/release. Local khớp remote d622abc trước lượt này. Production giữ 0.15.2; các phiên bản cũ trong thân AGENTS/runbook là mô tả lịch sử, không dùng thay mốc TRANG_THAI/manifest/log đã xác nhận.

@@ -26,12 +26,44 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     assert not ({"rate", "valuation_rate", "basic_rate", "amount"} & set(row)), row
     token = uuid.uuid4().hex
     selected = [{"source_row": row["source_row"], "qty": 5}]
-    payload = {**args, "selections": json.dumps(selected), "request_id": token}
+    address = insert({"doctype": "Address", "address_title": f["p"] + "-giao",
+        "address_type": "Shipping", "address_line1": "Kho nhận số 12", "city": "Hà Nội", "country": "Vietnam",
+        "links": [{"link_doctype": "Customer", "link_name": f["kh2"]}]}, ktt)
+    other = insert({"doctype": "Address", "address_title": f["p"] + "-khac",
+        "address_type": "Shipping", "address_line1": "Địa chỉ khách khác", "city": "Hà Nội", "country": "Vietnam",
+        "links": [{"link_doctype": "Customer", "link_name": f["kh1"]}]}, ktt)
+    info = {"delivery_method": "Vận chuyển", "recipient": "Anh Nhận UAT", "phone": "0901234567",
+            "driver_name": "Lái xe UAT", "vehicle_no": "29A-UAT", "shipping_address_name": address["name"]}
+    payload = {**args, "selections": json.dumps(selected), "request_id": token, "delivery": json.dumps(info)}
     made = rpc("kh_aph.ban_nhanh.create_drafts", payload, ktbh)
     assert len(made["delivery_notes"]) == 1 and made["delivery_notes"][0]["docstatus"] == 0, made
     note = get("Delivery Note", made["delivery_notes"][0]["name"], ktbh)
     assert note["items"][0]["qty"] == 5 and note["items"][0]["warehouse"] == f["kho"], note["name"]
+    assert note["kh_aph_nguoi_nhan_tai_kho"] == info["recipient"] and note["vehicle_no"] == info["vehicle_no"]
+    assert note["shipping_address_name"] == address["name"] and "Kho nhận số 12" in note["shipping_address"]
     assert ledger_counts() == before, "Lập phiếu nháp đã phát sinh sổ/hoá đơn"
+    count_dn = len(lst("Delivery Note", {}, ["name"], ktt))
+    for change in ({"recipient": "Người khác"}, {"phone": "0902"}, {"delivery_method": "Khách đến lấy"}, {"vehicle_no": "xe khác"}):
+        denied(lambda change=change: rpc("kh_aph.ban_nhanh.create_drafts", {**payload, "delivery": json.dumps({**info, **change})}, ktbh))
+    for change in ({"shipping_address_name": other["name"]}, {"phone": 123}, {"docstatus": 1}):
+        denied(lambda change=change: rpc("kh_aph.ban_nhanh.create_drafts", {**payload,
+            "request_id": uuid.uuid4().hex, "delivery": json.dumps({**info, **change})}, ktbh))
+    # Quyền Address vẫn kiểm ở server, kể cả tên địa chỉ đã có trên client.
+    permitted = insert({"doctype": "User Permission", "user": f["ktbh"], "allow": "Address", "for_value": other["name"]}, ktt)
+    denied(lambda: rpc("kh_aph.ban_nhanh.create_drafts", {**payload, "request_id": uuid.uuid4().hex}, ktbh), ("PermissionError",))
+    ktt("/api/method/frappe.client.delete", {"doctype": "User Permission", "name": permitted["name"]})
+    # Người bán không giả tên người thực giao; kho điền, chọn đúng cách giao rồi mới xuất.
+    fake = get("Delivery Note", note["name"], ktbh)
+    fake["kh_aph_nguoi_thuc_giao"] = "Giả người giao"
+    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(fake)}, ktbh), ("PermissionError",))
+    denied(lambda: rpc("kh_aph.delivery_status.confirm", {"name": note["name"], "action": "handoff"}, ktt))
+    actual = get("Delivery Note", note["name"], ktt)
+    actual["kh_aph_nguoi_thuc_giao"] = "Anh kho vệ tinh"
+    rpc("frappe.client.save", {"doc": json.dumps(actual)}, ktt)
+    denied(lambda: rpc("kh_aph.delivery_status.confirm", {"name": note["name"], "action": "pickup"}, ktt))
+    assert len(lst("Delivery Note", {}, ["name"], ktt)) == count_dn and ledger_counts() == before
+    emit("HTTP_014_GIAO_NHAN_METADATA", "PASS", {"customer_address": True, "address_permission": True,
+         "request_content": True, "dispatcher_permission": True, "matching_action": True, "ledger_unchanged": True})
     repeat = rpc("kh_aph.ban_nhanh.create_drafts", payload, ktbh)
     assert repeat["reused"] and repeat["delivery_notes"] == made["delivery_notes"], repeat
     denied(lambda: rpc("kh_aph.ban_nhanh.create_drafts", {**payload,
@@ -43,7 +75,8 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     emit("HTTP_014_BAN_NHANH_DRAFT_REPEAT", "PASS", {"delivery_note": note["name"], "remaining_kg": 15, "ledger_unchanged": True})
 
     html = rpc("kh_aph.ban_nhanh.print_batch", {**args, "request_id": token}, ktbh)["html"]
-    for text in ("CHỜ XUẤT", note["name"], root["name"], "Người thực giao hàng", "Người thực nhận hàng", "Kg/bao"):
+    for text in ("CHỜ XUẤT", note["name"], root["name"], "Người thực giao hàng", "Người thực nhận hàng", "Kg/bao",
+                 "Liên: Lưu kho", "Liên: Giao nhận", info["recipient"], info["vehicle_no"], "Kho nhận số 12", "Anh kho vệ tinh"):
         assert text in html, text
     for text in ("valuation_rate", "basic_rate", "Đơn giá vốn", "Giá bán/kg"):
         assert text not in html, text
