@@ -79,3 +79,12 @@ class HoSoGiaoNhan(unittest.TestCase):
         with self.assertRaises(ValueError): self.m.protect_file(types.SimpleNamespace(file_url="/private/files/ky.pdf"))
         self.f.db.exists.return_value = False
         self.m.protect_file(types.SimpleNamespace(file_url="/private/files/ky.pdf"))
+
+    def test_khong_cong_khai_hoac_doi_nguon_file_da_chon(self):
+        self.f.get_meta = lambda dt: types.SimpleNamespace(has_field=lambda f: True)
+        self.f.db.exists.return_value = True
+        old = self.doc(file_url="/private/files/ky.pdf", is_private=1, attached_to_name="DN-1")
+        old.file_url = old.get("file_url")
+        for change in ({"is_private": 0}, {"attached_to_name": "DN-2"}, {"content": "ghi de"}):
+            d = self.doc(old, **{"file_url": old.file_url, "is_private": 1, "attached_to_name": "DN-1", **change})
+            with self.assertRaises(ValueError): self.m.protect_file_update(d)

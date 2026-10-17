@@ -91,3 +91,16 @@ def protect_file(doc, method=None):
         return
     if frappe.db.exists("Delivery Note", {FILE: doc.file_url, "docstatus": ["!=", 2]}):
         frappe.throw("Tệp đang là bản ký của phiếu giao. Gỡ hoặc thay bản ký trên phiếu trước khi xóa tệp")
+
+
+def protect_file_update(doc, method=None):
+    """Giữ quyền riêng tư/liên kết/nội dung của tệp đã được chọn trên phiếu."""
+    if not enabled() or not frappe.get_meta("Delivery Note").has_field(FILE):
+        return
+    old = doc.get_doc_before_save()
+    if not old or not old.file_url:
+        return
+    if not frappe.db.exists("Delivery Note", {FILE: old.file_url, "docstatus": ["!=", 2]}):
+        return
+    if any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")) or doc.get("content"):
+        frappe.throw("Tệp đang là bản ký. Tải tệp mới và thay trên phiếu để đối chiếu lại")

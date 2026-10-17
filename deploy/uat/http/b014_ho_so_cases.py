@@ -28,6 +28,8 @@ def chay(rpc, get, insert, lst, denied, ktt, dn, emit):
     result = rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": doc["modified"]}, ktt)
     assert result["doi_chieu_boi"] == doc["modified_by"] and result["doi_chieu_luc"], result
     denied(lambda: rpc("frappe.client.delete", {"doctype": "File", "name": file["name"]}, ktt))
+    public = {**get("File", file["name"], ktt), "is_private": 0}
+    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(public)}, ktt))
     doc = get("Delivery Note", name, ktt)
     forged = {**doc, "kh_aph_doi_chieu_boi": "Administrator"}
     denied(lambda: save(forged))

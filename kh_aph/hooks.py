@@ -390,3 +390,4 @@ for _dt in ("Customer", "Supplier"):
 for _event in ("validate", "before_update_after_submit"):
     doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.ho_so_giao_nhan.validate")
 doc_events.setdefault("File", {})["on_trash"] = "kh_aph.ho_so_giao_nhan.protect_file"
+doc_events["File"]["before_validate"] = "kh_aph.ho_so_giao_nhan.protect_file_update"
