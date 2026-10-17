@@ -21,7 +21,7 @@ class MoneyBoundaries(unittest.TestCase):
         self.f.flags = types.SimpleNamespace(get=lambda key: False)
         self.f.PermissionError = ValueError
         utils = types.ModuleType("frappe.utils")
-        for key in ("add_days", "cint", "flt", "get_first_day", "get_last_day", "getdate", "nowdate", "now_datetime"):
+        for key in ("add_days", "cint", "flt", "get_first_day", "get_last_day", "getdate", "nowdate", "nowtime", "now_datetime"):
             setattr(utils, key, lambda v=None, *args: v)
         utils.now_datetime = lambda: "2026-10-17 16:00:00"
         self.context = patch.dict(sys.modules, {"frappe": self.f, "frappe.utils": utils})
@@ -138,3 +138,9 @@ class MoneyBoundaries(unittest.TestCase):
         for fn in (q.khoa_ky, q.mo_khoa_ky):
             with self.assertRaises(ValueError): fn("VH", "2026-09", "kiem quyen")
         q._ky.assert_not_called()
+
+    def test_ho_so_dung_khong_duoc_phan_bo_gia_thanh_khi_cong_role(self):
+        m = self.load("factory_costing")
+        self.f.conf = {m.FLAG: 1}
+        self.f.get_roles = lambda: ["Accounts Manager", "APH Không xem giá vốn"]
+        with self.assertRaises(ValueError): m._can_ke_toan()

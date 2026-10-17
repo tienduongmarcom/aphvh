@@ -82,6 +82,13 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     denied(lambda: get("Stock Closing Entry", closing["name"], dung), ("PermissionError",))
     denied(lambda: lst("Stock Closing Entry", {}, ["name"], dung), ("PermissionError",))
     assert get("Stock Closing Entry", closing["name"], ktt)["docstatus"] == 0
+    for method, values in (
+        ("phan_bo_thang", {"company": f["aph"], "thang": f["date"][:7]}),
+        ("vet_bon", {"kho": f["kho"], "xuong": "", "loai_hao_hut": "Hao hụt tự nhiên", "ly_do": "UAT"}),
+        ("quyet_toan_do_dang", {"kho": f["kho"], "xuong": "", "ly_do": "UAT"}),
+    ):
+        denied(lambda method=method, values=values: rpc("kh_aph.factory_costing." + method, values, dung), ("PermissionError",))
+    assert ledger_counts() == before
     emit("HTTP_014_STOCK_CLOSING_NO_COST", "PASS", {"denied_even_with_stock_user": True, "chief_read": True})
 
     from b014_ban_nhanh_scope import chay as scope_cases
