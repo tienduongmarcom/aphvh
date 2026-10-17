@@ -222,11 +222,12 @@ def chay(admin, phien, f, emit):
     tv = get("Workspace", "Tiền và vay", ktt)
     nhan_tb = {s["label"] for s in tb["shortcuts"]}
     for x in ("Đơn chờ duyệt dưới giá sàn", "Đơn chung chờ duyệt dưới giá sàn", "Hóa đơn còn nợ", "Khách cần gọi hôm nay",
-              "Hóa đơn chờ xuất MISA"):
+              "Hóa đơn chờ xuất MISA", "Phiếu đã nhận thiếu bản ký", "Bản ký chờ đối chiếu"):
         assert x in nhan_tb, x
     nhan_tv = {s["label"] for s in tv["shortcuts"]}
     for x in ("Sổ quỹ và tiền gửi", "Khế ước vay", "Dư nợ vay theo khế ước",
-              "Công nợ với giám đốc"):
+              "Công nợ với giám đốc", "Tiền chưa rõ khách", "Phân bổ tiền và cọc còn nháp",
+              "Bàn giao tiền nhà máy chờ nhận", "Bàn giao tiền có chênh lệch"):
         assert x in nhan_tv, x
     emit("HTTP_014_MAN_HINH", "PASS", {"trung_tam_ban": len(nhan_tb), "tien_va_vay": len(nhan_tv)})
 

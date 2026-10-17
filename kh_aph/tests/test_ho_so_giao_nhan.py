@@ -10,7 +10,10 @@ class HoSoGiaoNhan(unittest.TestCase):
     def setUp(self):
         self.f = types.ModuleType("frappe")
         self.f.conf = {"kh_aph_trung_tam_ban": 1}
-        self.f.flags = types.SimpleNamespace(get=lambda key: None)
+        self.f.flags = types.SimpleNamespace()
+        self.f.flags.get = lambda key: getattr(self.f.flags, key, None)
+        self.f.session = types.SimpleNamespace(user="kt")
+        self.f.TimestampMismatchError = ValueError
         self.f.whitelist = lambda **kw: lambda fn: fn
         self.f.throw = lambda msg, *a: (_ for _ in ()).throw(ValueError(msg))
         self.f.get_all = Mock(return_value=[{"name": "file-1"}])
@@ -95,3 +98,44 @@ class HoSoGiaoNhan(unittest.TestCase):
         old = self.doc(kh_aph_doi_chieu_boi="kt", kh_aph_doi_chieu_luc=stamp)
         d = self.doc(old, kh_aph_doi_chieu_boi="kt", kh_aph_doi_chieu_luc=str(stamp))
         self.m.validate(d)
+
+    def review_doc(self, **kw):
+        d = self.doc(kh_aph_ban_ky="/private/files/ky.pdf", kh_aph_delivery_state="Khách đã nhận", **kw)
+        d.modified = "2026-10-17 14:00:00"
+        d.check_permission = Mock()
+        d.save = Mock()
+        d.add_comment = Mock()
+        self.f.get_doc = Mock(return_value=d)
+        return d
+
+    def test_doi_chieu_kiem_quyen_doc_va_ghi(self):
+        d = self.review_doc()
+        d.check_permission.side_effect = ValueError("khong co quyen")
+        with self.assertRaises(ValueError): self.m.doi_chieu("DN-1", d.modified)
+        self.f.get_all.assert_not_called()
+        d.save.assert_not_called()
+
+    def test_phien_cu_va_chua_nhan_khong_duoc_doi_chieu(self):
+        d = self.review_doc()
+        with self.assertRaises(ValueError): self.m.doi_chieu("DN-1", "cu")
+        d.save.assert_not_called()
+        d.set("kh_aph_delivery_state", "Đang giao")
+        with self.assertRaises(ValueError): self.m.doi_chieu("DN-1", d.modified)
+        d.save.assert_not_called()
+
+    def test_xac_nhan_va_bam_lai_khong_them_dau_moi(self):
+        d = self.review_doc()
+        result = self.m.doi_chieu("DN-1", d.modified)
+        self.assertEqual(result["doi_chieu_boi"], "kt")
+        self.assertEqual([x.args[0] for x in d.check_permission.call_args_list], ["read", "write"])
+        self.m.doi_chieu("DN-1", d.modified)
+        d.save.assert_called_once()
+        d.add_comment.assert_called_once()
+        self.assertIsNone(self.f.flags.get("kh_aph_doi_chieu_ban_ky"))
+
+    def test_save_loi_phuc_hoi_co_noi_bo(self):
+        d = self.review_doc()
+        d.save.side_effect = ValueError("save loi")
+        with self.assertRaises(ValueError): self.m.doi_chieu("DN-1", d.modified)
+        self.assertIsNone(self.f.flags.get("kh_aph_doi_chieu_ban_ky"))
+        d.add_comment.assert_not_called()

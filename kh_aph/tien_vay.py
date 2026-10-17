@@ -84,6 +84,12 @@ def schema():
 
 def _workspace():
     loi_vao = [
+        ("Tiền thực nhận", "DocType", "APH Funds Receipt", {"docstatus": 1}),
+        ("Tiền chưa rõ khách", "DocType", "APH Funds Receipt", {"docstatus": 1, "customer": ["is", "not set"]}),
+        ("Phân bổ tiền và cọc còn nháp", "DocType", "APH Funds Action", {"docstatus": 0}),
+        ("Tuyến thu tiền đã duyệt", "DocType", "APH Funds Route", {"docstatus": 1}),
+        ("Bàn giao tiền nhà máy chờ nhận", "DocType", "APH Phieu quy nha may", {"docstatus": 1, "loai": "Bàn giao tiền", "trang_thai": "Chờ nhận"}),
+        ("Bàn giao tiền có chênh lệch", "DocType", "APH Phieu quy nha may", {"docstatus": 1, "trang_thai": "Chênh lệch chờ điều tra"}),
         ("Sổ quỹ và tiền gửi", "Report", "So quy va tien gui", None),
         ("Khế ước vay", "DocType", DT_VAY, {"trang_thai": "Đang vay"}),
         ("Dư nợ vay theo khế ước", "Report", "Du no vay theo khe uoc", None),
