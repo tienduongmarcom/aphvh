@@ -51,6 +51,9 @@ class TestViCsv(unittest.TestCase):
             # 0.4.16: sửa bản dịch sai nghĩa Nợ/Có của ERPNext
             'Debit To': 'Ghi Nợ tài khoản (phải thu)', 'Credit To': 'Ghi Có tài khoản (phải trả)',
             'Debit Account': 'Tài khoản ghi Nợ', 'Credit Account': 'Tài khoản ghi Có', 'Territory': 'Khu vực',
+            'Base Total Billed Amount': 'Tổng giá trị đã lập hóa đơn (tiền tệ công ty)',
+            'Please select Company and Posting Date to getting entries': 'Chọn Công ty và Ngày hạch toán để lấy các bút toán.',
+            'Please set opening number of booked depreciations': 'Nhập số kỳ khấu hao đã hạch toán trước đầu kỳ.',
         }
         ctx = {(r[0], r[2]): r[1] for r in load() if len(r) == 3}
         self.assertEqual(ctx.get(('No.', "Title of the 'row number' column")), 'STT')

@@ -45,6 +45,8 @@ def schema():
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     f = _fields()
     create_custom_fields(f)
+    from kh_aph import ban_nhanh
+    ban_nhanh.schema()
     _workspace()
     return {"fields": sum(len(v) for v in f.values()), "workspace": WORKSPACE}
 

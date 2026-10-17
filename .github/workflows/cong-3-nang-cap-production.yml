@@ -8,7 +8,7 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   push:
-    branches: ["fix/p0-uat-v091-20261010", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1"]
+    branches: ["fix/p0-uat-v091-20261010", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016"]
 permissions:
   contents: read
   packages: read

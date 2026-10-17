@@ -1,5 +1,35 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 13:22 (Việt Nam) — Production 0.15.1 đã triển khai theo log anh Tiến
+
+Anh Tiến trực tiếp chạy thủ tục trên VM `erpnext-prod`, site `frontend`; Codex không có phiên SSH. Diễn tập lượt `10170555e7bc7c` báo tong/dem/chi_tiet khớp, dấu `~/dien-tap-0.15.1.ok`, sau đó triển khai báo `=== XONG 0.15.1: ĐẠT ===`. Đây là bằng chứng log người vận hành gửi, chưa phải Codex kiểm độc lập giao diện production.
+
+Nguồn bất biến: tag `v0.15.1`, commit `b803c7a95e13c57af3a0f58da6e0c8ea48079db2`; image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.1`, digest `sha256:c4b61eb4b2924d50f64bbeaf83623da3e7259f9484b28d6f3e228939912edf47` khớp log VM. Nền ERPNext 16.51.1/Frappe 16.52.0, kh_aph 0.15.1/lab9x 0.2.10. Phát hành [39005035290](https://github.com/tienduongmarcom/aphvh/actions/runs/39005035290) đạt UAT/Cổng 2/Cổng 2b/Cổng 3 và job đẩy image trên đúng SHA. Không di chuyển tag 0.15.0/0.15.1.
+
+Bản này gồm nâng nền, lập phiếu xuất nháp/in nhanh và sửa dịch đã ghi bên dưới; không đồng nghĩa hoàn thành toàn bộ dự án. Tiếp theo: nhân sự mở lại Desk, kiểm phiên bản/hiển thị và sử dụng theo quyền; không tạo chứng từ giả trên production. Click primary/in giấy thực tế với nhân sự thật chưa được nghiệm thu bởi Codex. Hồ sơ bản ký, ca tiền, nhà máy/tài chính mới vẫn còn mở. Quay lui chỉ theo thủ tục và bản sao lưu ngay trước nâng 0.15.1 (phiên bản trước 0.14.3), không dùng thư mục sao lưu cũ tùy ý. Các mục ĐANG DỞ/phát hành chưa xong bên dưới là lịch sử.
+
+## 17/10/2026 11:25 — Ứng viên 0.15.1, sửa ranh giới readiness của Cổng 2b
+
+Tag v0.15.0 do anh Tiến đẩy = c236b27; KHÔNG di chuyển hoặc ghi đè. Phát hành run 38998723309: attempt 1 và 2 UAT/Cổng 2/Cổng 3 đạt, Cổng 2b lỗi HTTP503 bước 3 nên job đẩy image bị skip. Logs: mã thoát kéo image không tồn tại=2 và CUSTOM_TAG=ci-b đã đúng, backend/frontend vẫn health starting ~50 giây sau nâng. Rerun một lần tái hiện; không tiếp tục rerun cùng tag.
+
+Sửa Cổng 2b: sau nâng B phải đợi HTTP200 đúng JSON message=pong (hạn chót 180 giây) TRƯỚC khi thử kéo image không tồn tại. Sau thử lỗi vẫn kiểm HTTP ngay, không retry để che downtime do chính hành động thử. Probe có 3 test HTTP localhost thật:503→200,503 vĩnh viễn và200 sai body. Thêm trigger Cổng 2b khi push nhánh tính năng để đóng cổng này trước khi nhờ anh gắn tag. Không thay bộ kiểm nghiệp vụ, không sửa core. App ứng viên 0.15.1; chưa có tag mới và không tự phát hành.
+
+ĐANG DỞ: đẩy sửa vào PR #3 và chạy đủ UAT/Cổng2/Cổng2b/Cổng3 trên SHA mới; nếu readiness vẫn503 phải đọc log thêm, không kết luận đã sửa. Production frontend vẫn0.14.3 theo mốc bàn giao, phiên này không chạm VM.
+
+## 17/10/2026 09:20 — UAT phạm vi kho: chỉnh cấu hình tài khoản thử
+
+SHA 76f6bde: Cổng 2 38987997088 và Cổng 3 38987993537 đạt; UAT 38987993529 lỗi tại đối chứng dương của scope_wh. Native Frappe chặn đọc Company do Warehouse User Permission áp mọi DocType, gồm trường Company.default_in_transit_warehouse. Ba ca mới trước đó đạt: 3 kho/2 pháp nhân không ghi sổ, sửa nháp cập nhật lượng, Company scope; restore đạt. Ca lỗi nhóm sau chưa chạy, không tuyên bố đủ 19 ca.
+
+Sửa fixture để Warehouse User Permission áp đúng Warehouse/Sales Order/Delivery Note/APH Shared Sales Order, không áp lên cấu hình Company có kho chuyển tiếp chung. Không thêm kho được phép, không bypass quyền server và không nới assertion đối chứng dương/âm. Company scope giữ apply_all. ĐANG DỞ: chạy lại CI SHA mới; production không đổi.
+
+## 17/10/2026 — Hoàn thiện kiểm nhiều kho và quyền bán hàng nhanh
+
+Mốc CI đã xác minh 16/10 23:40: PR #2 a271099 đủ ba cổng xanh (UAT 38925577491, Cổng 2 38925582784, Cổng 3 38925578136); PR #3 8705848 cũng đủ (38925615925 / 38925623196 / 38925615939), cả bước quay lui và cố ý nâng lỗi đều chạy đạt. Production chưa đổi. Các mục ĐANG DỞ cũ bên dưới là lịch sử.
+
+Theo yêu cầu anh Tiến 17/10, mở rộng PR #3: b014 thêm 5 ca (3 kho/2 pháp nhân; sửa DN nháp; User Permission Company và Warehouse có đối chứng dương; lỗi native ở nhóm sau rollback cả đợt). Kiểm lại quyền liên kết trên phiếu khi in/thử lại và chặn dùng lại đợt có phiếu hủy. Mong 19 PASS b014 gồm restore; bổ sung User Permission vào snapshot. Tài khoản/dữ liệu giả, giữ framework native, không sửa core.
+
+ĐANG DỞ: chạy CI trên SHA mới; chưa dùng kết quả mốc 8705848 để kết luận thay đổi này đạt. Sau CI rà ảnh Dialog và chốt phạm vi phát hành; hồ sơ chữ ký số hóa/ca tiền/nhà máy/tài chính mới còn là việc tiếp theo, không tuyên bố cả dự án xong. Không tag, phát hành image hay chạm frontend.
+
 ## 16/10/2026 22:40 — Sửa vị trí ca kiểm workflow
 
 CI SHA 25974b9 / bd66e95 dừng build: test mới đọc `.github/workflows` nhưng Docker loại `.github` khỏi image. Chuyển nguyên ca kiểm ranh giới sang `deploy/release/test_print_defaults_gate.py`, chạy bắt buộc ngay sau checkout Cổng 3; test bộ cài vẫn chạy trong image. Không skip ca, không nới assertion, không thêm workflow vào image production. ĐANG DỞ: kiểm cục bộ rồi đẩy hai PR, đọc CI SHA mới; frontend không đổi.
@@ -12,13 +42,23 @@ Nguyên nhân: bộ cài chưa nhận mẫu native `<DocType> Classic`; site m�
 
 ĐANG DỞ: đưa sửa vào cả hai nhánh và chờ CI mới. Chưa tag, phát hành, diễn tập VM hay thay frontend. Bước tiếp: đọc Cổng 3 đúng SHA, xử lý lỗi thực nếu còn; sau đó mở rộng ca nhiều kho/scope trước phát hành bán hàng nhanh. Thời gian ghi mục này là thời gian làm việc, không phải thời gian triển khai.
 
+## 16/10/2026 — Ứng viên 0.15.0, bước bán hàng/lập phiếu xuất nhanh
+
+Nhánh `feat/ban-hang-nhanh-20261016` dựa trên nhánh nâng nền `thu/erpnext-v16.51.1` (PR #2). Không phát hành/triển khai. Cờ hiện có `kh_aph_trung_tam_ban` (mặc định tắt); schema mới chỉ qua bộ cài rõ ràng, không after_migrate.
+
+Đã viết: Dialog “Lập phiếu xuất & In” trên đơn chung đã xác nhận; facade `ban_nhanh.preview/create_drafts/print_batch`; phiếu nháp theo đơn nguồn × kho, chống lặp theo mã yêu cầu/nội dung, trừ lượng đã lập nháp khi chọn giao đợt tiếp; giữ bao nguyên theo snapshot. Không submit/commit/ghi sổ trong facade. Mẫu in số lượng có ô ký thực giao/thực nhận và nhãn CHỜ XUẤT. Bổ sung quyền lập nháp Delivery Note cho Kế toán bán hàng, không thêm quyền submit/hủy/xóa. Sửa 7 bản dịch sai nghĩa rõ từ audit 15/10; không áp bừa 137 đề xuất phụ thuộc ngữ cảnh.
+
+Kiểm cục bộ: lab9x 107 ca; kh_aph 235 ca khi có Jinja2. HTTP/Chrome mới nằm trong `deploy/uat/http/b014_ban_nhanh_cases.py` + `ban-nhanh-desk.mjs`; chạy chung b014, mong 14 PASS gồm restore. Chưa kết luận HTTP/Chrome PASS trước Actions đúng SHA. Chi tiết `docs/ban-hang-nhanh-tiep-quan.md`.
+
+Nền 3112ff0: UAT 38893496163 và Cổng 2 38893496202 đạt; core 63.508 tệp khớp, phiên bản thực ERPNext 16.51.1 + Frappe 16.52.0. Cổng 3 38893460847 FAIL vì kiểm kho mặc định đọc ô không tồn tại; đã sửa nhận biết meta, thêm 2 ca tái hiện và nhập thay đổi từ nhánh nền b409d34. Giữ run FAIL làm bằng chứng. ĐANG DỞ: đợi CI SHA mới và xử lý lỗi thực. Chưa làm hồ sơ bản ký/đối chiếu, ca tiền mặt/custodian, phần nhà máy/tài chính mới, phần lớn bản dịch còn lại. Thứ tự người dùng chốt: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính. Tiếp theo mở rộng ký nhận và cảnh báo phiếu thiếu hồ sơ; không coi bản in có ô ký là đã có chữ ký.
+
 ## 16/10/2026 — Codex tiếp nhận, ứng viên nâng nền 0.14.4
 
 Anh Tiến đã cho phép phát triển tiếp: bán hàng → xuất kho/ký nhận → tiền mặt/chuyển khoản/công nợ → nhà máy → tổng hợp tài chính; cải thiện UI, bản dịch, tự tạo dữ liệu giả lập. Chỉ dẫn này thay quyết định tạm dừng tính năng ở bản bàn giao cũ bên dưới. Không chạm production.
 
 Ứng viên nền tách riêng tại `thu/erpnext-v16.51.1`: ghim image ERPNext 16.51.1, app 0.14.4, Ubuntu CI 24.04; thêm gate so checksum toàn bộ tệp core image nền/ứng viên. Giữ mốc production 0.14.3 và digest quay lui. Cổng 3 vẫn diễn tập nâng từ đúng production 0.14.3.
 
-Cổng 2 và UAT nền đầu tiên đạt; Cổng 3 run 38893460847 FAIL: kiem_trien_khai đọc Stock Settings.default_warehouse đã bị upstream bỏ. Đã thêm ca tái hiện và sửa kiểm theo meta, giữ giá trị cấu hình trên nền cũ. Bổ sung guard Stock Closing Entry/Balance cho mọi hồ sơ ẩn vốn và xóa FIFO/stock queue khỏi phản hồi. Thêm 4 ca đặc hiệu native chốt kho/báo cáo và rollback. ĐANG DỞ: chạy lại CI trên SHA sửa tương thích; chưa nâng production. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
+ĐANG DỞ: chờ CI trên SHA ứng viên. Chưa phát hành, chưa triển khai; chưa xác nhận phiên bản Frappe thực trong image (CI in bench version). Sau nền: làm nút lập phiếu xuất nháp/in từ đơn chung, rồi hồ sơ ký nhận và thanh toán. Xem `docs/nang-nen-16.51.1.md`.
 
 ## 000000000000000. BÀN GIAO 16/10/2026 17:50 — Claude → Codex (kiểm chéo, phát triển tiếp)
 
@@ -164,7 +204,7 @@ Kiểm thử:
 - **Hồ sơ hóa đơn MISA** (`APH Hoa don ngoai`): hàng đợi "Hoa don cho xuat", khóa người xử lý chống trùng, Gốc / Điều chỉnh / Thay thế / Hủy; chênh lệch với doanh thu quản trị chỉ hiển thị, không chặn (Q148).
 
 Kiểm thử và triển khai:
-- CI xanh trên `dc6aa1b`: UAT candidate `38567486172` (đủ các bộ, gồm b0113 13 PASS), Cổng 3 `38567486151` (nâng cấp từ 0.11.2), Cổng 2 `38567493935`.
+- CI xanh trên `dc6aa1b`: UAT candidate `38567486172` (đủ các bộ, gồm b0113 14 PASS), Cổng 3 `38567486151` (nâng cấp từ 0.11.2), Cổng 2 `38567493935`.
 - Ba lần đỏ trước đó được giữ làm bằng chứng:
   - Phiếu trả bắt buộc chọn hai ô làm hỏng bộ inventory → đổi sang điền mặc định.
   - ERPNext 16.50 đòi ngày dạng chuỗi ở `get_payment_terms`.
