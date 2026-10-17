@@ -99,7 +99,7 @@ def chay(admin, phien, f, emit):
     winners = [name for name in race_results if name]
     assert len(winners) == 1, race_results
     denied(lambda: insert(race_doc, ktt), text="Mã giao dịch đã được dùng")
-    rpc("frappe.client.delete", {"doctype": "Journal Entry", "name": winners[0]}, ktt)
+    ktt("/api/method/frappe.client.delete", {"doctype": "Journal Entry", "name": winners[0]})
     emit("HTTP_014_MA_GD_NATIVE", "PASS", {"cross_pe_je": True, "concurrent_single_draft": True})
     so = bao_cao("So quy va tien gui", {"company": f["aph"], "account": acc["bank"], "tu_ngay": d, "den_ngay": d}, ktt2)
     dong = [r for r in so if r.get("so")]

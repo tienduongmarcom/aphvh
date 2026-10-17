@@ -152,7 +152,7 @@ print('LEDGER:'+json.dumps(out));frappe.destroy()
     assert ledger()==snap_cross
     draft=insert(native_doc(f['ref']+'-native-first'))
     deny(lambda:insert({**receipt_doc,'external_reference':f['ref']+'-native-first'}))
-    rpc('frappe.client.delete',{'doctype':'Journal Entry','name':draft['name']})
+    admin('/api/method/frappe.client.delete',{'doctype':'Journal Entry','name':draft['name']})
     assert ledger()==snap_cross
     emit('HTTP_FUNDS_CROSS_SOURCE_DUPLICATE','PASS','Native JE and Funds Receipt share one bank reference guard; no ledger drift')
     def action(kind,amount,**kw):
