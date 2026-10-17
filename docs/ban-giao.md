@@ -1,12 +1,22 @@
 # Bàn giao dự án APH-VH
 
-## 17/10/2026 — Đang kiểm đợt1A: thông tin giao nhận và bản in nhanh
+## 17/10/2026 — Đợt 1A đã đạt kiểm thử, chưa phát hành
 
-Nhánh mới `feat/thong-tin-giao-nhan-20261017` từ mốc0c1e104 đã giữ kế hoạch5 đợt. Viết thông tin theo đợt trong Dialog lập phiếu: cách giao, người nhận, số liên hệ, lái xe/biển số/địa chỉ; dùng trường native đã kiểm meta16.51.1 và thêm6 ô thật sự thiếu. Kiểm Address theo quyền và Customer; đưa thông tin mới vào hash request, giữ hash cũ nếu không truyền thông tin mới. Kho ghi người giao thực tế (server kiểm submit quyền), xác nhận đúng cách giao. Phiếu đã xuất không sửa đè thông tin; cập nhật hồ sơ ký không tính lại địa chỉ đã lưu. Bản in nhanh có2 liên, escape dữ liệu và dấu bản sao sau xuất. Không thay sổ/tài chính/quyền cơ bản hoặc trạng thái giao hàng.
+PR [#5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, nền `0c1e104` của nhánh bàn giao. Mã nghiệp vụ đã kiểm: **`5155ca48f4a2039d164de419459fcde92a1bfdbb`**. Commit cập nhật hồ sơ sau mốc này chỉ thay tài liệu, không phải SHA đã chạy CI.
 
-Cục bộ278 kh_aph +107 lab9x=385 ca đạt; cú phápPython/JS và diff kiểm được. Bộ sinh Print Format chạy không đổiJSON chuẩn (template nhanh render riêng). HTTP b014 thêm ca thông tin giao nhận và kiểm chuỗi VAT cũ trên phiếu mới; mong25 PASS gồm restore, tổng artifact dự kiến216. Cổng3 đổi baseline từ0.15.1 sang đúng0.15.2/digest production đã xác nhận. Các kết quả CI cũ không xác nhận mã mới.
+Đã thêm cách giao, người nhận, điện thoại, lái xe, biển số và địa chỉ trong Dialog lập phiếu theo đợt. Địa chỉ thay thế phải đúng Customer và quyền đọc; để trống giữ địa chỉ từng SO nguồn. Nội dung mới tham gia hash chống trùng, giữ hash cũ cho API không truyền thông tin giao nhận. Kho ghi riêng người trực tiếp giao; cần quyền submit và xác nhận đúng cách giao. Dấu người/thời điểm xuất do server ghi, giữ nguyên khi nhận hàng và lưu bản ký. Phiếu đã xuất không sửa đè thông tin. Bản in nhanh có hai liên Lưu kho/Giao nhận, không giá và có dấu bản sao khi in lại sau xuất. Dùng cờ Trung tâm Bán hàng hiện có; thêm sáu Custom Field qua bộ cài rõ ràng, không after_migrate, không sửa core/sổ tài chính.
 
-ĐANG DỞ: chờ CI trên đúngSHA, sửa nguyên nhân nếu lỗi; đọc artifact/ảnhDialog và bằng chứng nâng cấp. Chi tiết9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md`. Chưa hoàn tất GN09 xử lý chênh lệch hoặc GN10 xuất ngay trongDialog; chốt ca/người giữ tiền/nhà máy vẫn ở kế hoạch tiếp theo. Production giữ0.15.2, chưa tăngversion/tag/merge/phát hành/triển khai.
+Bằng chứng trên đúng SHA:
+
+- Cục bộ: **278 kh_aph + 107 lab9x = 385 ca đạt**; cú pháp Python/JS và diff đạt. Bộ sinh Print Format chuẩn chạy không đổi JSON (template nhanh render riêng).
+- [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39041879339): đạt site trắng.
+- [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876332): đạt dựng/nâng/quay lui.
+- [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876201): **216 PASS, 0 FAIL**, b014 có 25 PASS gồm restore. Đã đọc artifact, kiểm sáu trường Dialog và cả hai trang PDF A4. Chuỗi VAT/cọc/giao/thu: 770.000 / 192.500 / 100.000 / 92.500, chưa giao 577.500, nợ cũ không đổi, lãi gộp 75.000.
+- [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876215): đạt từ đúng baseline production 0.15.2/digest đã xác nhận. Đọc dấu vân: trước/sau nâng khớp `dem/tong/chi_tiet`; schema/cờ sau cài khớp site trắng; trước lỗi/sau tự quay lui khớp `dem/tong/chi_tiet/versions`.
+
+ĐANG DỞ: đợt 1 chưa đóng. Bước tiếp theo là thiết kế/triển khai GN09: người phụ trách, kết quả và liên kết chứng từ xử lý chênh lệch trên phiếu nguồn; không coi đối chiếu bản ký là xử lý xong. GN10 xuất ngay trong Dialog chưa có; GN06 còn các đường in khác và máy in thật; GN11 chưa cắt kết nối trình duyệt tại thời điểm server commit. Fallback địa chỉ SO có unit, chưa có ca HTTP riêng. Chi tiết 9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md`, thứ tự 5 đợt tại `docs/ke-hoach-van-hanh-tiep-noi.md`. Chốt ca/người giữ tiền/nhà máy vẫn thuộc đợt sau.
+
+Production vẫn **0.15.2**, chưa tăng version/tag/merge/phát hành/triển khai PR #5, chưa nghiệm thu tài khoản nhân sự/dữ liệu/máy in thật. Khi đến bước phát hành phải kiểm đúng SHA phiên bản cuối và diễn tập bản sao production hiện tại theo runbook.
 
 ## 17/10/2026 — Khôi phục mạch kế hoạch vận hành, đọc lại quy tắc GitHub
 
@@ -528,4 +538,3 @@ Repo trên máy chủ là private; máy chủ không còn token `repo`, muốn `
 - `NGHIEM_THU.md`: biên bản nghiệm thu các bản 0.1–0.2.
 - Dữ liệu sổ MISA mẫu của khách nằm trong Project claude.ai "Hơp nhất APH - VH" (không có trong repo; không dùng làm dữ liệu thử ngoài máy khách).
 
-Bổ sung dấu thời điểm/người xác nhận xuất tại kho do server ghi; giữ nguyên khi khách nhận và lưu bản ký. Cục bộ278+107=385 ca đạt, CI mới chưa kết luận.
