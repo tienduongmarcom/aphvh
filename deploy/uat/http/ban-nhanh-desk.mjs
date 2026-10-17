@@ -44,9 +44,10 @@ try {
     await until('!!cur_frm.custom_buttons["Lập phiếu xuất & In"]');
     await evaluate('cur_frm.custom_buttons["Lập phiếu xuất & In"].trigger("click");true');
     await until('!!window.cur_dialog && cur_dialog.fields_dict.rows && cur_dialog.$wrapper.is(":visible")');
-    const view=await evaluate('({title:cur_dialog.title,rows:cur_dialog.fields_dict.rows.df.data.map(r=>({qty:r.qty,remaining:r.remaining_qty,draft:r.draft_qty})),button:cur_dialog.get_primary_btn().text()})');
+    const view=await evaluate('({title:cur_dialog.title,rows:cur_dialog.fields_dict.rows.df.data.map(r=>({qty:r.qty,remaining:r.remaining_qty,draft:r.draft_qty})),button:cur_dialog.get_primary_btn().text(),deliveryFields:["delivery_method","recipient","phone","driver_name","vehicle_no","shipping_address_name"].map(k=>({name:k,visible:!!cur_dialog.fields_dict[k]?.$wrapper.is(":visible")})),method:cur_dialog.get_value("delivery_method"),recipientRequired:cur_dialog.fields_dict.recipient.df.reqd})');
     if(view.rows.length!==1 || view.rows[0].qty!==0 || view.rows[0].remaining!==15 || view.rows[0].draft!==5)throw Error('Sai lượng trên Dialog: '+JSON.stringify(view));
     if(!view.button.includes('Lập phiếu'))throw Error('Thiếu hành động chính');
+    if(view.deliveryFields.length!==6 || view.deliveryFields.some(f=>!f.visible) || view.method!=="Vận chuyển" || !view.recipientRequired)throw Error('Thiếu thông tin giao nhận trong Dialog: '+JSON.stringify(view));
     const screenshot=await command('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync('ban-nhanh-dialog.png',Buffer.from(screenshot.data,'base64'));
     console.log(JSON.stringify({case:'NATIVE_DESK_BAN_NHANH_DIALOG',status:'PASS',detail:view}));

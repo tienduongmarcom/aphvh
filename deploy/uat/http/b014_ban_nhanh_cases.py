@@ -75,6 +75,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     emit("HTTP_014_BAN_NHANH_DRAFT_REPEAT", "PASS", {"delivery_note": note["name"], "remaining_kg": 15, "ledger_unchanged": True})
 
     html = rpc("kh_aph.ban_nhanh.print_batch", {**args, "request_id": token}, ktbh)["html"]
+    Path("quick-delivery-slip.html").write_text(html, encoding="utf-8")
     for text in ("CHỜ XUẤT", note["name"], root["name"], "Người thực giao hàng", "Người thực nhận hàng", "Kg/bao",
                  "Liên: Lưu kho", "Liên: Giao nhận", info["recipient"], info["vehicle_no"], "Kho nhận số 12", "Anh kho vệ tinh"):
         assert text in html, text
