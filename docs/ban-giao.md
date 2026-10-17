@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 17/10/2026 13:22 (Việt Nam) — Production 0.15.1 đã triển khai theo log anh Tiến
+
+Anh Tiến trực tiếp chạy thủ tục trên VM `erpnext-prod`, site `frontend`; Codex không có phiên SSH. Diễn tập lượt `10170555e7bc7c` báo tong/dem/chi_tiet khớp, dấu `~/dien-tap-0.15.1.ok`, sau đó triển khai báo `=== XONG 0.15.1: ĐẠT ===`. Đây là bằng chứng log người vận hành gửi, chưa phải Codex kiểm độc lập giao diện production.
+
+Nguồn bất biến: tag `v0.15.1`, commit `b803c7a95e13c57af3a0f58da6e0c8ea48079db2`; image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.1`, digest `sha256:c4b61eb4b2924d50f64bbeaf83623da3e7259f9484b28d6f3e228939912edf47` khớp log VM. Nền ERPNext 16.51.1/Frappe 16.52.0, kh_aph 0.15.1/lab9x 0.2.10. Phát hành [39005035290](https://github.com/tienduongmarcom/aphvh/actions/runs/39005035290) đạt UAT/Cổng 2/Cổng 2b/Cổng 3 và job đẩy image trên đúng SHA. Không di chuyển tag 0.15.0/0.15.1.
+
+Bản này gồm nâng nền, lập phiếu xuất nháp/in nhanh và sửa dịch đã ghi bên dưới; không đồng nghĩa hoàn thành toàn bộ dự án. Tiếp theo: nhân sự mở lại Desk, kiểm phiên bản/hiển thị và sử dụng theo quyền; không tạo chứng từ giả trên production. Click primary/in giấy thực tế với nhân sự thật chưa được nghiệm thu bởi Codex. Hồ sơ bản ký, ca tiền, nhà máy/tài chính mới vẫn còn mở. Quay lui chỉ theo thủ tục và bản sao lưu ngay trước nâng 0.15.1 (phiên bản trước 0.14.3), không dùng thư mục sao lưu cũ tùy ý. Các mục ĐANG DỞ/phát hành chưa xong bên dưới là lịch sử.
+
 ## 17/10/2026 11:25 — Ứng viên 0.15.1, sửa ranh giới readiness của Cổng 2b
 
 Tag v0.15.0 do anh Tiến đẩy = c236b27; KHÔNG di chuyển hoặc ghi đè. Phát hành run 38998723309: attempt 1 và 2 UAT/Cổng 2/Cổng 3 đạt, Cổng 2b lỗi HTTP503 bước 3 nên job đẩy image bị skip. Logs: mã thoát kéo image không tồn tại=2 và CUSTOM_TAG=ci-b đã đúng, backend/frontend vẫn health starting ~50 giây sau nâng. Rerun một lần tái hiện; không tiếp tục rerun cùng tag.
