@@ -45,6 +45,7 @@ class IssueBoundary(unittest.TestCase):
         self.f.parse_json = __import__("json").loads
         self.f.has_permission = Mock(return_value=True)
         self.f.db = Mock()
+        self.f.db.sql.return_value = []
         self.f.db.get_value.return_value = types.SimpleNamespace(enabled=1, user_type="System User")
         self.f.db.exists.return_value = False
         self.f.get_meta = lambda dt: types.SimpleNamespace(has_field=lambda f: True)
@@ -145,7 +146,7 @@ class IssueBoundary(unittest.TestCase):
         doc = self.ready()
         proof = self.doc(return_against="SI", is_return=1, update_stock=0, items=[])
         original = self.doc(items=[{"delivery_note": "DN-khác"}])
-        self.f.get_doc = Mock(side_effect=lambda dt,n: proof if n=="CREDIT" else original)
+        self.f.get_doc = Mock(side_effect=lambda dt,n,**kw: proof if n=="CREDIT" else original)
         with self.assertRaises(ValueError): self.m._proof(doc, R.CREDIT, "CREDIT")
         original.items = [{"delivery_note": "DN"}, {"delivery_note": "DN-khác"}]
         with self.assertRaises(ValueError): self.m._proof(doc, R.CREDIT, "CREDIT")
@@ -166,9 +167,9 @@ class IssueBoundary(unittest.TestCase):
     def test_cancel_requires_reopening_linked_proof_and_closing_active_source(self):
         doc = self.ready()
         with self.assertRaises(ValueError): self.m.before_cancel(doc)
-        doc.set(self.m.STATE, None); self.f.db.exists.return_value = True
+        doc.set(self.m.STATE, None); self.f.db.sql.return_value = [("DN",)]
         with self.assertRaises(ValueError): self.m.before_cancel(doc)
-        self.f.db.exists.return_value = False
+        self.f.db.sql.return_value = []
         self.m.before_cancel(doc)
 
     def test_flag_off_no_database_or_mutation(self):

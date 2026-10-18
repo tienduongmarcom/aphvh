@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 
 
 def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien):
@@ -88,5 +90,23 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien):
     result = action("resolve", {"ket_qua": "Đã kiểm kho nhập lại và hóa đơn giảm tương ứng", "cach_xu_ly": "Hóa đơn giảm", "hoa_don_giam": credit})
     assert result[state] == "Đã xử lý" and counts() == ledger_after_return
     denied(lambda: rpc("frappe.client.cancel", {"doctype": "Sales Invoice", "name": credit}, ktt))
+    action("reopen", {"ly_do": "Kiểm đồng thời chốt và hủy chứng từ căn cứ"})
+    stamp = current()["modified"]
+    callers = [phien(f["ktt"]), phien(f["ktt"])]
+    def race(index):
+        try:
+            if index == 0:
+                return action("resolve", {"ket_qua": "Kiểm đồng thời", "cach_xu_ly": "Hóa đơn giảm", "hoa_don_giam": credit},
+                              callers[index], stamp)
+            return rpc("frappe.client.cancel", {"doctype": "Sales Invoice", "name": credit}, callers[index])
+        except urllib.error.HTTPError as exc:
+            error = json.loads(exc.read().decode())
+            assert error.get("exc_type") in ("QueryDeadlockError", "ValidationError", "TimestampMismatchError", "LinkExistsError"), error
+            return {"denied": error["exc_type"]}
+    with ThreadPoolExecutor(2) as pool:
+        outcomes = list(pool.map(race, (0, 1)))
+    final, credit_doc = current(), get("Sales Invoice", credit, ktt)
+    assert not (final[state] == "Đã xử lý" and credit_doc["docstatus"] != 1), outcomes
     emit("HTTP_014_CHENH_LECH_CHUNG_TU", "PASS", {"submitted_return_source": True, "credit_source": True,
-         "draft_and_wrong_proof_denied": True, "cancel_proof_denied": True, "resolution_does_not_post": True})
+         "draft_and_wrong_proof_denied": True, "cancel_proof_denied": True, "resolution_does_not_post": True,
+         "concurrent_cancel_safe": True})

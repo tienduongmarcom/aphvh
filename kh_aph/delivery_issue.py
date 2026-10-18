@@ -41,6 +41,8 @@ def fields():
              "depends_on": "eval:doc.docstatus==1 && !doc.is_return" + (" && doc." + STATE if name != STATE else "")}
         if options is not None:
             f["options"] = options
+        if name in (RETURN, CREDIT):
+            f["search_index"] = 1
         if name == STATE:
             f["in_standard_filter"] = 1
             f["description"] = "Đối chiếu bản ký không tự hoàn tất việc xử lý chênh lệch."
@@ -92,7 +94,7 @@ def _proof(doc, mode, name):
     dt = "Delivery Note" if mode == R.RETURN else "Sales Invoice"
     # Cùng khóa với hủy native: không chốt bằng chứng từ vừa bị hủy đồng thời.
     frappe.db.sql(f"SELECT name FROM `tab{dt}` WHERE name=%s FOR UPDATE", name)
-    proof = frappe.get_doc(dt, name)
+    proof = frappe.get_doc(dt, name, for_update=True)
     proof.check_permission("read")
     if cint(proof.docstatus) != 1 or not cint(proof.is_return) or proof.company != doc.company or proof.customer != doc.customer:
         frappe.throw("Chứng từ xử lý phải đã ghi sổ, là chứng từ trả/giảm, đúng công ty và khách của phiếu")
@@ -116,7 +118,7 @@ def cap_nhat(name, modified, action, values=None):
     if not enabled():
         frappe.throw("Xử lý chênh lệch giao nhận chưa được bật")
     frappe.db.sql("SELECT name FROM `tabDelivery Note` WHERE name=%s FOR UPDATE", name)
-    doc = frappe.get_doc("Delivery Note", name)
+    doc = frappe.get_doc("Delivery Note", name, for_update=True)
     doc.check_permission("read")
     doc.check_permission("write")
     if cint(doc.docstatus) != 1 or cint(doc.is_return):
@@ -176,5 +178,7 @@ def before_cancel(doc, method=None):
     if doc.doctype == "Delivery Note" and doc.get(STATE) in (R.PENDING, R.ACTIVE):
         frappe.throw("Phiếu còn chênh lệch cần xử lý; kế toán trưởng chốt hồ sơ trước khi hủy")
     field = RETURN if doc.doctype == "Delivery Note" else CREDIT
-    if frappe.db.exists("Delivery Note", {field: doc.name, "docstatus": 1}):
+    # Đọc khóa hiện hành, không dùng snapshot repeatable-read trước lúc chốt đồng thời.
+    frappe.db.sql(f"SELECT name FROM `tab{doc.doctype}` WHERE name=%s FOR UPDATE", doc.name)
+    if frappe.db.sql(f"SELECT name FROM `tabDelivery Note` WHERE `{field}`=%s AND docstatus=1 LIMIT 1 FOR UPDATE", doc.name):
         frappe.throw("Chứng từ đang làm căn cứ xử lý chênh lệch. Mở lại hồ sơ trên phiếu giao trước khi hủy")
