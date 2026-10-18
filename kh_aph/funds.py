@@ -407,6 +407,9 @@ def create_action(values):
     fields = ("receipt", "action_type", "amount", "posting_date", "reason", "source_reservation",
               "source_allocation", "shared_order", "source_company", "invoice", "route",
               "bank_account", "owner_bank_account", "external_reference", "owner_external_reference")
+    from kh_aph import cash_custody
+    if cash_custody.enabled():
+        fields += (cash_custody.HOLDER, cash_custody.PAYER)
     doc = frappe.get_doc({"doctype": "APH Funds Action", **{f: values.get(f) for f in fields}}).insert()
     doc.submit()
     return doc.as_dict()

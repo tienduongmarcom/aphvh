@@ -56,7 +56,12 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
     assert next(r for r in je["accounts"] if r["account"] == f["acc"]["tien"])[H] == f["ktbh"]
     money_rows = [r for r in review() if r["voucher_no"] in (receipt["name"], je["name"])]
     assert len(money_rows) == 1 and money_rows[0]["holder"] == f["ktbh"] and float(money_rows[0]["debit"]) == 54321, money_rows
-    emit("HTTP_2A_FUNDS_SINGLE_GL_SOURCE", "PASS", {"receipt_je_metadata": True, "cash_counted_once": True})
+    refund = call("kh_aph.funds.create_action", {"values": json.dumps({"receipt": receipt["name"], "action_type": "Hoàn tiền",
+        "amount": 1000, "posting_date": f["date"], "reason": "UAT kiểm phía chi", "bank_account": f["acc"]["tien"],
+        "external_reference": f["p"] + "-custody-refund", "kh_aph_nguoi_giao_tien": f["ktbh"]})})
+    refunded = [r for r in review() if r["voucher_no"] == refund["journal_entry"]]
+    assert len(refunded) == 1 and refunded[0]["holder"] == f["ktbh"] and float(refunded[0]["credit"]) == 1000, refunded
+    emit("HTTP_2A_FUNDS_SINGLE_GL_SOURCE", "PASS", {"receipt_je_metadata": True, "cash_counted_once": True, "refund_payer": True})
 
     before = counts()
     denied(lambda: rpc("kh_aph.cash_custody.review", args, dung), ("PermissionError",))
