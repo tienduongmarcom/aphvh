@@ -55,3 +55,9 @@ Không sửa sổ tài chính khi chuyển trách nhiệm cùng quỹ. Khác qu�
 ## 9. Triển khai và khôi phục
 
 Schema qua bộ cài rõ ràng; không hook after_migrate, không tạo dữ liệu trách nhiệm lịch sử. Thêm cờ vào installer/preflight/dấu vân/rollback/C3/UAT, FLAGS_MOI hiện ba cờ mới so production0.15.3. Chưa tăng version/tag/deploy; chủ dự án tự gắn tag khi bản đủ điều kiện. Diễn tập bản sao dữ liệu hiện tại theo runbook trước nâng thật; quay lui snapshot/image/cờ trong bảo trì, không restore mất giao dịch sau mở nhập liệu. Nghiệm thu người dùng thật gom cuối; còn adapter nhà máy/thu cũ, đóng vụ lệch, đảo và quyền tiền cá nhân không GL trước khi gọi toàn bộ2B hoàn tất.
+
+## Bằng chứng đang kiểm
+
+Lượt3dadd51/UAT39141849273 đã qua cùng-quỹ/thiếu và retry/chuyển Cash/nộp Bank, FAIL ở hai phiên gửi do MariaDB1020 Record has changed. Giữ nguyên run và artifact. Sửa bằng retry tối đa3 lần tại đúng biên RPC tiền, rollback toàn bộ JE/kết quả lần thử, không retry ValidationError và không rollback nghiệp vụ caller nếu được gọi nội bộ; unit kiểm các ranh giới này. Assertion một nguồn chỉ đủ một đề nghị và hai phiên nhận chỉ một JE giữ nguyên. Đang chờ CI mã sửa.
+
+Không tắt riêng cờ bàn giao sau khi đã vận hành; projection trách nhiệm cùng-quỹ cần dữ liệu bàn giao. Khôi phục phải dùng snapshot/image/cờ tương ứng theo runbook, không tắt cờ để xóa tác động trách nhiệm.

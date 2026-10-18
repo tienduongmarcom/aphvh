@@ -6,6 +6,7 @@ from frappe.utils import cint, now_datetime, getdate
 
 from kh_aph import cash_custody as custody
 from kh_aph.cash_closing_rules import anchor, balance, money, position, unchanged
+from kh_aph.cash_transaction import retry_rpc
 
 FLAG = "kh_aph_cash_closing"
 OPENING = "APH Xac minh quy"
@@ -222,6 +223,7 @@ def prevent_change(doc, method=None):
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_rpc
 def close(name):
     """Retry theo tên hồ sơ: cùng ca chỉ được submit một lần."""
     guard()
@@ -238,6 +240,7 @@ def close(name):
 
 
 @frappe.whitelist()
+@retry_rpc
 def current(company, account):
     """Chỉ trả phần tiền của người đang đăng nhập; không lộ các nguồn hoặc người khác."""
     scope(company, account)

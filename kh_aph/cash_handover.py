@@ -8,6 +8,7 @@ from frappe.utils import cint, now_datetime, getdate
 
 from kh_aph import cash_closing as C, cash_custody as custody
 from kh_aph.cash_closing_rules import money
+from kh_aph.cash_transaction import retry_rpc
 
 FLAG = "kh_aph_cash_handover"
 DT = "APH Ban giao tien"
@@ -164,6 +165,7 @@ def result(doc):
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_rpc
 def send(name):
     doc = _locked(name)
     if doc.from_holder != frappe.session.user:
@@ -177,6 +179,7 @@ def send(name):
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_rpc
 def cancel(name):
     doc = _locked(name)
     if doc.from_holder != frappe.session.user:
@@ -203,6 +206,7 @@ def _journal(doc, amount):
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_rpc
 def receive(name, amount, reason=None, assignee=None, due_date=None):
     doc = _locked(name)
     if doc.from_holder == doc.to_holder or frappe.session.user != doc.to_holder:
