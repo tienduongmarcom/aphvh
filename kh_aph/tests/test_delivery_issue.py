@@ -10,7 +10,7 @@ from kh_aph import delivery_issue_rules as R
 class IssueRules(unittest.TestCase):
     def test_schema_payload_and_dates(self):
         self.assertEqual(R.normalize("report", {"noi_dung": "  Lệch 1 bao  "}), {"noi_dung": "Lệch 1 bao"})
-        for action, value in [("bad", {}), ("report", []), ("report", {"noi_dung": 5}),
+        for action, value in [("bad", {}), ([], {}), ({}, {}), ("report", []), ("report", {"noi_dung": 5}),
                 ("report", {"noi_dung": "x", "docstatus": 1}), ("report", {"noi_dung": "x"*2001}),
                 ("report", {"noi_dung": "x\0"}), ("assign", {"nguoi_phu_trach": "a", "han_xu_ly": "2026-02-30"}),
                 ("assign", {"nguoi_phu_trach": "a", "han_xu_ly": "2026-10-18T01:00:00"})]:

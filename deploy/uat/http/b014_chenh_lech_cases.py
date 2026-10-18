@@ -26,6 +26,11 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien):
     report = action("report", {"noi_dung": "Bản ký ghi thiếu 1 kg; xác minh hàng có chở về kho hay không"}, ktbh)
     assert report[state] == "Cần xử lý" and report["kh_aph_chenh_lech_bao_boi"] == f["ktbh"]
     assert not any(key in report for key in ("items", "grand_total", "valuation_rate", "amount"))
+    no_cost = action("report", {"noi_dung": report["kh_aph_chenh_lech_noi_dung"]}, phien(f["dung"]))
+    assert set(no_cost) == {"name", "modified", "kh_aph_chenh_lech_state", "kh_aph_chenh_lech_noi_dung",
+        "kh_aph_chenh_lech_phu_trach", "kh_aph_chenh_lech_han", "kh_aph_chenh_lech_ket_qua",
+        "kh_aph_chenh_lech_cach_xu_ly", "kh_aph_chenh_lech_phieu_tra", "kh_aph_chenh_lech_hoa_don_giam",
+        "kh_aph_chenh_lech_bao_boi", "kh_aph_chenh_lech_bao_luc", "kh_aph_chenh_lech_chot_boi", "kh_aph_chenh_lech_chot_luc"}
     denied(lambda: action("assign", {"nguoi_phu_trach": f["ktt2"], "han_xu_ly": f["date"]}, ktbh), ("PermissionError",))
     denied(lambda: action("report", {"noi_dung": "x", "docstatus": 1}, ktbh))
     forged = {**current(), state: "Đã xử lý", "kh_aph_chenh_lech_chot_boi": f["ktbh"]}
@@ -36,7 +41,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien):
     ktt("/api/method/frappe.client.delete", {"doctype": "User Permission", "name": perm["name"]})
     assert counts() == before
     emit("HTTP_014_CHENH_LECH_QUYEN", "PASS", {"chief_only": True, "assignee_scope": True,
-         "stale_denied": True, "overposting_denied": True, "minimal_response": True})
+         "stale_denied": True, "overposting_denied": True, "minimal_response": True, "no_cost_combined_roles": True})
 
     doc = current()
     rpc("kh_aph.ho_so_giao_nhan.doi_chieu", {"name": name, "modified": doc["modified"]}, ktt)

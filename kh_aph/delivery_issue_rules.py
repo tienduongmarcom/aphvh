@@ -12,7 +12,7 @@ KEYS = {"report": {"noi_dung"}, "assign": {"nguoi_phu_trach", "han_xu_ly"},
 
 
 def normalize(action, values):
-    if action not in KEYS or not isinstance(values, dict) or set(values) - KEYS[action]:
+    if not isinstance(action, str) or action not in KEYS or not isinstance(values, dict) or set(values) - KEYS[action]:
         raise ValueError("Thao tác hoặc trường thông tin xử lý chênh lệch không hợp lệ")
     result = {}
     for key in KEYS[action]:
