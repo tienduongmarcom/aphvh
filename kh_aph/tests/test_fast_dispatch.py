@@ -41,6 +41,34 @@ class FastDispatch(unittest.TestCase):
         self.f.has_permission.return_value = True; self.f.conf = {}
         with self.assertRaises(ValueError): self.m.create_and_dispatch("ROOT", [], "TOKEN", {}, "Kho A")
 
+    def test_print_uses_document_net_sales_values_including_zero(self):
+        class Record(types.SimpleNamespace):
+            def get(self, key, default=None): return getattr(self, key, default)
+        helpers = types.ModuleType("kh_aph.print_utils")
+        helpers.kh_aph_cong_ty = lambda company: {"ten": company, "dia_chi": "Địa chỉ công ty"}
+        helpers.kh_aph_ngay = lambda date: "Ngày 18 tháng 10 năm 2026"
+        self.m._order = Mock(return_value=Record(name="ROOT"))
+        self.m._note_scope = Mock()
+        self.f.get_all = Mock(return_value=["DN-1"])
+        self.f.utils = Record(strip_html=lambda text: text, get_fullname=lambda user: "Người lập")
+        self.f.render_template = Mock(side_effect=lambda path, context: context)
+        for net_rate in (30000, 0):
+            row = Record(item_code="A", item_name="Đậu", warehouse="HN", qty=100, uom="Kg",
+                         rate=37500, amount=3750000, net_rate=net_rate, net_amount=net_rate*100,
+                         valuation_rate="KHÔNG ĐƯỢC IN GIÁ VỐN")
+            note = Record(name="DN-1", company="APH", posting_date="2026-10-18", customer="KH-1",
+                          customer_name="Khách", currency="VND", docstatus=0, owner="ktbh", items=[row],
+                          check_permission=Mock())
+            self.f.get_doc = Mock(return_value=note)
+            with self.subTest(net_rate=net_rate), patch.dict(sys.modules, {"kh_aph.print_utils": helpers}):
+                printed = self.m.print_batch("ROOT", "TOKEN")["html"]["notes"][0]
+                self.assertEqual(printed["items"][0]["rate"], "30.000" if net_rate else "0")
+                self.assertEqual(printed["total"], "3.000.000" if net_rate else "0")
+                self.assertEqual(printed["total_qty"], "100")
+                self.assertNotIn("valuation_rate", repr(printed))
+                self.assertNotIn("KHÔNG ĐƯỢC IN GIÁ VỐN", repr(printed))
+                note.check_permission.assert_called_once_with("print")
+
     def test_actual_dispatcher_not_fabricated_or_unbounded(self):
         for value in (None, 12, " ", "a\nb", "a"*141):
             with self.subTest(value=value), self.assertRaises(ValueError):

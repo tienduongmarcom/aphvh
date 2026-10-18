@@ -111,3 +111,7 @@ HD01 hóa đơn một phần: yêu cầu từng dòng/lượng, gắn lần giao
 GN10 và ca mất phản hồi GN11 đã bổ sung, kiểm đúng mã `bdb91a8` (406 cục bộ/227 UAT/bốn cổng, link ở đầu bàn giao). Xuất ngay tách ý định với lập nháp, nguyên tử nhiều nguồn, dùng lại kết quả sau commit. Chrome đã thực sự chặn phản hồi200 rồi retry cùng Dialog, không chỉ gọi API lặp.
 
 Đợt 1 chưa đóng: bước tiếp GN06 đồng bộ các đường in chuẩn/in lại/phiếu tổng hợp với dữ liệu đợt mới, giữ fallback phiếu cũ/phiếu trả, không gán một người nhận chung cho nhiều DN. Kiểm escape/ẩn giá/bản sao/PDF và nghiệm thu máy in thật. Nhân sự/dữ liệu thật và tải thực tế còn mở. Giữ các đợt tiền/nhà máy/tài chính và hóa đơn một phần ở phạm vi riêng đã ghi trên.
+
+### Điều chỉnh GN06 ngày 18/10/2026
+
+Chủ dự án yêu cầu phiếu xuất nhanh theo PDF A5 đang dùng: A5 ngang có giá bán/thành tiền/tiền chữ và năm ô ký, vẫn hai liên và metadata giao nhận. Đã sửa template/API in và kiểm cục bộ300 ca, PDF giả; chưa kiểm CI/HTTP/máy in thật. Mốc xanh bdb91a8 là trước sửa A5. Mẫu chuẩn/in lại/tổng hợp chưa đổi, quy tắc không giá của các mẫu đó chưa bị ghi đè. Xem đầu ban-giao/TRANG_THAI cho điểm tiếp nối.

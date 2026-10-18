@@ -49,17 +49,26 @@ class DispatchPrint(unittest.TestCase):
         note = {"name": "DN-1", "company": "APH", "posting_date": "2026-10-16",
                 "customer_name": "Khách <script>", "docstatus": 0, "recipient": "Nhận <script>",
                 "address": "Kho <img>", "created_by": "Người lập", "dispatcher": "Kho A",
-                "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": 50,
-                           "bags": 2, "kg_per_bag": 25}]}
+                "total": "1.875.000", "total_words": "Một triệu tám trăm bảy mươi lăm nghìn đồng",
+                "total_qty": "50", "currency": "VND", "company_address": "Công ty <img>",
+                "customer": "KH-1", "warehouses": "HN",
+                "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": "50",
+                           "uom": "Kg", "bags": "2", "kg_per_bag": "25", "rate": "37.500", "amount": "1.875.000"}]}
         html = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
         self.assertIn("CHỜ XUẤT", html)
         self.assertIn("Khách &lt;script&gt;", html)
         self.assertNotIn("Khách <script>", html)
         self.assertIn("Người thực giao hàng", html)
         self.assertIn("50", html)
-        self.assertNotIn("Giá bán", html)
+        self.assertNotIn("Giá vốn", html)
+        self.assertIn("Giá bán thuần theo phiếu", html)
         self.assertIn("Nhận &lt;script&gt;", html)
         self.assertIn("Kho &lt;img&gt;", html)
+        self.assertIn("Công ty &lt;img&gt;", html)
+        self.assertIn("size: A5 landscape", html)
+        for text in ("Đơn giá", "Thành tiền", "37.500", "1.875.000", note["total_words"],
+                     "Người lập phiếu", "Thủ kho", "Kế toán trưởng", "Giám đốc"):
+            self.assertIn(text, html)
         self.assertEqual(html.count("<h1>PHIẾU XUẤT KHO</h1>"), 2)
         self.assertIn("Liên: Lưu kho", html)
         self.assertIn("Liên: Giao nhận", html)

@@ -255,7 +255,9 @@ def _create(shared_order, selections, request_id, delivery=None, dispatcher=None
 
 @frappe.whitelist()
 def print_batch(shared_order, request_id):
-    """In một đợt đã lập; không tăng số lượng, không xác nhận xuất, không trả giá."""
+    """In phiếu A5 từ đợt đã lập; giá bán trên chứng từ, không ghi sổ."""
+    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay
+    from lab9x.vn_words import so_tien_bang_chu, so_vn
     _guard()
     doc = _order(shared_order)
     names = frappe.get_all("Delivery Note", {F_ORDER: doc.name, F_BATCH: request_id}, pluck="name", order_by="name")
@@ -268,7 +270,15 @@ def print_batch(shared_order, request_id):
         dn.check_permission("print")
         if dn.docstatus == 2:
             frappe.throw("Đợt có phiếu đã hủy; không in làm căn cứ xuất hàng")
-        notes.append({"name": dn.name, "company": dn.company, "posting_date": dn.posting_date,
+        company = kh_aph_cong_ty(dn.company)
+        # Chỉ giá bán thuần trên DN; không truy vấn hoặc đưa giá vốn vào ngữ cảnh in.
+        total = sum(flt(r.net_amount if r.get("net_amount") is not None else r.amount) for r in dn.items)
+        notes.append({"name": dn.name, "company": company["ten"], "company_address": company["dia_chi"],
+                      "posting_date": kh_aph_ngay(dn.posting_date), "customer": dn.customer,
+                      "currency": dn.currency, "total": so_vn(total, 2),
+                      "total_words": so_tien_bang_chu(total) if dn.currency == "VND" else "",
+                      "total_qty": so_vn(sum(flt(r.qty) for r in dn.items)),
+                      "warehouses": ", ".join(dict.fromkeys(r.warehouse for r in dn.items)),
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
                       "delivery_method": dn.get(delivery_info.METHOD), "recipient": dn.get(delivery_info.RECIPIENT),
                       "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),
@@ -276,7 +286,11 @@ def print_batch(shared_order, request_id):
                       "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),
                       "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": dn.get(delivery_info.HANDED_AT),
                       "items": [{"item_code": r.item_code, "item_name": r.item_name, "warehouse": r.warehouse,
-                                 "qty": r.qty, "bags": r.get("kh_aph_bags"),
-                                 "kg_per_bag": r.get("kh_aph_kg_per_bag")} for r in dn.items]})
+                                 "qty": so_vn(r.qty), "uom": r.uom,
+                                 "bags": so_vn(r.get("kh_aph_bags")) if r.get("kh_aph_bags") else "",
+                                 "kg_per_bag": so_vn(r.get("kh_aph_kg_per_bag")) if r.get("kh_aph_kg_per_bag") else "",
+                                 "rate": so_vn(r.net_rate if r.get("net_rate") is not None else r.rate, 2),
+                                 "amount": so_vn(r.net_amount if r.get("net_amount") is not None else r.amount, 2)}
+                                for r in dn.items]})
     return {"html": frappe.render_template("templates/ban_nhanh/phieu_dot_xuat.html",
                                            {"shared_order": doc.name, "notes": notes})}

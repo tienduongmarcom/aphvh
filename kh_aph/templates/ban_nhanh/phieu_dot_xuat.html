@@ -1,32 +1,60 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><title>Phiếu xuất kho</title>
 <style>
-body { font: 13px Arial, sans-serif; color: #111; margin: 20px; }
-section { page-break-after: always; } section:last-child { page-break-after: auto; }
-h1 { font-size: 22px; text-align: center; } .state { text-align: center; font-weight: bold; }
-table { width: 100%; border-collapse: collapse; margin: 14px 0; } th, td { border: 1px solid #555; padding: 7px; }
-.number { text-align: right; } .signatures { display: flex; justify-content: space-around; min-height: 110px; }
-@page { size: A4; margin: 14mm; }
+@page { size: A5 landscape; margin: 6mm 7mm; }
+* { box-sizing: border-box; }
+body { font: 9pt "Times New Roman", serif; color: #000; margin: 0; line-height: 1.12; }
+section + section { break-before: page; page-break-before: always; }
+h1 { clear: both; font-size: 15pt; margin: 1mm 0 0; text-align: center; }
+p { margin: 0; }
+.center { text-align: center; } .number { text-align: right; white-space: nowrap; }
+.head { font-size: 9pt; } .copy { float: right; font-size: 8pt; }
+.state { text-align: center; font: bold 8pt Arial, sans-serif; margin: 1mm 0; }
+.info { margin: 2mm 0; } .info div { margin: .5mm 0; }
+.goods { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1.5mm 0; font-size: 9pt; }
+.goods th, .goods td { border: .3pt solid #777; padding: 1mm; overflow-wrap: anywhere; }
+.goods th { text-align: center; } .goods .empty td { height: 4mm; }
+thead { display: table-header-group; } tr { break-inside: avoid; page-break-inside: avoid; }
+.delivery { font-size: 9pt; margin: 1.5mm 0; }
+.signatures { width: 100%; border-collapse: collapse; text-align: center; margin-top: 2mm; font-size: 9pt; }
+.signatures td { width: 20%; vertical-align: top; height: 20mm; }
+.end { break-inside: avoid; page-break-inside: avoid; }
+.footer { font-size: 7pt; border-top: .3pt solid #999; padding-top: 1mm; }
+@media screen { body { max-width: 196mm; margin: 8mm auto; } section { margin-bottom: 12mm; } }
 </style></head><body>
 {% for note in notes %}{% for copy in ["Lưu kho", "Giao nhận"] %}<section>
+<div class="head"><span class="copy">Liên: {{ copy | e }}</span><b>Đơn vị: {{ note.company | e }}</b><br>
+Địa chỉ: {{ (note.company_address or '........................................................................') | e }}</div>
 <h1>PHIẾU XUẤT KHO</h1>
-<p class="state">Liên: {{ copy | e }}</p>
-<p class="state">{% if note.docstatus == 0 %}CHỜ XUẤT — CHƯA GHI SỔ KHO/CÔNG NỢ{% else %}ĐÃ XÁC NHẬN XUẤT — BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA{% endif %}</p>
-<p>Đơn vị: {{ note.company | e }}<br>Phiếu: <b>{{ note.name | e }}</b> · Ngày: {{ note.posting_date | e }}<br>
-Đơn bán chung: {{ shared_order | e }}<br>Khách hàng: {{ note.customer_name | e }}<br>
-Người lập: {{ (note.created_by or '') | e }}<br>
-Cách giao: {{ (note.delivery_method or '') | e }}<br>
-Địa chỉ giao: {{ (note.address or '') | e }}</p>
-<table><thead><tr><th>Hàng hóa</th><th>Kho xuất</th><th>Số bao</th><th>Kg/bao</th><th>{% if note.docstatus == 0 %}Kg dự kiến{% else %}Kg đã xuất{% endif %}</th></tr></thead><tbody>
-{% for row in note['items'] %}<tr><td>{{ row.item_code | e }} — {{ row.item_name | e }}</td><td>{{ row.warehouse | e }}</td>
-<td class="number">{{ row.bags or '' }}</td><td class="number">{{ row.kg_per_bag or '' }}</td><td class="number">{{ row.qty }}</td></tr>{% endfor %}
+<p class="center"><i>{{ note.posting_date | e }}</i><br><b>Số: {{ note.name | e }}</b></p>
+<p class="state">{% if note.docstatus == 0 %}CHỜ XUẤT - CHƯA GHI SỔ KHO/CÔNG NỢ{% else %}ĐÃ XÁC NHẬN XUẤT - BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA{% endif %}</p>
+<div class="info">
+<div>- Khách hàng: <b>{{ note.customer_name | e }}</b> (Mã KH: {{ note.customer | e }})</div>
+<div>- Người nhận hàng: {{ (note.recipient or '................................') | e }} <span style="float:right">SĐT: {{ (note.phone or '........................') | e }}</span></div>
+<div>- Lý do xuất kho: Xuất bán hàng. &nbsp; Xuất tại kho: {{ note.warehouses | e }}</div>
+<div>- Địa chỉ giao: {{ (note.address or '........................................................................') | e }}</div>
+</div>
+<table class="goods"><colgroup><col style="width:5%"><col style="width:29%"><col style="width:16%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:11%"><col style="width:13%"></colgroup>
+<thead><tr><th>STT</th><th>Tên hàng hóa, quy cách, phẩm chất</th><th>Mã số</th><th>ĐVT</th><th>{% if note.docstatus == 0 %}Kg dự kiến{% else %}Kg đã xuất{% endif %}</th><th>Số bao<br>× Kg/bao</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead><tbody>
+{% for row in note['items'] %}<tr><td class="center">{{ loop.index }}</td><td>{{ row.item_name | e }}</td><td>{{ row.item_code | e }}</td><td class="center">{{ row.uom | e }}</td><td class="number">{{ row.qty | e }}</td>
+<td class="number">{{ row.bags | e }}{% if row.bags and row.kg_per_bag %} × {{ row.kg_per_bag | e }}{% endif %}</td><td class="number">{{ row.rate | e }}</td><td class="number">{{ row.amount | e }}</td></tr>{% endfor %}
+{% for blank in range([0, 4 - note['items'] | length] | max) %}<tr class="empty"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+<tr><td></td><td colspan="3"><b>Cộng tiền hàng (chưa thuế)</b></td><td class="number"><b>{{ note.total_qty | e }}</b></td><td></td><td></td><td class="number"><b>{{ note.total | e }}</b></td></tr>
 </tbody></table>
-<p>Người nhận tại kho: {{ (note.recipient or '..................................') | e }}<br>
-Điện thoại: {{ (note.phone or '........................') | e }}<br>
-Tên lái xe: {{ (note.driver_name or '........................') | e }} · Biển số xe: {{ (note.vehicle_no or '........................') | e }}<br>
-Người thực giao: {{ (note.dispatcher or '..................................') | e }}<br>
-Thời điểm xác nhận xuất tại kho: {{ (note.handoff_time or '..................................') | e }}</p>
-<div class="signatures"><div><b>Người thực giao hàng</b><br>(Ký, ghi rõ họ tên)</div><div><b>Người thực nhận hàng</b><br>(Ký, ghi rõ họ tên)</div></div>
-<p>Ghi chú / chênh lệch thực giao: ................................................................................</p>
-<p>In phiếu không xác nhận xuất hàng. Kho đối chiếu lượng thực giao và xác nhận xuất trên hệ thống.</p>
-</section>{% endfor %}{% endfor %}</body></html>
+<div class="end">
+<p><b><i>- Tổng số tiền hàng{% if note.total_words %} (viết bằng chữ): {{ note.total_words | e }}{% else %}: {{ note.total | e }} {{ note.currency | e }}{% endif %}</i></b></p>
+<div class="delivery">
+<div>- Cách giao: {{ (note.delivery_method or '........................') | e }}; Lái xe: {{ (note.driver_name or '........................') | e }}; Biển số: {{ (note.vehicle_no or '........................') | e }}</div>
+<div>- Người thực giao hàng: {{ (note.dispatcher or '........................') | e }}; Thời điểm xuất: {{ (note.handoff_time or '........................') | e }}</div>
+<div>- Ghi chú / chênh lệch thực giao: ........................................................................................................................</div>
+<div>- Số chứng từ gốc kèm theo: .................... <span style="float:right">{{ note.posting_date | e }}</span></div>
+</div>
+<table class="signatures"><tr>
+<td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i></td>
+<td><b>Người nhận hàng</b><br><i>(Ký, họ tên)</i><br><small>Người thực nhận hàng</small></td>
+<td><b>Thủ kho</b><br><i>(Ký, họ tên)</i><br><small>Người thực giao hàng</small></td>
+<td><b>Kế toán trưởng</b><br><i>(Ký, họ tên)</i></td>
+<td><b>Giám đốc</b><br><i>(Ký, họ tên)</i></td>
+</tr></table>
+<p class="footer">Đơn bán chung: {{ shared_order | e }}. Người lập: {{ (note.created_by or '') | e }}.<br>In phiếu không xác nhận xuất hàng. Giá bán thuần theo phiếu, chưa thuế; không thay thế hóa đơn.</p>
+</div></section>{% endfor %}{% endfor %}</body></html>

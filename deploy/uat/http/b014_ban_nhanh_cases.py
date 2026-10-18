@@ -83,9 +83,19 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
         assert text in html, text
     for text in ("valuation_rate", "basic_rate", "Đơn giá vốn", "Giá bán/kg"):
         assert text not in html, text
+    for text in ("size: A5 landscape", "Đơn giá", "Thành tiền", "viết bằng chữ", "Kế toán trưởng", "Giám đốc"):
+        assert text in html, text
+    # Giá bán thuần từ DN, không đọc giá vốn hoặc tự tính lại từ bảng giá hiện hành.
+    def vn_amount(value):
+        return f"{value:,.2f}".rstrip("0").rstrip(".").replace(",", "X").replace(".", ",").replace("X", ".")
+    for row in note["items"]:
+        assert vn_amount(row["net_rate"]) in html
+        assert vn_amount(row["net_amount"]) in html
+    assert vn_amount(sum(row["net_amount"] for row in note["items"])) in html
     denied(lambda: rpc("kh_aph.ban_nhanh.print_batch", {**args, "request_id": token}, dung), ("PermissionError",))
     assert ledger_counts() == before, "In đã phát sinh sổ"
-    emit("HTTP_014_BAN_NHANH_PRINT", "PASS", {"quantity_only": True, "draft_label": True, "ledger_unchanged": True})
+    emit("HTTP_014_BAN_NHANH_PRINT", "PASS", {"paper": "A5 landscape", "sales_price": True,
+         "cost_hidden": True, "draft_label": True, "ledger_unchanged": True})
 
     if os.environ.get("GITHUB_ACTIONS") == "true":
         result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")), root["name"]],

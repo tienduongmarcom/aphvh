@@ -44,3 +44,7 @@ Unit: chuẩn hóa/kiểu dữ liệu/field thừa, địa chỉ theo khách/quy
 ## 9. Cài đặt và khôi phục
 
 Schema thêm sáu ô qua `trung_tam_ban.schema`, dùng cờ hiện có, không after_migrate. JS qua hook, không build frontend. Template in nhanh render trực tiếp theo image; bộ sinh JSON Print Format chuẩn được chạy kiểm và không có diff vì không sửa mẫu chuẩn. Cổng3 baseline cập nhật đúng digest production0.15.2 đã có log xác nhận. Chưa tăng version/tag/image, chưa đổi VM. Trước phát hành cần đủ cổng; trên VM phải diễn tập bản sao dữ liệu hiện tại và giữ bảo trì khi nâng, quay lui theo snapshot tương ứng; không restore tùy ý sau khi đã mở nhập liệu.
+
+## Bổ sung 18/10/2026 — Mẫu A5 chủ dự án cung cấp
+
+Theo yêu cầu trực tiếp “phiếu xuất nhanh chỉnh theo mẫu A5 của tôi”, mẫu nhanh chuyển sang A5 ngang có giá bán, thành tiền và tiền bằng chữ, năm ô ký theo mẫu. Giữ hai liên, dấu nháp/bản sao và metadata giao nhận. Đây là cập nhật phạm vi phiếu nhanh, không thay chính sách mẫu kho chuẩn không giá. Giá bán thuần lấy net_rate/net_amount từ DN, tổng tiền hàng chưa thuế ghi rõ; không đọc giá vốn, không tự đổi sổ hoặc coi giấy in là đã xuất/đã bàn giao. Dùng tiền chữ VND; ngoại tệ hiển thị mã tiền. Đã kiểm cục bộ300 ca và PDF giả, CI/HTTP/máy in thật chưa kiểm; chi tiết điểm dừng ở đầu ban-giao/TRANG_THAI.
