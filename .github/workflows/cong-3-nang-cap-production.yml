@@ -1,7 +1,7 @@
 # Cổng 3: diễn tập ĐÚNG đường đi của site production `frontend`:
-# image production 0.15.2 (đang chạy từ 17/10/2026 (log người vận hành), 21 cờ bật, bộ cài, cây kho, có khách + nhà cung cấp) -> diễn tập bản sao
+# image production 0.15.3 (đang chạy từ 18/10/2026 theo log người vận hành, 21 cờ bật, bộ cài, cây kho, có khách + nhà cung cấp) -> diễn tập bản sao
 # tách biệt -> dấu sai bị từ chối -> trien_khai_frontend.sh (bảo trì xuyên suốt, so sổ chi tiết) -> chạy lại bộ cài -> so schema
-# với site dựng mới -> quay-lui.sh về 0.15.2 -> cố ý làm hỏng nâng cấp: tự quay lui, giữ bảo trì, dữ liệu như trước.
+# với site dựng mới -> quay-lui.sh về 0.15.3 -> cố ý làm hỏng nâng cấp: tự quay lui, giữ bảo trì, dữ liệu như trước.
 # Toàn bộ chạy trên dữ liệu giả của máy CI; không chạm máy chủ hay dữ liệu thật.
 name: Cổng 3 - nâng cấp từ bản production
 on:
@@ -15,8 +15,9 @@ permissions:
 env:
   ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
-  PROD_TAG: "0.15.2"
-  # Digest image 0.15.2 đang chạy trên erpnext-prod từ 17/10/2026 (log người vận hành) (docker images --digests).
+  PROD_TAG: "0.15.3"
+  # Digest image 0.15.3 đang chạy trên erpnext-prod từ 18/10/2026 theo log người vận hành.
+  # Trước: 0.15.2 sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333.
   # Trước: 0.14.2 sha256:0f528c3c1f0e0021eb9d864ba03bd4581af51f9857b736f584d16b442c81a8a3,
   #        0.14.0 sha256:3a259c9b239dc00dacb0fcb79c421c93306a9e9a6813fcd329fd122cc3192a02,
   # Trước: 0.13.0 sha256:e313659262389598d10b9f90c6005d753b377e6789ecc0114ac371a87e8214a2,
@@ -25,7 +26,7 @@ env:
   #        0.11.3 sha256:716f1401b5e0143d08f1ee29044226a79173056766f7091e87cf354af44bd2d8,
   #        0.11.2 sha256:f2417393b5ea6c65a901502b342741614111356df13758dc873f5cd534a09ca3,
   #        0.11.1 sha256:9335dfa1f2d9199ecc2c49a14bba86ce331cecd62395b1a66e113d78d50f8424
-  PROD_DIGEST: sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333
+  PROD_DIGEST: sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496
   # 21 cờ đã bật trên frontend
   FLAGS_CU: >-
     kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order
@@ -64,7 +65,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Kéo đúng image production 0.15.2
+      - name: Kéo đúng image production 0.15.3
         run: |
           if [ -n "$PROD_DIGEST" ]; then
             docker pull "$PROD_IMAGE@$PROD_DIGEST"
@@ -75,7 +76,7 @@ jobs:
           d=$(docker image inspect "$PROD_IMAGE:$PROD_TAG" --format '{{json .RepoDigests}}')
           echo "::notice title=Image production đã kéo::$PROD_IMAGE:$PROD_TAG $d"
           docker run --rm --entrypoint bash "$PROD_IMAGE:$PROD_TAG" -c 'cd /home/frappe/frappe-bench && bench version' | tee "$RUNNER_TEMP/log-0-phien-ban.txt"
-          grep -q "kh_aph 0.15.2" "$RUNNER_TEMP/log-0-phien-ban.txt"
+          grep -q "kh_aph 0.15.3" "$RUNNER_TEMP/log-0-phien-ban.txt"
       - uses: docker/setup-buildx-action@v3
       - name: Dựng bản ứng viên (không đẩy)
         uses: docker/build-push-action@v6
@@ -92,7 +93,7 @@ jobs:
           so() { python3 "$GITHUB_WORKSPACE/deploy/release/so_dau_van.py" "$@"; }
           ex() { ./erpctl exec -T backend bench --site "$@" </dev/null; }
           EOF
-      - name: 1. dung.sh bằng image production 0.15.2, bật 21 cờ + bộ cài + cây kho 0.11.2 (giống frontend hiện tại)
+      - name: 1. dung.sh bằng image production 0.15.3, bật 21 cờ + bộ cài + cây kho 0.11.2 (giống frontend hiện tại)
         run: |
           export ERP_HOME="$RUNNER_TEMP/erp"
           ./deploy/khach-hang/dung.sh ci "$PROD_TAG" khach/aph-vh/khach.json </dev/null 2>&1 | tee "$RUNNER_TEMP/log-1.txt"
@@ -115,7 +116,7 @@ jobs:
           d=json.loads([l for l in open(sys.argv[1]) if l.startswith("DAU_VAN ")][0][8:])
           print(f"::notice title=Dấu vân trước nâng cấp (so với frontend thật)::schema {d['schema']['so_muc']} mục, sha {d['schema']['sha256'][:16]}")
           EOF
-          grep -q '"kh_aph": "0.15.2"' "$RUNNER_TEMP/dv-0-truoc.txt"
+          grep -q '"kh_aph": "0.15.3"' "$RUNNER_TEMP/dv-0-truoc.txt"
       - name: 1b. Diễn tập bản sao TÁCH BIỆT (dien_tap_ban_sao.sh, image ứng viên); production không đổi gì
         run: |
           source "$RUNNER_TEMP/ham.sh"
@@ -222,7 +223,7 @@ jobs:
           so "$RUNNER_TEMP/dv-2-sau-cai.txt" "$RUNNER_TEMP/dv-3-doi-chieu.txt" --phan schema,co \
             --bo-qua '^PS\|(POS Invoice|Purchase Invoice|Purchase Order|Quotation|Request for Quotation|Sales Order)\|\|default_print_format\|\1( with Item Image| Modern with Images| Classic)$' | tee "$RUNNER_TEMP/log-5d.txt"
           ./erpctl exec -T backend bash -c 'bench drop-site doi-chieu --force --no-backup --db-root-username root --db-root-password "'"$DB_PASSWORD"'"' </dev/null > "$RUNNER_TEMP/log-5e.txt" 2>&1
-      - name: 6. quay-lui.sh về 0.15.2, cờ trả về như bản sao lưu
+      - name: 6. quay-lui.sh về 0.15.3, cờ trả về như bản sao lưu
         run: |
           source "$RUNNER_TEMP/ham.sh"
           BK="$(grep -lx "$PROD_TAG" sao-luu/*/phien-ban-truoc.txt | head -1 | xargs dirname | xargs basename)"

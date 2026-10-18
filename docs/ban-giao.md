@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Production0.15.3 đã triển khai ĐẠT theo log VM
+
+Anh Tiến gửi log từ `tienduongmarcom@erpnext-prod:~/trien-khai`: image0.15.3 digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**, kết thúc **`=== XONG 0.15.3: ĐẠT ===`**. Digest khớp [workflow39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607), nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đây là xác nhận triển khai từ người vận hành; Codex không SSH hoặc kiểm độc lập giao diện production.
+
+Đã cập nhật manifest khách về0.15.3 và baseline Cổng3 sang cùng tag/digest, giữ nền ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11 và21 cờ. Các cổng của release đã kiểm nâng từ0.15.2; baseline mới dùng cho lượt kiểm kế tiếp, chưa coi đã diễn tập CI từ0.15.3. Đã parse YAML và kiểm manifest/baseline/tag/digest/nguồn/21 cờ khớp, cú pháp15 khối shell đạt, 18 ca cấu hình khách/bộ cài đạt, diff đạt. Không đổi mã ứng dụng hoặc triển khai lại VM.
+
+Bước tiếp: tải lại Desk, kiểm mẫu A5 với máy in thật và thông tin giao nhận theo `docs/nghiem-thu-mau-in-20261018.md`; ghi actual trước khi đóng GN06. Quy chế biểu mẫu vẫn là dự thảo; đợt chốt ca/người giữ tiền và nhà máy theo kế hoạch sau. Không nâng lại hoặc restore backup cũ sau khi mở nhập liệu; cần đối soát giao dịch mới nếu có lỗi. Không suy từ log triển khai thành đã nghiệm thu nhân sự/dữ liệu/máy in thật.
+
 ## 18/10/2026 — Image0.15.3 phát hành đạt; chờ diễn tập và nâng VM
 
 [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đã thành công toàn bộ trên tag `v0.15.3` = `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đã đọc log job phát hành117613939264: kiểm phiên bản/tag đạt, 302+108 unit đạt cả runner và build, image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3` đẩy thành công với manifest digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**. Nhãn revision đúng mã đóng gói.
