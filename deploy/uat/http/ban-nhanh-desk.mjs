@@ -60,6 +60,9 @@ try {
     } else if (mode === 'nguoi-giu-tien') {
         await command('Page.navigate',{url:base+'/desk/payment-entry/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && cur_frm.doctype === "Payment Entry" && cur_frm.doc.docstatus === 1');
+        await until('!!cur_frm.fields_dict.kh_aph_nguoi_giu_tien');
+        // Vùng Accounts chuẩn mặc định thu gọn. API form mở tab/vùng như khi người dùng tìm ô.
+        await evaluate('cur_frm.scroll_to_field("kh_aph_nguoi_giu_tien",false);true');
         await until('!!cur_frm.fields_dict.kh_aph_nguoi_giu_tien?.$wrapper.is(":visible")');
         const view=await evaluate('({holder:cur_frm.doc.kh_aph_nguoi_giu_tien,flag:frappe.boot.kh_aph.cash_custody,dirty:cur_frm.is_dirty()})');
         if(!view.holder||!view.flag||view.dirty)throw Error('Sai ô người giữ tiền: '+JSON.stringify(view));
