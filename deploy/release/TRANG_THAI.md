@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Bộ mẫu `7c2217e` đạt đủ bốn cổng, chưa phát hành
+
+SHA đầy đủ `7c2217e8737e96700fa050aac446bb3591a830a8`. [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39101464777), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463208), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463191), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463224) đều đạt. Cục bộ 302+108 ca đạt. Đã đọc artifact: UAT 227 PASS/0 FAIL, b014 có 36 PASS, core 63.508 tệp nguyên vẹn. Đã xem PDF CI: hai liên đúng hai trang A5, tổng hợp tám đợt/bốn company hai trang A4, khối ký nguyên vẹn.
+
+Cổng 3 so tổng/đếm/chi tiết khớp, schema/cờ khớp site mới, quay lui và ca lỗi tự quay lui khớp phiên bản/dữ liệu và giữ bảo trì. Nền CI không có phát sinh sổ, không thay diễn tập bản sao production có dữ liệu ngay trước triển khai. Bằng chứng chi tiết ở đầu `docs/ban-giao.md`.
+
+**Chưa phát hành:** còn nghiệm thu máy in/nhân sự thật theo `docs/nghiem-thu-mau-in-20261018.md`, quy chế biểu mẫu chưa ban hành. Production giữ 0.15.2; chưa tăng version/tag/merge hoặc triển khai VM. Commit hồ sơ sau mã kiểm chỉ thay tài liệu.
+
 ## 18/10/2026 — Bộ mẫu theo thông tư đang chờ kiểm SHA cuối
 
 Đã đồng bộ mẫu kho, thu/chi, bán hàng, giao nhận, đối soát và phiếu xuất nhanh A5 theo chế độ hiện hành của từng đơn vị; căn cứ và giới hạn được ghi tại `docs/bang-ra-soat-phap-ly-APH-VH.md`, quy chế nội bộ còn là dự thảo. Render cục bộ 19 tình huống giả lập đạt 21 trang; kiểm cục bộ 302 ca ứng dụng + 108 ca lõi đạt. Booklet xem trước: `outputs/bo-mau-phieu-thong-tu-2026.pdf`.

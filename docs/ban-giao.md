@@ -1,5 +1,17 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Bộ mẫu trên PR #5 đạt đủ bốn cổng, chưa phát hành
+
+Mã ứng viên: `7c2217e8737e96700fa050aac446bb3591a830a8`, nhánh `feat/thong-tin-giao-nhan-20261017`. Đã đẩy cả sửa phiếu nhanh A5 và bộ mẫu theo chế độ; cập nhật mô tả PR theo phạm vi cuối. Cục bộ 302+108 ca đạt.
+
+Bằng chứng **đều đạt trên cùng SHA**: [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39101464777), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463208), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463191), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463224).
+
+Đã tải và đọc artifact UAT: **227 PASS, 0 FAIL**, b014 có 36 PASS. Ca phiếu nhanh xác nhận A5 ngang, giá bán thuần, giấu giá vốn, dấu nháp và sổ không đổi; ca tổng hợp kiểm tám đợt/bốn company, quyền in và sổ không đổi. Core 63.508 tệp không thêm/xóa/sửa so với image nền. Đã xem cả hai trang A5 và hai trang tổng hợp do CI sinh; khối ký không bị cắt. PDF A5 từ CI được chép ra `outputs/phieu-xuat-a5-ci-7c2217e.pdf` của chat.
+
+Đã đọc artifact Cổng 3: so tổng/đếm/chi tiết trước–sau nâng khớp; schema site nâng và site mới 1.046 mục khớp sau bỏ qua đúng sáu mục theo workflow; quay lui khớp schema 1.034 mục/cờ/versions/cài đặt/giao diện; ca cố ý lỗi khớp đếm/tổng/chi tiết/versions và giữ bảo trì. **Nền Cổng 3 không có phát sinh sổ (các nhóm chi tiết bằng 0)**, nên đây là bằng chứng cơ chế nâng/quay lui trên CI, không thay diễn tập dữ liệu production hiện tại.
+
+**ĐANG DỞ:** GN06 còn nghiệm thu máy in/người dùng thật; quy chế biểu mẫu còn là dự thảo. Có chín ca cụ thể tại `docs/nghiem-thu-mau-in-20261018.md`. Bước tiếp in A4/A5 và ghi actual, chốt ứng viên phát hành theo runbook khi đủ điều kiện. Production vẫn 0.15.2; chưa tăng version, tag, merge hoặc triển khai. Commit bàn giao sau SHA trên chỉ thay tài liệu, không là lượt CI nghiệp vụ mới.
+
 ## 18/10/2026 — Đồng bộ bộ mẫu theo chế độ kế toán, đang chờ CI và nghiệm thu máy in
 
 Đã cập nhật bảy mẫu chuẩn, phiếu xuất nhanh A5 và đường in biên bản giao nhận theo chế độ của từng đơn vị: APH–TT133, VH–TT99, Minh Khang–mẫu quản trị nội bộ theo TT152, TL–mẫu quản trị nội bộ. Bản in giữ số lượng yêu cầu/thực tế, Nợ/Có, bộ phận, quyển số, chữ ký, trạng thái nháp/hủy và dữ liệu giao nhận mới; không tự ghi sổ khi in. Phiếu kho chuẩn không tự điền giá nếu quyền/nghiệp vụ không cho phép. Đã có booklet xem trước tại `outputs/bo-mau-phieu-thong-tu-2026.pdf` với 19 tình huống giả lập (21 trang, gồm 2 liên giao nhận và 2 liên A5).
