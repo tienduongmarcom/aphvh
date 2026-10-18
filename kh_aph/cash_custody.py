@@ -26,10 +26,13 @@ def schema():
         # JE ghi theo dòng tài khoản, không có ô đầu phiếu gây mơ hồ nhiều quỹ.
         if dt == "Journal Entry" or not frappe.db.exists("DocType", dt):
             continue
-        fields[dt] = [_field(HOLDER, "Người thực giữ/nhận tiền mặt")]
+        after = {"Payment Entry": "paid_to", "Sales Invoice": "customer", "POS Invoice": "customer",
+                 "Purchase Invoice": "cash_bank_account", "APH Funds Receipt": "bank_account",
+                 "APH Funds Action": "owner_bank_account", "APH Phieu quy nha may": "company"}[dt]
+        fields[dt] = [_field(HOLDER, "Người thực giữ/nhận tiền mặt", insert_after=after)]
         if dt in ("Payment Entry", "APH Funds Action"):
-            fields[dt].append(_field(PAYER, "Người thực giao/chi tiền mặt"))
-    fields["Journal Entry Account"] = [_field(HOLDER, "Người thực giữ tiền mặt", in_list_view=1)]
+            fields[dt].append(_field(PAYER, "Người thực giao/chi tiền mặt", insert_after="paid_from" if dt == "Payment Entry" else "bank_account"))
+    fields["Journal Entry Account"] = [_field(HOLDER, "Người thực giữ tiền mặt", in_list_view=1, insert_after="account")]
     create_custom_fields(fields)
     frappe.reload_doc("kh_aph", "report", "ra_nguoi_giu_tien_mat")
 
