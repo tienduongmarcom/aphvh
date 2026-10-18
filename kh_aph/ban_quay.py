@@ -214,7 +214,7 @@ def _tk_ngan_hang_hop_le(company, tk):
 
 
 @frappe.whitelist(methods=["POST"])
-def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, ma_gd=None, hoa_don=None, ghi_chu=None):
+def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, ma_gd=None, hoa_don=None, ghi_chu=None, nguoi_giu_tien=None):
     """Lập và ghi sổ phiếu thu (mỗi hình thức một phiếu). hoa_don: danh sách hóa đơn được chọn (JSON), phân bổ theo thứ tự
     chọn; phần dư để trả trước, kế toán phân bổ theo kế hoạch (không FIFO)."""
     _can_bat()
@@ -259,6 +259,9 @@ def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, m
             "reference_date": nowdate() if hinh_thuc == "Chuyển khoản" else None,
             "remarks": (ghi_chu or f"Thu {hinh_thuc.lower()} của khách {customer}"),
             "references": [{"reference_doctype": "Sales Invoice", "reference_name": t, "allocated_amount": a} for t, a in pb]})
+        from kh_aph import cash_custody
+        if cash_custody.enabled() and hinh_thuc == "Tiền mặt":
+            pe.set(cash_custody.HOLDER, nguoi_giu_tien)
         pe.flags.ignore_permissions = True  # quyền đã kiểm: kế toán bán hàng / kế toán
         pe.insert()
         pe.submit()

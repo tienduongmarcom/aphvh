@@ -409,3 +409,11 @@ for _event in ("before_validate", "before_update_after_submit"):
 for _dt in ("Delivery Note", "Sales Invoice"):
     doc_events.setdefault(_dt, {}).setdefault("before_cancel", []).append("kh_aph.delivery_issue.before_cancel")
 doctype_js["Delivery Note"].append("public/js/chenh_lech_giao_nhan.js")
+
+# Người giữ tiền là metadata trên nguồn; không tạo thêm GL/PLE.
+for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice", "POS Invoice",
+            "APH Funds Receipt", "APH Funds Action", "APH Phieu quy nha may"):
+    for _event in ("validate", "before_update_after_submit"):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        doc_events[_dt][_event] = _handlers + ["kh_aph.cash_custody.validate"]

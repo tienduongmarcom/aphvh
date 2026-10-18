@@ -101,6 +101,14 @@ def validate_phieu(doc):
 
 
 def _tao_je(doc, dong, ghi_chu):
+    from kh_aph import cash_custody
+    if cash_custody.enabled():
+        holders = {_quy(doc.company): doc.get(cash_custody.HOLDER)}
+        if doc.loai == LOAI_BAN_GIAO:
+            for row in dong:
+                if row.get("debit_in_account_currency"):
+                    holders[row["account"]] = doc.nguoi_nhan
+        cash_custody.stamp_rows(dong, holders)
     je = frappe.get_doc({"doctype": "Journal Entry", "voucher_type": "Cash Entry", "company": doc.company,
                          "posting_date": doc.posting_date, "user_remark": f"{ghi_chu} — {doc.name}",
                          "cheque_no": doc.name, "cheque_date": doc.posting_date, "accounts": dong})

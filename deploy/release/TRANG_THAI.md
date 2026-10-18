@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Đợt2A người giữ tiền trên nguồn, đang kiểm
+
+Theo yêu cầu tiếp tục sau PR #9, nhánh `feat/nguoi-giu-tien-20261018` dựa trên hồ sơ30a8773. Thêm cờ thứ22 `kh_aph_cash_custody` (mặc định tắt), metadata người thực giữ/giao trên PE, JE Account, SI/PI/POS, Funds Receipt/Action và phiếu quỹ nhà máy. Truyền metadata qua thu quầy/thu ngay/JE tự sinh; không tự điền owner hoặc backfill lịch sử. Nguồn đã submit không sửa người giữ; cùng accountCash trên JE không có hai người khác nhau vì GL gộp dòng. Báo cáo Rà người giữ tiền mặt đọc GL có quyền, hiện nguồn chưa xác minh; KHÔNG là số tiền hiện tại theo người và chưa có chốt ca/bàn giao mới.
+
+Cục bộ317 ca ứng dụng đạt, cú pháp Python/JS/diff đạt. Thêm HTTP/Chrome (kỳ vọng b01443, toàn bộ234 PASS); **chưa chạy CI**. Đã đồng bộ cờ mới vào bộ cài/dấu vân/preflight/quay lui/Cổng3 FLAGS_MOI, giữ baseline production0.15.3/21 cờ cũ. Không đổi version/tag hoặc triển khai. PR #9 A5 đã kiểm vẫn chưa phát hành; nhánh này phụ thuộc nguồn PR #9.
+
+**ĐANG DỞ:** chạy đủ bốn cổng đúng SHA, sửa lỗi thực nếu có và đọc artifact; hoàn thiện đặc tả9 nhóm đợt2A và bước2B chốt ca/bàn giao. Các đường Cash không có metadata (kể cả POS tổng hợp/nguồn ngoài allowlist) phải hiện chưa xác minh, không tuyên bố bao phủ đủ người giữ. Nghiệm thu thật gom cuối theo chủ dự án.
+
 ## 18/10/2026 — Ứng viên in lại A5, nghiệm thu thật gom cuối
 
 Chủ dự án cho phép gom nghiệm thu dữ liệu/người dùng/máy in thật đến cuối kế hoạch; vẫn kiểm UAT giả từng phần trước phát hành. Ứng viên `feat/in-lai-a5-20261018` thêm nút A5 từ DN đã lưu và API chỉ đọc, dùng renderer chung. Mã nghiệp vụ `1e89ace187468d976cb3361d3a0dd6ea75f917c1`, [PR #9](https://github.com/tienduongmarcom/aphvh/pull/9): cục bộ305+108 ca đạt; [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39109706356), [2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39109822145), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39109706459), [3](https://github.com/tienduongmarcom/aphvh/actions/runs/39109824398) đều đạt đúng SHA. Artifact đã đọc:229 PASS/0 FAIL, b01438, core63.508 tệp không đổi; HTTP/Chrome in lại hai lần không tăng phiếu/sổ. Đã xem hai trang A5. Cổng3 đã kiểm từ baseline0.15.3, so nâng/quay lui/ca lỗi khớp và giữ bảo trì; nền CI chưa có phát sinh sổ. Chi tiết ở đầu `docs/ban-giao.md`. Production vẫn0.15.3/digest đã xác nhận, chưa có tag/image hoặc triển khai mới. Bước tiếp hoàn thiện đặc tả đợt2 theo bản rà nguồn `docs/dot-2-ra-soat-nguon-tien.md`, không chờ dữ liệu thật. Chưa có mã chốt ca/bàn giao mới. Commit sau mã kiểm chỉ thay hồ sơ.

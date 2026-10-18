@@ -57,6 +57,16 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'nguoi-giu-tien') {
+        await command('Page.navigate',{url:base+'/desk/payment-entry/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "Payment Entry" && cur_frm.doc.docstatus === 1');
+        await until('!!cur_frm.fields_dict.kh_aph_nguoi_giu_tien?.$wrapper.is(":visible")');
+        const view=await evaluate('({holder:cur_frm.doc.kh_aph_nguoi_giu_tien,flag:frappe.boot.kh_aph.cash_custody,dirty:cur_frm.is_dirty()})');
+        if(!view.holder||!view.flag||view.dirty)throw Error('Sai ô người giữ tiền: '+JSON.stringify(view));
+        await evaluate('cur_frm.scroll_to_field("kh_aph_nguoi_giu_tien");true');
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('nguoi-giu-tien.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_NGUOI_GIU_TIEN',status:'PASS',detail:{visible:true,holder_saved:true,document_clean:true}}));
     } else if (mode === 'in-lai-a5') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});

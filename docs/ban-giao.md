@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Đợt2A người giữ tiền trên nguồn, đang kiểm
+
+Theo yêu cầu tiếp tục sau PR #9, nhánh `feat/nguoi-giu-tien-20261018` dựa trên hồ sơ30a8773. Thêm cờ thứ22 `kh_aph_cash_custody` (mặc định tắt), metadata người thực giữ/giao trên PE, JE Account, SI/PI/POS, Funds Receipt/Action và phiếu quỹ nhà máy. Truyền metadata qua thu quầy/thu ngay/JE tự sinh; không tự điền owner hoặc backfill lịch sử. Nguồn đã submit không sửa người giữ; cùng accountCash trên JE không có hai người khác nhau vì GL gộp dòng. Báo cáo Rà người giữ tiền mặt đọc GL có quyền, hiện nguồn chưa xác minh; KHÔNG là số tiền hiện tại theo người và chưa có chốt ca/bàn giao mới.
+
+Cục bộ317 ca ứng dụng đạt, cú pháp Python/JS/diff đạt. Thêm HTTP/Chrome (kỳ vọng b01443, toàn bộ234 PASS); **chưa chạy CI**. Đã đồng bộ cờ mới vào bộ cài/dấu vân/preflight/quay lui/Cổng3 FLAGS_MOI, giữ baseline production0.15.3/21 cờ cũ. Không đổi version/tag hoặc triển khai. PR #9 A5 đã kiểm vẫn chưa phát hành; nhánh này phụ thuộc nguồn PR #9.
+
+**ĐANG DỞ:** chạy đủ bốn cổng đúng SHA, sửa lỗi thực nếu có và đọc artifact; hoàn thiện đặc tả9 nhóm đợt2A và bước2B chốt ca/bàn giao. Các đường Cash không có metadata (kể cả POS tổng hợp/nguồn ngoài allowlist) phải hiện chưa xác minh, không tuyên bố bao phủ đủ người giữ. Nghiệm thu thật gom cuối theo chủ dự án.
+
 ## 18/10/2026 — Gom nghiệm thu thật ở cuối; bổ sung lối in lại A5
 
 Chủ dự án chốt chưa đủ hàng hóa/tồn kho nên nghiệm thu thực tế gom cuối, không chặn phát triển đợt2–4; từng phần vẫn kiểm UAT bằng dữ liệu giả. Đã cập nhật kế hoạch và IN02. Đợt5 vẫn chờ chốt nghiệp vụ riêng.

@@ -280,3 +280,5 @@ def chay(admin, phien, f, emit):
     tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)
     from b014_xuat_ngay_cases import chay as xuat_ngay_cases
     xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
+    from b014_cash_custody import chay as cash_cases
+    cash_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
