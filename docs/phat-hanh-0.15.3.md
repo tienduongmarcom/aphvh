@@ -16,11 +16,21 @@ kh_aph 0.15.3, lab9x 0.2.11; nền giữ ERPNext 16.51.1/Frappe 16.52.0 theo dig
 
 ## Bằng chứng
 
-Mã nghiệp vụ `7c2217e8737e96700fa050aac446bb3591a830a8` đã đạt bốn cổng, UAT227 PASS/0 FAIL và cục bộ302+108. Chi tiết ở đầu `docs/ban-giao.md`. Đổi nhãn phiên bản tạo SHA đóng gói mới; phải kiểm lại cả bốn cổng trên SHA đó trước gắn tag. Không dùng các cổng mã cũ làm bằng chứng SHA đóng gói mới.
+Mã nghiệp vụ `7c2217e8737e96700fa050aac446bb3591a830a8` đã đạt bốn cổng, UAT227 PASS/0 FAIL và cục bộ302+108. SHA đóng gói0.15.3/lab9x0.2.11: `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`; cục bộ302+108 đạt. [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858) và [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872) đều đạt trên mã đóng gói, UAT227 PASS/0 FAIL. Đã đọc artifact xác nhận0.15.3/0.2.11; core63.508 tệp nguyên vẹn; xem PDF hai trang A5 và hai trang tổng hợp A4. Cổng3 so schema/cờ với site mới, nâng/quay lui và ca lỗi tự quay lui đều khớp, giữ bảo trì; nền CI chưa có phát sinh sổ nên vẫn bắt buộc diễn tập bản sao production hiện tại. Commit sau mã đóng gói chỉ chốt tài liệu, không thay SHA gắn tag.
 
 ## Phát hành
 
 Theo AGENTS.md, chủ dự án tự gắn tag `v0.15.3` vào đúng SHA đóng gói đã đủ cổng. Workflow Phát hành image phải đạt và có digest image mới rồi mới chuyển sang bước VM. Không ghi đè tag/image 0.15.2, không dùng workflow_dispatch trên nhánh thay cho tag bất biến.
+
+Sau khi cả bốn cổng trên đều đạt, chạy trên MacBook (checkout của chat):
+
+```bash
+cd /Users/macbook/Documents/Codex/2026-10-17/ghcr-io-tienduongmarcom-kh-aph-erpnext/work/aphvh &&
+git tag v0.15.3 96a7ef0352b45c31b8d26428aad3ddbcafeeb37c &&
+git push origin v0.15.3
+```
+
+Tag trỏ rõ SHA đã kiểm; không gắn theo HEAD tài liệu hoặc merge commit chưa chạy kiểm trên đúng SHA. Main phải chứa commit nguồn này để giữ nguồn phát hành nhất quán; kiểm bằng `git merge-base --is-ancestor 96a7ef0352b45c31b8d26428aad3ddbcafeeb37c origin/main` sau khi PR #5 được gộp.
 
 ## Diễn tập và triển khai trên VM
 

@@ -1,5 +1,12 @@
 # AGENTS.md — hướng dẫn cho tác tử lập trình (Codex, Claude…) làm việc trên repo này
 
+> Cập nhật nguồn 18/10/2026: PR #4 đã gộp vào `main` bằng merge commit
+> `f05c8a181c269d2075b6d822addb571f26b7bef6`; lịch sử PR #1–#3 và tag0.15.2 đã nằm trong main.
+> Nguồn0.15.3 thuộc PR #5 (`feat/thong-tin-giao-nhan-20261017`) → main;
+> mã đóng gói `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c` đã đủ bốn cổng.
+> Các dòng dưới nói main còn cũ hoặc production0.14.x là lịch sử; trạng thái production mới nhất
+> phải đọc `deploy/release/TRANG_THAI.md` và `khach/aph-vh/phien-ban.yaml`. Chưa coi0.15.3 đã triển khai.
+
 Đọc tệp này trước, rồi `docs/ban-giao.md` (trạng thái, việc còn mở), `docs/quyet-dinh-nghiep-vu.md` (13 quyết định
 nghiệp vụ đã chốt — không hỏi lại), `deploy/release/RELEASE_GATES.md` + `deploy/release/TRIEN_KHAI_FRONTEND.md`
 (đưa bản mới lên production) và `docs/quy-trinh-trien-khai-khach.md`. Ngôn ngữ trao đổi với chủ dự án (anh Tiến, 9xLab): **tiếng Việt**. Thông điệp commit, chú thích,

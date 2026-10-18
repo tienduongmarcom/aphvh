@@ -1,5 +1,19 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — 0.15.3 đủ bốn cổng, nguồn chốt qua PR #5 → main
+
+Chủ dự án yêu cầu lên production và đồng bộ nguồn về main. PR #4 đã merge `f05c8a1`, chứa tag0.15.2 và nguồn PR #1–#3. Quyết định gộp tiếp PR #5 vào main bằng merge giữ lịch sử sau khi đủ cổng; mã đóng gói dùng gắn tag vẫn là **`96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`** (kh_aph0.15.3/lab9x0.2.11), không gắn theo commit hồ sơ/merge chưa chạy cổng riêng.
+
+Đạt trên cùng mã đóng gói: [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872). Cục bộ302+108 đạt. Đã tải/đọc artifact UAT:227 PASS/0 FAIL, b01436, phiên bản đúng0.15.3/0.2.11, core63.508 tệp không đổi. Đã xem hai trang A5 và hai trang tổng hợp A4 từ CI. Cổng3: so tổng/đếm/chi tiết khớp; schema site nâng/site mới1.046 mục khớp (bỏ qua đúng6 mục); quay lui schema1.034/cờ/versions/cài đặt/giao diện khớp; ca lỗi tự quay lui khớp và giữ bảo trì. Nền CI chưa có phát sinh sổ, không thay diễn tập bản sao dữ liệu thật hiện tại.
+
+**ĐANG DỞ:** theo AGENTS mục Phát hành, chủ dự án tự gắn tag `v0.15.3` đúng SHA trên; lệnh trong `docs/phat-hanh-0.15.3.md`. Sau workflow phát hành đạt và có digest mới, chạy diễn tập và triển khai trên phiên SSH `erpnext-prod`. Từ máy hiện tại hostname không phân giải và không có terminal SSH gắn với chat. Production/manifest vẫn0.15.2; chưa có tag/image/digest hoặc log nâng0.15.3. Máy in/nhân sự thật và quy chế biểu mẫu còn mở; không coi yêu cầu triển khai là kết quả nghiệm thu.
+
+## 18/10/2026 — Đã gộp PR #4 vào main; ứng viên 0.15.3 đang kiểm
+
+Theo yêu cầu chủ dự án, đổi đích PR #4 từ nhánh PR #3 sang main rồi merge đúng head `0c1e10425fbfe39eff961ddfef20663f4b70bf9b`, giữ lịch sử. Main mới `f05c8a181c269d2075b6d822addb571f26b7bef6` chứa tag0.15.2 và head PR #2/#3 (đã kiểm ancestry); PR #1 được GitHub đánh dấu merged, #2/#3 vẫn mở nhưng mã đã nằm trong main. PR #5 chuyển đích sang main; chưa merge PR #5.
+
+Ứng viên đóng gói0.15.3/lab9x0.2.11 là `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Cục bộ302+108 đạt. [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858) đang kiểm trên SHA này. Không dùng các cổng7c2217e thay kết quả đóng gói. Bước tiếp đọc artifact rồi chốt tag theo AGENTS; SSH hiện không phân giải được tên VM. Production vẫn0.15.2.
+
 ## 18/10/2026 — Chủ dự án yêu cầu lên production, chuẩn bị 0.15.3
 
 Anh Tiến yêu cầu đưa bản mới lên production. Đã đổi nhãn kh_aph0.15.3/lab9x0.2.11, giữ nền16.51.1/16.52.0 và21 cờ. Phạm vi theo PR #5 và mã nghiệp vụ7c2217e đã kiểm. Hướng dẫn đầy đủ tại `docs/phat-hanh-0.15.3.md`. Cần chạy lại bốn cổng trên SHA đóng gói mới; chưa có image/digest0.15.3.

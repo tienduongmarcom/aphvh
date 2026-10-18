@@ -1,5 +1,17 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — 0.15.3 sẵn sàng gắn tag; production vẫn0.15.2
+
+Mã đóng gói **`96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`**, kh_aph0.15.3/lab9x0.2.11: đủ [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858), [3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872). Đã đọc artifact: UAT227 PASS/0 FAIL, phiên bản đúng, PDF A5/tổng hợp đạt kiểm hình; nâng/quay lui/ca lỗi khớp và giữ bảo trì. Nền Cổng3 chưa có phát sinh sổ, cần diễn tập bản sao production hiện tại khi triển khai thật.
+
+Nguồn: PR #4 đã gộp main, PR #5 chốt gộp main giữ lịch sử theo yêu cầu production. Chọn mã đóng gói trên khi chủ dự án gắn tag theo AGENTS; commit sau chỉ thay hồ sơ. Bước tiếp: tag → workflow phát hành đạt/có digest → diễn tập bản sao hiện tại → nângfrontend. Lệnh tại `docs/phat-hanh-0.15.3.md`. Chưa có tag/image0.15.3; phiên này không kết nối được SSH `erpnext-prod`. Manifest giữ0.15.2 cho đến log VM xác nhận. Không ghi đã lên production từ kết quả CI.
+
+## 18/10/2026 — Nguồn main đã đồng bộ 0.15.2; 0.15.3 đang kiểm
+
+PR #4 đã merge vào main tại `f05c8a181c269d2075b6d822addb571f26b7bef6`; main chứa tag0.15.2 và lịch sử các nhánh trước. PR #5 nay nhắm main, chưa merge. Ứng viên0.15.3/lab9x0.2.11: `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`.
+
+Bốn cổng đang kiểm: [2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858). Chưa có tag/image/digest0.15.3. Production vẫn0.15.2; cần workflow phát hành đạt và diễn tập bản sao hiện tại trước nâng VM. Đường SSH từ phiên này chưa khả dụng.
+
 ## 18/10/2026 — Chuẩn bị ứng viên production 0.15.3 theo yêu cầu chủ dự án
 
 Đã đổi kh_aph0.15.3/lab9x0.2.11, giữ nền và21 cờ. Chưa gắn tag hoặc có image0.15.3; cần bốn cổng trên SHA đóng gói mới. Runbook tại `docs/phat-hanh-0.15.3.md`. Sau khi kiểm đạt: chủ dự án gắn tag theo AGENTS, workflow phát hành đạt rồi chạy diễn tập bản sao hiện tại và nâng cấp trên VM.
