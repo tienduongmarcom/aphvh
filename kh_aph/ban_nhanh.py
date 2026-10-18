@@ -2,6 +2,7 @@
 import hashlib
 import json
 import re
+from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe.utils import cint, flt
@@ -104,7 +105,8 @@ def preview(shared_order):
     doc = _order(shared_order)
     if not frappe.has_permission("Delivery Note", "create"):
         frappe.throw("Bạn chưa có quyền lập phiếu giao nháp", frappe.PermissionError)
-    return {"shared_order": doc.name, "customer": doc.customer, "rows": _rows(doc)}
+    return {"shared_order": doc.name, "customer": doc.customer, "rows": _rows(doc),
+            "can_dispatch": bool(frappe.has_permission("Delivery Note", "submit"))}
 
 
 def _summaries(notes):
@@ -134,7 +136,53 @@ def _note_scope(dn):
 
 @frappe.whitelist(methods=["POST"])
 def create_drafts(shared_order, selections, request_id, delivery=None):
+    return _create(shared_order, selections, request_id, delivery)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_and_dispatch(shared_order, selections, request_id, delivery, dispatcher):
+    """Tạo và xuất trọn đợt trong transaction HTTP; controller native sở hữu sổ."""
+    return _create(shared_order, selections, request_id, delivery, dispatcher=dispatcher, dispatch=True)
+
+
+def _dispatch_permissions(dn):
+    _note_scope(dn)
+    for right in ("write", "submit", "print"):
+        dn.check_permission(right)
+
+
+def _dispatched_matches(doc, notes, choices, info, dispatcher):
+    """Không nhận nháp/phiếu đã sửa lượng làm kết quả của yêu cầu xuất ngay trước đó."""
+    try:
+        expected = sorted((c["source_row"], Decimal(str(c["qty"]))) for c in choices)
+        actual = sorted((r.so_detail, Decimal(str(r.qty))) for n in notes for r in n.items)
+        matches = expected == actual and len({r[0] for r in expected}) == len(expected)
+    except (InvalidOperation, TypeError, KeyError):
+        matches = False
+    if not matches:
+        frappe.throw("Phiếu của đợt không còn khớp lượng yêu cầu; đối soát trước khi thao tác tiếp")
+    for dn in notes:
+        _dispatch_permissions(dn)
+        if dn.docstatus != 1 or cint(dn.is_return) or dn.customer != doc.customer or dn.get(delivery_info.DISPATCHER) != dispatcher:
+            frappe.throw("Đợt xuất ngay không còn nguyên trạng; mở phiếu để đối soát, không tự xuất tiếp")
+        if any((dn.get(field) or "") != value for key, field in delivery_info.MAPPING.items()
+               if (value := info[key]) or key != "shipping_address_name"):
+            frappe.throw("Thông tin trên phiếu không khớp yêu cầu xuất ngay")
+        for row in dn.items:
+            so = frappe.get_doc("Sales Order", row.against_sales_order, for_update=True)
+            so.check_permission("read")
+            if so.get("kh_aph_shared_order") != doc.name:
+                frappe.throw("Phiếu của đợt không thuộc đúng đơn chung")
+
+
+def _create(shared_order, selections, request_id, delivery=None, dispatcher=None, dispatch=False):
     _guard()
+    if dispatch:
+        if not frappe.has_permission("Delivery Note", "submit"):
+            frappe.throw("Bạn chưa có quyền xác nhận xuất kho", frappe.PermissionError)
+        if not isinstance(dispatcher, str) or not dispatcher.strip() or len(dispatcher.strip()) > 140 or any(ord(c) < 32 for c in dispatcher):
+            frappe.throw("Ghi tên người trực tiếp giao hàng hợp lệ trước khi xuất ngay")
+        dispatcher = dispatcher.strip()
     if not re.fullmatch(r"[a-zA-Z0-9-]{16,64}", request_id or ""):
         frappe.throw("Mã yêu cầu không hợp lệ; mở lại hộp thoại lập phiếu")
     choices = frappe.parse_json(selections) if isinstance(selections, str) else selections
@@ -145,8 +193,12 @@ def create_drafts(shared_order, selections, request_id, delivery=None):
         frappe.throw("Dữ liệu dòng giao không hợp lệ")
     doc = _order(shared_order, lock=True)
     info = delivery_info.parse(delivery, doc.customer)
+    if dispatch and not info:
+        frappe.throw("Xuất ngay cần đầy đủ cách giao và người thực nhận")
     # Giữ hash cũ khi không truyền thông tin giao nhận để retry phiếu trước nâng cấp vẫn hợp lệ.
     content = {"rows": canonical, "delivery": info} if info else canonical
+    if dispatch:
+        content = {"rows": canonical, "delivery": info, "operation": "dispatch", "dispatcher": dispatcher}
     signature = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
     # Current read: không dùng snapshot SELECT thường sau khi đã chờ khóa ở request khác.
     existing = frappe.db.sql_list(f"""SELECT name FROM `tabDelivery Note`
@@ -155,6 +207,8 @@ def create_drafts(shared_order, selections, request_id, delivery=None):
         notes = [frappe.get_doc("Delivery Note", name, for_update=True) for name in existing]
         if any(n.get(F_HASH) != signature for n in notes):
             frappe.throw("Đợt này đã lập phiếu với nội dung khác; mở lại để lập đợt mới")
+        if dispatch:
+            _dispatched_matches(doc, notes, choices, info, dispatcher)
         return {"delivery_notes": _summaries(notes), "reused": True}
     if not frappe.has_permission("Delivery Note", "create"):
         frappe.throw("Bạn chưa có quyền lập phiếu giao nháp", frappe.PermissionError)
@@ -181,8 +235,16 @@ def create_drafts(shared_order, selections, request_id, delivery=None):
         dn.set(F_ORDER, doc.name)
         dn.set(F_BATCH, request_id)
         dn.set(F_HASH, signature)
+        if dispatch:
+            dn.set(delivery_info.DISPATCHER, dispatcher)
+            _dispatch_permissions(dn)
         dn.insert()  # Quyền chuẩn, validation chuẩn, không ignore_permissions / submit / commit.
         notes.append(dn)
+    if dispatch:
+        from kh_aph.delivery_status import confirm
+        for dn in notes:
+            confirm(dn.name, "pickup" if info["delivery_method"] == "Khách đến lấy" else "handoff")
+        notes = [frappe.get_doc("Delivery Note", n.name, for_update=True) for n in notes]
     return {"delivery_notes": _summaries(notes), "reused": False}
 
 

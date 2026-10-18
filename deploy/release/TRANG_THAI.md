@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — ĐANG DỞ: GN10 xuất ngay và GN11 mất phản hồi sau commit
+
+Tiếp tục PR #5 từ `e2369ab` (mã GN09 đã kiểm `9c45e74`). Đã đọc lại AGENTS GitHub và hồ sơ hiện hành. Thêm API POST tạo+xác nhận nguyên tử dùng controller native; tách hash nháp/xuất ngay, kiểm lượng và nguồn thực tế khi retry, quyền submit/write/print và scope. Dialog mặc định nháp, lựa chọn xuất ngay cần người thực giao. Không thêm schema/cờ/quyền/core hoặc đổi production0.15.2.
+
+Cục bộ299 kh_aph +107 lab9x=406 ca đạt; cú pháp Python/JS và diff đạt. Đã thêm4 ca HTTP +1 ca Desk chặn phản hồi200 sau commit rồi thử lại cùng Dialog. b014 mong36 PASS gồm restore, tổng UAT dự kiến227. **Chưa kết luận CI của GN10/GN11**. Bước tiếp: đọc run đúng SHA và artifact, sửa nguyên nhân nếu lỗi; xem ảnh thao tác, so sổ/schema/nâng/quay lui. Đặc tả9 nhóm tại `docs/dac-ta-xuat-ngay.md`. Máy in thật/nhân sự/dữ liệu thực còn mở, không tăng version/tag/merge/phát hành/triển khai.
+
 ## 18/10/2026 — GN09 đã đạt kiểm thử: xử lý chênh lệch giao nhận
 
 Tiếp tục [PR #5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, từ mốc tài liệu `602b73e` / mã 1A đã kiểm `5155ca4`. **Mã nghiệp vụ GN09 đã kiểm: `9c45e7492e55797c48483d19004e52aecf6614ca`**. Các commit sau mốc này chỉ cập nhật tài liệu, không phải lượt CI mới. Đã đọc lại AGENTS trên GitHub và các quyết định/kiến trúc/bàn giao/runbook.

@@ -278,3 +278,5 @@ def chay(admin, phien, f, emit):
     chain = ban_nhanh_cases(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     from b014_tien_giao_nhan_chain import chay as tien_chain
     tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)
+    from b014_xuat_ngay_cases import chay as xuat_ngay_cases
+    xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)

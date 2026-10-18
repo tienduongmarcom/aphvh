@@ -16,6 +16,7 @@ const cookies = login.headers.getSetCookie().map(s => s.split(';')[0]).map(s => 
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aphvh-desk-uat-'));
 const chrome = spawn('google-chrome', ['--headless','--no-sandbox','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-address=127.0.0.1','--remote-debugging-port=19229','--user-data-dir='+profile,'about:blank'], {stdio:'ignore'});
 let ws, sequence=0;
+let lostResponse = null;
 const waiting=new Map();
 const diagnostics=[];
 try {
@@ -24,12 +25,39 @@ try {
     if(!tab)throw Error('Chrome did not start');
     ws = new WebSocket(tab.webSocketDebuggerUrl);
     await new Promise((ok,no)=>{ws.addEventListener('open',ok,{once:true});ws.addEventListener('error',no,{once:true});});
-    ws.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown')diagnostics.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);if(m.method==='Network.responseReceived'&&m.params.response.status>=400)diagnostics.push(m.params.response.status+' '+m.params.response.url.slice(0,180));const p=waiting.get(m.id);if(p){waiting.delete(m.id);clearTimeout(p.timer);m.error?p.no(Error(m.error.message)):p.ok(m.result);}});
+    ws.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown')diagnostics.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);if(m.method==='Network.responseReceived'&&m.params.response.status>=400)diagnostics.push(m.params.response.status+' '+m.params.response.url.slice(0,180));if(m.method==='Fetch.requestPaused'){if(!lostResponse&&m.params.responseStatusCode===200){lostResponse=m.params;command('Fetch.failRequest',{requestId:m.params.requestId,errorReason:'Aborted'}).catch(e=>diagnostics.push(e.message));}else command('Fetch.continueRequest',{requestId:m.params.requestId}).catch(e=>diagnostics.push(e.message));}const p=waiting.get(m.id);if(p){waiting.delete(m.id);clearTimeout(p.timer);m.error?p.no(Error(m.error.message)):p.ok(m.result);}});
     const command=(method,params={})=>new Promise((ok,no)=>{const id=++sequence;const timer=setTimeout(()=>{waiting.delete(id);no(Error('CDP timeout: '+method));},30000);waiting.set(id,{ok,no,timer});ws.send(JSON.stringify({id,method,params}));});
-    const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
+    const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'chenh-lech') {
+    if (mode === 'xuat-ngay') {
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Lập phiếu xuất & In"]');
+        await evaluate('cur_frm.custom_buttons["Lập phiếu xuất & In"].trigger("click");true');
+        await until('!!window.cur_dialog && !!cur_dialog.fields_dict.dispatch_now');
+        await evaluate('(async()=>{window.__fastDialog=cur_dialog;await cur_dialog.set_value("delivery_method","Khách đến lấy");await cur_dialog.set_value("recipient","Khách tự lấy UAT");await cur_dialog.set_value("dispatch_now",1);await cur_dialog.set_value("dispatcher","Kho UAT trình duyệt");cur_dialog.fields_dict.rows.df.data[0].qty=2;cur_dialog.fields_dict.rows.grid.refresh();return true;})()');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.ban_nhanh.create_and_dispatch*',requestStage:'Response'}]});
+        await evaluate('__fastDialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<300&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('Không chặn được phản hồi sau commit');
+        await until('!__fastDialog.get_primary_btn().prop("disabled")');
+        const requestId=new URLSearchParams(lostResponse.request.postData).get('request_id');
+        if(!requestId)throw Error('Thiếu token của yêu cầu đã chặn phản hồi');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        const notes = await evaluate(`frappe.call({method:'frappe.client.get_list',args:{doctype:'Delivery Note',filters:{kh_aph_don_chung_xuat:${JSON.stringify(source)},kh_aph_dot_xuat:${JSON.stringify(requestId)}},fields:['name','docstatus','kh_aph_delivery_state'],limit_page_length:0}}).then(r=>r.message)`);
+        if(notes.length!==1||notes[0].docstatus!==1||notes[0].kh_aph_delivery_state!=='Khách đã nhận')throw Error('Yêu cầu bị mất phản hồi chưa commit đúng: '+JSON.stringify(notes));
+        const ledgerCounts = () => evaluate(`Promise.all(['Delivery Note','Sales Invoice','GL Entry','Stock Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))`);
+        const before=await ledgerCounts();
+        await command('Fetch.disable');
+        await evaluate('__fastDialog.get_primary_btn().trigger("click");true');
+        await until('!__fastDialog.$wrapper.is(":visible")');
+        const after=await ledgerCounts();
+        if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Thử lại sau mất phản hồi đã ghi sổ lần nữa');
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'chenh-lech') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && cur_frm.doctype === "Delivery Note" && cur_frm.doc.kh_aph_chenh_lech_state === "Đang xử lý"');
