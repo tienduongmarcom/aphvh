@@ -191,6 +191,16 @@
    "read_only": 1,
    "no_copy": 1,
    "allow_on_submit": 1
+  },
+  {
+   "fieldname": "issue_state",
+   "label": "Xử lý chênh lệch",
+   "fieldtype": "Select",
+   "options": "\nChờ xử lý",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
   }
  ],
  "field_order": [
@@ -215,7 +225,8 @@
   "receive_reason",
   "assignee",
   "due_date",
-  "journal_entry"
+  "journal_entry",
+  "issue_state"
  ],
  "permissions": [
   {

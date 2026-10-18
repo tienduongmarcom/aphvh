@@ -57,6 +57,13 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     assert wallet(source)['expected_amount']==535 and wallet(source,recipient)['expected_amount']==365
     denied(lambda:call('send',{'name':draft(source,source,1)['name']}),text='chênh lệch chưa xử lý')
     assert counts()==before
+    for suffix, planned, actual in [('extra',20,25),('zero',10,0)]:
+        extra=account(suffix);journal(extra,100);verify(extra,100)
+        operation=send(extra,extra,planned);unchanged=counts()
+        observed=call('receive',{'name':operation['name'],'amount':actual,'reason':'UAT thừa hoặc chưa nhận tiền','assignee':f['ktt'],'due_date':f['date']},recipient)
+        assert observed['difference']==actual-planned and observed['status']=='Có chênh lệch'
+        assert wallet(extra)['expected_amount']==100-actual and wallet(extra,recipient)['expected_amount']==actual
+        assert counts()==unchanged
     emit('HTTP_2B_HANDOVER_SHORT_RETRY','PASS',{'actual_95_not_100':True,'retry_same_result':True,'changed_payload_denied':True,'dispute_blocks_outgoing':True,'no_gl_ple':True})
     source2,dest=account('source'),account('dest');journal(source2,1000);verify(source2,1000);verify(dest)
     moved=send(source2,dest,100);before=counts();result=call('receive',{'name':moved['name'],'amount':100},recipient)
@@ -76,9 +83,15 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     assert wallet(source2)['expected_amount']==400
     assert {r['account'] for r in get('Journal Entry',result['journal_entry'],ktt)['accounts']}=={source2,f['acc']['bank']}
     emit('HTTP_2B_HANDOVER_TO_BANK','PASS',{'native_cash_to_bank_only':True,'source_holder_reduced_once':True,'no_ple':True})
-    pending=send(source2,dest,200);assert wallet(source2)['available_amount']==200
+    pending=draft(source2,dest,200)
+    proof=insert({'doctype':'File','file_name':pending['name']+'.txt','is_private':1,'attached_to_doctype':DT,'attached_to_name':pending['name'],
+        'content':json.dumps({'uat':'ban-giao-huy'})},ktt)
+    pending=rpc('frappe.client.save',{'doc':json.dumps({**pending,'evidence':proof['file_url']})},ktt)
+    call('send',{'name':pending['name']});assert wallet(source2)['available_amount']==200
     call('cancel',{'name':pending['name']});assert call('cancel',{'name':pending['name']})['status']=='Đã hủy'
     assert wallet(source2)['available_amount']==400
+    denied(lambda:rpc('frappe.client.delete',{'doctype':'File','name':proof['name']},ktt))
+    assert ktt(proof['file_url'])=={'uat':'ban-giao-huy'}
     choices=[draft(source2,dest,300),draft(source2,dest,300)];sessions=[phien(f['ktt']),phien(f['ktt'])]
     def attempt(i):
         try:return ('ok',call('send',{'name':choices[i]['name']},sessions[i]))
@@ -101,6 +114,8 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     assert result['status']=='Vượt nguồn cần xử lý' and result['received_amount']==50 and not result['journal_entry']
     assert wallet(over_source)['expected_amount']==10 and wallet(over_source,recipient)['expected_amount']==0 and counts()==before
     call('cancel',{'name':over['name']})
+    assert wallet(over_source)['disputed'] and wallet(over_source)['available_amount']==0
+    assert get(DT,over['name'],ktt)['issue_state']=='Chờ xử lý'
     denied(lambda:rpc('kh_aph.cash_handover.send',{'name':first['name']},phien(f['dung'])),('PermissionError',))
     denied(lambda:insert({'doctype':DT,'company':f['vh'],'from_account':source2,'to_account':dest,'from_holder':f['scope_co'],'to_holder':f['ktt2'],'requested_amount':1,'reason':'ngoài phạm vi'},phien(f['scope_co'])),('PermissionError',))
     emit('HTTP_2B_HANDOVER_OVER_SOURCE','PASS',{'count_saved_without_transfer':True,'money_not_invented':True,'scope_and_no_cost':True})

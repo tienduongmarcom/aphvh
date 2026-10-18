@@ -73,10 +73,11 @@ def _disputed(company, account, holder):
     # Lát này chưa có nghiệp vụ đóng vụ lệch: giữ nguyên hồ sơ và chặn giao ra
     # trên ví có lệch chưa xử lý, không cộng lặp các khoản thiếu qua nhiều ca.
     shifts = frappe.db.sql(f"select name from `tab{C.SHIFT}` where company=%s and account=%s and holder=%s and docstatus=1 and difference!=0 limit 1 for update", (company, account, holder))
-    handovers = any(r.status in ("Có chênh lệch", "Vượt nguồn cần xử lý") and
-        ((r.from_account == account and r.from_holder == holder) or (r.to_account == account and r.to_holder == holder))
-        for r in _query(company, account))
-    return bool(shifts) or handovers
+    handovers = frappe.db.sql(f"""select name from `tab{DT}` where company=%s
+        and docstatus in (1,2) and issue_state='Chờ xử lý'
+        and ((from_account=%s and from_holder=%s) or (to_account=%s and to_holder=%s))
+        limit 1 for update""", (company, account, holder, account, holder))
+    return bool(shifts) or bool(handovers)
 
 
 def available(company, account, holder, exclude=None):
@@ -113,7 +114,7 @@ def validate(doc):
         doc.to_verification = to_opening.name
     else:
         doc.to_verification = None
-    for field in ("received_amount", "difference", "received_by", "received_at", "receive_hash", "journal_entry", "sent_by", "sent_at", "receive_reason", "assignee", "due_date"):
+    for field in ("received_amount", "difference", "received_by", "received_at", "receive_hash", "journal_entry", "sent_by", "sent_at", "receive_reason", "assignee", "due_date", "issue_state"):
         doc.set(field, None)
     doc.status = "Nháp"
     if doc._action == "submit":
@@ -250,6 +251,7 @@ def receive(name, amount, reason=None, assignee=None, due_date=None):
     doc.receive_hash, doc.receive_reason = signature, reason
     doc.assignee, doc.due_date, doc.journal_entry = assignee, due_date, journal
     doc.status = "Vượt nguồn cần xử lý" if over else "Có chênh lệch" if difference else "Đã nhận"
+    doc.issue_state = "Chờ xử lý" if difference or over else None
     with _updating(doc):
         doc.save()
     return result(doc)

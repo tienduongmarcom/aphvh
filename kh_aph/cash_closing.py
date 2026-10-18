@@ -291,7 +291,7 @@ def protect_file(doc, method=None):
         return
     types = (OPENING, SHIFT, "APH Ban giao tien") if cint(frappe.conf.get("kh_aph_cash_handover")) else (OPENING, SHIFT)
     for dt in types:
-        if frappe.db.sql(f"select name from `tab{dt}` where docstatus=1 and evidence=%s limit 1 for update", (url,)):
+        if frappe.db.sql(f"select name from `tab{dt}` where docstatus in (1,2) and evidence=%s limit 1 for update", (url,)):
             if method == "on_trash" or doc.get("content") or any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")):
                 frappe.throw("Tệp thuộc hồ sơ tiền đã xác nhận; giữ nguyên bằng chứng lịch sử")
 

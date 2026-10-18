@@ -61,3 +61,5 @@ Schema qua bộ cài rõ ràng; không hook after_migrate, không tạo dữ li�
 Lượt3dadd51/UAT39141849273 đã qua cùng-quỹ/thiếu và retry/chuyển Cash/nộp Bank, FAIL ở hai phiên gửi do MariaDB1020 Record has changed. Giữ nguyên run và artifact. Sửa bằng retry tối đa3 lần tại đúng biên RPC tiền, rollback toàn bộ JE/kết quả lần thử, không retry ValidationError và không rollback nghiệp vụ caller nếu được gọi nội bộ; unit kiểm các ranh giới này. Assertion một nguồn chỉ đủ một đề nghị và hai phiên nhận chỉ một JE giữ nguyên. Đang chờ CI mã sửa.
 
 Không tắt riêng cờ bàn giao sau khi đã vận hành; projection trách nhiệm cùng-quỹ cần dữ liệu bàn giao. Khôi phục phải dùng snapshot/image/cờ tương ứng theo runbook, không tắt cờ để xóa tác động trách nhiệm.
+
+Chênh lệch có issue_state riêng ngay trên hồ sơ nguồn (Chờ xử lý). Hủy đề nghị chưa chuyển giải phóng giữ chỗ nhưng không đóng vụ lệch/quan sát đã lưu, không xóa tệp căn cứ; danh sách cần xử lý và guard ví vẫn bao gồm hồ sơ hủy có issue_state này. Chưa có thao tác đóng vụ ở lát này. UAT bổ sung nhận thừa25/20, nhận0/10, tệp sau hủy và hủy vượt nguồn vẫn còn vụ cần xử lý; số ca emit không giảm.
