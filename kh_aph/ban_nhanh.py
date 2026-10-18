@@ -165,6 +165,9 @@ def _dispatched_matches(doc, notes, choices, info, dispatcher):
         _dispatch_permissions(dn)
         if dn.docstatus != 1 or cint(dn.is_return) or dn.customer != doc.customer or dn.get(delivery_info.DISPATCHER) != dispatcher:
             frappe.throw("Đợt xuất ngay không còn nguyên trạng; mở phiếu để đối soát, không tự xuất tiếp")
+        states = {"Khách đã nhận"} if info["delivery_method"] == "Khách đến lấy" else {"Đang giao", "Khách đã nhận"}
+        if dn.get("kh_aph_delivery_state") not in states or not dn.get(delivery_info.HANDED_AT) or not dn.get(delivery_info.HANDED_BY):
+            frappe.throw("Phiếu chưa có xác nhận xuất hợp lệ của đợt; mở phiếu để đối soát")
         if any((dn.get(field) or "") != value for key, field in delivery_info.MAPPING.items()
                if (value := info[key]) or key != "shipping_address_name"):
             frappe.throw("Thông tin trên phiếu không khớp yêu cầu xuất ngay")
@@ -180,6 +183,8 @@ def _create(shared_order, selections, request_id, delivery=None, dispatcher=None
     if dispatch:
         if not frappe.has_permission("Delivery Note", "submit"):
             frappe.throw("Bạn chưa có quyền xác nhận xuất kho", frappe.PermissionError)
+        if not cint(frappe.conf.get("kh_aph_post_receivable_on_delivery")):
+            frappe.throw("Quy trình giao hàng và ghi công nợ lúc xuất chưa được bật")
         if not isinstance(dispatcher, str) or not dispatcher.strip() or len(dispatcher.strip()) > 140 or any(ord(c) < 32 for c in dispatcher):
             frappe.throw("Ghi tên người trực tiếp giao hàng hợp lệ trước khi xuất ngay")
         dispatcher = dispatcher.strip()

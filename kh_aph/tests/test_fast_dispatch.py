@@ -13,6 +13,7 @@ class FastDispatch(unittest.TestCase):
         self.f.throw = lambda msg, exc=ValueError: (_ for _ in ()).throw(exc(msg))
         self.f.PermissionError = PermissionError
         self.f.has_permission = Mock(return_value=True)
+        self.f.conf = {"kh_aph_post_receivable_on_delivery": 1}
         utils = types.ModuleType("frappe.utils")
         utils.cint = lambda v: int(v or 0)
         utils.flt = lambda v: float(v or 0)
@@ -37,6 +38,8 @@ class FastDispatch(unittest.TestCase):
     def test_permission_checked_before_any_create(self):
         self.f.has_permission.return_value = False
         with self.assertRaises(PermissionError): self.m.create_and_dispatch("ROOT", [], "TOKEN", {}, "Kho A")
+        self.f.has_permission.return_value = True; self.f.conf = {}
+        with self.assertRaises(ValueError): self.m.create_and_dispatch("ROOT", [], "TOKEN", {}, "Kho A")
 
     def test_actual_dispatcher_not_fabricated_or_unbounded(self):
         for value in (None, 12, " ", "a\nb", "a"*141):
@@ -45,6 +48,7 @@ class FastDispatch(unittest.TestCase):
 
     def note(self, **kw):
         values = {"customer": "KH", "docstatus": 1, "is_return": 0,
+                  "kh_aph_delivery_state": "Đang giao", "kh_aph_ban_giao_luc": "now", "kh_aph_ban_giao_boi": "kho",
                   "kh_aph_nguoi_thuc_giao": "Kho A", **kw}
         note = types.SimpleNamespace(**values)
         note.get = lambda key: getattr(note, key, None)
