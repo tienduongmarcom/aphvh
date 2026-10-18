@@ -1,13 +1,20 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
-## 18/10/2026 — ĐANG DỞ: xác minh quỹ và chốt ca 2B
+## 18/10/2026 — Lát xác minh quỹ và chốt ca 2B đã kiểm; bàn giao tiền còn tiếp
 
-Nhánh `feat/chot-ca-tien-mat-20261018`, dựa PR #10 (14dceff). Đã viết hồ sơ native `APH Xac minh quy` + dòng phân bổ và `APH Chot ca tien`, cờ23 `kh_aph_cash_closing` mặc định tắt, cần cờ2A. Không đổi version, chưa phát hành hoặc triển khai; production vẫn0.15.3.
+Nhánh `feat/chot-ca-tien-mat-20261018`, [PR #11](https://github.com/tienduongmarcom/aphvh/pull/11), base PR #10 (14dceff). Mã nghiệp vụ/kiểm **`022322cab2eea0dade0848fa133bbb6c19199273`**. Không tăng version/tag hoặc triển khai: production vẫn0.15.3 theo xác nhận vận hành đã có; các PR #9–#11 chưa phát hành.
 
-327 unit app +108 lõi đạt cục bộ. **HTTP/Chrome/Cổng2/2b/3 chưa xác minh trên mã này**, không dùng PASS2A thay thế. Bước tiếp: chạy các cổng trên đúng SHA, sửa mọi lỗi, đọc artifact và cập nhật hồ sơ. Bộ mới dự kiến6 ca (5 HTTP +1 Chrome), b01451/ tổng242 nếu đủ đạt. Thử trên tiền/quỹ giả riêng, không dữ liệu khách.
+Đã có ba DocType native: `APH Xac minh quy` + `APH Phan bo quy`, `APH Chot ca tien`; Workspace Tiền và vay có lối vào và danh sách ca lệch. Cờ23 `kh_aph_cash_closing` mặc định tắt, cần cờ22 custody. Quản lý xác minh phân bổ số dư Cash/VND có căn cứ, phần chưa rõ riêng; người giữ tự chốt phải có/thực đếm/lệch và người/hạn xử lý. Không ghi GL/PLE, không lấy số đếm làm đầu ca mới. Snapshot lưu băm từng GL, actor/time server; nháp/sổ/bản trước đổi thì kiểm lại. Hủy/repost/sửa sổ trước mốc hoặc sổ mới ghi trước ngày chốt phải xác minh lại, bản cũ giữ nguyên. Retry cùng ca không submit hai lần. Tệp kiểm đếm riêng tư đúng hồ sơ, chặn sửa/xóa blob đã xác nhận. Không suy owner/backfill tiền lịch sử.
 
-Phạm vi: phân bổ số dư sổ thành người rõ/chưa rõ có căn cứ; chốt tự thân, số phải có/thực đếm/lệch và người/hạn xử lý; snapshot băm từng GL bất biến; phát hiện sổ trước mốc thay đổi, ghi lùi ngày trước ngày chốt; retry theo tên ca. Không GL/PLE mới. Chưa làm bàn giao/giữ chỗ tiền, adapter nhà máy, chống lặp thu quầy, xử lý kết quả lệch/mở lại hoặc giao diện tiền riêng cho Dũng; chưa coi toàn bộ2B đạt. Đặc tả triển khai: `docs/thiet-ke-chot-ca-ban-giao-2b.md` mục10.
+Quyền native Company/Account/từng dòng GL và từng nguồn vẫn được kiểm; khóa Cash theo company và current read. Account User chỉ đọc/chốt ca chính mình, quản lý không chốt thay; Không xem giá vốn/Kế toán nhà máy bị chặn kể cả cộng quyền. API current chỉ trả số của chính người đang đăng nhập. Chứng cứ JSON chỉ chứa mã GL và băm, không chứa tiền/người của nguồn. Chưa cấp thêm quyền GL cho người bán/nhà máy.
 
+Cục bộ **327 kh_aph +108 lab9x** đạt; Python/JS và diff đạt. Đủ bốn cổng trên đúng022322c: [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39138158466), [Cổng2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39138169799), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39138168695), [Cổng3](https://github.com/tienduongmarcom/aphvh/actions/runs/39138171169). Các lượt trước be3d555/95d384c đã hủy khi thay mã, không lấy làm bằng chứng mã cuối.
+
+Đã tải/đọc artifact: **242 HTTP/Desk PASS,0 FAIL**, b01451; thêm2 kiểm kỹ thuật core/site trắng cũng PASS (244 dòng PASS toàn bộ evidence). Sáu ca mới đạt: phân1000 thành700/200/chưa rõ100; tệp riêng tư/giữ blob; thiếu20/thừa10, không đổi sổ; hai phiên retry và hai nháp cùng khoảng; nháp lỗi thời; hủy sau chốt, xác minh lại có liên kết, sổ lùi ngày; kế toán thường chốt đúng mình, không đọc phân bổ/ca người khác, Company scope và NoCost cộng manager; Chrome đọc snapshot800/800/0, form sạch/khóa. Đã xem `chot-ca-tien.png`; chỉ là ảnh UAT giả. Core63.508 tệp không đổi.
+
+Cổng3: schema nâng/site mới **1.059/1.059**, lệch0, bỏ qua đúng6/6 mục; quay lui **1.052/1.052**, đếm/tổng/cờ/versions/settings/UI khớp, custody/closing đều0. Ca cố ý lỗi tự quay lui, so đếm/tổng/chi tiết/versions khớp và giữ bảo trì. Nền CI có GL0, không thay diễn tập bản sao production có dữ liệu khi đến phát hành.
+
+**Bước tiếp theo:** bàn giao/giữ chỗ nguồn/nhận và đảo có kiểm soát; nối adapter quỹ nhà máy, chặn tự nhận, chống lặp thu quầy, vòng xử lý kết quả lệch và quyền tiền cá nhân tối thiểu cho người bán/nhà máy. Chưa có các phần này, không coi toàn bộ2B hoặc tiền toàn cửa hàng đã hoàn tất. Giới hạn lát này10.000 dòng/quỹ, VND; cùng ngày dòng mới theo ID GL/mốc server, không suy giờ nghiệp vụ không có trên GL. Blueprint field/quyền/khóa ở `docs/thiet-ke-chot-ca-ban-giao-2b.md` mục10. Nghiệm thu tài khoản nhân sự/dữ liệu/máy in thật vẫn gom cuối theo anh Tiến.
 
 ## 18/10/2026 — Đợt2A người giữ tiền đã kiểm kỹ thuật/UAT;2B còn thiết kế
 

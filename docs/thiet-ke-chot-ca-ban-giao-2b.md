@@ -87,7 +87,7 @@ Chốt ca/kiểm đếm/cùng-quỹ không ghi GL/PLE, không giảm nợ. Thu k
 | User Permission Company/Account, Dũng cộng quyền | Không đọc/ghi vượt phạm vi/không lộ vốn |
 | Cài lại/nâng bản sao có số dư/quay lui | Không backfill owner, tổng người/quỹ/sổ khớp và lịch sử nguyên vẹn |
 
-Các ca này chưa chạy cho2B; không dùng kết quả317 unit/2A thay cho bằng chứng2B.
+Các ca của lát xác minh/chốt ca đã chạy, xem mục11. Bàn giao/giữ chỗ/đảo/adapter nhà máy chưa chạy cho2B; không dùng kết quả2A hoặc lát đầu thay toàn bộ bộ ca này.
 
 ## 9. Triển khai
 
@@ -113,6 +113,14 @@ Tại mốc xác minh lưu dấu từng GL gồm ID/ngày/creation/tiền/cờ h
 
 Nháp giữ fingerprint; nếu sổ hoặc bản trước đổi trước submit, từ chối và yêu cầu lưu/đối chiếu lại. close(name) khóa hồ sơ, retry cùng tên trả kết quả cũ. Hai nháp cùng khoảng thời gian không chốt đồng thời vì so previous_shift dưới khóa. Thực đếm không trở thành GL/đầu ca mới; chênh lệch lưu trên hồ sơ, chưa có nút xác nhận xử lý/mở lại. API native submit cũng chạy cùng guard.
 
-Kiểm: 10 ca unit mới cho Decimal/fingerprint/tổng/quyền/cờ tắt; HTTP quỹ giả1000 phân700/200/chưa rõ100, thu100 rõ +50 chưa rõ, ca thiếu20/thừa10, hai phiên retry, nháp lỗi thời, hủy sau chốt, xác minh thay mốc, ghi lùi ngày, không chốt thay và không lộ ca khác; Chrome đọc snapshot đã chốt. Chưa có kết quả tích hợp lúc viết blueprint; ghi kết quả thật ở ban-giao/TRANG_THAI.
+Kiểm: 10 ca unit mới cho Decimal/fingerprint/tổng/quyền/cờ tắt; HTTP quỹ giả1000 phân700/200/chưa rõ100, thu100 rõ +50 chưa rõ, ca thiếu20/thừa10, hai phiên retry, nháp lỗi thời, hủy sau chốt, xác minh thay mốc, ghi lùi ngày, không chốt thay và không lộ ca khác; Chrome đọc snapshot đã chốt. Đã có kết quả tích hợp trên022322c; xem mục11 và ban-giao/TRANG_THAI.
 
 Triển khai chỉ cấu trúc, không phân bổ lịch sử hoặc sửa sổ; khi bật thật kế toán trưởng xác minh quỹ có căn cứ. Cổng3 thêm cả custody/closing vào FLAGS_MOI, rollback trả hai cờ0 theo snapshot. Nhóm bàn giao/giữ chỗ/đảo/adapter nhà máy/idempotency thu cũ và bảng tổng hợp vẫn là bước sau; không được bật như module bàn giao hoàn chỉnh. Nghiệm thu người dùng/thực địa theo quyết định gom cuối.
+
+## 11. Bằng chứng lát đầu
+
+PR #11, mã022322cab2eea0dade0848fa133bbb6c19199273:327+108 unit đạt,242 HTTP/Desk PASS/0 FAIL (b01451), thêm2 kiểm kỹ thuật core/site trắng PASS. Đã đọc artifact UAT39138168695 và xem ảnh chot-ca-tien.png: snapshot800/800/0 khóa, form sạch. Bằng chứng tệp kiểm đếm gồm chặn tệp công khai, chặn xóa/đổi riêng tư sau xác nhận và tải lại blob còn nguyên. Kế toán Accounts User chốt được chính mình, không đọc bản phân bổ/ca khác; NoCost cộng manager bị chặn.
+
+Bốn cổng: C2 39138158466, C2b39138169799, UAT39138168695, C3 39138171169 đều success đúng mã. C3 schema1.059/1.059 (bỏ qua6 mục có chủ đích), rollback1.052/1.052 và tổng/đếm/cờ/settings/UI/versions khớp; hai cờ mới về0. Cố ý gây lỗi tự quay lui và giữ bảo trì. Core63.508 tệp không đổi. Không có FAIL trên mã cuối; các lượt trước hủy khi cập nhật mã không dùng làm bằng chứng.
+
+Đây là dữ liệu giả và nền CI GL0 cho migration, không phải nghiệm thu nhân sự hoặc bản sao production có phát sinh. Chưa phát hành/bật cờ trên production, vẫn0.15.3. Các phần bàn giao/giữ chỗ/đảo, xử lý kết quả lệch và adapter người bán/nhà máy tiếp tục theo mục8–10.

@@ -68,9 +68,9 @@ Thứ tự trên không cấm khảo sát điểm nối tiền trong đợt 1; k
 
 | Mã | Yêu cầu | Điểm nguồn hiện có / khoảng thiếu |
 |---|---|---|
-| T01 | Bao phủ mọi đường thu, kể cả cũ | Rà `ban_quay.thu_tien`, Payment Entry chuẩn, Funds Receipt/Action, Journal Entry và phiếu quỹ nhà máy. Người lập không mặc nhiên là người giữ; chưa có mapping toàn bộ |
+| T01 | Bao phủ mọi đường thu, kể cả cũ | 2A/PR #10 đã thêm người giữ/giao trên PE, JE Account, SI/PI/POS, Funds và quỹ nhà máy, truyền qua quầy/thu ngay/JE tự sinh; 236 ca HTTP/Desk đạt trên929d16a. Chưa coi POS/nguồn ngoài adapter và nhân sự thật đã nghiệm thu; người lập không mặc nhiên là người giữ |
 | T02 | Thu thực và phân bổ tách nhau | Tái dùng `funds`, nativeJE/PE/PLE; không FIFO, không giả bank TL, không đổi chủ hàng vì công ty nhận tiền |
-| T03 | Chốt ca/phải có/thực đếm | Chưa có luồng chung; cần xác định ranh giới quỹ/ca/người, khoản chuyển ca và không tự ép lệch về0 |
+| T03 | Chốt ca/phải có/thực đếm | PR #11 đã có xác minh phân bổ số bắt đầu và chốt tự thân trên Cash/VND; số phải có/thực đếm/lệch, người/hạn xử lý và mốc server. 327+108 unit, 242 HTTP/Desk đạt trên022322c. Chưa phát hành, chưa có giữ chỗ/bàn giao/xử lý kết quả lệch và chưa nghiệm thu nhân sự thật |
 | T04 | Bàn giao không thu khách lần hai | Có nền `factory_cash.xac_nhan_nhan`; cần luồngchung và khoản tiền nguồn, không ghi lại doanh thu/131 |
 | T05 | Không tự nhận, kể cả cộngquyền | Codehiện chưa chặn rõ người lập tự nhận; thiết kế guard dựa đúng người thực giao/người thực nhận, không chỉdựa owner hoặc tên role |
 | T06 | Thiếu/thừa, nộpbank, giữquáhạn | Chưa có vòng xử lý đầyđủ; giữ tiền thực riêng với chênh lệch/điều tra, không sửa phiếuthu cho khớp |
