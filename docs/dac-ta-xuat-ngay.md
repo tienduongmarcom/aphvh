@@ -46,6 +46,8 @@ Nháp/in vẫn không ghi sổ. Chọn xuất ngay chủ động thực hiện x
 - Desk thật: chọn tự lấy và xuất ngay; dùng CDP Fetch chặn phản hồi HTTP200 sau server commit; kiểm DN đã submit rồi bấm lại nút trong đúng Dialog, so counts DN/SI/GL/SLE không tăng. Đây là mô phỏng mất phản hồi trình duyệt thật ở mốc commit, không chỉ gọi API lặp.
 - Thêm 4 ca HTTP và 1 ca Desk; b014 kỳ vọng36 PASS gồm restore, toàn UAT227. Kiểm trên đúng SHA, đọc artifact/ảnh và giữ hồi quy cọc/GN09/giá vốn.
 
+Kết quả18/10/2026 trên `bdb91a826cb506d67870e14d1319cededc4a5008`: 406 ca cục bộ đạt, UAT227 PASS/0 FAIL (b01436 gồm restore), cả bốn cổng đạt. Đã đọc các ca mới, xem ảnh kết quả Chrome và so dấu vân nâng cấp/schema/tự quay lui đều khớp. Link run ở đầu hồ sơ bàn giao. Các mốc kiểm trước GN10 không dùng thay bằng chứng này.
+
 ## 9. Triển khai và khôi phục
 
 Tái dùng cờ Trung tâm Bán hàng và các cờ nguồn/giao hàng đã có; không thay inventory21 cờ hoặc bộ cài. JS qua doctype_js hiện có, không build frontend. Production/tag/version/manifest chưa đổi. Cần Cổng2/2b/UAT/3 đúng SHA; trước phát hành vẫn diễn tập bản sao production hiện tại theo runbook, không lấy CI thay nghiệm thu người thật/máy in. Quay lui bằng image và snapshot tương ứng trước mở nhập liệu; sau có giao dịch mới phải đối soát, không tự restore mất dữ liệu.
