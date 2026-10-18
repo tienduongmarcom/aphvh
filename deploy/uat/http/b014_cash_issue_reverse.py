@@ -73,7 +73,9 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     emit('HTTP_2B_ISSUE_REOPEN_AUDIT','PASS',{'reopen_blocks_wallet':True,'evidence_survives_cancel':True,'no_gl_ple':True})
     choices=[]
     for i in range(2):
-        d,unused=evidence(resolution(original));choices.append(proof(d,new,clean))
+        d,reused=evidence(resolution(original))
+        assert reused['file_url']==file['file_url'] and ktt(file['file_url'])=={'uat':'doi-chieu-lech'}
+        choices.append(proof(d,new,clean))
     sessions=[phien(f['ktt']),phien(f['ktt'])]
     def resolve_at(i):
         try:return ('ok',confirm(choices[i],sessions[i]))

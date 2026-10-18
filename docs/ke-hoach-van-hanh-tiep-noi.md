@@ -17,7 +17,7 @@ Quy tắc bắt buộc đọc từ `AGENTS.md`, `docs/quyet-dinh-nghiep-vu.md`, 
 | Đợt | Kết quả cần có | Mốc 0.15.3 | Điều kiện đóng đợt |
 |---|---|---|---|
 | 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Production0.15.3 đã có luồng chính; PR #9 đã bổ sung lối in lại A5, đủ bốn cổng trên1e89ace; chưa phát hành | Kỹ thuật/UAT A5 đạt; chuyển đặc tả đợt2, nghiệm thu người dùng/máy in gom cuối |
-| 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ/quỹ nhà máy; PR #10 có metadata người giữ và báo cáo rà nguồn2A, đủ bốn cổng trên929d16a,236 UAT PASS; PR #11 đã kiểm xác minh/chốt ca; PR #12 đã viết giữ chỗ và xác nhận thực nhận, đủ bốn cổng đúng1787448,249 HTTP/Desk PASS/0 FAIL; xử lý kết quả lệch/đảo/adapter cũ còn thiếu | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
+| 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ/quỹ nhà máy; PR #10 có metadata người giữ và báo cáo rà nguồn2A, đủ bốn cổng trên929d16a,236 UAT PASS; PR #11 đã kiểm xác minh/chốt ca; PR #12 đã viết giữ chỗ và xác nhận thực nhận, đủ bốn cổng đúng1787448,249 HTTP/Desk PASS/0 FAIL; PR #13 thêm đối chiếu có căn cứ/hoàn ngược chiều, đang kiểm; adapter cũ còn thiếu | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
 | 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất; sheet của Dũng là bước đệm theo chủ dự án | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
 | 4 — Tài chính | Đối chiếu đầy đủ, chốt tháng/báo cáo điều hành | Có nhiều công cụ riêng; chưa chứng minh toàn chuỗi | Đối chiếu dữ liệu đại diện và xác định tạm tính/hoàn tất |
 | 5 — Hóa đơn một phần | Yêu cầu theo dòng/lượng/lần giao, hàng đợi MISA | Chưa chốt đặc tả riêng | Chốt nghiệp vụ trước code, không gộp vào bản vá giao nhận |
@@ -70,10 +70,10 @@ Thứ tự trên không cấm khảo sát điểm nối tiền trong đợt 1; k
 |---|---|---|
 | T01 | Bao phủ mọi đường thu, kể cả cũ | 2A/PR #10 đã thêm người giữ/giao trên PE, JE Account, SI/PI/POS, Funds và quỹ nhà máy, truyền qua quầy/thu ngay/JE tự sinh; 236 ca HTTP/Desk đạt trên929d16a. Chưa coi POS/nguồn ngoài adapter và nhân sự thật đã nghiệm thu; người lập không mặc nhiên là người giữ |
 | T02 | Thu thực và phân bổ tách nhau | Tái dùng `funds`, nativeJE/PE/PLE; không FIFO, không giả bank TL, không đổi chủ hàng vì công ty nhận tiền |
-| T03 | Chốt ca/phải có/thực đếm | PR #11 đã có xác minh phân bổ số bắt đầu và chốt tự thân trên Cash/VND; số phải có/thực đếm/lệch, người/hạn xử lý và mốc server. 327+108 unit, 242 HTTP/Desk đạt trên022322c. PR #12 nối giữ chỗ/bàn giao; chưa có đóng vụ lệch/đảo, chưa phát hành hoặc nghiệm thu nhân sự thật |
+| T03 | Chốt ca/phải có/thực đếm | PR #11 đã có xác minh phân bổ số bắt đầu và chốt tự thân trên Cash/VND; số phải có/thực đếm/lệch, người/hạn xử lý và mốc server. 327+108 unit, 242 HTTP/Desk đạt trên022322c. PR #12 nối giữ chỗ/bàn giao; PR #13 bổ sung đóng/mở lại bằng xác minh mới/ca khớp và phiếu hoàn; đang kiểm, chưa phát hành hoặc nghiệm thu nhân sự thật |
 | T04 | Bàn giao không thu khách lần hai | PR #12: cùng Cash chuyển trách nhiệm không GL; khác Cash/nộp Bank một native JE hai dòng tiền, không PE/PLE/131/doanh thu. Nguồn được xác minh, giữ chỗ và đọc lại khi khóa. Adapter `factory_cash.xac_nhan_nhan` cũ chưa nối |
 | T05 | Không tự nhận, kể cả cộngquyền | PR #12: người giao phải tự gửi, đúng người nhận mới xác nhận; chặn tự nhận/nhận thay kể cả Admin. Không suy owner. Luồng nhà máy cũ chưa được thay guard trong lát này |
-| T06 | Thiếu/thừa, nộpbank, giữquáhạn | PR #12 lưu số thực/thiếu/thừa, người/hạn xử lý; vượt nguồn lưu quan sát không chuyển; hủy đề nghị vẫn giữ vụ lệch/tệp. Ví có lệch hoặc nhóm chưa rõ âm bị chặn giao ra. Đã có nộp Bank; chưa có đóng vụ lệch/đảo/nhắc quá hạn thống nhất |
+| T06 | Thiếu/thừa, nộpbank, giữquáhạn | PR #12 lưu số thực/thiếu/thừa, người/hạn xử lý; vượt nguồn lưu quan sát không chuyển; hủy đề nghị vẫn giữ vụ lệch/tệp. Ví có lệch hoặc nhóm chưa rõ âm bị chặn giao ra. Đã có nộp Bank; PR #13 thêm đóng/mở lại có căn cứ và hoàn toàn bộ bằng phiếu ngược, đang kiểm. Nhắc quá hạn và adapter cũ chưa đầy đủ |
 | T07 | Ngân hàng/sao kê/ngoại lệ | Có quyềnFile/Bank, mãgiaodịch chung và đối soát; chưa có bảngchốt ngày người phụtrách/hạn xử lý thống nhất |
 
 Không tự gán người giữ cho khoản lịch sử chưa rõ; phảihiện chưa xácminh. Phải kiểm phiên đồngthời/khóa ghi, số tiền hữu hạn, tối đa2 sốlẻ và quyềnCompany trước mọi ghi sổ.
@@ -124,3 +124,10 @@ Sau khi phần kỹ thuật/UAT đạt, có thể chuyển đợt2; đợt1 gi�
 Rà nguồn đợt2: `docs/dot-2-ra-soat-nguon-tien.md`. Chưa có schema/code chốt ca mới; phải hoàn thiện field/nguồn tiền/vòng đời/quyền trước triển khai.
 
 Đợt2A: đặc tả9 nhóm `docs/dac-ta-nguoi-giu-tien-2a.md`, ứng viên PR #10 đã đạt bốn cổng trên929d16a (236 PASS/0 FAIL); chưa phát hành. Thiết kế2B `docs/thiet-ke-chot-ca-ban-giao-2b.md` chưa có code/schema và chưa PASS ca2B. Không gọi báo cáo phát sinh2A là số tiền đang giữ.
+
+
+## Điểm nối PR #13 — đối chiếu và hoàn
+
+Mã đang kiểm d415cf3:351+108 unit đạt, kỳ vọng thêm10 ca HTTP/Desk (259 tổng, b01468); chưa kết luận CI mã mới đạt. Đặc tả9 nhóm tại `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`. Hồ sơ đối chiếu chỉ quản lý, cần xác minh mới và ca khớp còn hiệu lực từng phía Cash; không tự tạo bút toán, giữ lệch cũ, hủy hồ sơ mở lại chặn ví. Hoàn toàn bộ theo người/quỹ/số gốc bằng phiếu ngược chiều, chặn nguồn đã dùng/giữ chỗ/trùng; Bank chỉ làm nguồn hoàn đúng bàn giao gốc, không mở luồng chi tùy ý. Không hủy JE gốc. Không hỗ trợ hoàn một phần hoặc hoàn tiếp phiếu hoàn.
+
+Sau khi kiểm đủ đúng mã, còn nối adapter nhận quỹ nhà máy/thu quầy cũ, token thu quầy cũ và quyền tiền cá nhân tối thiểu cho người bán/nhà máy. Chưa chuyển sang màn hình nhà máy/chốt tài chính khi các điểm nối tiền chưa khép. Production0.15.3 chưa đổi; nghiệm thu thật gom cuối.

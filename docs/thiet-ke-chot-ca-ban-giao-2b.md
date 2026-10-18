@@ -131,3 +131,8 @@ Bốn cổng: C2 39138158466, C2b39138169799, UAT39138168695, C3 39138171169 đ�
 Sau lát xác minh/chốt ca, mã1787448b02c5768b0f1b48ee71da7297f78e268e đã có giữ chỗ và nhận theo số thực, cùng Cash chuyển trách nhiệm không sổ, khác Cash/nộp Bank native JE. Quyền người giao/người nhận, khóa nguồn, retry nguyên transaction, vụ lệch/tệp vẫn giữ khi hủy đề nghị, nhóm chưa rõ âm chặn giao ra. Chi tiết9 nhóm tại `docs/dac-ta-ban-giao-tien-2b.md`, không thay bằng blueprint lịch sử ở mục10.
 
 338+108 unit và249 HTTP/Desk PASS/0 FAIL đúng mã; Cổng2/2b/UAT/Cổng3 đều đạt (trạng thái cuối và link run tại đầu `docs/ban-giao.md`, `deploy/release/TRANG_THAI.md`). Còn đảo/đóng vụ lệch, adapter nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân không GL. Không gọi toàn bộ2B hoàn tất; production0.15.3 chưa đổi, nghiệm thu thật gom cuối.
+
+
+## 13. Điểm nối đối chiếu/hoàn — PR #13
+
+Đã có mã d415cf3 cho hồ sơ đối chiếu và phiếu hoàn. Thay cho việc xóa/chỉnh số nguồn: đối chiếu yêu cầu xác minh mới + ca khớp từng phía còn hiệu lực, tệp riêng tư và kết quả điều tra; chốt/mở lại không đổi GL. Hoàn là giao dịch ngược chiều mới, đúng hai người, đúng quỹ và toàn bộ số thực nhận, kiểm nguồn hiện tại và giữ chỗ; Bank chỉ làm nguồn hoàn gốc. JE gốc và số đếm/lệch cũ giữ nguyên. Hồ sơ đã gửi/hủy không xóa tay kể cả quản lý. Chi tiết tại `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`;351+108 unit đạt, bốn cổng đang kiểm, chưa gọi PASS toàn bộ. Trạng thái cuối ở đầu ban-giao/TRANG_THAI. Adapter cũ và quyền cá nhân không GL vẫn còn mở.

@@ -294,8 +294,33 @@ def protect_file(doc, method=None):
     types = (OPENING, SHIFT, "APH Ban giao tien", "APH Doi chieu lech tien") if cint(frappe.conf.get("kh_aph_cash_handover")) else (OPENING, SHIFT)
     for dt in types:
         if frappe.db.sql(f"select name from `tab{dt}` where docstatus in (1,2) and evidence=%s limit 1 for update", (url,)):
+            if method != "on_trash" and _same_private_upload(doc):
+                return
             if method == "on_trash" or doc.get("content") or any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")):
                 frappe.throw("Tệp thuộc hồ sơ tiền đã xác nhận; giữ nguyên bằng chứng lịch sử")
+
+
+def _same_private_upload(doc):
+    """File.before_insert đã chuẩn hóa nội dung/dedupe; chỉ thêm File mới.
+
+    Không tin content_hash từ client, không cho nhánh này sửa File đã tồn tại.
+    So byte sau xử lý native (kể cả EXIF), giữ URL/riêng tư và blob cũ.
+    """
+    if not doc.is_new() or not cint(doc.get("is_private")) or frappe.db.exists("File", doc.name):
+        return False
+    rows = frappe.db.sql("""select name from `tabFile` where file_url=%s
+        and is_private=1 and name!=%s order by name limit 1 for update""", (doc.file_url, doc.name))
+    if not rows:
+        return False
+    original = frappe.get_doc("File", rows[0][0])
+    original.check_permission("read")
+    incoming = getattr(doc, "_content", None)
+    if incoming is None:
+        incoming = doc.get_content(encodings=[])
+    existing = original.get_content(encodings=[])
+    def raw(value):
+        return value.encode("utf-8") if isinstance(value, str) else value
+    return raw(incoming) == raw(existing)
 
 
 class CashClosingFileMixin:

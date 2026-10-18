@@ -78,3 +78,26 @@ class ClosingAccess(unittest.TestCase):
         self.f.get_roles.return_value=['System Manager','APH Không xem giá vốn','Kế toán nhà máy']
         self.m.guard()
         self.assertEqual(self.m.roles_for(),{'System Manager'})
+
+    def test_new_private_reference_can_reuse_identical_native_blob(self):
+        doc=types.SimpleNamespace(name='new',file_url='/private/files/old.pdf',_content=b'proof',is_new=lambda:True,get=lambda k:1 if k=='is_private' else None)
+        self.f.db.exists.return_value=False;self.f.db.sql.return_value=[('original',)]
+        original=types.SimpleNamespace(check_permission=Mock(),get_content=lambda **kw:b'proof')
+        self.f.get_doc=Mock(return_value=original)
+        self.assertTrue(self.m._same_private_upload(doc))
+        original.check_permission.assert_called_once_with('read')
+        doc._content=b'changed'
+        self.assertFalse(self.m._same_private_upload(doc))
+
+    def test_reusing_blob_cannot_edit_existing_file_or_make_public(self):
+        doc=types.SimpleNamespace(name='old',file_url='/private/files/old.pdf',_content=b'proof',is_new=lambda:False,get=lambda k:1)
+        self.assertFalse(self.m._same_private_upload(doc))
+        doc.is_new=lambda:True;doc.get=lambda k:0
+        self.assertFalse(self.m._same_private_upload(doc))
+        self.f.db.sql.assert_not_called()
+
+    def test_new_reference_still_requires_read_permission_to_original(self):
+        doc=types.SimpleNamespace(name='new',file_url='/private/files/old.pdf',_content=b'proof',is_new=lambda:True,get=lambda k:1)
+        self.f.db.exists.return_value=False;self.f.db.sql.return_value=[('original',)]
+        self.f.get_doc=Mock(return_value=types.SimpleNamespace(check_permission=Mock(side_effect=PermissionError('denied'))))
+        with self.assertRaises(PermissionError):self.m._same_private_upload(doc)

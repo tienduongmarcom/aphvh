@@ -49,3 +49,8 @@ Hoàn cùng Cash/khác Cash/Bank về Cash, số dư/giữ chỗ/đếm GL/PLE �
 ## 9. Triển khai và khôi phục
 
 Schema rõ trong bộ cài, không after_migrate; cài lại không tự xử lý lịch sử. Ca lệch cũ có issue_state trống vẫn bị chặn cho đến có hồ sơ đối chiếu hợp lệ. Cờ24/phiên bản giữ nguyên; không tag/merge/deploy. Diễn tập CI nâng/site mới/rollback và cố ý lỗi; khi phát hành còn cần bản sao production có dữ liệu. Không tắt riêng cờ sau phát sinh. Nghiệm thu người dùng/dữ liệu/máy in thật gom cuối theo anh Tiến.
+
+
+## Bằng chứng đang kiểm
+
+UAT39176704265/d415cf3 FAIL tại upload căn cứ lặp sau khi hai ca đóng/mở vụ đã PASS. Frappe16.52.0 File.before_insert/save_file dùng chung URL khi nội dung trùng, guard cũ nhầm File mới với sửa blob cũ. Bản sửa chỉ cho tạo tham chiếu File mới riêng tư khi byte sau xử lý native khớp blob đang bảo vệ và người thao tác có quyền đọc File gốc; không tin content_hash client, không cho nhánh này sửa File đã tồn tại. Đọc byte thô để không thay encoding PDF/ảnh, giữ guard sửa/xóa/chuyển công khai. UAT giữ nội dung trùng, kiểm URL/blob cũ;354+108 unit đạt, chờ4 cổng mã sửa. Nguồn primary đã đối chiếu: frappe/core/doctype/file/file.py tại tag v16.52.0.
