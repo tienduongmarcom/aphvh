@@ -1,10 +1,10 @@
 # Phiên bản đã triển khai theo log người vận hành xác nhận.
 khach: aph-vh
-image_tag: "0.15.2"
-image_id: "sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333"
-nguon_sha: "24b795cc28f47ca2f31aef8edbbd8e5984c12ee3"
+image_tag: "0.15.3"
+image_id: "sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496"
+nguon_sha: "96a7ef0352b45c31b8d26428aad3ddbcafeeb37c"
 nen: "frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268 (ERPNext 16.51.1 + Frappe 16.52.0)"
 moi_truong: production
-# Người vận hành xác nhận trên erpnext-prod/frontend ngày 17/10/2026:
-# diễn tập tách biệt lượt 10171255a25ef6 khớp tổng/đếm/chi tiết; triển khai báo === XONG 0.15.2: ĐẠT ===.
+# Người vận hành xác nhận trên erpnext-prod/frontend ngày 18/10/2026:
+# log triển khai báo === XONG 0.15.3: ĐẠT ===, digest khớp workflow phát hành39105247607.
 # Giữ bản này cho tới khi có log xác nhận triển khai phiên bản kế tiếp.

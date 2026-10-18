@@ -5,7 +5,8 @@
 > Nguồn0.15.3 thuộc PR #5 (`feat/thong-tin-giao-nhan-20261017`) → main;
 > mã đóng gói `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c` đã đủ bốn cổng.
 > Các dòng dưới nói main còn cũ hoặc production0.14.x là lịch sử; trạng thái production mới nhất
-> phải đọc `deploy/release/TRANG_THAI.md` và `khach/aph-vh/phien-ban.yaml`. Chưa coi0.15.3 đã triển khai.
+> phải đọc `deploy/release/TRANG_THAI.md` và `khach/aph-vh/phien-ban.yaml`.
+> Production0.15.3 đã được người vận hành xác nhận ĐẠT ngày18/10/2026, digest khớp image phát hành.
 
 Đọc tệp này trước, rồi `docs/ban-giao.md` (trạng thái, việc còn mở), `docs/quyet-dinh-nghiep-vu.md` (13 quyết định
 nghiệp vụ đã chốt — không hỏi lại), `deploy/release/RELEASE_GATES.md` + `deploy/release/TRIEN_KHAI_FRONTEND.md`

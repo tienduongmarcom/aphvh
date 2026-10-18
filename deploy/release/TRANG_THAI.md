@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Production0.15.3 đã triển khai ĐẠT
+
+Người vận hành gửi log `erpnext-prod/frontend`, trong `~/trien-khai`: **`=== XONG 0.15.3: ĐẠT ===`**, image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3`, digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**, khớp workflow39105247607/nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đã đổi `khach/aph-vh/phien-ban.yaml` và baseline Cổng3 sang bản production này; chưa chạy lại diễn tập CI từ baseline mới.
+
+Nguồn xác nhận là log người vận hành; Codex không có SSH và chưa kiểm độc lập giao diện. Giữ nền/21 cờ. Bản0.15.2/digest `sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333` là mốc lịch sử/quay lui có điều kiện, không tự restore sau khi có giao dịch mới. Bước tiếp nghiệm thu người dùng/máy in A5 theo chín ca trong `docs/nghiem-thu-mau-in-20261018.md`; triển khai đạt không thay nghiệm thu nghiệp vụ thật.
+
 ## 18/10/2026 — Image0.15.3 đã phát hành đạt, chưa triển khai VM
 
 [Workflow39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) thành công toàn bộ trên tag `v0.15.3`, nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3`, manifest digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**. Đã đọc log push/metadata và artifact: UAT227 PASS/0 FAIL, core nguyên vẹn, Cổng2/2b/3 đạt, so nâng/quay lui/ca lỗi khớp. kh_aph0.15.3/lab9x0.2.11, nền và21 cờ giữ nguyên.
