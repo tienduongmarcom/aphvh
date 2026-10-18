@@ -8,6 +8,17 @@ from kh_aph.delivery_info_rules import normalize
 
 
 class DeliveryInfoRules(unittest.TestCase):
+    def test_print_snapshot_preserves_legacy_returns_and_document_values(self):
+        from kh_aph.delivery_info_rules import print_snapshot
+        doc = {"kh_aph_nguoi_nhan": "Người cũ", "kh_aph_lai_xe": "Xe cũ",
+               "kh_aph_bien_so_xe": "CŨ", "kh_aph_cach_giao": "Vận chuyển",
+               "kh_aph_nguoi_nhan_tai_kho": "Người mới <script>", "driver_name": "Lái xe mới",
+               "vehicle_no": "MỚI", "kh_aph_ban_giao_luc": "2026-10-18 09:00:00"}
+        self.assertEqual(print_snapshot(doc)["recipient"], "Người mới <script>")
+        self.assertEqual(print_snapshot(doc)["vehicle"], "MỚI")
+        self.assertEqual(print_snapshot({**doc, "is_return": 1})["recipient"], "Người cũ")
+        self.assertEqual(print_snapshot({**doc, "kh_aph_cach_giao": None})["driver"], "Xe cũ")
+
     def test_normalize(self):
         r = normalize({"delivery_method": "Vận chuyển", "recipient": "  Anh Nam  ", "phone": " 0901 "})
         self.assertEqual(r["recipient"], "Anh Nam")

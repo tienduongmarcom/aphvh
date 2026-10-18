@@ -1,5 +1,13 @@
 # Bảng rà soát: nghiệp vụ – quy định – app xử lý thế nào (cho chị Dung duyệt)
 
+## 18/10/2026 — Đối chiếu bộ mẫu in theo văn bản chính thức
+
+Đã đối chiếu các mẫu phiếu nhập/xuất kho và phiếu thu/chi với phụ lục chứng từ của Thông tư 133/2016/TT-BTC (APH) và Thông tư 99/2025/TT-BTC (VH). Bộ mẫu trong mã đã bổ sung bộ phận, Nợ/Có, yêu cầu–thực nhập/xuất, quyển số, số tiền bằng chữ, số chứng từ kèm theo và chữ ký theo từng chế độ; mẫu đã điều chỉnh được ghi “vận dụng”.
+
+Minh Khang dùng nhãn mẫu quản trị nội bộ theo Thông tư 152/2025/TT-BTC, không tự nhận là mẫu bắt buộc của Thông tư 152. TL và mẫu giao nhận/đối soát dùng nhãn quản trị nội bộ. Phiếu xuất nhanh A5 có giá bán thuần để vận hành, không ghi sổ khi in; mẫu kho chuẩn vẫn giữ kiểm soát quyền giá. Căn cứ tham khảo: [TT133 trên Công báo](https://congbao.chinhphu.vn/van-ban/thong-tu-so-133-2016-tt-btc-21048/15526.htm), [TT99 trên Công báo](https://congbao.chinhphu.vn/van-ban/thong-tu-so-99-2025-tt-btc-46529/59652.htm), [TT152 trên Cổng thông tin Chính phủ](https://vanban.chinhphu.vn/?docid=216533&pageid=27160&typegroupid=6).
+
+Quy chế nội bộ tương ứng đang ở trạng thái **dự thảo để doanh nghiệp ban hành** tại `docs/quy-che-bieu-mau-chung-tu.md`; chưa coi đây là xác nhận pháp lý cuối cùng hoặc nghiệm thu máy in thật.
+
 Cập nhật 06/10/2026. Mục đích: chị Dung đối chiếu nhanh, chỗ nào chưa đúng thì sửa quy tắc trong app.
 Cột "Mức đối chiếu": **Đã đọc** = đã đọc nội dung văn bản/bài phân tích; **Chưa đối chiếu điều khoản** = mới dựa vào tên văn bản và hiểu biết chung, cần chị Dung xem lại điều khoản.
 Ghi chú xác nhận chỉ để ghi nhận, bỏ khi đã về một sổ.

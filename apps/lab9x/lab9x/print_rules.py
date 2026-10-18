@@ -11,6 +11,7 @@
 THONG_TU = {
     "APH": ("133/2016/TT-BTC", "26/08/2016", "Ban hành theo"),
     "VHT": ("99/2025/TT-BTC", "27/10/2025", "Kèm theo"),
+    "VH": ("99/2025/TT-BTC", "27/10/2025", "Kèm theo"),
 }
 
 
@@ -21,6 +22,30 @@ def can_cu_mau(abbr) -> str:
         return ""
     so, ngay, dong = t
     return f"({dong} Thông tư số {so} ngày {ngay} của Bộ Tài chính)"
+
+
+def thong_tin_mau(che_do, loai="noi_bo", van_dung=False) -> dict:
+    """Căn cứ của chứng từ, không gán số mẫu doanh nghiệp cho HKD/phiếu quản trị.
+
+    TT99 Điều9/PL I, TT133 Điều84-85/PL3; TT152 Điều5-6 không ban hành
+    bộ mẫu phiếu thu/chi/nhập/xuất riêng. Biểu mẫu tự thiết kế phải ghi rõ.
+    """
+    che_do = str(che_do or "")
+    code = {"nhap": "01 - VT", "xuat": "02 - VT", "thu": "01-TT", "chi": "02-TT"}.get(loai, "")
+    legal = {"133": ("133/2016/TT-BTC", "26/08/2016", "Ban hành theo"),
+             "99": ("99/2025/TT-BTC", "27/10/2025", "Kèm theo")}.get(che_do)
+    label, basis = "Mẫu quản trị nội bộ", ""
+    if legal and code:
+        number, date, prefix = legal
+        label = f"Mẫu số {code}" + (" (vận dụng)" if van_dung else "")
+        basis = f"({prefix} Thông tư số {number} ngày {date} của Bộ trưởng Bộ Tài chính)"
+    elif che_do == "152":
+        label = "Mẫu nội bộ - hộ kinh doanh"
+        basis = "Chế độ kế toán: Thông tư 152/2025/TT-BTC ngày 31/12/2025"
+    return {"nhan": label, "can_cu": basis, "che_do": che_do,
+            "ke_toan_truong": "Kế toán trưởng" if legal else "Người kiểm soát (nếu có)",
+            "nguoi_duyet": "Giám đốc" if legal else
+                "Người đại diện hộ kinh doanh" if che_do == "152" else "Người phụ trách"}
 
 
 # --- Thu / chi ------------------------------------------------------------------------------

@@ -26,3 +26,18 @@ def normalize(values):
     if not result["recipient"]:
         raise ValueError("Ghi người thực nhận hàng tại kho; không bắt buộc là người dùng phần mềm")
     return result
+
+
+def print_snapshot(doc):
+    """Chỉ đọc snapshot phiếu; phiếu cũ/phiếu trả giữ ô cũ, không tra danh mục hiện tại."""
+    current = bool(doc.get("kh_aph_cach_giao")) and not doc.get("is_return")
+    return {
+        "current": current,
+        "method": doc.get("kh_aph_cach_giao") if current else doc.get("kh_aph_hinh_thuc_giao"),
+        "recipient": doc.get("kh_aph_nguoi_nhan_tai_kho") if current else doc.get("kh_aph_nguoi_nhan"),
+        "phone": doc.get("kh_aph_dien_thoai_nhan") if current else "",
+        "driver": doc.get("driver_name") if current else doc.get("kh_aph_lai_xe"),
+        "vehicle": doc.get("vehicle_no") if current else doc.get("kh_aph_bien_so_xe"),
+        "dispatcher": doc.get("kh_aph_nguoi_thuc_giao") if current else "",
+        "time": doc.get("kh_aph_ban_giao_luc") if current else "",
+    }

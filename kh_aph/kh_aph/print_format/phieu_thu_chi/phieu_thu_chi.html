@@ -5,17 +5,19 @@
 {%- set nc = kh_aph_no_co(doc) -%}
 {%- set p = kh_aph_thu_chi(doc) -%}
 {%- set cham = ".................................................." -%}
+{%- set pf = kh_aph_mau_info(doc.company, p.kieu if p.tien_mat else "noi_bo") -%}
 <div class="aph-vt">
+{% if doc.docstatus == 0 %}<div class="aph-state">BẢN NHÁP - CHƯA GHI SỔ</div>{% elif doc.docstatus == 2 %}<div class="aph-state">CHỨNG TỪ ĐÃ HỦY - CHỈ ĐỂ ĐỐI CHIẾU</div>{% endif %}
 <table class="aph-head"><tr>
   <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
-  <td class="aph-mau">{% if p.mau %}<b>Mẫu số {{ p.mau }}</b>{% if p.can_cu %}<br><i>{{ p.can_cu }}</i>{% endif %}{% endif %}</td>
+  <td class="aph-mau"><b>{{ pf.nhan | e }}</b>{% if pf.can_cu %}<br><i>{{ pf.can_cu | e }}</i>{% endif %}</td>
 </tr></table>
 <table class="aph-title"><tr>
   <td class="aph-side"></td>
   <td class="aph-center">
     <div class="aph-name">{{ p.tieu_de }}</div>
     <div class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
-    <div>Số: {{ doc.name }}</div>
+    <div>{% if p.tien_mat %}Quyển số: ................ &nbsp;{% endif %}Số: {{ doc.name }}</div>
   </td>
   <td class="aph-side aph-noco">Nợ: {{ nc.no }}<br>Có: {{ nc.co }}</td>
 </tr></table>
@@ -42,8 +44,8 @@
 
 <div class="aph-sign-date">{{ kh_aph_ngay(doc.posting_date) }}</div>
 <table class="aph-sign"><tr>
-  <td><b>Giám đốc</b><br><i>(Ký, họ tên, đóng dấu)</i></td>
-  <td><b>Kế toán trưởng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ pf.nguoi_duyet | e }}</b><br><i>(Ký, họ tên, đóng dấu)</i></td>
+  <td><b>{{ pf.ke_toan_truong | e }}</b><br><i>(Ký, họ tên)</i></td>
   {%- if p.tien_mat and p.kieu == "thu" %}
   <td><b>Người nộp tiền</b><br><i>(Ký, họ tên)</i></td>
   <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i><div class="aph-sign-name">{{ kh_aph_ten_nguoi(doc.owner) }}</div></td>
@@ -59,6 +61,8 @@
 {%- if p.tien_mat and p.kieu in ("thu", "chi") %}
 <div class="aph-info aph-tc">
   <div>Đã nhận đủ số tiền (viết bằng chữ): {{ cham }}{{ cham }}</div>
+  {% if not p.ngoai_te %}<div>+ Tỷ giá ngoại tệ: ........................ &nbsp; + Số tiền quy đổi: ........................</div>{% endif %}
+  {% if pf.che_do in ("133", "99") %}<div><i>(Liên gửi ra ngoài phải đóng dấu)</i></div>{% endif %}
 </div>
 {%- endif %}
 </div>

@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Đồng bộ bộ mẫu theo chế độ kế toán, đang chờ CI và nghiệm thu máy in
+
+Đã cập nhật bảy mẫu chuẩn, phiếu xuất nhanh A5 và đường in biên bản giao nhận theo chế độ của từng đơn vị: APH–TT133, VH–TT99, Minh Khang–mẫu quản trị nội bộ theo TT152, TL–mẫu quản trị nội bộ. Bản in giữ số lượng yêu cầu/thực tế, Nợ/Có, bộ phận, quyển số, chữ ký, trạng thái nháp/hủy và dữ liệu giao nhận mới; không tự ghi sổ khi in. Phiếu kho chuẩn không tự điền giá nếu quyền/nghiệp vụ không cho phép. Đã có booklet xem trước tại `outputs/bo-mau-phieu-thong-tu-2026.pdf` với 19 tình huống giả lập (21 trang, gồm 2 liên giao nhận và 2 liên A5).
+
+Kiểm cục bộ hiện đạt **302 ca ứng dụng + 108 ca lõi**; đã render và xem toàn bộ booklet. Bộ sinh Print Format đã chạy. Đây là mã chưa chạy CI trên SHA cuối và chưa đưa lên production 0.15.2. Quy chế biểu mẫu mới ở trạng thái dự thảo tại `docs/quy-che-bieu-mau-chung-tu.md`, cần kế toán trưởng ban hành trước khi coi là quy định nội bộ chính thức.
+
+**ĐANG DỞ:** chạy lại kiểm sau thay đổi cuối, kiểm CI đúng SHA, in thử A4/A5 trên máy thật và đối chiếu với người dùng; sau khi đạt mới xem xét phát hành/triển khai theo runbook. Không tag, merge, đổi version hoặc triển khai trong lượt này.
+
 ## 18/10/2026 — Phiếu xuất nhanh A5 theo mẫu chủ dự án, chưa kiểm CI
 
 Anh Tiến cung cấp PDF phiếu đang dùng và yêu cầu chỉnh riêng phiếu xuất nhanh theo mẫu A5. Yêu cầu mới thay cách trình bày A4/không giá của phiếu nhanh: A5 ngang, Times New Roman, thông tin đơn vị/khách/người nhận/kho/địa chỉ, bảng hàng có mã/ĐVT/kg/bao × kg mỗi bao/đơn giá/thành tiền, tổng tiền hàng bằng chữ, chứng từ kèm theo và năm vị trí ký theo mẫu. Giữ hai liên Lưu kho/Giao nhận, thông tin xe/người thực giao/thời điểm/chênh lệch và dấu chờ xuất/bản sao.

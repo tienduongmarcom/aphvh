@@ -52,6 +52,8 @@ class DispatchPrint(unittest.TestCase):
                 "total": "1.875.000", "total_words": "Một triệu tám trăm bảy mươi lăm nghìn đồng",
                 "total_qty": "50", "currency": "VND", "company_address": "Công ty <img>",
                 "customer": "KH-1", "warehouses": "HN",
+                "print_form": __import__("lab9x.print_rules", fromlist=["thong_tin_mau"]).thong_tin_mau(133, "xuat", True),
+                "accounts": {"no": "", "co": ""},
                 "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": "50",
                            "uom": "Kg", "bags": "2", "kg_per_bag": "25", "rate": "37.500", "amount": "1.875.000"}]}
         html = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
@@ -72,8 +74,11 @@ class DispatchPrint(unittest.TestCase):
         self.assertEqual(html.count("<h1>PHIẾU XUẤT KHO</h1>"), 2)
         self.assertIn("Liên: Lưu kho", html)
         self.assertIn("Liên: Giao nhận", html)
-        self.assertIn("Kg dự kiến", html)
+        self.assertIn("Yêu cầu", html)
+        self.assertIn("Thực xuất", html)
+        self.assertIn("Mẫu số 02 - VT (vận dụng)", html)
+        self.assertIn("133/2016/TT-BTC", html)
         note["docstatus"] = 1
         printed = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
         self.assertIn("BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA", printed)
-        self.assertIn("Kg đã xuất", printed)
+        self.assertIn("Thực xuất", printed)

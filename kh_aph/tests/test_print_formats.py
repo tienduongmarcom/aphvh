@@ -56,6 +56,10 @@ def _env(an):
         kh_aph_lo=lambda row: row.get("batch_no") or "",
         kh_aph_gia_gom_thue=_gia_gom_thue,
         kh_aph_mau=lambda c: "(Ban hành theo Thông tư số 133/2016/TT-BTC ngày 26/08/2016 của Bộ Tài chính)" if c == "APH" else "",
+        kh_aph_mau_info=lambda company, kind="noi_bo", adapted=False: __import__(
+            "lab9x.print_rules", fromlist=["thong_tin_mau"]).thong_tin_mau(
+                {"APH": 133, "VH": 99, "MK": 152}.get(company), kind, adapted),
+        kh_aph_giao_nhan=__import__("kh_aph.delivery_info_rules", fromlist=["print_snapshot"]).print_snapshot,
         kh_aph_loai_phieu_kho=__import__("lab9x.print_rules", fromlist=["x"]).ten_loai_phieu_kho,
         # 0.11.1: mặc định như cờ kh_aph_sales_adjust tắt (in như cũ)
         kh_aph_bbgn_an_gia=lambda doc: False,
@@ -188,6 +192,27 @@ class TestBienBan0111(unittest.TestCase):
 
 class TestDeliveryNotePrints(unittest.TestCase):
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_regime_headers_and_draft_actual_quantity_and_current_snapshot(self):
+        html = (ROOT / "phieu_xuat_kho_ban_hang" / "phieu_xuat_kho_ban_hang.html").read_text()
+        for company, circular in (("APH", "133/2016"), ("VH", "99/2025"), ("MK", "152/2025"), ("TL", "")):
+            doc = _dn(company=company, docstatus=0, kh_aph_cach_giao="Vận chuyển",
+                      kh_aph_nguoi_nhan_tai_kho="Người mới <script>", kh_aph_dien_thoai_nhan="0901",
+                      driver_name="Lái mới", vehicle_no="XE-MỚI", kh_aph_nguoi_thuc_giao="Kho <img>")
+            out = _env(False).from_string(html).render(doc=doc)
+            self.assertIn("BẢN NHÁP - CHƯA GHI SỔ", out)
+            self.assertNotIn('<td class="r">500</td>', out)
+            self.assertIn("Người mới &lt;script&gt;", out)
+            self.assertIn("Kho &lt;img&gt;", out)
+            self.assertIn("XE-MỚI", out)
+            self.assertNotIn("Trần Văn Nhận", out)
+            if circular: self.assertIn(circular, out)
+            if company in ("MK", "TL"):
+                self.assertNotIn("Mẫu số", out)
+                self.assertNotIn("Giám đốc", out)
+                self.assertNotIn("Kế toán trưởng", out)
+            if company == "MK": self.assertIn("Người đại diện hộ kinh doanh", out)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_phieu_xuat_kho(self):
         html = (ROOT / "phieu_xuat_kho_ban_hang" / "phieu_xuat_kho_ban_hang.html").read_text(encoding="utf-8")
         out = _env(False).from_string(html).render(doc=_dn())
@@ -198,7 +223,8 @@ class TestDeliveryNotePrints(unittest.TestCase):
         self.assertIn("Giao đến: Số 5 ngõ 12 Láng, Hà Nội", out)
         self.assertNotIn("32.000", out)  # chỉ số lượng: không in giá bán
         self.assertNotIn("21.600.000", out)
-        self.assertNotIn("Đơn giá", out)
+        self.assertIn("Đơn giá", out)  # Giữ khung mẫu; các ô giá vẫn để trống theo chính sách.
+        self.assertIn("Mẫu số 02 - VT (vận dụng)", out)
         self.assertIn("500", out)
         self.assertIn("Lô: PT-2609-01", out)
         self.assertIn("800", out)  # số lượng theo đơn

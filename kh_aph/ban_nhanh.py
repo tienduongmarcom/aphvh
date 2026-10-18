@@ -256,7 +256,7 @@ def _create(shared_order, selections, request_id, delivery=None, dispatcher=None
 @frappe.whitelist()
 def print_batch(shared_order, request_id):
     """In phiếu A5 từ đợt đã lập; giá bán trên chứng từ, không ghi sổ."""
-    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay
+    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay, kh_aph_mau_info, kh_aph_no_co
     from lab9x.vn_words import so_tien_bang_chu, so_vn
     _guard()
     doc = _order(shared_order)
@@ -279,6 +279,7 @@ def print_batch(shared_order, request_id):
                       "total_words": so_tien_bang_chu(total) if dn.currency == "VND" else "",
                       "total_qty": so_vn(sum(flt(r.qty) for r in dn.items)),
                       "warehouses": ", ".join(dict.fromkeys(r.warehouse for r in dn.items)),
+                      "print_form": kh_aph_mau_info(dn.company, "xuat", True), "accounts": kh_aph_no_co(dn),
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
                       "delivery_method": dn.get(delivery_info.METHOD), "recipient": dn.get(delivery_info.RECIPIENT),
                       "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),

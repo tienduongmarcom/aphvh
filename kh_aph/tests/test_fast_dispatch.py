@@ -47,6 +47,8 @@ class FastDispatch(unittest.TestCase):
         helpers = types.ModuleType("kh_aph.print_utils")
         helpers.kh_aph_cong_ty = lambda company: {"ten": company, "dia_chi": "Địa chỉ công ty"}
         helpers.kh_aph_ngay = lambda date: "Ngày 18 tháng 10 năm 2026"
+        helpers.kh_aph_mau_info = lambda *args: {"nhan": "Mẫu số 02 - VT (vận dụng)"}
+        helpers.kh_aph_no_co = lambda doc: {"no": "", "co": ""}
         self.m._order = Mock(return_value=Record(name="ROOT"))
         self.m._note_scope = Mock()
         self.f.get_all = Mock(return_value=["DN-1"])

@@ -135,6 +135,8 @@ jinja = {
         "kh_aph.print_utils.kh_aph_sl_don_ban",
         "kh_aph.print_utils.kh_aph_dia_chi",
         "kh_aph.print_utils.kh_aph_mau",
+        "kh_aph.print_utils.kh_aph_mau_info",
+        "kh_aph.print_utils.kh_aph_giao_nhan",
         "kh_aph.print_utils.kh_aph_loai_phieu_kho",
         "kh_aph.print_utils.kh_aph_thu_chi",
         "kh_aph.print_utils.kh_aph_ban_hang",

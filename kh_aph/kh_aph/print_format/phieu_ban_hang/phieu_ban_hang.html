@@ -6,10 +6,12 @@
 {%- set tra = doc.is_return -%}
 {%- set cham = ".............................." -%}
 {%- set tong = (doc.rounded_total or doc.grand_total) -%}
+{%- set pf = kh_aph_mau_info(doc.company) -%}
 <div class="aph-vt">
+{% if doc.docstatus == 0 %}<div class="aph-state">BẢN NHÁP - CHƯA GHI SỔ</div>{% elif doc.docstatus == 2 %}<div class="aph-state">CHỨNG TỪ ĐÃ HỦY - CHỈ ĐỂ ĐỐI CHIẾU</div>{% endif %}
 <table class="aph-head"><tr>
   <td><b>{{ cty.ten }}</b>{% if cty.dia_chi %}<br>{{ cty.dia_chi }}{% endif %}{% if cty.mst %}<br>MST: {{ cty.mst }}{% endif %}</td>
-  <td class="aph-mau"></td>
+  <td class="aph-mau"><b>{{ pf.nhan | e }}</b>{% if pf.can_cu %}<br><i>{{ pf.can_cu | e }}</i>{% endif %}</td>
 </tr></table>
 <table class="aph-title"><tr>
   <td class="aph-center">

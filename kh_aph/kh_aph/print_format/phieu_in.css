@@ -34,3 +34,12 @@
 .aph-vt .aph-tong { width: 55%; margin-left: 45%; margin-top: -1px; }
 .aph-vt .aph-tong .l { text-align: left; }
 .aph-vt .aph-tbl th { color: #000; }
+
+/* Chứng từ vận dụng TT133/TT99; giữ khổ giấy do người dùng chọn, không ép A5 cho phiếu dài. */
+.aph-vt .aph-state { text-align:center; font-weight:bold; border:1px solid #555; padding:3px; margin:3px 0; }
+.aph-vt .aph-head { page-break-inside:avoid; break-inside:avoid; }
+.aph-vt thead { display:table-header-group; }
+.aph-vt tr { page-break-inside:avoid; break-inside:avoid; }
+.aph-vt .aph-sign { page-break-inside:avoid; break-inside:avoid; }
+.aph-vt .aph-sign td { min-width:15%; height:92px; }
+.aph-vt .aph-mau { overflow-wrap:break-word; }
