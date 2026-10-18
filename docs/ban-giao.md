@@ -1,5 +1,11 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Chủ dự án yêu cầu lên production, chuẩn bị 0.15.3
+
+Anh Tiến yêu cầu đưa bản mới lên production. Đã đổi nhãn kh_aph0.15.3/lab9x0.2.11, giữ nền16.51.1/16.52.0 và21 cờ. Phạm vi theo PR #5 và mã nghiệp vụ7c2217e đã kiểm. Hướng dẫn đầy đủ tại `docs/phat-hanh-0.15.3.md`. Cần chạy lại bốn cổng trên SHA đóng gói mới; chưa có image/digest0.15.3.
+
+**ĐANG DỞ:** kiểm SHA đóng gói, chốt để chủ dự án gắn tag theo AGENTS, theo dõi workflow phát hành rồi diễn tập/nâng VM. Kiểm SSH chỉ đọc từ máy hiện tại báo không phân giải được tên `erpnext-prod`, không có đường kết nối VM trong phiên này; không coi đã triển khai. Production/manifest vẫn0.15.2. Nghiệm thu máy in thật và ban hành quy chế biểu mẫu còn mở.
+
 ## 18/10/2026 — Bộ mẫu trên PR #5 đạt đủ bốn cổng, chưa phát hành
 
 Mã ứng viên: `7c2217e8737e96700fa050aac446bb3591a830a8`, nhánh `feat/thong-tin-giao-nhan-20261017`. Đã đẩy cả sửa phiếu nhanh A5 và bộ mẫu theo chế độ; cập nhật mô tả PR theo phạm vi cuối. Cục bộ 302+108 ca đạt.

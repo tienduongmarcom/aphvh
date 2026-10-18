@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Chuẩn bị ứng viên production 0.15.3 theo yêu cầu chủ dự án
+
+Đã đổi kh_aph0.15.3/lab9x0.2.11, giữ nền và21 cờ. Chưa gắn tag hoặc có image0.15.3; cần bốn cổng trên SHA đóng gói mới. Runbook tại `docs/phat-hanh-0.15.3.md`. Sau khi kiểm đạt: chủ dự án gắn tag theo AGENTS, workflow phát hành đạt rồi chạy diễn tập bản sao hiện tại và nâng cấp trên VM.
+
+Production hiện vẫn0.15.2/digest đã xác nhận. SSH thử chỉ đọc từ máy hiện tại không phân giải được `erpnext-prod`; chưa truy cập hoặc thay đổi VM. Manifest giữ nguyên cho đến log triển khai thành công.
+
 ## 18/10/2026 — Bộ mẫu `7c2217e` đạt đủ bốn cổng, chưa phát hành
 
 SHA đầy đủ `7c2217e8737e96700fa050aac446bb3591a830a8`. [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39101464777), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463208), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463191), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463224) đều đạt. Cục bộ 302+108 ca đạt. Đã đọc artifact: UAT 227 PASS/0 FAIL, b014 có 36 PASS, core 63.508 tệp nguyên vẹn. Đã xem PDF CI: hai liên đúng hai trang A5, tổng hợp tám đợt/bốn company hai trang A4, khối ký nguyên vẹn.
