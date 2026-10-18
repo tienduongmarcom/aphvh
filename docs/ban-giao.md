@@ -1,5 +1,113 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — 0.15.3 đủ bốn cổng, nguồn chốt qua PR #5 → main
+
+Chủ dự án yêu cầu lên production và đồng bộ nguồn về main. PR #4 đã merge `f05c8a1`, chứa tag0.15.2 và nguồn PR #1–#3. Quyết định gộp tiếp PR #5 vào main bằng merge giữ lịch sử sau khi đủ cổng; mã đóng gói dùng gắn tag vẫn là **`96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`** (kh_aph0.15.3/lab9x0.2.11), không gắn theo commit hồ sơ/merge chưa chạy cổng riêng.
+
+Đạt trên cùng mã đóng gói: [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872). Cục bộ302+108 đạt. Đã tải/đọc artifact UAT:227 PASS/0 FAIL, b01436, phiên bản đúng0.15.3/0.2.11, core63.508 tệp không đổi. Đã xem hai trang A5 và hai trang tổng hợp A4 từ CI. Cổng3: so tổng/đếm/chi tiết khớp; schema site nâng/site mới1.046 mục khớp (bỏ qua đúng6 mục); quay lui schema1.034/cờ/versions/cài đặt/giao diện khớp; ca lỗi tự quay lui khớp và giữ bảo trì. Nền CI chưa có phát sinh sổ, không thay diễn tập bản sao dữ liệu thật hiện tại.
+
+**ĐANG DỞ:** theo AGENTS mục Phát hành, chủ dự án tự gắn tag `v0.15.3` đúng SHA trên; lệnh trong `docs/phat-hanh-0.15.3.md`. Sau workflow phát hành đạt và có digest mới, chạy diễn tập và triển khai trên phiên SSH `erpnext-prod`. Từ máy hiện tại hostname không phân giải và không có terminal SSH gắn với chat. Production/manifest vẫn0.15.2; chưa có tag/image/digest hoặc log nâng0.15.3. Máy in/nhân sự thật và quy chế biểu mẫu còn mở; không coi yêu cầu triển khai là kết quả nghiệm thu.
+
+## 18/10/2026 — Đã gộp PR #4 vào main; ứng viên 0.15.3 đang kiểm
+
+Theo yêu cầu chủ dự án, đổi đích PR #4 từ nhánh PR #3 sang main rồi merge đúng head `0c1e10425fbfe39eff961ddfef20663f4b70bf9b`, giữ lịch sử. Main mới `f05c8a181c269d2075b6d822addb571f26b7bef6` chứa tag0.15.2 và head PR #2/#3 (đã kiểm ancestry); PR #1 được GitHub đánh dấu merged, #2/#3 vẫn mở nhưng mã đã nằm trong main. PR #5 chuyển đích sang main; chưa merge PR #5.
+
+Ứng viên đóng gói0.15.3/lab9x0.2.11 là `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Cục bộ302+108 đạt. [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858) đang kiểm trên SHA này. Không dùng các cổng7c2217e thay kết quả đóng gói. Bước tiếp đọc artifact rồi chốt tag theo AGENTS; SSH hiện không phân giải được tên VM. Production vẫn0.15.2.
+
+## 18/10/2026 — Chủ dự án yêu cầu lên production, chuẩn bị 0.15.3
+
+Anh Tiến yêu cầu đưa bản mới lên production. Đã đổi nhãn kh_aph0.15.3/lab9x0.2.11, giữ nền16.51.1/16.52.0 và21 cờ. Phạm vi theo PR #5 và mã nghiệp vụ7c2217e đã kiểm. Hướng dẫn đầy đủ tại `docs/phat-hanh-0.15.3.md`. Cần chạy lại bốn cổng trên SHA đóng gói mới; chưa có image/digest0.15.3.
+
+**ĐANG DỞ:** kiểm SHA đóng gói, chốt để chủ dự án gắn tag theo AGENTS, theo dõi workflow phát hành rồi diễn tập/nâng VM. Kiểm SSH chỉ đọc từ máy hiện tại báo không phân giải được tên `erpnext-prod`, không có đường kết nối VM trong phiên này; không coi đã triển khai. Production/manifest vẫn0.15.2. Nghiệm thu máy in thật và ban hành quy chế biểu mẫu còn mở.
+
+## 18/10/2026 — Bộ mẫu trên PR #5 đạt đủ bốn cổng, chưa phát hành
+
+Mã ứng viên: `7c2217e8737e96700fa050aac446bb3591a830a8`, nhánh `feat/thong-tin-giao-nhan-20261017`. Đã đẩy cả sửa phiếu nhanh A5 và bộ mẫu theo chế độ; cập nhật mô tả PR theo phạm vi cuối. Cục bộ 302+108 ca đạt.
+
+Bằng chứng **đều đạt trên cùng SHA**: [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39101464777), [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463208), [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463191), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39101463224).
+
+Đã tải và đọc artifact UAT: **227 PASS, 0 FAIL**, b014 có 36 PASS. Ca phiếu nhanh xác nhận A5 ngang, giá bán thuần, giấu giá vốn, dấu nháp và sổ không đổi; ca tổng hợp kiểm tám đợt/bốn company, quyền in và sổ không đổi. Core 63.508 tệp không thêm/xóa/sửa so với image nền. Đã xem cả hai trang A5 và hai trang tổng hợp do CI sinh; khối ký không bị cắt. PDF A5 từ CI được chép ra `outputs/phieu-xuat-a5-ci-7c2217e.pdf` của chat.
+
+Đã đọc artifact Cổng 3: so tổng/đếm/chi tiết trước–sau nâng khớp; schema site nâng và site mới 1.046 mục khớp sau bỏ qua đúng sáu mục theo workflow; quay lui khớp schema 1.034 mục/cờ/versions/cài đặt/giao diện; ca cố ý lỗi khớp đếm/tổng/chi tiết/versions và giữ bảo trì. **Nền Cổng 3 không có phát sinh sổ (các nhóm chi tiết bằng 0)**, nên đây là bằng chứng cơ chế nâng/quay lui trên CI, không thay diễn tập dữ liệu production hiện tại.
+
+**ĐANG DỞ:** GN06 còn nghiệm thu máy in/người dùng thật; quy chế biểu mẫu còn là dự thảo. Có chín ca cụ thể tại `docs/nghiem-thu-mau-in-20261018.md`. Bước tiếp in A4/A5 và ghi actual, chốt ứng viên phát hành theo runbook khi đủ điều kiện. Production vẫn 0.15.2; chưa tăng version, tag, merge hoặc triển khai. Commit bàn giao sau SHA trên chỉ thay tài liệu, không là lượt CI nghiệp vụ mới.
+
+## 18/10/2026 — Đồng bộ bộ mẫu theo chế độ kế toán, đang chờ CI và nghiệm thu máy in
+
+Đã cập nhật bảy mẫu chuẩn, phiếu xuất nhanh A5 và đường in biên bản giao nhận theo chế độ của từng đơn vị: APH–TT133, VH–TT99, Minh Khang–mẫu quản trị nội bộ theo TT152, TL–mẫu quản trị nội bộ. Bản in giữ số lượng yêu cầu/thực tế, Nợ/Có, bộ phận, quyển số, chữ ký, trạng thái nháp/hủy và dữ liệu giao nhận mới; không tự ghi sổ khi in. Phiếu kho chuẩn không tự điền giá nếu quyền/nghiệp vụ không cho phép. Đã có booklet xem trước tại `outputs/bo-mau-phieu-thong-tu-2026.pdf` với 19 tình huống giả lập (21 trang, gồm 2 liên giao nhận và 2 liên A5).
+
+Kiểm cục bộ hiện đạt **302 ca ứng dụng + 108 ca lõi**; đã render và xem toàn bộ booklet. Bộ sinh Print Format đã chạy. Đây là mã chưa chạy CI trên SHA cuối và chưa đưa lên production 0.15.2. Quy chế biểu mẫu mới ở trạng thái dự thảo tại `docs/quy-che-bieu-mau-chung-tu.md`, cần kế toán trưởng ban hành trước khi coi là quy định nội bộ chính thức.
+
+**ĐANG DỞ:** chạy lại kiểm sau thay đổi cuối, kiểm CI đúng SHA, in thử A4/A5 trên máy thật và đối chiếu với người dùng; sau khi đạt mới xem xét phát hành/triển khai theo runbook. Không tag, merge, đổi version hoặc triển khai trong lượt này.
+
+## 18/10/2026 — Phiếu xuất nhanh A5 theo mẫu chủ dự án, chưa kiểm CI
+
+Anh Tiến cung cấp PDF phiếu đang dùng và yêu cầu chỉnh riêng phiếu xuất nhanh theo mẫu A5. Yêu cầu mới thay cách trình bày A4/không giá của phiếu nhanh: A5 ngang, Times New Roman, thông tin đơn vị/khách/người nhận/kho/địa chỉ, bảng hàng có mã/ĐVT/kg/bao × kg mỗi bao/đơn giá/thành tiền, tổng tiền hàng bằng chữ, chứng từ kèm theo và năm vị trí ký theo mẫu. Giữ hai liên Lưu kho/Giao nhận, thông tin xe/người thực giao/thời điểm/chênh lệch và dấu chờ xuất/bản sao.
+
+Giá bán thuần lấy từ `Delivery Note Item.net_rate/net_amount` (giữ đúng cả giá0), tổng cộng các net_amount, ghi rõ chưa thuế; không cộng lại thuế, không biến phiếu thành hóa đơn hoặc biên bản bàn giao mới. Chỉ fallback rate/amount khi trường net là None. Tiền chữ dùng VND; ngoại tệ ghi tổng và mã tiền, không đọc thành đồng. Không truy vấn/đưa giá vốn vào ngữ cảnh in. Giữ guard/quyền/scope trên server và không ghi sổ khi in. Không thêm schema/cờ/version.
+
+Đã kiểm cục bộ **300 ca kh_aph đạt**, gồm kiểm giá thuần/giá0/không đưa giá vốn vào ngữ cảnh, escape và trạng thái nháp/đã xuất; cú pháp và diff đạt. Bộ sinh Print Format đã chạy, JSON chuẩn không đổi vì đây là template nhanh riêng. PDF Chrome từ chính template với dữ liệu giả: mỗi liên một trang A5 ngang594,96×420pt; đã xem cả hai liên. Phiếu25 dòng tự sang trang, lặp tiêu đề bảng, giữ phần ký nguyên khối. File xem thử tại thư mục `outputs/phieu-xuat-nhanh-a5.pdf` của chat, không đưa dữ liệu khách vào repo. Đã cập nhật ca HTTP kiểm giá từ DN/A5 và bỏ tuyên bố quantity_only cũ theo yêu cầu mới; **chưa chạy ca HTTP/CI của thay đổi này**, không dùng các cổng xanh bdb91a8 để chứng minh mã mới.
+
+**ĐANG DỞ: GN06 và nghiệm thu thực tế chưa đóng.** Bước tiếp: kiểm CI đúng SHA mới, đồng bộ các đường mẫu chuẩn/in lại/tổng hợp theo phạm vi đã chốt; nghiệm thu máy in A5 và nhân viên. Chỉ phiếu nhanh đổi có giá theo yêu cầu này; mẫu kho chuẩn vẫn theo quy tắc riêng cho tới khi có yêu cầu đổi. Production giữ **0.15.2**, chưa push/phát hành/triển khai thay đổi A5.
+
+## 18/10/2026 — GN10/GN11 đã đạt: xuất ngay và mất phản hồi sau commit
+
+Tiếp tục [PR #5](https://github.com/tienduongmarcom/aphvh/pull/5) trên `feat/thong-tin-giao-nhan-20261017` từ `e2369ab`. **Mã nghiệp vụ đã kiểm: `bdb91a826cb506d67870e14d1319cededc4a5008`**. Commit sau mốc này chỉ cập nhật hồ sơ, không phải lượt CI mới. Đã đọc lại AGENTS GitHub, bàn giao, quyết định, kiến trúc và runbook; giữ production 0.15.2.
+
+Đã thêm lựa chọn Xuất ngay trong Dialog, mặc định vẫn nháp. Người có quyền submit mới thấy lựa chọn; cần người thực giao, cách giao và người nhận. API POST tạo+xác nhận trọn đợt trong một transaction qua controller native; lỗi nhóm sau rollback cả DN/SI/GL/SLE. Tách hash nháp/xuất ngay, kiểm cờ ghi nợ lúc xuất, quyền/scope và lượng/nguồn/thông tin/dấu xuất thực tế khi retry. Không nâng nháp cũ thành đã xuất. Vận chuyển tới Đang giao, tự lấy tới Khách đã nhận; không ghi sổ khi mở lại bản in/nhận hàng/retry. Sau thành công tải lại lượng và công nợ trên đơn. Không thêm schema/cờ/quyền hoặc sửa core.
+
+Bằng chứng trên đúng SHA:
+
+- Cục bộ **299 kh_aph +107 lab9x =406 ca đạt**; cú pháp Python/JS, diff đạt.
+- [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39086136285) và [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39086133337): đạt site trắng và diễn tập dựng/nâng/quay lui.
+- [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39086133438): **227 PASS, 0 FAIL**, b01436 gồm restore. Đã đọc cả 4 ca HTTP xuất ngay và 1 ca Desk. Thiếu submit/Dũng/thiếu người giao bị chặn không để nháp; hai cách giao và retry sau nhận đúng; APH đã xử lý rồi VH thiếu tồn thì cả đợt rollback và Bin không đổi, bổ sung tồn giả rồi retry cùng token thành công hai Company; scope bị chặn cả retry; gọi đồng thời chỉ một DN/một SI.
+- Ca `NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE`: Chrome thực dùng Fetch chặn phản hồi200 sau server commit, xác minh DN `MAT-DN-2026-00017` đã submit/Khách đã nhận rồi bấm lại đúng Dialog/token. Counts DN/SI/GL/SLE không tăng. Đã xem ảnh kết quả `xuat-ngay-retry.png` trong artifact.
+- [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39086133314): đạt từ baseline production0.15.2 đúng digest. Đọc dấu vân: trước/sau nâng khớp `dem/tong/chi_tiet`; schema/cờ khớp site trắng; trước lỗi/sau tự quay lui khớp `dem/tong/chi_tiet/versions`.
+
+Đặc tả9 nhóm: `docs/dac-ta-xuat-ngay.md`. Kế hoạch truy nguyên: `docs/ke-hoach-van-hanh-tiep-noi.md`.
+
+**ĐANG DỞ: đợt 1 chưa đóng. Bước tiếp GN06:** đồng bộ dữ liệu giao nhận giữa bản in nhanh, mẫu in chuẩn/in lại và phiếu tổng hợp. `phieu_xuat_kho_ban_hang.html`/`bien_ban_giao_nhan.html` còn đọc ô cũ `kh_aph_nguoi_nhan`, `kh_aph_lai_xe`/biển số trong khi phiếu nhanh đã dùng ô đợt/native mới; `delivery_slip.render` còn ô ký trống chung. Cần chọn dữ liệu mới khi có cách giao đợt, fallback phiếu cũ/phiếu trả, escape và kiểm từng đường in/PDF; không gán một người nhận chung cho nhiều DN khác nhau. Sau đó nghiệm thu máy in/người dùng/dữ liệu thật. Chốt ca/tiền/nhà máy và hóa đơn một phần vẫn theo các đợt sau.
+
+Production vẫn **0.15.2**; chưa tăng version/tag/merge/phát hành/triển khai PR #5. Phát hành phải kiểm SHA phiên bản cuối và diễn tập bản sao production hiện tại theo runbook.
+
+## 18/10/2026 — GN09 đã đạt kiểm thử: xử lý chênh lệch giao nhận
+
+Tiếp tục [PR #5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, từ mốc tài liệu `602b73e` / mã 1A đã kiểm `5155ca4`. **Mã nghiệp vụ GN09 đã kiểm: `9c45e7492e55797c48483d19004e52aecf6614ca`**. Các commit sau mốc này chỉ cập nhật tài liệu, không phải lượt CI mới. Đã đọc lại AGENTS trên GitHub và các quyết định/kiến trúc/bàn giao/runbook.
+
+Đã có vòng báo chênh lệch → giao người/hạn → chốt kết quả hoặc mở lại có lý do trên DN nguồn. Quyền read/write và scope native vẫn áp dụng; thao tác giao/chốt/mở lại đòi Accounts Manager hoặc Administrator, người phụ trách phải có quyền trên đúng phiếu. Chốt cần bản ký hiện tại đã đối chiếu; không tự đóng vì chỉ có dấu đối chiếu. Căn cứ gồm kết luận không điều chỉnh sổ hoặc phiếu trả/hóa đơn giảm đã submit, đúng nguồn/Company/Customer. Thay tệp/ghi chú tự mở lại, giữ kết quả cũ trong Comment. Khóa đọc hiện hành bảo vệ khi chốt và hủy căn cứ đồng thời. Không tạo DocType Nhiệm vụ hoặc sổ lượng/tiền riêng.
+
+Hủy phiếu nguồn có hồ sơ đòi trưởng và quyền cancel native. Hồ sơ kết thúc trong cùng transaction hủy; không buộc nhận hàng hoặc bản ký giả để thoát vòng. Nếu hóa đơn/liên kết native còn hiệu lực thì hủy bị chặn và dấu hồ sơ rollback. Phiếu đã hủy vẫn xem hồ sơ readonly; phiếu amend không sao chép trạng thái cũ. Không tự tạo/hủy chứng từ tài chính thay người dùng.
+
+Bằng chứng trên đúng SHA:
+
+- Cục bộ **294 kh_aph + 107 lab9x = 401 ca đạt**; cú pháp Python/JS và diff đạt.
+- [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39083098771): đạt site trắng.
+- [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095486): đạt dựng/nâng/quay lui.
+- [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095506): **222 PASS, 0 FAIL**; b014 có 31 PASS gồm restore. Đã đọc artifact của cả 5 ca HTTP chênh lệch và 1 ca Desk; xem ảnh Dialog thật. Đã kiểm Dũng cộng vai trò, scope người phụ trách, phiên cũ/field giả, mở lại khi đổi bằng chứng, chứng từ nháp/sai nguồn, chốt không ghi sổ, chốt–hủy đồng thời, hủy nguồn không nhận hàng giả và hoàn tồn đúng.
+- [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095503): đạt từ baseline 0.15.2 đúng digest. Đọc dấu vân: trước/sau nâng khớp `dem/tong/chi_tiet`; schema/cờ sau cài khớp site trắng; trước lỗi/sau tự quay lui khớp `dem/tong/chi_tiet/versions`.
+
+Đặc tả 9 nhóm tại `docs/dac-ta-chenh-lech-giao-nhan.md`; kế hoạch truy nguyên cập nhật tại `docs/ke-hoach-van-hanh-tiep-noi.md`. Những chứng từ xử lý ngoài DN trả/SI giảm, hoặc hóa đơn gộp chưa truy được dòng nguồn phải giữ mở để đối soát, không chọn đại chứng từ hay tạo trả kho giả.
+
+**ĐANG DỞ: đợt 1 chưa đóng. Bước tiếp theo GN10:** thao tác xuất ngay có quyền trong Dialog, một lần gọi tạo+xác nhận nguyên tử, kiểm quyền submit/lượng/tồn/duyệt và retry không ghi sổ hai lần. GN06 còn các đường in/máy in thật; GN11 còn cắt mạng đúng lúc server commit; nhân sự/dữ liệu thật chưa nghiệm thu. Chốt ca/người giữ tiền/nhà máy là đợt sau. Production vẫn **0.15.2**, chưa tăng version/tag/merge/phát hành/triển khai PR #5. Khi phát hành phải kiểm đúng SHA cuối và diễn tập bản sao production hiện tại theo runbook.
+
+## 17/10/2026 — Đợt 1A đã đạt kiểm thử, chưa phát hành
+
+PR [#5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, nền `0c1e104` của nhánh bàn giao. Mã nghiệp vụ đã kiểm: **`5155ca48f4a2039d164de419459fcde92a1bfdbb`**. Commit cập nhật hồ sơ sau mốc này chỉ thay tài liệu, không phải SHA đã chạy CI.
+
+Đã thêm cách giao, người nhận, điện thoại, lái xe, biển số và địa chỉ trong Dialog lập phiếu theo đợt. Địa chỉ thay thế phải đúng Customer và quyền đọc; để trống giữ địa chỉ từng SO nguồn. Nội dung mới tham gia hash chống trùng, giữ hash cũ cho API không truyền thông tin giao nhận. Kho ghi riêng người trực tiếp giao; cần quyền submit và xác nhận đúng cách giao. Dấu người/thời điểm xuất do server ghi, giữ nguyên khi nhận hàng và lưu bản ký. Phiếu đã xuất không sửa đè thông tin. Bản in nhanh có hai liên Lưu kho/Giao nhận, không giá và có dấu bản sao khi in lại sau xuất. Dùng cờ Trung tâm Bán hàng hiện có; thêm sáu Custom Field qua bộ cài rõ ràng, không after_migrate, không sửa core/sổ tài chính.
+
+Bằng chứng trên đúng SHA:
+
+- Cục bộ: **278 kh_aph + 107 lab9x = 385 ca đạt**; cú pháp Python/JS và diff đạt. Bộ sinh Print Format chuẩn chạy không đổi JSON (template nhanh render riêng).
+- [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39041879339): đạt site trắng.
+- [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876332): đạt dựng/nâng/quay lui.
+- [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876201): **216 PASS, 0 FAIL**, b014 có 25 PASS gồm restore. Đã đọc artifact, kiểm sáu trường Dialog và cả hai trang PDF A4. Chuỗi VAT/cọc/giao/thu: 770.000 / 192.500 / 100.000 / 92.500, chưa giao 577.500, nợ cũ không đổi, lãi gộp 75.000.
+- [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39041876215): đạt từ đúng baseline production 0.15.2/digest đã xác nhận. Đọc dấu vân: trước/sau nâng khớp `dem/tong/chi_tiet`; schema/cờ sau cài khớp site trắng; trước lỗi/sau tự quay lui khớp `dem/tong/chi_tiet/versions`.
+
+ĐANG DỞ: đợt 1 chưa đóng. Bước tiếp theo là thiết kế/triển khai GN09: người phụ trách, kết quả và liên kết chứng từ xử lý chênh lệch trên phiếu nguồn; không coi đối chiếu bản ký là xử lý xong. GN10 xuất ngay trong Dialog chưa có; GN06 còn các đường in khác và máy in thật; GN11 chưa cắt kết nối trình duyệt tại thời điểm server commit. Fallback địa chỉ SO có unit, chưa có ca HTTP riêng. Chi tiết 9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md`, thứ tự 5 đợt tại `docs/ke-hoach-van-hanh-tiep-noi.md`. Chốt ca/người giữ tiền/nhà máy vẫn thuộc đợt sau.
+
+Production vẫn **0.15.2**, chưa tăng version/tag/merge/phát hành/triển khai PR #5, chưa nghiệm thu tài khoản nhân sự/dữ liệu/máy in thật. Khi đến bước phát hành phải kiểm đúng SHA phiên bản cuối và diễn tập bản sao production hiện tại theo runbook.
+
 ## 17/10/2026 — Khôi phục mạch kế hoạch vận hành, đọc lại quy tắc GitHub
 
 Theo yêu cầu anh Tiến, đã đọc lại AGENTS.md trên origin/feat/ho-so-giao-nhan-20261017 và đối chiếu bàn giao, quyết định nghiệp vụ, kiến trúc, quy trình khách/release. Local khớp remote d622abc trước lượt này. Production giữ 0.15.2; các phiên bản cũ trong thân AGENTS/runbook là mô tả lịch sử, không dùng thay mốc TRANG_THAI/manifest/log đã xác nhận.

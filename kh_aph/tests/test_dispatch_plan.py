@@ -47,13 +47,38 @@ class DispatchPrint(unittest.TestCase):
     def test_draft_quantity_and_untrusted_text(self):
         source = Path(__file__).resolve().parents[1] / "templates/ban_nhanh/phieu_dot_xuat.html"
         note = {"name": "DN-1", "company": "APH", "posting_date": "2026-10-16",
-                "customer_name": "Khách <script>", "docstatus": 0,
-                "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": 50,
-                           "bags": 2, "kg_per_bag": 25}]}
+                "customer_name": "Khách <script>", "docstatus": 0, "recipient": "Nhận <script>",
+                "address": "Kho <img>", "created_by": "Người lập", "dispatcher": "Kho A",
+                "total": "1.875.000", "total_words": "Một triệu tám trăm bảy mươi lăm nghìn đồng",
+                "total_qty": "50", "currency": "VND", "company_address": "Công ty <img>",
+                "customer": "KH-1", "warehouses": "HN",
+                "print_form": __import__("lab9x.print_rules", fromlist=["thong_tin_mau"]).thong_tin_mau(133, "xuat", True),
+                "accounts": {"no": "", "co": ""},
+                "items": [{"item_code": "A", "item_name": "Đậu", "warehouse": "HN", "qty": "50",
+                           "uom": "Kg", "bags": "2", "kg_per_bag": "25", "rate": "37.500", "amount": "1.875.000"}]}
         html = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
         self.assertIn("CHỜ XUẤT", html)
         self.assertIn("Khách &lt;script&gt;", html)
         self.assertNotIn("Khách <script>", html)
         self.assertIn("Người thực giao hàng", html)
         self.assertIn("50", html)
-        self.assertNotIn("Giá bán", html)
+        self.assertNotIn("Giá vốn", html)
+        self.assertIn("Giá bán thuần theo phiếu", html)
+        self.assertIn("Nhận &lt;script&gt;", html)
+        self.assertIn("Kho &lt;img&gt;", html)
+        self.assertIn("Công ty &lt;img&gt;", html)
+        self.assertIn("size: A5 landscape", html)
+        for text in ("Đơn giá", "Thành tiền", "37.500", "1.875.000", note["total_words"],
+                     "Người lập phiếu", "Thủ kho", "Kế toán trưởng", "Giám đốc"):
+            self.assertIn(text, html)
+        self.assertEqual(html.count("<h1>PHIẾU XUẤT KHO</h1>"), 2)
+        self.assertIn("Liên: Lưu kho", html)
+        self.assertIn("Liên: Giao nhận", html)
+        self.assertIn("Yêu cầu", html)
+        self.assertIn("Thực xuất", html)
+        self.assertIn("Mẫu số 02 - VT (vận dụng)", html)
+        self.assertIn("133/2016/TT-BTC", html)
+        note["docstatus"] = 1
+        printed = SandboxedEnvironment().from_string(source.read_text()).render(shared_order="SO-1", notes=[note])
+        self.assertIn("BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA", printed)
+        self.assertIn("Thực xuất", printed)

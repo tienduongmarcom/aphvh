@@ -14,9 +14,29 @@ async function kh_aph_lap_dot_xuat(frm) {
     if (!rows.length) return frappe.msgprint("Đã giao hoặc đã lập phiếu chờ xuất hết đơn. Kiểm tra các phiếu chờ xuất trước khi lập thêm.");
     // Giữ mã yêu cầu khi lỗi mạng để lần bấm lại không lập thêm phiếu.
     const request_id = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, "0")).join("");
-    const dialog = new frappe.ui.Dialog({title: "Lập phiếu xuất theo lượng giao đợt này", size: "extra-large",
+    let dialog;
+    dialog = new frappe.ui.Dialog({title: "Lập phiếu xuất theo lượng giao đợt này", size: "extra-large",
         fields: [
             {fieldtype: "HTML", options: '<div class="alert alert-info">Chọn lượng giao bằng kg; hàng theo bao phải đủ bao theo quy cách đã lưu. Phiếu được tạo ở trạng thái <b>Chờ xuất</b>. Kho xác nhận thực giao mới trừ tồn và ghi công nợ.</div>'},
+            {fieldname: "delivery_method", label: "Cách giao đợt này", fieldtype: "Select",
+                options: ["Vận chuyển", "Khách đến lấy"], default: "Vận chuyển", reqd: 1},
+            {fieldname: "recipient", label: "Người thực nhận hàng tại kho", fieldtype: "Data", reqd: 1,
+                description: "Người nhận/lái xe ký nhận tại kho, không bắt buộc có tài khoản phần mềm."},
+            {fieldname: "phone", label: "Điện thoại liên hệ", fieldtype: "Data"},
+            {fieldname: "dispatch_now", label: "Xuất ngay — đã kiểm thực giao tại kho", fieldtype: "Check", default: 0,
+                hidden: !response.message.can_dispatch,
+                description: "Chỉ chọn khi hàng đã thực giao. Hệ thống sẽ trừ tồn và ghi công nợ theo cách giao đã chọn.",
+                onchange() {if (dialog) dialog.get_primary_btn().text(dialog.get_value("dispatch_now") ? "Xuất ngay & Mở bản in" : "Lập phiếu & Mở bản in");}},
+            {fieldname: "dispatcher", label: "Người thực giao hàng tại kho", fieldtype: "Data",
+                depends_on: "eval:doc.dispatch_now", mandatory_depends_on: "eval:doc.dispatch_now"},
+            {fieldtype: "Column Break"},
+            {fieldname: "driver_name", label: "Tên lái xe (nếu khác người nhận)", fieldtype: "Data"},
+            {fieldname: "vehicle_no", label: "Biển số xe", fieldtype: "Data"},
+            {fieldname: "shipping_address_name", label: "Địa chỉ giao thay thế", fieldtype: "Link", options: "Address",
+                description: "Để trống để giữ địa chỉ từ từng đơn nguồn, nếu đã có.",
+                get_query: () => ({query: "frappe.contacts.doctype.address.address.address_query",
+                    filters: {link_doctype: "Customer", link_name: response.message.customer, disabled: 0}})},
+            {fieldtype: "Section Break"},
             {fieldname: "rows", label: "Hàng giao đợt này", fieldtype: "Table", cannot_add_rows: true,
                 cannot_delete_rows: true, in_place_edit: true,
                 data: rows.map(r => ({...r, qty: 0})), fields: [
@@ -42,20 +62,29 @@ async function kh_aph_lap_dot_xuat(frm) {
             dialog.disable_primary_action();
             let created = false;
             try {
-                const made = await frappe.call({method: "kh_aph.ban_nhanh.create_drafts", freeze: true,
-                    args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id}});
+                const dispatch = !!values.dispatch_now;
+                const made = await frappe.call({method: dispatch ? "kh_aph.ban_nhanh.create_and_dispatch" : "kh_aph.ban_nhanh.create_drafts", freeze: true,
+                    args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id,
+                        ...(dispatch ? {dispatcher: values.dispatcher} : {}),
+                        delivery: JSON.stringify(Object.fromEntries(["delivery_method", "recipient", "phone", "driver_name", "vehicle_no", "shipping_address_name"]
+                            .map(key => [key, values[key] || ""])))}});
                 created = true;
                 const names = made.message.delivery_notes.map(n => n.name);
                 const print = await frappe.call({method: "kh_aph.ban_nhanh.print_batch",
                     args: {shared_order: frm.doc.name, request_id}});
                 preview.document.open(); preview.document.write(print.message.html); preview.document.close();
                 preview.focus(); preview.print(); dialog.hide();
-                frappe.msgprint({title: "Đã lập phiếu chờ xuất", indicator: "green",
+                if (dispatch) await frm.reload_doc();
+                frappe.msgprint({title: dispatch ? "Đã xác nhận xuất hàng" : "Đã lập phiếu chờ xuất", indicator: "green",
                     message: names.map(n => frappe.utils.get_form_link("Delivery Note", n, true)).join("<br>") +
-                        "<br>In chưa ghi sổ. Chuyển phiếu cho kho đối chiếu và xác nhận xuất."});
+                        (dispatch ? "<br>Kho và công nợ đã ghi nhận. Mở lại bản in không xuất hàng lần nữa." :
+                            "<br>In chưa ghi sổ. Chuyển phiếu cho kho đối chiếu và xác nhận xuất.")});
             } catch (error) {
                 preview.close();
-                if (created) frappe.msgprint("Đã lập phiếu chờ xuất nhưng chưa mở được bản in. Bấm lại cùng lượng để mở bản in; hệ thống sẽ dùng lại phiếu đã lập.");
+                if (created) frappe.msgprint(values.dispatch_now ?
+                    "Đã xác nhận xuất nhưng chưa mở được bản in. Giữ nguyên nội dung và bấm lại trong cửa sổ này để dùng lại phiếu, không xuất lần nữa." :
+                    "Đã lập phiếu chờ xuất nhưng chưa mở được bản in. Bấm lại cùng lượng để mở bản in; hệ thống sẽ dùng lại phiếu đã lập.");
+                else if (values.dispatch_now) frappe.msgprint("Chưa nhận được kết quả xuất thành công. Khi thử lại, giữ nguyên nội dung trong cửa sổ này để hệ thống kiểm mã yêu cầu, tránh xuất trùng.");
                 throw error;
             } finally { dialog.enable_primary_action(); }
         },

@@ -5,8 +5,9 @@
     hàng hóa, bên giao là khách hàng. -#}
 {%- set cty = kh_aph_cong_ty(doc.company) -%}
 {%- set tra = doc.is_return -%}
+{%- set gn = kh_aph_giao_nhan(doc) -%}
 {%- set dons = doc.items | map(attribute="against_sales_order") | select | unique | list -%}
-{%- set thue = doc.kh_aph_hinh_thuc_giao == "Thuê xe, nhà xe" -%}
+{%- set thue = gn.method in ("Thuê xe, nhà xe", "Vận chuyển") -%}
 {%- set cham = ".............................." -%}
 {%- set dc = kh_aph_dia_chi(doc.shipping_address or doc.address_display) -%}
 {%- set gia = kh_aph_gia_gom_thue(doc) -%}
@@ -16,22 +17,24 @@
 {%- set an_gia = kh_aph_bbgn_an_gia(doc) -%}
 {%- set tn = kh_aph_thuc_nhan(doc) -%}
 
+{%- set pf = kh_aph_mau_info(doc.company) -%}
 {%- macro ben_cty(nhan) -%}
   <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ cty.ten }}</div>
   {%- if cty.dia_chi %}<div>- Địa chỉ: {{ cty.dia_chi }}</div>{% endif %}
   {%- if cty.mst %}<div>- Mã số thuế: {{ cty.mst }}</div>{% endif %}
-  <div>- Đại diện: {{ kh_aph_ten_nguoi(doc.owner) }}</div>
+  <div>- Đại diện: {{ (gn.dispatcher or kh_aph_ten_nguoi(doc.owner)) | e }}</div>
 {%- endmacro -%}
 
 {%- macro ben_khach(nhan) -%}
   <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ doc.customer_name }}</div>
   <div>- Địa chỉ{{ " giao hàng" if nhan else "" }}: {{ dc or cham }}</div>
   {%- if doc.tax_id %}<div>- Mã số thuế: {{ doc.tax_id }}</div>{% endif %}
-  <div>- {{ "Người nhận hàng" if nhan else "Người giao trả hàng" }}: {{ doc.kh_aph_nguoi_nhan or cham }}</div>
+  <div>- {{ "Người nhận hàng" if nhan else "Người giao trả hàng" }}: {{ (gn.recipient or cham) | e }}</div>
 {%- endmacro -%}
 
 {%- macro lien(so, ten) -%}
 <div class="aph-vt">
+{% if doc.docstatus == 0 %}<div class="aph-state">BẢN NHÁP - CHƯA GHI SỔ</div>{% elif doc.docstatus == 2 %}<div class="aph-state">CHỨNG TỪ ĐÃ HỦY - CHỈ ĐỂ ĐỐI CHIẾU</div>{% endif %}
 <table class="aph-head"><tr>
   <td><b>{{ cty.ten }}</b>{% if cty.dia_chi %}<br>{{ cty.dia_chi }}{% endif %}{% if cty.mst %}<br>MST: {{ cty.mst }}{% endif %}</td>
   <td class="aph-qh"><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b><u>Độc lập - Tự do - Hạnh phúc</u></b></td>
@@ -40,6 +43,7 @@
   <td class="aph-center">
     <div class="aph-name">{{ "BIÊN BẢN NHẬN LẠI HÀNG HÓA" if tra else "BIÊN BẢN GIAO NHẬN HÀNG HÓA" }}</div>
     <div>Số: {{ doc.name }} &nbsp;–&nbsp; <span class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</span></div>
+    <div class="aph-lien">{{ pf.nhan | e }}</div>
     <div class="aph-lien">Liên {{ so }}: {{ ten }}</div>
   </td>
 </tr></table>
@@ -55,9 +59,10 @@
   {{ ben_cty(false) }}
   {%- if thue %}
   <div class="aph-party">NGƯỜI VẬN CHUYỂN: {{ ("Nhà xe " ~ doc.kh_aph_nha_xe) if doc.kh_aph_nha_xe else cham }}</div>
-  <div>- Lái xe: {{ doc.kh_aph_lai_xe or cham }} &nbsp; Điện thoại: {{ doc.kh_aph_sdt_lai_xe or "............" }} &nbsp; Biển số xe: {{ doc.kh_aph_bien_so_xe or "............" }}</div>
+  <div>- Lái xe: {{ (gn.driver or cham) | e }} &nbsp; Điện thoại: {{ doc.kh_aph_sdt_lai_xe or "............" }} &nbsp; Biển số xe: {{ (gn.vehicle or "............") | e }}</div>
   {%- endif %}
   {{ ben_khach(true) }}
+  {% if gn.current %}<div>- Cách giao: {{ gn.method | e }}; Điện thoại người nhận: {{ (gn.phone or cham) | e }}; Thời điểm xuất: {{ (gn.time or cham) | e }}</div>{% endif %}
   {%- endif %}
 </div>
 

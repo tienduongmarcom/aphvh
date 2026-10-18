@@ -37,9 +37,18 @@ def deliveries(shared_order):
 
 
 def render(shared, documents):
+    from kh_aph.delivery_info_rules import print_snapshot
     escape = lambda value: html.escape(str(value or ''), quote=True)
     rows = []
+    signatures = []
     for doc in documents:
+        info = print_snapshot(doc)
+        signatures.append('<div class="handoff"><b>Phiếu ' + escape(doc.name) + '</b> - ' + escape(doc.company)
+            + '<br>Cách giao: ' + escape(info['method']) + '; Người nhận: ' + escape(info['recipient'])
+            + '; Điện thoại: ' + escape(info['phone']) + '<br>Lái xe: ' + escape(info['driver'])
+            + '; Biển số: ' + escape(info['vehicle']) + '; Thời điểm xuất: ' + escape(info['time'])
+            + '<br>Người thực giao: ' + escape(info['dispatcher'])
+            + '<p>Người giao ký: ____________________ &nbsp; Người nhận ký: ____________________</p></div>')
         for item in doc.items:
             cells = [doc.name, doc.company, item.warehouse, item.item_code, item.item_name,
                      format(flt(item.stock_qty), '.9f').rstrip('0').rstrip('.'), item.stock_uom, doc.get('kh_aph_delivery_state')]
@@ -48,12 +57,12 @@ def render(shared, documents):
     return ('<!doctype html><html lang="vi"><meta charset="utf-8"><title>Phiếu giao hàng tổng hợp</title>'
             '<style>@page{size:A4;margin:12mm}body{font:13px Arial;margin:24px}table{width:100%;border-collapse:collapse}'
             'td,th{border:1px solid #444;padding:6px;text-align:left}h1{font-size:20px;text-align:center}'
+            '.handoff{break-inside:avoid;border-top:1px solid #777;margin-top:14px;padding-top:8px;min-height:85px}'
             '@media print{body{margin:0}tr{break-inside:avoid}thead{display:table-header-group}}</style>'
-            '<h1>PHIẾU GIAO HÀNG TỔNG HỢP</h1><p>Đơn chung: ' + escape(shared.name)
+            '<h1>PHIẾU GIAO HÀNG TỔNG HỢP</h1><p>Mẫu quản trị nội bộ - không thay chứng từ kế toán từng đơn vị.</p><p>Đơn chung: ' + escape(shared.name)
             + '<br>Khách hàng: ' + escape(shared.customer) + '</p><table><thead><tr>'
             + ''.join('<th>' + escape(h) + '</th>' for h in headers) + '</tr></thead><tbody>'
-            + ''.join(rows) + '</tbody></table><p>Người giao: ____________________'
-            ' &nbsp; Người nhận: ____________________</p></html>')
+            + ''.join(rows) + '</tbody></table>' + ''.join(signatures) + '</html>')
 
 
 @frappe.whitelist(methods=['POST'])

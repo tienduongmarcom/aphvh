@@ -2,11 +2,13 @@
 import hashlib
 import json
 import re
+from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe.utils import cint, flt
 
 from kh_aph.dispatch_plan import plan
+from kh_aph import delivery_info
 
 F_ORDER = "kh_aph_don_chung_xuat"
 F_BATCH = "kh_aph_dot_xuat"
@@ -103,7 +105,8 @@ def preview(shared_order):
     doc = _order(shared_order)
     if not frappe.has_permission("Delivery Note", "create"):
         frappe.throw("Bạn chưa có quyền lập phiếu giao nháp", frappe.PermissionError)
-    return {"shared_order": doc.name, "customer": doc.customer, "rows": _rows(doc)}
+    return {"shared_order": doc.name, "customer": doc.customer, "rows": _rows(doc),
+            "can_dispatch": bool(frappe.has_permission("Delivery Note", "submit"))}
 
 
 def _summaries(notes):
@@ -120,6 +123,8 @@ def _summaries(notes):
 def _note_scope(dn):
     """Kiểm lại liên kết trên phiếu cũ khi in/thử lại, kể cả quyền vừa bị thu hẹp."""
     dn.check_permission("read")
+    if dn.get(delivery_info.METHOD):
+        delivery_info.check_address(dn.customer, dn.get("shipping_address_name"))
     frappe.get_doc("Company", dn.company).check_permission("read")
     for row in dn.items:
         frappe.get_doc("Item", row.item_code).check_permission("read")
@@ -130,8 +135,59 @@ def _note_scope(dn):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_drafts(shared_order, selections, request_id):
+def create_drafts(shared_order, selections, request_id, delivery=None):
+    return _create(shared_order, selections, request_id, delivery)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_and_dispatch(shared_order, selections, request_id, delivery, dispatcher):
+    """Tạo và xuất trọn đợt trong transaction HTTP; controller native sở hữu sổ."""
+    return _create(shared_order, selections, request_id, delivery, dispatcher=dispatcher, dispatch=True)
+
+
+def _dispatch_permissions(dn):
+    _note_scope(dn)
+    for right in ("write", "submit", "print"):
+        dn.check_permission(right)
+
+
+def _dispatched_matches(doc, notes, choices, info, dispatcher):
+    """Không nhận nháp/phiếu đã sửa lượng làm kết quả của yêu cầu xuất ngay trước đó."""
+    try:
+        expected = sorted((c["source_row"], Decimal(str(c["qty"]))) for c in choices)
+        actual = sorted((r.so_detail, Decimal(str(r.qty))) for n in notes for r in n.items)
+        matches = expected == actual and len({r[0] for r in expected}) == len(expected)
+    except (InvalidOperation, TypeError, KeyError):
+        matches = False
+    if not matches:
+        frappe.throw("Phiếu của đợt không còn khớp lượng yêu cầu; đối soát trước khi thao tác tiếp")
+    for dn in notes:
+        _dispatch_permissions(dn)
+        if dn.docstatus != 1 or cint(dn.is_return) or dn.customer != doc.customer or dn.get(delivery_info.DISPATCHER) != dispatcher:
+            frappe.throw("Đợt xuất ngay không còn nguyên trạng; mở phiếu để đối soát, không tự xuất tiếp")
+        states = {"Khách đã nhận"} if info["delivery_method"] == "Khách đến lấy" else {"Đang giao", "Khách đã nhận"}
+        if dn.get("kh_aph_delivery_state") not in states or not dn.get(delivery_info.HANDED_AT) or not dn.get(delivery_info.HANDED_BY):
+            frappe.throw("Phiếu chưa có xác nhận xuất hợp lệ của đợt; mở phiếu để đối soát")
+        if any((dn.get(field) or "") != value for key, field in delivery_info.MAPPING.items()
+               if (value := info[key]) or key != "shipping_address_name"):
+            frappe.throw("Thông tin trên phiếu không khớp yêu cầu xuất ngay")
+        for row in dn.items:
+            so = frappe.get_doc("Sales Order", row.against_sales_order, for_update=True)
+            so.check_permission("read")
+            if so.get("kh_aph_shared_order") != doc.name:
+                frappe.throw("Phiếu của đợt không thuộc đúng đơn chung")
+
+
+def _create(shared_order, selections, request_id, delivery=None, dispatcher=None, dispatch=False):
     _guard()
+    if dispatch:
+        if not frappe.has_permission("Delivery Note", "submit"):
+            frappe.throw("Bạn chưa có quyền xác nhận xuất kho", frappe.PermissionError)
+        if not cint(frappe.conf.get("kh_aph_post_receivable_on_delivery")):
+            frappe.throw("Quy trình giao hàng và ghi công nợ lúc xuất chưa được bật")
+        if not isinstance(dispatcher, str) or not dispatcher.strip() or len(dispatcher.strip()) > 140 or any(ord(c) < 32 for c in dispatcher):
+            frappe.throw("Ghi tên người trực tiếp giao hàng hợp lệ trước khi xuất ngay")
+        dispatcher = dispatcher.strip()
     if not re.fullmatch(r"[a-zA-Z0-9-]{16,64}", request_id or ""):
         frappe.throw("Mã yêu cầu không hợp lệ; mở lại hộp thoại lập phiếu")
     choices = frappe.parse_json(selections) if isinstance(selections, str) else selections
@@ -140,8 +196,15 @@ def create_drafts(shared_order, selections, request_id):
                            key=lambda c: c["source_row"])
     except (TypeError, KeyError):
         frappe.throw("Dữ liệu dòng giao không hợp lệ")
-    signature = hashlib.sha256(json.dumps(canonical, sort_keys=True).encode()).hexdigest()
     doc = _order(shared_order, lock=True)
+    info = delivery_info.parse(delivery, doc.customer)
+    if dispatch and not info:
+        frappe.throw("Xuất ngay cần đầy đủ cách giao và người thực nhận")
+    # Giữ hash cũ khi không truyền thông tin giao nhận để retry phiếu trước nâng cấp vẫn hợp lệ.
+    content = {"rows": canonical, "delivery": info} if info else canonical
+    if dispatch:
+        content = {"rows": canonical, "delivery": info, "operation": "dispatch", "dispatcher": dispatcher}
+    signature = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
     # Current read: không dùng snapshot SELECT thường sau khi đã chờ khóa ở request khác.
     existing = frappe.db.sql_list(f"""SELECT name FROM `tabDelivery Note`
         WHERE {F_ORDER}=%s AND {F_BATCH}=%s ORDER BY name FOR UPDATE""", (doc.name, request_id))
@@ -149,6 +212,8 @@ def create_drafts(shared_order, selections, request_id):
         notes = [frappe.get_doc("Delivery Note", name, for_update=True) for name in existing]
         if any(n.get(F_HASH) != signature for n in notes):
             frappe.throw("Đợt này đã lập phiếu với nội dung khác; mở lại để lập đợt mới")
+        if dispatch:
+            _dispatched_matches(doc, notes, choices, info, dispatcher)
         return {"delivery_notes": _summaries(notes), "reused": True}
     if not frappe.has_permission("Delivery Note", "create"):
         frappe.throw("Bạn chưa có quyền lập phiếu giao nháp", frappe.PermissionError)
@@ -171,17 +236,28 @@ def create_drafts(shared_order, selections, request_id):
             row.qty = choice["qty"]
             row.kh_aph_bags = choice["bags"]
             row.kh_aph_kg_per_bag = choice["kg_per_bag"]
+        delivery_info.apply(dn, info)
         dn.set(F_ORDER, doc.name)
         dn.set(F_BATCH, request_id)
         dn.set(F_HASH, signature)
+        if dispatch:
+            dn.set(delivery_info.DISPATCHER, dispatcher)
+            _dispatch_permissions(dn)
         dn.insert()  # Quyền chuẩn, validation chuẩn, không ignore_permissions / submit / commit.
         notes.append(dn)
+    if dispatch:
+        from kh_aph.delivery_status import confirm
+        for dn in notes:
+            confirm(dn.name, "pickup" if info["delivery_method"] == "Khách đến lấy" else "handoff")
+        notes = [frappe.get_doc("Delivery Note", n.name, for_update=True) for n in notes]
     return {"delivery_notes": _summaries(notes), "reused": False}
 
 
 @frappe.whitelist()
 def print_batch(shared_order, request_id):
-    """In một đợt đã lập; không tăng số lượng, không xác nhận xuất, không trả giá."""
+    """In phiếu A5 từ đợt đã lập; giá bán trên chứng từ, không ghi sổ."""
+    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay, kh_aph_mau_info, kh_aph_no_co
+    from lab9x.vn_words import so_tien_bang_chu, so_vn
     _guard()
     doc = _order(shared_order)
     names = frappe.get_all("Delivery Note", {F_ORDER: doc.name, F_BATCH: request_id}, pluck="name", order_by="name")
@@ -194,10 +270,28 @@ def print_batch(shared_order, request_id):
         dn.check_permission("print")
         if dn.docstatus == 2:
             frappe.throw("Đợt có phiếu đã hủy; không in làm căn cứ xuất hàng")
-        notes.append({"name": dn.name, "company": dn.company, "posting_date": dn.posting_date,
+        company = kh_aph_cong_ty(dn.company)
+        # Chỉ giá bán thuần trên DN; không truy vấn hoặc đưa giá vốn vào ngữ cảnh in.
+        total = sum(flt(r.net_amount if r.get("net_amount") is not None else r.amount) for r in dn.items)
+        notes.append({"name": dn.name, "company": company["ten"], "company_address": company["dia_chi"],
+                      "posting_date": kh_aph_ngay(dn.posting_date), "customer": dn.customer,
+                      "currency": dn.currency, "total": so_vn(total, 2),
+                      "total_words": so_tien_bang_chu(total) if dn.currency == "VND" else "",
+                      "total_qty": so_vn(sum(flt(r.qty) for r in dn.items)),
+                      "warehouses": ", ".join(dict.fromkeys(r.warehouse for r in dn.items)),
+                      "print_form": kh_aph_mau_info(dn.company, "xuat", True), "accounts": kh_aph_no_co(dn),
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
+                      "delivery_method": dn.get(delivery_info.METHOD), "recipient": dn.get(delivery_info.RECIPIENT),
+                      "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),
+                      "driver_name": dn.get("driver_name"), "vehicle_no": dn.get("vehicle_no"),
+                      "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),
+                      "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": dn.get(delivery_info.HANDED_AT),
                       "items": [{"item_code": r.item_code, "item_name": r.item_name, "warehouse": r.warehouse,
-                                 "qty": r.qty, "bags": r.get("kh_aph_bags"),
-                                 "kg_per_bag": r.get("kh_aph_kg_per_bag")} for r in dn.items]})
+                                 "qty": so_vn(r.qty), "uom": r.uom,
+                                 "bags": so_vn(r.get("kh_aph_bags")) if r.get("kh_aph_bags") else "",
+                                 "kg_per_bag": so_vn(r.get("kh_aph_kg_per_bag")) if r.get("kh_aph_kg_per_bag") else "",
+                                 "rate": so_vn(r.net_rate if r.get("net_rate") is not None else r.rate, 2),
+                                 "amount": so_vn(r.net_amount if r.get("net_amount") is not None else r.amount, 2)}
+                                for r in dn.items]})
     return {"html": frappe.render_template("templates/ban_nhanh/phieu_dot_xuat.html",
                                            {"shared_order": doc.name, "notes": notes})}

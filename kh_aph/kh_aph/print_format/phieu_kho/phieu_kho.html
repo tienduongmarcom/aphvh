@@ -67,10 +67,12 @@
 {%- for k in rows | map(attribute=field) | select | unique | list %}{{ kh_aph_ten_kho(k) }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endmacro -%}
 
+{%- set pf = kh_aph_mau_info(doc.company, kieu, true) -%}
 <div class="aph-vt">
+{% if doc.docstatus == 0 %}<div class="aph-state">BẢN NHÁP - CHƯA GHI SỔ</div>{% elif doc.docstatus == 2 %}<div class="aph-state">CHỨNG TỪ ĐÃ HỦY - CHỈ ĐỂ ĐỐI CHIẾU</div>{% endif %}
 <table class="aph-head"><tr>
-  <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}</td>
-  <td class="aph-mau">{% if mau %}<b>Mẫu số {{ mau }}</b>{% set cc = kh_aph_mau(doc.company) %}{% if cc %}<br><i>{{ cc }}</i>{% endif %}{% endif %}</td>
+  <td><b>Đơn vị:</b> {{ cty.ten }}{% if cty.dia_chi %}<br><b>Địa chỉ:</b> {{ cty.dia_chi }}{% endif %}<br><b>Bộ phận:</b> ................................</td>
+  <td class="aph-mau"><b>{{ pf.nhan | e }}</b>{% if pf.can_cu %}<br><i>{{ pf.can_cu | e }}</i>{% endif %}</td>
 </tr></table>
 <table class="aph-title"><tr>
   <td class="aph-side"></td>
@@ -113,16 +115,16 @@
   {%- if kieu == "nhap" %}
   <td><b>Người giao hàng</b><br><i>(Ký, họ tên)</i></td>
   <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i></td>
-  <td><b>Kế toán trưởng</b><br><i>(Hoặc bộ phận có nhu cầu nhập)<br>(Ký, họ tên)</i></td>
+  <td><b>{{ pf.ke_toan_truong | e }}</b><br><i>{% if pf.che_do in ("133", "99") %}(Hoặc bộ phận có nhu cầu nhập)<br>{% endif %}(Ký, họ tên)</i></td>
   {%- elif kieu == "xuat" %}
   <td><b>Người nhận hàng</b><br><i>(Ký, họ tên)</i></td>
   <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i></td>
-  <td><b>Kế toán trưởng</b><br><i>(Hoặc bộ phận có nhu cầu nhập)<br>(Ký, họ tên)</i></td>
-  <td><b>Giám đốc</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ pf.ke_toan_truong | e }}</b><br><i>{% if pf.che_do in ("133", "99") %}(Hoặc bộ phận có nhu cầu nhập)<br>{% endif %}(Ký, họ tên)</i></td>
+  <td><b>{{ pf.nguoi_duyet | e }}</b><br><i>(Ký, họ tên)</i></td>
   {%- else %}
   <td><b>Tổ trưởng sản xuất</b><br><i>(Ký, họ tên)</i></td>
   <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i></td>
-  <td><b>Kế toán trưởng</b><br><i>(Ký, họ tên)</i></td>
+  <td><b>{{ pf.ke_toan_truong | e }}</b><br><i>(Ký, họ tên)</i></td>
   {%- endif %}
 </tr></table>
 </div>

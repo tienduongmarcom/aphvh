@@ -135,6 +135,8 @@ jinja = {
         "kh_aph.print_utils.kh_aph_sl_don_ban",
         "kh_aph.print_utils.kh_aph_dia_chi",
         "kh_aph.print_utils.kh_aph_mau",
+        "kh_aph.print_utils.kh_aph_mau_info",
+        "kh_aph.print_utils.kh_aph_giao_nhan",
         "kh_aph.print_utils.kh_aph_loai_phieu_kho",
         "kh_aph.print_utils.kh_aph_thu_chi",
         "kh_aph.print_utils.kh_aph_ban_hang",
@@ -395,3 +397,15 @@ doc_events.setdefault("File", {})["before_validate"] = "kh_aph.ho_so_giao_nhan.p
 # Chống ghi hai lần một mã thực thu/chi qua PE, JE và phiếu tiền/cọc.
 for _dt in ("Payment Entry", "Journal Entry"):
     doc_events[_dt]["validate"].append("kh_aph.money_reference.validate")
+
+# Thông tin giao nhận theo đợt; giá/kho/công nợ vẫn qua controller chuẩn.
+for _event in ("before_validate", "before_update_after_submit"):
+    doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.delivery_info.validate")
+doc_events["Delivery Note"].setdefault("before_submit", []).append("kh_aph.delivery_info.before_submit")
+
+# Hồ sơ chênh lệch gắn phiếu nguồn, dùng cờ Trung tâm Bán hàng hiện có.
+for _event in ("before_validate", "before_update_after_submit"):
+    doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.delivery_issue.validate")
+for _dt in ("Delivery Note", "Sales Invoice"):
+    doc_events.setdefault(_dt, {}).setdefault("before_cancel", []).append("kh_aph.delivery_issue.before_cancel")
+doctype_js["Delivery Note"].append("public/js/chenh_lech_giao_nhan.js")

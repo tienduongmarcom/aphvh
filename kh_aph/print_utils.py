@@ -164,6 +164,23 @@ def kh_aph_mau(company) -> str:
     return can_cu_mau(frappe.get_cached_value("Company", company, "abbr") if company else "")
 
 
+def kh_aph_mau_info(company, loai="noi_bo", van_dung=False) -> dict:
+    """Chế độ APH/VH/MK theo cấu hình khách; VHT/MKT giữ tương thích mã cũ.
+
+    Không đổi chế độ kế toán Company hoặc tự chuyển APH từ TT133 sang TT99.
+    Đơn vị không xác định chỉ in mẫu nội bộ, không suy đoán số mẫu pháp lý.
+    """
+    from lab9x.print_rules import thong_tin_mau
+    abbr = frappe.get_cached_value("Company", company, "abbr") if company else ""
+    regime = {"APH": 133, "VH": 99, "VHT": 99, "MK": 152, "MKT": 152}.get(abbr)
+    return thong_tin_mau(regime, loai, van_dung)
+
+
+def kh_aph_giao_nhan(doc) -> dict:
+    from kh_aph.delivery_info_rules import print_snapshot
+    return print_snapshot(doc)
+
+
 def kh_aph_loai_phieu_kho(name) -> str:
     from lab9x.print_rules import ten_loai_phieu_kho
 

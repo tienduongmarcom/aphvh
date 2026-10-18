@@ -1,7 +1,7 @@
 name: UAT candidate image verification
 on:
   push:
-    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016", "feat/ho-so-giao-nhan-20261017"]
+    branches: ["fix/p0-uat-v091-20261010", "wip/source-change-20261012", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016", "feat/ho-so-giao-nhan-20261017", "feat/thong-tin-giao-nhan-20261017"]
   pull_request:
     types: [opened, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -171,7 +171,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/b014.py | tee http-b014-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 24
+          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 36
           if grep -q '"status": "FAIL"' http-b014-evidence.txt; then echo "Có ca FAIL trong http-b014-evidence.txt"; exit 1; fi
       - name: Render four-company quantity slip to PDF
         run: |
@@ -181,6 +181,9 @@ jobs:
           trap 'rm -rf "$chrome_root"' EXIT
           mkdir -p "$chrome_root/config" "$chrome_root/cache"
           XDG_CONFIG_HOME="$chrome_root/config" XDG_CACHE_HOME="$chrome_root/cache" google-chrome --user-data-dir="$chrome_root/profile" --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/shared-four-company-slip.pdf" "file://$PWD/shared-four-company-slip.html"
+          XDG_CONFIG_HOME="$chrome_root/config" XDG_CACHE_HOME="$chrome_root/cache" google-chrome --user-data-dir="$chrome_root/profile" --headless --no-sandbox --disable-dev-shm-usage --no-pdf-header-footer --print-to-pdf="$PWD/quick-delivery-slip.pdf" "file://$PWD/quick-delivery-slip.html"
+          test -s quick-delivery-slip.pdf
+          head -c 4 quick-delivery-slip.pdf | grep -q '%PDF'
           test -s shared-four-company-slip.pdf
           head -c 4 shared-four-company-slip.pdf | grep -q '%PDF'
       - name: Nhật ký khi lỗi (chú thích đọc được qua API, không cần tải log thô)
@@ -210,8 +213,12 @@ jobs:
             base-versions-evidence.txt
             ban-nhanh-dialog.png
             ho-so-giao-nhan.png
+            chenh-lech-giao-nhan.png
+            xuat-ngay-retry.png
             fresh-site-evidence.txt
             http-*-evidence.txt
             shared-four-company-slip.html
             shared-four-company-slip.pdf
 
+            quick-delivery-slip.html
+            quick-delivery-slip.pdf

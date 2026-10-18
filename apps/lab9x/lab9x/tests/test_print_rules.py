@@ -10,6 +10,26 @@ class TestPrintRules(unittest.TestCase):
         self.assertIn("133/2016/TT-BTC", P.can_cu_mau("APH"))
         self.assertIn("99/2025/TT-BTC ngày 27/10/2025", P.can_cu_mau("VHT"))
         self.assertEqual(P.can_cu_mau("MKT"), "")
+        self.assertIn("99/2025/TT-BTC", P.can_cu_mau("VH"))
+
+    def test_document_form_basis_is_not_invented_for_hkd_or_internal_documents(self):
+        for regime, circular in ((133, "133/2016"), (99, "99/2025")):
+            for kind, code in (("nhap", "01 - VT"), ("xuat", "02 - VT"), ("thu", "01-TT"), ("chi", "02-TT")):
+                with self.subTest(regime=regime, kind=kind):
+                    info = P.thong_tin_mau(regime, kind, True)
+                    self.assertIn(code, info["nhan"])
+                    self.assertIn("vận dụng", info["nhan"])
+                    self.assertIn(circular, info["can_cu"])
+                    self.assertEqual(info["nguoi_duyet"], "Giám đốc")
+            self.assertEqual(P.thong_tin_mau(regime)["nhan"], "Mẫu quản trị nội bộ")
+            self.assertEqual(P.thong_tin_mau(regime)["can_cu"], "")
+        for kind in ("thu", "chi", "nhap", "xuat", "noi_bo"):
+            hkd = P.thong_tin_mau(152, kind)
+            self.assertNotIn("Mẫu số", hkd["nhan"])
+            self.assertNotIn("Kèm theo", hkd["can_cu"])
+            self.assertIn("152/2025", hkd["can_cu"])
+            self.assertEqual(hkd["nguoi_duyet"], "Người đại diện hộ kinh doanh")
+            self.assertNotIn("Mẫu số", P.thong_tin_mau(None, kind)["nhan"])
 
     def test_thu_chi(self):
         self.assertEqual(P.loai_thu_chi("Receive", "Receivable", "Cash"), {"kieu": "thu", "tien_mat": True})

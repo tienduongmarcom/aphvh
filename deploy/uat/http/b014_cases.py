@@ -257,13 +257,15 @@ def chay(admin, phien, f, emit):
 
     from b014_ho_so_cases import chay as ho_so_cases
     ho_so_cases(rpc, get, insert, lst, denied, ktt, dn, emit)
+    from b014_chenh_lech_cases import chay as chenh_lech_cases
+    chenh_lech_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien)
 
     # 8. Hai màn hình điều hướng có đủ lối vào; bộ đếm in không cho sửa tay.
     tb = get("Workspace", "Trung tâm Bán hàng", ktt)
     tv = get("Workspace", "Tiền và vay", ktt)
     nhan_tb = {s["label"] for s in tb["shortcuts"]}
     for x in ("Đơn chờ duyệt dưới giá sàn", "Đơn chung chờ duyệt dưới giá sàn", "Hóa đơn còn nợ", "Khách cần gọi hôm nay",
-              "Hóa đơn chờ xuất MISA", "Phiếu đã nhận thiếu bản ký", "Bản ký chờ đối chiếu"):
+              "Hóa đơn chờ xuất MISA", "Phiếu đã nhận thiếu bản ký", "Bản ký chờ đối chiếu", "Chênh lệch giao nhận cần xử lý"):
         assert x in nhan_tb, x
     nhan_tv = {s["label"] for s in tv["shortcuts"]}
     for x in ("Sổ quỹ và tiền gửi", "Khế ước vay", "Dư nợ vay theo khế ước",
@@ -276,3 +278,5 @@ def chay(admin, phien, f, emit):
     chain = ban_nhanh_cases(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     from b014_tien_giao_nhan_chain import chay as tien_chain
     tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)
+    from b014_xuat_ngay_cases import chay as xuat_ngay_cases
+    xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
