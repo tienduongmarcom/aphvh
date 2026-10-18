@@ -9,7 +9,7 @@ def chay(rpc, get, insert, submit, lst, ktt, f, emit):
     invoice = submit(insert({"doctype": "Sales Invoice", "company": f["aph"], "customer": f["kh2"],
         "posting_date": f["date"], "due_date": f["date"], "currency": "VND", "selling_price_list": f["pl"],
         "kh_aph_thu_ngay_tk": f["acc"]["tien"], H: f["ktbh"],
-        "items": [{"item_code": f["A"], "qty": 1, "rate": 35000, "warehouse": f["kho"]}]}, ktt), ktt)
+        "items": [{"item_code": f["A"], "qty": 1, "rate": 35000, "warehouse": f["kho"], "item_tax_template": f["t_aph"]}]}, ktt), ktt)
     payments = lst("Payment Entry", {"docstatus": 1, "remarks": ["like", "%" + invoice["name"] + "%"]}, ["name"], ktt)
     assert len(payments) == 1, payments
     pe = get("Payment Entry", payments[0]["name"], ktt)
