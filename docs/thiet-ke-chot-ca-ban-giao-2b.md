@@ -124,3 +124,10 @@ PR #11, mã022322cab2eea0dade0848fa133bbb6c19199273:327+108 unit đạt,242 HTTP
 Bốn cổng: C2 39138158466, C2b39138169799, UAT39138168695, C3 39138171169 đều success đúng mã. C3 schema1.059/1.059 (bỏ qua6 mục có chủ đích), rollback1.052/1.052 và tổng/đếm/cờ/settings/UI/versions khớp; hai cờ mới về0. Cố ý gây lỗi tự quay lui và giữ bảo trì. Core63.508 tệp không đổi. Không có FAIL trên mã cuối; các lượt trước hủy khi cập nhật mã không dùng làm bằng chứng.
 
 Đây là dữ liệu giả và nền CI GL0 cho migration, không phải nghiệm thu nhân sự hoặc bản sao production có phát sinh. Chưa phát hành/bật cờ trên production, vẫn0.15.3. Các phần bàn giao/giữ chỗ/đảo, xử lý kết quả lệch và adapter người bán/nhà máy tiếp tục theo mục8–10.
+
+
+## 12. Điểm nối bàn giao tiền — PR #12
+
+Sau lát xác minh/chốt ca, mã1787448b02c5768b0f1b48ee71da7297f78e268e đã có giữ chỗ và nhận theo số thực, cùng Cash chuyển trách nhiệm không sổ, khác Cash/nộp Bank native JE. Quyền người giao/người nhận, khóa nguồn, retry nguyên transaction, vụ lệch/tệp vẫn giữ khi hủy đề nghị, nhóm chưa rõ âm chặn giao ra. Chi tiết9 nhóm tại `docs/dac-ta-ban-giao-tien-2b.md`, không thay bằng blueprint lịch sử ở mục10.
+
+338+108 unit và249 HTTP/Desk PASS/0 FAIL đúng mã; Cổng2/2b/UAT/Cổng3 đều đạt (trạng thái cuối và link run tại đầu `docs/ban-giao.md`, `deploy/release/TRANG_THAI.md`). Còn đảo/đóng vụ lệch, adapter nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân không GL. Không gọi toàn bộ2B hoàn tất; production0.15.3 chưa đổi, nghiệm thu thật gom cuối.

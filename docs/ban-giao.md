@@ -1,11 +1,20 @@
 # Bàn giao dự án APH-VH
 
-## 18/10/2026 — ĐANG DỞ: bàn giao tiền sau xác minh/chốt ca
+## 19/10/2026 — Bàn giao tiền đã kiểm đủ bốn cổng; đợt2B còn tiếp
 
-Nhánh `feat/ban-giao-tien-20261018`, base PR #11 (014c05a). Đã viết giữ chỗ, nhận cùng Cash/chuyển Cash khác/nộp Bank, chặn nhận thay/tự nhận, số đếm vượt nguồn lưu không chuyển, retry và khóa nguồn; cờ24 kh_aph_cash_handover mặc định tắt. Native DocType APH Ban giao tien, JE liên kết được bảo vệ, ca có transfer_hash, tệp riêng tư giữ blob. 338 unit app +108 lõi đạt. UAT39141849273 trên3dadd51 FAIL ở hai phiên gửi: MariaDB1020 (snapshot vừa đổi), đã giữ artifact. Đang sửa retry toàn biên RPC (rollback cả lần thử, không chỉ thử lại SQL), giữ nguyên assertion đồng thời; chưa có PASS mã sửa. Bước tiếp: chạy các cổng đúng SHA, đọc artifact, sửa mọi FAIL; không dùng PASS PR #11 thay thế. Đặc tả9 nhóm docs/dac-ta-ban-giao-tien-2b.md.
+Nhánh `feat/ban-giao-tien-20261018`, [PR #12](https://github.com/tienduongmarcom/aphvh/pull/12), base PR #11 (014c05a). Mã nghiệp vụ/kiểm **`1787448b02c5768b0f1b48ee71da7297f78e268e`**. Đã có Native DocType `APH Ban giao tien`, Workspace/Dialog; cờ24 `kh_aph_cash_handover` mặc định tắt, cần custody/closing. Không tăng version/tag/merge/triển khai, production vẫn0.15.3 với21 cờ.
 
-Chưa có đảo bàn giao/đóng vụ lệch, adapter nhà máy/thu quầy cũ hoặc quyền tiền riêng không GL. Ví có lệch bị chặn giao ra toàn bộ trong lát này; chưa coi toàn bộ2B xong. Không tăng version/tag/deploy, production vẫn0.15.3. Nghiệm thu thực tế cuối theo anh Tiến.
+Gửi giữ chỗ nguồn, đúng người nhận tự xác nhận số thực; không tự nhận/nhận thay kể cả Admin. Cùng Cash chỉ chuyển trách nhiệm, không GL/PLE; khác Cash/nộp Bank một native JE hai dòng tiền, không thu khách/giảm nợ lần nữa. Thiếu/thừa lưu lý do/người/hạn xử lý; vượt nguồn chỉ lưu số đếm, không chuyển. Hủy đề nghị chưa chuyển giải phóng giữ chỗ nhưng giữ vụ lệch và blob căn cứ. JE liên kết không sửa/gỡ/hủy tay; ca nháp kiểm lại khi trách nhiệm thay đổi. Ví có lệch chưa xử lý hoặc bất kỳ nhóm trách nhiệm/chưa rõ âm bị chặn giao ra, không suy người đã chi.
 
+Cục bộ **338 kh_aph +108 lab9x** đạt, cú pháp Python/JS và diff đạt. Đúng1787448: [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39145460833), [Cổng2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39145541665), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39145540867) và [Cổng3](https://github.com/tienduongmarcom/aphvh/actions/runs/39145543386) đều success.
+
+Đã tải/đọc artifact UAT: **249 HTTP/Desk PASS,0 FAIL**, b01458; hai kiểm kỹ thuật core/site trắng cũng PASS. Bảy ca bàn giao đạt: giữ chỗ/cùng Cash không sổ; thực95/100 và retry không đổi nội dung; chuyển Cash; nộp Bank; hai đề nghị tranh nguồn/hai phiên nhận chỉ một JE; vượt nguồn và quyền; Chrome mất phản hồi sau commit rồi nhận lại cùng Dialog không thêm JE/GL/PLE. Trong các ca có thêm nhận25/20,0/10, tệp/vụ lệch giữ sau hủy, nhóm chưa rõ âm chặn giao. Đã xem ảnh `ban-giao-tien.png` đúng mã cuối, hồ sơ sạch/đã nhận/thực20/bút toán liên kết. Core63.508 tệp không đổi, ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11.
+
+Cổng3: schema nâng/site mới **1.061/1.061**, lệch0, bỏ qua6/6 mục; rollback **1.052/1.052**, đếm/tổng/cờ/versions/cài đặt/giao diện khớp, ba cờ custody/closing/handover đều về0. Ca cố ý lỗi tự quay lui, đếm/tổng/chi tiết/versions khớp và giữ bảo trì. Đã đọc artifact `cong-3-bang-chung`. Nền CI có GL0, không thay diễn tập bản sao production có dữ liệu khi phát hành.
+
+Giữ bằng chứng lỗi [UAT39141849273](https://github.com/tienduongmarcom/aphvh/actions/runs/39141849273), mã3dadd51: MariaDB1020 ở hai phiên gửi. Đã sửa retry tối đa3 lần tại đúng biên RPC, rollback toàn lần thử, không retry ValidationError/không rollback caller nội bộ; giữ nguyên assertion đồng thời. Mã cuối kiểm lại đạt, không dùng PASS của PR #11 thay cho mã mới.
+
+**ĐANG DỞ đợt2B:** chưa có đảo bàn giao/đóng vụ lệch, adapter nhà máy/thu quầy cũ, idempotency thu quầy cũ hoặc quyền tiền cá nhân không GL. Không coi tiền toàn cửa hàng hoàn tất. Bước tiếp: thiết kế xử lý kết quả lệch/đảo có kiểm soát, rồi nối đường cũ và quyền tối thiểu. Đặc tả9 nhóm `docs/dac-ta-ban-giao-tien-2b.md`; nghiệm thu người dùng/dữ liệu/máy in thật gom cuối theo anh Tiến. Không tắt riêng cờ bàn giao sau phát sinh để xóa projection; khôi phục snapshot/image/cờ theo runbook.
 
 ## 18/10/2026 — Lát xác minh quỹ và chốt ca 2B đã kiểm; bàn giao tiền còn tiếp
 

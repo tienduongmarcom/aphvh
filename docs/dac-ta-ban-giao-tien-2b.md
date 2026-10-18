@@ -56,12 +56,15 @@ Không sửa sổ tài chính khi chuyển trách nhiệm cùng quỹ. Khác qu�
 
 Schema qua bộ cài rõ ràng; không hook after_migrate, không tạo dữ liệu trách nhiệm lịch sử. Thêm cờ vào installer/preflight/dấu vân/rollback/C3/UAT, FLAGS_MOI hiện ba cờ mới so production0.15.3. Chưa tăng version/tag/deploy; chủ dự án tự gắn tag khi bản đủ điều kiện. Diễn tập bản sao dữ liệu hiện tại theo runbook trước nâng thật; quay lui snapshot/image/cờ trong bảo trì, không restore mất giao dịch sau mở nhập liệu. Nghiệm thu người dùng thật gom cuối; còn adapter nhà máy/thu cũ, đóng vụ lệch, đảo và quyền tiền cá nhân không GL trước khi gọi toàn bộ2B hoàn tất.
 
-## Bằng chứng đang kiểm
+## Bằng chứng kiểm thử
 
-Lượt3dadd51/UAT39141849273 đã qua cùng-quỹ/thiếu và retry/chuyển Cash/nộp Bank, FAIL ở hai phiên gửi do MariaDB1020 Record has changed. Giữ nguyên run và artifact. Sửa bằng retry tối đa3 lần tại đúng biên RPC tiền, rollback toàn bộ JE/kết quả lần thử, không retry ValidationError và không rollback nghiệp vụ caller nếu được gọi nội bộ; unit kiểm các ranh giới này. Assertion một nguồn chỉ đủ một đề nghị và hai phiên nhận chỉ một JE giữ nguyên. Đang chờ CI mã sửa.
+Lượt3dadd51/UAT39141849273 đã qua cùng-quỹ/thiếu và retry/chuyển Cash/nộp Bank, FAIL ở hai phiên gửi do MariaDB1020 Record has changed. Giữ nguyên run và artifact. Sửa bằng retry tối đa3 lần tại đúng biên RPC tiền, rollback toàn bộ JE/kết quả lần thử, không retry ValidationError và không rollback nghiệp vụ caller nếu được gọi nội bộ; unit kiểm các ranh giới này. Assertion một nguồn chỉ đủ một đề nghị và hai phiên nhận chỉ một JE giữ nguyên. Mã cuối1787448 đã kiểm lại đạt trên cùng assertion.
 
 Không tắt riêng cờ bàn giao sau khi đã vận hành; projection trách nhiệm cùng-quỹ cần dữ liệu bàn giao. Khôi phục phải dùng snapshot/image/cờ tương ứng theo runbook, không tắt cờ để xóa tác động trách nhiệm.
 
 Chênh lệch có issue_state riêng ngay trên hồ sơ nguồn (Chờ xử lý). Hủy đề nghị chưa chuyển giải phóng giữ chỗ nhưng không đóng vụ lệch/quan sát đã lưu, không xóa tệp căn cứ; danh sách cần xử lý và guard ví vẫn bao gồm hồ sơ hủy có issue_state này. Chưa có thao tác đóng vụ ở lát này. UAT bổ sung nhận thừa25/20, nhận0/10, tệp sau hủy và hủy vượt nguồn vẫn còn vụ cần xử lý; số ca emit không giảm.
 
 Nếu bất kỳ nhóm trách nhiệm hoặc Chưa xác minh đang âm (ví dụ chi50 thiếu người giữ sau phân bổ100 cho A), chặn giao ra dù A còn số dương100: không được lấy100 vượt tổng quỹ50. Không tự suy người đã chi; cần đối chiếu nguồn/xác minh lại có căn cứ. UAT giữ ca này trong nhóm vượt nguồn.
+
+
+Mã nghiệp vụ/kiểm `1787448b02c5768b0f1b48ee71da7297f78e268e`, PR #12:338+108 unit đạt;249 HTTP/Desk PASS/0 FAIL, b01458, thêm hai kiểm kỹ thuật core/site trắng PASS. Đã đọc artifact UAT39145540867, xem ảnh ban-giao-tien.png; core63.508 tệp không đổi. Cổng2 39145460833, Cổng2b39145541665, UAT39145540867, Cổng3 39145543386 đều success đúng mã. Schema nâng/site mới1061/1061 (bỏ qua6/6), rollback1052/1052 và đếm/tổng/cờ/versions/cài đặt/giao diện khớp; ba cờ mới0. Cố ý lỗi tự quay lui, chi tiết/versions khớp và giữ bảo trì. Nền migration CI GL0, chưa thay diễn tập dữ liệu production hiện tại. Commit hồ sơ sau1787448 chỉ thay tài liệu; production0.15.3 chưa đổi.
