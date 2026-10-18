@@ -1,4 +1,8 @@
-# Ứng viên 0.15.3 — vận hành giao nhận và bộ mẫu chứng từ
+# Phát hành 0.15.3 — vận hành giao nhận và bộ mẫu chứng từ
+
+## Trạng thái phát hành — 18/10/2026
+
+Tag đã được chủ dự án đẩy; [workflow39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) **đạt toàn bộ**, image0.15.3 đã phát hành với manifest digest `sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`, nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đã đọc log đẩy image và artifact UAT227 PASS/0 FAIL/Cổng3 khớp. Bước tag phía dưới là quy trình tham chiếu đã hoàn thành; bước hiện tại là **Diễn tập và triển khai trên VM**. Production vẫn0.15.2 cho tới log VM xác nhận; chưa có kết nối SSH từ phiên Codex.
 
 Đích: site `frontend`, VM `erpnext-prod`, Compose `~/erp/aph-vh`, project `erp-aph-vh`. Production hiện đã xác nhận là 0.15.2, digest `sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333`. Chưa ghi nhận triển khai 0.15.3.
 
