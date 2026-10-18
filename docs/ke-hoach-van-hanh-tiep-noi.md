@@ -16,7 +16,7 @@ Quy tắc bắt buộc đọc từ `AGENTS.md`, `docs/quyet-dinh-nghiep-vu.md`, 
 
 | Đợt | Kết quả cần có | Mốc 0.15.3 | Điều kiện đóng đợt |
 |---|---|---|---|
-| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Production0.15.3 đã có luồng chính; ứng viên đang bổ sung lối in lại A5 từ phiếu có sẵn | Kiểm kỹ thuật/UAT lối A5 rồi chuyển đợt2; nghiệm thu người dùng/máy in gom cuối |
+| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Production0.15.3 đã có luồng chính; PR #9 đã bổ sung lối in lại A5, đủ bốn cổng trên1e89ace; chưa phát hành | Kỹ thuật/UAT A5 đạt; chuyển đặc tả đợt2, nghiệm thu người dùng/máy in gom cuối |
 | 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ và quỹ nhà máy; chưa có cơ chế chung toàn cửa hàng | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
 | 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất; sheet của Dũng là bước đệm theo chủ dự án | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
 | 4 — Tài chính | Đối chiếu đầy đủ, chốt tháng/báo cáo điều hành | Có nhiều công cụ riêng; chưa chứng minh toàn chuỗi | Đối chiếu dữ liệu đại diện và xác định tạm tính/hoàn tất |
@@ -33,7 +33,7 @@ Thứ tự trên không cấm khảo sát điểm nối tiền trong đợt 1; k
 | GN03 | Người nhận/lái xe, điện thoại, biển số, địa chỉ, cách giao theo từng đợt | Đã có trong Dialog, server allowlist/quyền địa chỉ và nội dung chống trùng; triển khai0.15.3 | Giữ hồi quy Customer/Address/kiểu dữ liệu/scope; nghiệm thu cách nhân viên nhập thực tế |
 | GN04 | Người xuất thực tế khác người nhập | Đã có `kh_aph_nguoi_thuc_giao`, tách người ký thực giao khỏi actor/time server | Giữ quyền kho và khóa sau xuất; nghiệm thu tên thực giao với nhân viên đại diện |
 | GN05 | Dự kiến, thực giao tại kho, thực nhận của khách | DN nháp/submit là nguồn lượng; có biên bản thực nhận trong luồng điều chỉnh | Không tạo sổ lượng thứ hai; xác định rõ mốc thay qty nháp và mốc dùng chứng từ điều chỉnh sau xuất; không nhầm nhận thiếu với lỗi nhập |
-| GN06 | In2 liên, tên người lập, người giao/nhận, bản sao không xuất lại | A5 nhanh đã có2 liên, giá bán thuần và dấu nháp/bản sao. Mẫu chuẩn dùng `kh_aph_giao_nhan`; in lại chuẩn dùng mẫu đó; `delivery_slip.render` có metadata/khối ký riêng từng DN | Dữ liệu các đường in đã đồng bộ trong0.15.3. Còn nút mở lại A5 từ phiếu có sẵn, không tạo DN mới; kiểm quyền/không tăng sổ và nghiệm thu giấy A5/người dùng |
+| GN06 | In2 liên, tên người lập, người giao/nhận, bản sao không xuất lại | A5 nhanh đã có2 liên, giá bán thuần và dấu nháp/bản sao. Mẫu chuẩn dùng `kh_aph_giao_nhan`; in lại chuẩn dùng mẫu đó; `delivery_slip.render` có metadata/khối ký riêng từng DN | Dữ liệu các đường in đã đồng bộ trong0.15.3. PR #9 đã có nút mở lại A5; HTTP/Chrome kiểm quyền/không tăng sổ đạt trên1e89ace. Còn phát hành và nghiệm thu giấy A5/người dùng |
 | GN07 | In không xuất kho/nợ; xác nhận thực giao mới ghi sổ | `delivery_status.confirm`, `delivery_receivable`, caHTTP b014 | Mọi đường mới đi cùng service; lặp handoff/pickup không ghiGL/SLE/SI lần hai; không cho người thiếu submit quyền xuất ngay |
 | GN08 | Hồ sơ ký và dấu đối chiếu | `ho_so_giao_nhan.py`, `ban_014.js`, ca b014 hồ sơ | Giữ tệp riêng đúng phiếu, chặn xóa blob, thay tệp/ghi chú mất dấu, timestamp cũ bị chặn |
 | GN09 | Chênh lệch cần xử lý có người phụ trách/kết quả | Đã triển khai0.15.3: `delivery_issue.py`, Dialog, Workspace và ca b014 chênh lệch | Giữ hồi quy báo/giao/chốt/mở lại, căn cứ và hủy native; nghiệm thu người phụ trách thực tế, theo giới hạn trong `dac-ta-chenh-lech-giao-nhan.md` |
@@ -116,7 +116,9 @@ GN10/GN11 đã kiểm lại trong release0.15.3: xuất ngay tách ý định v�
 
 ### Việc còn lại trước khi đóng đợt 1
 
-1. **Lối in lại A5 từ phiếu đã có:** production0.15.3 chỉ mở mẫu nhanh từ Dialog lập đợt. Ứng viên `feat/in-lai-a5-20261018` bổ sung nút “Phiếu xuất kho A5 (2 liên)” trên DN và API `ban_nhanh.print_note`; dùng chung renderer, không tạo/sửa phiếu hoặc ghi sổ. Còn kiểm UAT trên đúng SHA trước ghi hoàn tất kỹ thuật. `trung_tam_ban.in_lai` vẫn là lối in chuẩn riêng.
-2. **Nghiệm thu người dùng/máy in/dữ liệu đại diện:** theo `docs/nghiem-thu-mau-in-20261018.md`, ghi expected/actual. IN02 còn thiếu lối mở lại A5 nên chưa thể nghiệm thu đầy đủ từ DN. PDF CI và log triển khai không thay kết quả này. Tải thực tế còn chưa đo; quy chế biểu mẫu vẫn là dự thảo.
+1. **Lối in lại A5 từ phiếu đã có:** production0.15.3 chỉ mở mẫu nhanh từ Dialog lập đợt. Ứng viên `feat/in-lai-a5-20261018` bổ sung nút “Phiếu xuất kho A5 (2 liên)” trên DN và API `ban_nhanh.print_note`; dùng chung renderer, không tạo/sửa phiếu hoặc ghi sổ. Đã đủ bốn cổng trên `1e89ace187468d976cb3361d3a0dd6ea75f917c1`, UAT229 PASS/0 FAIL (b01438), gồm HTTP/Chrome in lại hai lần không tăng sổ; chưa phát hành. `trung_tam_ban.in_lai` vẫn là lối in chuẩn riêng.
+2. **Nghiệm thu người dùng/máy in/dữ liệu đại diện:** theo `docs/nghiem-thu-mau-in-20261018.md`, ghi expected/actual. IN02 đã kiểm UAT lối mở lại A5 từ DN ở PR #9; còn phát hành và nghiệm thu thực tế. PDF CI và log triển khai không thay kết quả này. Tải thực tế còn chưa đo; quy chế biểu mẫu vẫn là dự thảo.
 
 Sau khi phần kỹ thuật/UAT đạt, có thể chuyển đợt2; đợt1 giữ trạng thái chờ nghiệm thu thực tế đến cuối theo quyết định mới. Đợt2 bắt đầu bằng đặc tả9 nhóm cho người giữ tiền/chốt ca/bàn giao toàn cửa hàng, tận dụng thu/cọc/thu hộ/quỹ nhà máy hiện có. Đợt3 còn màn nhập lượng một lần; đợt4 còn đối chiếu và chốt chuỗi, không viết lại các nghiệp vụ nền. Đợt5 phải chốt nghiệp vụ riêng trước code.
+
+Rà nguồn đợt2: `docs/dot-2-ra-soat-nguon-tien.md`. Chưa có schema/code chốt ca mới; phải hoàn thiện field/nguồn tiền/vòng đời/quyền trước triển khai.
