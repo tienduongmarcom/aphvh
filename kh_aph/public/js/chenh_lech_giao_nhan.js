@@ -19,10 +19,10 @@
 	}
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
-			const visible = !!(frappe.boot.kh_aph || {}).trung_tam_ban && frm.doc.docstatus === 1 && !frm.doc.is_return;
+			const visible = !!(frappe.boot.kh_aph || {}).trung_tam_ban && [1, 2].includes(frm.doc.docstatus) && !frm.doc.is_return;
 			Object.keys(frm.fields_dict).filter(k => k.startsWith("kh_aph_chenh_lech_")).forEach(k =>
 				frm.toggle_display(k, visible && (k === state || !!frm.doc[state])));
-			if (!visible) return;
+			if (!visible || frm.doc.docstatus !== 1) return;
 			if (!frm.perm[0] || !frm.perm[0].write) return;
 			const current = frm.doc[state];
 			if (current !== "Đã xử lý") {

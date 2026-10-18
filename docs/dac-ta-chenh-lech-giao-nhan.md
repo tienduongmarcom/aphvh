@@ -27,12 +27,14 @@ Workspace Trung tâm Bán hàng có lối **Chênh lệch giao nhận cần xử
 - **Phiếu trả hàng:** DN trả đã submit, `is_return=1`, `return_against` đúng DN nguồn, đúng Company/Customer. Phải là hàng thực nhập lại theo quy trình hiện có; ghi nhận thiếu không mặc nhiên tạo trả hàng.
 - **Hóa đơn giảm:** SI trả đã submit, không update_stock, có hóa đơn gốc cùng Company/Customer, truy được DN nguồn. Nếu hóa đơn gốc gộp nhiều DN thì dòng hóa đơn giảm phải chỉ rõ DN đang xử lý. Trường hợp chưa truy được nguồn phải giữ mở và đối soát, không chọn đại chứng từ.
 - Không hỗ trợ đóng bằng JE/Stock Entry bất kỳ. Nếu cần quy trình khác, giữ hồ sơ mở và dùng đặc tả nghiệp vụ tương ứng; không lách bằng kết luận không điều chỉnh sổ.
-- Chặn hủy chứng từ đang là căn cứ; trưởng mở lại và bỏ liên kết hiện hành trước khi hủy bằng nghiệp vụ native. Hủy source DN còn hồ sơ mở cũng bị chặn. Lịch sử không bị xóa khi bỏ liên kết.
+- Chặn hủy chứng từ đang là căn cứ; trưởng mở lại và bỏ liên kết hiện hành trước khi hủy bằng nghiệp vụ native. Hủy DN nguồn có hồ sơ đòi quyền trưởng và quyền cancel native; hệ thống kết thúc theo việc hủy, không buộc nhận hàng hoặc bản ký giả. Kết quả hủy ghi cùng transaction, native cancel bị chặn do hóa đơn/liên kết thì toàn bộ dấu hồ sơ cũng rollback. Không bỏ qua phụ thuộc hay tự hủy hóa đơn. Lịch sử không bị xóa khi bỏ liên kết.
 - Thay tệp/ghi chú sau chốt xóa kết quả/căn cứ/dấu chốt hiện hành, giữ người phụ trách/hạn và mở Đang xử lý; đồng thời luồng hồ sơ ký xóa dấu đối chiếu. Phải xem lại bản ký trước khi chốt lần nữa.
 
 ## 5. Dữ liệu và chuyển trạng thái
 
 Mười hai Custom Field trên DN: `kh_aph_chenh_lech_state` (Select), `_noi_dung` (Small Text), `_phu_trach` (Link User), `_han` (Date), `_ket_qua` (Small Text), `_cach_xu_ly` (Select), `_phieu_tra` (Link Delivery Note), `_hoa_don_giam` (Link Sales Invoice), `_bao_boi` (Link User), `_bao_luc` (Datetime), `_chot_boi` (Link User), `_chot_luc` (Datetime). Các hậu tố dùng cùng tiền tố `kh_aph_chenh_lech`.
+
+Cách xử lý có thêm giá trị “Phiếu nguồn đã hủy” chỉ do callback cancel native ghi, API chốt thường không nhận giá trị này. Hồ sơ trên DN đã hủy vẫn hiển thị readonly, không mở lại trực tiếp; DN amend mới không sao chép hồ sơ cũ.
 
 Các trường readonly, allow_on_submit, no_copy; server chặn sửa tay qua API/save/import. Người/thời điểm báo và chốt do server ghi, không nhận từ client. Nội dung tối đa 2.000 ký tự; Link/Select tối đa 140, ngày ISO hợp lệ; chặn field thừa/kiểu sai/ký tự điều khiển. Endpoint POST `delivery_issue.cap_nhat(name, modified, action, values)` khóa DN và kiểm phiên sửa; cập nhật nguyên tử, không tự commit. Khi chốt khóa chứng từ căn cứ, kiểm lại trạng thái để không dùng chứng từ vừa hủy đồng thời.
 
@@ -52,7 +54,8 @@ Báo/giao/chốt/mở lại không tạo GL/SLE/SI/PLE và không giảm công n
 - Đối chiếu bản ký không đổi Cần xử lý; giao người/hạn chuyển Đang xử lý. Chốt không điều chỉnh sổ lưu đúng actor/time, sổ giữ nguyên; bấm lặp không có lịch sử giả.
 - Đổi ghi chú sau chốt tự mở lại, xóa dấu hiện hành, vẫn đọc được kết quả cũ; chốt lại trước đối chiếu mới bị chặn.
 - DN trả nháp, source sai, Company/Customer sai, SI giảm ghi kho hoặc nguồn mơ hồ bị chặn. DN trả và SI giảm đúng nguồn đã submit được liên kết; chốt không ghi thêm sổ. Hủy căn cứ đang liên kết bị chặn; mở lại giữ lịch sử.
-- Kiểm native Dialog và lối Workspace trên image thật. 4 ca HTTP và 1 ca Desk mới của b014; kỳ vọng b014 30 PASS gồm restore, tổng 221. Chỉ kết luận sau đọc run/artifact trên đúng SHA; không dùng kết quả 1A để nghiệm thu GN09.
+- DN đang giao có vấn đề, chưa có bản ký: hủy khi SI còn hiệu lực bị chặn và dấu hồ sơ rollback; sau khi hủy SI chuẩn, trưởng hủy DN, tồn được hoàn đúng, lưu kết thúc theo hủy mà không có dấu nhận hàng/đối chiếu giả.
+- Kiểm native Dialog và lối Workspace trên image thật. 5 ca HTTP và 1 ca Desk mới của b014; kỳ vọng b014 31 PASS gồm restore, tổng 222. Chỉ kết luận sau đọc run/artifact trên đúng SHA; không dùng kết quả 1A để nghiệm thu GN09.
 
 ## 9. Triển khai và khôi phục
 

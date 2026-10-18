@@ -164,13 +164,26 @@ class IssueBoundary(unittest.TestCase):
         self.assertIsNone(doc.get(self.m.RESULT))
         self.assertIn("RET", doc.add_comment.call_args.args[1])
 
-    def test_cancel_requires_reopening_linked_proof_and_closing_active_source(self):
+    def test_cancel_requires_reopening_linked_proof(self):
         doc = self.ready()
-        with self.assertRaises(ValueError): self.m.before_cancel(doc)
         doc.set(self.m.STATE, None); self.f.db.sql.return_value = [("DN",)]
         with self.assertRaises(ValueError): self.m.before_cancel(doc)
         self.f.db.sql.return_value = []
         self.m.before_cancel(doc)
+
+    def test_chief_can_cancel_source_without_fake_receipt_or_signed_file(self):
+        doc = self.doc(**{self.m.STATE: R.PENDING, self.m.DETAIL: "Giao sai địa chỉ"})
+        self.f.get_roles.return_value = ["Stock Manager"]
+        with self.assertRaises(PermissionError): self.m.before_cancel(doc)
+        self.assertEqual(doc.get(self.m.STATE), R.PENDING)
+        self.f.get_roles.return_value = ["Accounts Manager"]
+        self.m.before_cancel(doc)
+        self.assertEqual(doc.get(self.m.MODE), R.CANCELLED)
+        self.assertEqual(doc.get(self.m.CLOSE_BY), "chief")
+        self.assertIsNone(doc.get(self.m.ACTOR))
+        doc.add_comment.assert_called_once()
+        with self.assertRaises(ValueError):
+            R.normalize("resolve", {"ket_qua": "Giả hủy", "cach_xu_ly": R.CANCELLED})
 
     def test_flag_off_no_database_or_mutation(self):
         self.f.conf = {}

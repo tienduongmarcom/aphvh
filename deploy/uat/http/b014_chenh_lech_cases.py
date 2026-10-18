@@ -115,3 +115,32 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, f, dn, emit, phien):
     emit("HTTP_014_CHENH_LECH_CHUNG_TU", "PASS", {"submitted_return_source": True, "credit_source": True,
          "draft_and_wrong_proof_denied": True, "cancel_proof_denied": True, "resolution_does_not_post": True,
          "concurrent_cancel_safe": True})
+
+    # Phiếu đang giao chưa có bản ký vẫn phải hủy được đúng nghiệp vụ, không nhận hàng giả để thoát vòng.
+    bin_before = lst("Bin", {"item_code": f["A"], "warehouse": f["kho"]}, ["actual_qty"], ktt)[0]["actual_qty"]
+    so = insert({"doctype": "Sales Order", "company": f["aph"], "customer": f["kh2"], "transaction_date": f["date"],
+        "delivery_date": f["date"], "selling_price_list": f["pl"], "currency": "VND", "conversion_rate": 1,
+        "items": [{"item_code": f["A"], "qty": 3, "uom": "Kg", "conversion_factor": 1, "rate": 35000,
+                   "warehouse": f["kho"], "delivery_date": f["date"], "item_tax_template": f["t_aph"]}]}, ktt)
+    so = submit(so, ktt)
+    cancelled = rpc("erpnext.selling.doctype.sales_order.sales_order.make_delivery_note", {"source_name": so["name"]}, ktt)
+    cancelled = submit(insert(cancelled, ktt), ktt)
+    cancelled = get("Delivery Note", cancelled["name"], ktt)
+    rpc("kh_aph.delivery_issue.cap_nhat", {"name": cancelled["name"], "modified": cancelled["modified"], "action": "report",
+        "values": json.dumps({"noi_dung": "Sai phiếu nguồn, dừng giao và hủy theo nghiệp vụ chuẩn"})}, ktbh)
+    invoices = lst("Sales Invoice", [["Sales Invoice Item", "delivery_note", "=", cancelled["name"]], ["docstatus", "=", 1]], ["name"], ktt)
+    assert len(invoices) == 1
+    denied(lambda: rpc("frappe.client.cancel", {"doctype": "Delivery Note", "name": cancelled["name"]}, ktt),
+           ("ValidationError", "LinkExistsError"))
+    still_open = get("Delivery Note", cancelled["name"], ktt)
+    assert still_open[state] == "Cần xử lý" and not still_open.get("kh_aph_chenh_lech_chot_boi"), "Hủy lỗi không rollback dấu hồ sơ"
+    rpc("frappe.client.cancel", {"doctype": "Sales Invoice", "name": invoices[0]["name"]}, ktt)
+    rpc("frappe.client.cancel", {"doctype": "Delivery Note", "name": cancelled["name"]}, ktt)
+    ended = get("Delivery Note", cancelled["name"], ktt)
+    assert ended["docstatus"] == 2 and ended[state] == "Đã xử lý" and ended["kh_aph_chenh_lech_cach_xu_ly"] == "Phiếu nguồn đã hủy"
+    assert ended["kh_aph_chenh_lech_chot_boi"] == f["ktt"] and not ended.get("kh_aph_doi_chieu_boi")
+    assert ended["kh_aph_delivery_state"] == "Đang giao" and not ended.get("kh_aph_ban_ky")
+    bin_after = lst("Bin", {"item_code": f["A"], "warehouse": f["kho"]}, ["actual_qty"], ktt)[0]["actual_qty"]
+    assert abs(float(bin_after) - float(bin_before)) < 1e-9
+    emit("HTTP_014_CHENH_LECH_HUY_NGUON", "PASS", {"no_fake_receipt": True, "native_dependencies": True,
+         "failed_cancel_rolls_back_case": True, "chief_stamp": True, "stock_restored": True})

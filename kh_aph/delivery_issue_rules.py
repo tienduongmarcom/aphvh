@@ -7,6 +7,7 @@ CLOSED = "Đã xử lý"
 NO_LEDGER = "Đối chiếu, không điều chỉnh sổ"
 RETURN = "Phiếu trả hàng"
 CREDIT = "Hóa đơn giảm"
+CANCELLED = "Phiếu nguồn đã hủy"  # Chỉ do thao tác hủy native ghi; không nhận từ Dialog chốt.
 KEYS = {"report": {"noi_dung"}, "assign": {"nguoi_phu_trach", "han_xu_ly"},
         "resolve": {"ket_qua", "cach_xu_ly", "phieu_tra", "hoa_don_giam"}, "reopen": {"ly_do"}}
 

@@ -29,7 +29,7 @@ def fields():
              (DETAIL, "Nội dung chênh lệch", "Small Text", None),
              (ASSIGNEE, "Người phụ trách xử lý", "Link", "User"), (DUE, "Hạn xử lý chênh lệch", "Date", None),
              (RESULT, "Kết quả xử lý chênh lệch", "Small Text", None),
-             (MODE, "Cách xử lý chênh lệch", "Select", "\n".join(("", R.NO_LEDGER, R.RETURN, R.CREDIT))),
+             (MODE, "Cách xử lý chênh lệch", "Select", "\n".join(("", R.NO_LEDGER, R.RETURN, R.CREDIT, R.CANCELLED))),
              (RETURN, "Phiếu trả hàng đã xử lý", "Link", "Delivery Note"),
              (CREDIT, "Hóa đơn giảm đã xử lý", "Link", "Sales Invoice"),
              (OPEN_BY, "Người báo chênh lệch", "Link", "User"), (OPEN_AT, "Thời điểm báo chênh lệch", "Datetime", None),
@@ -38,7 +38,7 @@ def fields():
     for name, label, kind, options in specs:
         f = {"fieldname": name, "label": label, "fieldtype": kind, "read_only": 1, "allow_on_submit": 1,
              "no_copy": 1, "insert_after": previous,
-             "depends_on": "eval:doc.docstatus==1 && !doc.is_return" + (" && doc." + STATE if name != STATE else "")}
+             "depends_on": "eval:(doc.docstatus==1 || doc.docstatus==2) && !doc.is_return" + (" && doc." + STATE if name != STATE else "")}
         if options is not None:
             f["options"] = options
         if name in (RETURN, CREDIT):
@@ -175,10 +175,20 @@ def cap_nhat(name, modified, action, values=None):
 def before_cancel(doc, method=None):
     if not enabled() or not frappe.get_meta("Delivery Note").has_field(STATE):
         return
-    if doc.doctype == "Delivery Note" and doc.get(STATE) in (R.PENDING, R.ACTIVE):
-        frappe.throw("Phiếu còn chênh lệch cần xử lý; kế toán trưởng chốt hồ sơ trước khi hủy")
     field = RETURN if doc.doctype == "Delivery Note" else CREDIT
     # Đọc khóa hiện hành, không dùng snapshot repeatable-read trước lúc chốt đồng thời.
     frappe.db.sql(f"SELECT name FROM `tab{doc.doctype}` WHERE name=%s FOR UPDATE", doc.name)
     if frappe.db.sql(f"SELECT name FROM `tabDelivery Note` WHERE `{field}`=%s AND docstatus=1 LIMIT 1 FOR UPDATE", doc.name):
         frappe.throw("Chứng từ đang làm căn cứ xử lý chênh lệch. Mở lại hồ sơ trên phiếu giao trước khi hủy")
+    if doc.doctype == "Delivery Note" and not cint(doc.is_return) and doc.get(STATE):
+        _chief()
+        before = _snapshot(doc)
+        for f in RESOLUTION:
+            doc.set(f, None)
+        doc.set(STATE, R.CLOSED)
+        doc.set(MODE, R.CANCELLED)
+        doc.set(RESULT, "Kết thúc hồ sơ theo việc hủy phiếu nguồn bằng nghiệp vụ chuẩn; không xác nhận khách nhận hàng.")
+        doc.set(CLOSE_BY, frappe.session.user)
+        doc.set(CLOSE_AT, now_datetime())
+        # Cùng transaction cancel: controller native hoặc kiểm liên kết lỗi thì toàn bộ dấu này cũng rollback.
+        _audit(doc, "Kết thúc theo hủy phiếu nguồn", before)
