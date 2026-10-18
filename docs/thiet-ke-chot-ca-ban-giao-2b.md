@@ -1,6 +1,6 @@
 # Bước2B — Chốt ca và bàn giao tiền dùng chung
 
-Ngày18/10/2026. Thiết kế tiếp nối2A; **chưa có mã/schema2B**. Không dùng báo cáo phát sinh2A thay cho số tiền hiện còn giữ. Không cần hỏi lại quyết định không tự nhận, không ghi thu khách lần hai, chênh lệch chờ điều tra hoặc nghiệm thu thật gom cuối.
+Ngày18/10/2026. Thiết kế tiếp nối2A; **lát xác minh/chốt ca đang triển khai, chưa đủ toàn bộ2B**. Không dùng báo cáo phát sinh2A thay cho số tiền hiện còn giữ. Không cần hỏi lại quyết định không tự nhận, không ghi thu khách lần hai, chênh lệch chờ điều tra hoặc nghiệm thu thật gom cuối.
 
 ## 1. Mục tiêu/phạm vi
 
@@ -94,3 +94,25 @@ Các ca này chưa chạy cho2B; không dùng kết quả317 unit/2A thay cho b�
 Tách code2B sau khi nền2A được kiểm, thêm cờ/schema rõ ràng, mặc định tắt. Bật trên UAT giả trước; migration chỉ thêm cấu trúc, không tự gán tiền lịch sử. Trước vận hành thật cần người có trách nhiệm xác minh số tiền bắt đầu, phân quyền nhân sự và thử luồng đại diện; nghiệm thu thực tế gom cuối theo chủ dự án. Diễn tập/quay lui dùng runbook snapshot/image/cờ; không restore sau mở giao dịch mà không đối soát.
 
 Bước triển khai đầu: hoàn thiện blueprint field/DocPerm, thuật toán khóa và fingerprint/ca hủy-repost, rồi làm xác minh tiền bắt đầu + đối chiếu read-only. Chỉ nối bàn giao khi công thức tổng người–quỹ–GL đã kiểm bằng dữ liệu giả có giao dịch. Không coi thiết kế này là module đã chạy.
+
+## 10. Blueprint lát xác minh và chốt ca (18/10/2026)
+
+Cờ23 `kh_aph_cash_closing` cần cờ22; mặc định tắt. Ba DocType native có controller, schema rõ ràng, không hook tự cài. Workspace Tiền và vay có Xác minh quỹ / Chốt ca tiền / Ca tiền chênh lệch.
+
+| Hồ sơ | Field cụ thể | Quyền và vòng đời |
+|---|---|---|
+| APH Xac minh quy | company, account, reason bắt buộc; evidence; allocations(holder, amount); unverified_amount; gl_balance; previous_verification; source_hash/source_rows; closed_by/closed_at | Accounts Manager/System Manager có tạo/sửa nháp/submit, không cancel/sửa đã submit. Xác minh sau liên kết bản trước và bắt buộc lý do. |
+| APH Phan bo quy | holder User nội bộ đang hoạt động đúng phạm vi, amount không âm, không trùng holder | Child của xác minh, không CRUD độc lập. |
+| APH Chot ca tien | company/account/holder; verification/previous_shift/started_at; expected_amount/counted_amount/difference/status; reason/assignee/due_date/evidence; dấu sổ/actor/time | Accounts User xem/chốt chính mình; quản lý xem trong scope nhưng không chốt thay. Ca lệch phải có lý do, người xử lý, hạn. Không cancel/sửa/mở lại trong lát này. |
+
+Vai trò Không xem giá vốn/Kế toán nhà máy bị chặn cả cộng manager; chưa cấp GL qua module này. Quyền native Company, Account, GL và từng nguồn vẫn bắt buộc. API current chỉ trả mốc, tiền của chính người đăng nhập và thời gian kiểm; không trả các người khác/GL. Chứng cứ JSON chỉ chứa mã GL và băm, không chứa tiền hoặc người của nguồn. Account User không được đọc phân bổ của bản xác minh.
+
+Khóa tất cả Cash account của company theo tên trong transaction, tương thích hook before_submit/before_cancel các nguồn chuẩn và before_insert GL (kể cả dòng đảo). GL và nguồn đọc for_update của Frappe16.52.0, tránh snapshot cũ sau đợi khóa. Không commit trong service. Giới hạn10.000 dòng/quỹ được báo lỗi rõ thay vì cắt dữ liệu. Nguồn ngoài adapter để nhóm chưa rõ, không suy owner.
+
+Tại mốc xác minh lưu dấu từng GL gồm ID/ngày/creation/tiền/cờ hủy/nguồn/người giữ; API chỉ lưu băm của nội dung này. Lần sau tập GL cũ phải giữ nguyên, dòng mới hoạt động cộng theo người trên nguồn. Tổng phân bổ + chưa rõ luôn so số dư Cash hiện có. Hủy/repost/sửa dòng cũ kể cả tổng bằng nhau làm mốc hết hiệu lực, bắt xác minh mới có lý do; không sửa bản chốt. Sổ mới có posting_date trước ngày của ca gần nhất cũng chặn chốt mới. **Trong cùng ngày**, native GL chỉ có ngày ghi sổ: dòng tạo sau chốt được tính ở ca sau bằng định danh mới; không suy giờ nghiệp vụ không có trên GL. Ca qua ngày dùng started_at/closed_at server, không chia nhóm theo posting_date.
+
+Nháp giữ fingerprint; nếu sổ hoặc bản trước đổi trước submit, từ chối và yêu cầu lưu/đối chiếu lại. close(name) khóa hồ sơ, retry cùng tên trả kết quả cũ. Hai nháp cùng khoảng thời gian không chốt đồng thời vì so previous_shift dưới khóa. Thực đếm không trở thành GL/đầu ca mới; chênh lệch lưu trên hồ sơ, chưa có nút xác nhận xử lý/mở lại. API native submit cũng chạy cùng guard.
+
+Kiểm: 10 ca unit mới cho Decimal/fingerprint/tổng/quyền/cờ tắt; HTTP quỹ giả1000 phân700/200/chưa rõ100, thu100 rõ +50 chưa rõ, ca thiếu20/thừa10, hai phiên retry, nháp lỗi thời, hủy sau chốt, xác minh thay mốc, ghi lùi ngày, không chốt thay và không lộ ca khác; Chrome đọc snapshot đã chốt. Chưa có kết quả tích hợp lúc viết blueprint; ghi kết quả thật ở ban-giao/TRANG_THAI.
+
+Triển khai chỉ cấu trúc, không phân bổ lịch sử hoặc sửa sổ; khi bật thật kế toán trưởng xác minh quỹ có căn cứ. Cổng3 thêm cả custody/closing vào FLAGS_MOI, rollback trả hai cờ0 theo snapshot. Nhóm bàn giao/giữ chỗ/đảo/adapter nhà máy/idempotency thu cũ và bảng tổng hợp vẫn là bước sau; không được bật như module bàn giao hoàn chỉnh. Nghiệm thu người dùng/thực địa theo quyết định gom cuối.

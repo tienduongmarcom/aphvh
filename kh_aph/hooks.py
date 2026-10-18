@@ -417,3 +417,16 @@ for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice
         _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
         _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
         doc_events[_dt][_event] = _handlers + ["kh_aph.cash_custody.validate"]
+
+# Chốt ca chỉ lưu hồ sơ; khóa chung với các đường ghi/hủy GL chuẩn.
+for _dt in ("APH Xac minh quy", "APH Chot ca tien"):
+    has_permission[_dt] = "kh_aph.cash_closing.has_permission"
+permission_query_conditions["APH Chot ca tien"] = "kh_aph.cash_closing.query_conditions"
+permission_query_conditions["APH Xac minh quy"] = "kh_aph.cash_closing.opening_query_conditions"
+for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice", "POS Invoice",
+            "Stock Entry", "Purchase Receipt", "Delivery Note", "Stock Reconciliation"):
+    for _event in ("before_submit", "before_cancel"):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        doc_events[_dt][_event] = _handlers + ["kh_aph.cash_closing.lock_ledger"]
+doc_events.setdefault("GL Entry", {})["before_insert"] = "kh_aph.cash_closing.lock_ledger"

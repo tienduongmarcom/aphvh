@@ -282,3 +282,6 @@ def chay(admin, phien, f, emit):
     xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
     from b014_cash_custody import chay as cash_cases
     cash_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
+
+    from b014_cash_closing import chay as closing_cases
+    closing_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

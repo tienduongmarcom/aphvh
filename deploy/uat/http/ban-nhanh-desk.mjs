@@ -57,6 +57,18 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'chot-ca') {
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/aph-chot-ca-tien/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "APH Chot ca tien" && cur_frm.doc.docstatus === 1');
+        await until('!!cur_frm.custom_buttons["Đối chiếu số hiện tại"]');
+        await evaluate('cur_frm.scroll_to_field("expected_amount",false);true');
+        await pause(700);
+        const proof = await evaluate('({expected:cur_frm.doc.expected_amount,counted:cur_frm.doc.counted_amount,status:cur_frm.doc.status,readonly:cur_frm.fields_dict.expected_amount.df.read_only,visible:cur_frm.fields_dict.expected_amount.$wrapper.is(":visible"),clean:!cur_frm.is_dirty()})');
+        if(proof.expected!==800||proof.counted!==800||proof.status!=="Khớp"||!proof.readonly||!proof.visible||!proof.clean)throw Error('Ca đã chốt hiển thị sai: '+JSON.stringify(proof));
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('chot-ca-tien.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_2B_CHOT_CA',status:'PASS',detail:proof}));
     } else if (mode === 'nguoi-giu-tien') {
         await command('Page.navigate',{url:base+'/desk/payment-entry/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && cur_frm.doctype === "Payment Entry" && cur_frm.doc.docstatus === 1');

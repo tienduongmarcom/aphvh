@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — ĐANG DỞ: xác minh quỹ và chốt ca 2B
+
+Nhánh `feat/chot-ca-tien-mat-20261018`, dựa PR #10 (14dceff). Đã viết hồ sơ native `APH Xac minh quy` + dòng phân bổ và `APH Chot ca tien`, cờ23 `kh_aph_cash_closing` mặc định tắt, cần cờ2A. Không đổi version, chưa phát hành hoặc triển khai; production vẫn0.15.3.
+
+327 unit app +108 lõi đạt cục bộ. **HTTP/Chrome/Cổng2/2b/3 chưa xác minh trên mã này**, không dùng PASS2A thay thế. Bước tiếp: chạy các cổng trên đúng SHA, sửa mọi lỗi, đọc artifact và cập nhật hồ sơ. Bộ mới dự kiến6 ca (5 HTTP +1 Chrome), b01451/ tổng242 nếu đủ đạt. Thử trên tiền/quỹ giả riêng, không dữ liệu khách.
+
+Phạm vi: phân bổ số dư sổ thành người rõ/chưa rõ có căn cứ; chốt tự thân, số phải có/thực đếm/lệch và người/hạn xử lý; snapshot băm từng GL bất biến; phát hiện sổ trước mốc thay đổi, ghi lùi ngày trước ngày chốt; retry theo tên ca. Không GL/PLE mới. Chưa làm bàn giao/giữ chỗ tiền, adapter nhà máy, chống lặp thu quầy, xử lý kết quả lệch/mở lại hoặc giao diện tiền riêng cho Dũng; chưa coi toàn bộ2B đạt. Đặc tả triển khai: `docs/thiet-ke-chot-ca-ban-giao-2b.md` mục10.
+
+
 ## 18/10/2026 — Đợt2A người giữ tiền đã kiểm kỹ thuật/UAT;2B còn thiết kế
 
 Theo yêu cầu tiếp tục sau PR #9, đã làm lớp nguồn đợt2A trên nhánh `feat/nguoi-giu-tien-20261018`, [PR #10](https://github.com/tienduongmarcom/aphvh/pull/10), base nhánhPR #9 (30a8773). Mã nghiệp vụ/kiểm **`929d16a84e1f1e6df32d0a614c228060c5e76c4b`**. Thêm cờ thứ22 `kh_aph_cash_custody` mặc định tắt,10 Custom Field trên PE/JE Account/SI/PI/POS/Funds Receipt–Action/quỹ nhà máy; truyền người thực giữ/giao qua đường thu quầy/thu ngay/JE tự sinh. Nguồn submit không đổi người giữ; không suy owner/backfill. Cùng accountCash trên JE không có hai người khác nhau vì GL gộp dòng.
