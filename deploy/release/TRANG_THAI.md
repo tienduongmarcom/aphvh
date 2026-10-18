@@ -1,12 +1,24 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
-## 18/10/2026 — ĐANG DỞ: GN09 xử lý chênh lệch giao nhận
+## 18/10/2026 — GN09 đã đạt kiểm thử: xử lý chênh lệch giao nhận
 
-Tiếp tục PR #5 trên nhánh `feat/thong-tin-giao-nhan-20261017`, từ `602b73e` (mã nghiệp vụ 1A đã kiểm `5155ca4`). Production vẫn 0.15.2, không đổi tag/image/VM. Đã đọc lại AGENTS trên origin và các quyết định/kiến trúc/bàn giao/runbook.
+Tiếp tục [PR #5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, từ mốc tài liệu `602b73e` / mã 1A đã kiểm `5155ca4`. **Mã nghiệp vụ GN09 đã kiểm: `9c45e7492e55797c48483d19004e52aecf6614ca`**. Các commit sau mốc này chỉ cập nhật tài liệu, không phải lượt CI mới. Đã đọc lại AGENTS trên GitHub và các quyết định/kiến trúc/bàn giao/runbook.
 
-Đã viết hồ sơ trên DN nguồn: báo chênh lệch, giao người và hạn, chốt kết quả, mở lại có lý do; readonly và server guard, không DocType Nhiệm vụ/sổ mới. Kế toán trưởng (Accounts Manager hoặc Administrator) xử lý ngoại lệ, quyền read/write và scope DN vẫn kiểm riêng. Bằng chứng chốt: đối chiếu không ghi sổ hoặc liên kết phiếu trả/hóa đơn giảm đã submit đúng nguồn/company/customer. Đổi bản ký/ghi chú tự mở lại, giữ lịch sử; chặn hủy chứng từ đang làm căn cứ. Hủy phiếu nguồn có hồ sơ đòi kế toán trưởng, kết thúc hồ sơ trong cùng transaction cancel, không ép nhận hàng/bản ký giả; native cancel lỗi thì dấu hồ sơ rollback. Tái dùng cờ Trung tâm Bán hàng và bộ cài rõ ràng.
+Đã có vòng báo chênh lệch → giao người/hạn → chốt kết quả hoặc mở lại có lý do trên DN nguồn. Quyền read/write và scope native vẫn áp dụng; thao tác giao/chốt/mở lại đòi Accounts Manager hoặc Administrator, người phụ trách phải có quyền trên đúng phiếu. Chốt cần bản ký hiện tại đã đối chiếu; không tự đóng vì chỉ có dấu đối chiếu. Căn cứ gồm kết luận không điều chỉnh sổ hoặc phiếu trả/hóa đơn giảm đã submit, đúng nguồn/Company/Customer. Thay tệp/ghi chú tự mở lại, giữ kết quả cũ trong Comment. Khóa đọc hiện hành bảo vệ khi chốt và hủy căn cứ đồng thời. Không tạo DocType Nhiệm vụ hoặc sổ lượng/tiền riêng.
 
-Cục bộ 294 kh_aph + 107 lab9x = 401 ca đạt; đang bổ sung/kiểm HTTP và Dialog trên ERPNext thật. **Chưa xác nhận CI của GN09**. b014 mong 31 PASS gồm restore (thêm 5 ca HTTP + 1 ca Desk), tổng UAT dự kiến 222. Bước tiếp: đọc CI trên đúng SHA, sửa nguyên nhân nếu lỗi; kiểm ảnh Dialog, nâng cấp/schema/quay lui. Đặc tả 9 nhóm: `docs/dac-ta-chenh-lech-giao-nhan.md`. GN10 xuất ngay, in máy thật và cắt mạng tại commit vẫn còn mở; chốt ca/tiền/nhà máy là các đợt sau.
+Hủy phiếu nguồn có hồ sơ đòi trưởng và quyền cancel native. Hồ sơ kết thúc trong cùng transaction hủy; không buộc nhận hàng hoặc bản ký giả để thoát vòng. Nếu hóa đơn/liên kết native còn hiệu lực thì hủy bị chặn và dấu hồ sơ rollback. Phiếu đã hủy vẫn xem hồ sơ readonly; phiếu amend không sao chép trạng thái cũ. Không tự tạo/hủy chứng từ tài chính thay người dùng.
+
+Bằng chứng trên đúng SHA:
+
+- Cục bộ **294 kh_aph + 107 lab9x = 401 ca đạt**; cú pháp Python/JS và diff đạt.
+- [Cổng 2](https://github.com/tienduongmarcom/aphvh/actions/runs/39083098771): đạt site trắng.
+- [Cổng 2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095486): đạt dựng/nâng/quay lui.
+- [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095506): **222 PASS, 0 FAIL**; b014 có 31 PASS gồm restore. Đã đọc artifact của cả 5 ca HTTP chênh lệch và 1 ca Desk; xem ảnh Dialog thật. Đã kiểm Dũng cộng vai trò, scope người phụ trách, phiên cũ/field giả, mở lại khi đổi bằng chứng, chứng từ nháp/sai nguồn, chốt không ghi sổ, chốt–hủy đồng thời, hủy nguồn không nhận hàng giả và hoàn tồn đúng.
+- [Cổng 3](https://github.com/tienduongmarcom/aphvh/actions/runs/39083095503): đạt từ baseline 0.15.2 đúng digest. Đọc dấu vân: trước/sau nâng khớp `dem/tong/chi_tiet`; schema/cờ sau cài khớp site trắng; trước lỗi/sau tự quay lui khớp `dem/tong/chi_tiet/versions`.
+
+Đặc tả 9 nhóm tại `docs/dac-ta-chenh-lech-giao-nhan.md`; kế hoạch truy nguyên cập nhật tại `docs/ke-hoach-van-hanh-tiep-noi.md`. Những chứng từ xử lý ngoài DN trả/SI giảm, hoặc hóa đơn gộp chưa truy được dòng nguồn phải giữ mở để đối soát, không chọn đại chứng từ hay tạo trả kho giả.
+
+**ĐANG DỞ: đợt 1 chưa đóng. Bước tiếp theo GN10:** thao tác xuất ngay có quyền trong Dialog, một lần gọi tạo+xác nhận nguyên tử, kiểm quyền submit/lượng/tồn/duyệt và retry không ghi sổ hai lần. GN06 còn các đường in/máy in thật; GN11 còn cắt mạng đúng lúc server commit; nhân sự/dữ liệu thật chưa nghiệm thu. Chốt ca/người giữ tiền/nhà máy là đợt sau. Production vẫn **0.15.2**, chưa tăng version/tag/merge/phát hành/triển khai PR #5. Khi phát hành phải kiểm đúng SHA cuối và diễn tập bản sao production hiện tại theo runbook.
 
 ## 17/10/2026 — Đợt 1A đã đạt kiểm thử, chưa phát hành
 

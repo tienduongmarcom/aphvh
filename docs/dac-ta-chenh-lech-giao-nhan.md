@@ -57,6 +57,8 @@ Báo/giao/chốt/mở lại không tạo GL/SLE/SI/PLE và không giảm công n
 - DN đang giao có vấn đề, chưa có bản ký: hủy khi SI còn hiệu lực bị chặn và dấu hồ sơ rollback; sau khi hủy SI chuẩn, trưởng hủy DN, tồn được hoàn đúng, lưu kết thúc theo hủy mà không có dấu nhận hàng/đối chiếu giả.
 - Kiểm native Dialog và lối Workspace trên image thật. 5 ca HTTP và 1 ca Desk mới của b014; kỳ vọng b014 31 PASS gồm restore, tổng 222. Chỉ kết luận sau đọc run/artifact trên đúng SHA; không dùng kết quả 1A để nghiệm thu GN09.
 
+Kết quả ngày 18/10/2026 trên mã `9c45e7492e55797c48483d19004e52aecf6614ca`: 401 ca cục bộ đạt, UAT222 PASS/0 FAIL (b01431 gồm restore), cả Cổng2/2b/UAT/3 đạt. Đã đọc artifact, xem Dialog và so dấu vân sau nâng/schema site trắng/tự quay lui; các phần đối chiếu đều khớp. Link run ở đầu tài liệu bàn giao. Đây là kiểm trên site thử với dữ liệu giả, chưa nghiệm thu người thật/dữ liệu/máy in/diễn tập VM cho ứng viên mới.
+
 ## 9. Triển khai và khôi phục
 
 Dùng cờ `kh_aph_trung_tam_ban` hiện có, mặc định tắt; hook return sớm khi tắt, UI ẩn trường/nút. Schema qua `trung_tam_ban.schema` trong bộ cài production/UAT rõ ràng, không after_migrate. Không đổi flag inventory, phiên bản hoặc manifest production trong lượt phát triển. Không backfill/đóng chênh lệch từ ghi chú lịch sử.
