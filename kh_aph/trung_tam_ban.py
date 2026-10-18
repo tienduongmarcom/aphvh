@@ -32,11 +32,12 @@ def _fields():
     from kh_aph.ban_quay import _duyet_fields
     from kh_aph.ho_so_giao_nhan import fields as ho_so_fields
     from kh_aph.delivery_info import fields as delivery_fields
+    from kh_aph.delivery_issue import fields as issue_fields
     return {
         DT_CHUNG: _duyet_fields("customer"),
         "Delivery Note": [
             {"fieldname": F_LAN_IN, "label": "Số lần in lại", "fieldtype": "Int", "insert_after": "kh_aph_delivery_at",
-             "read_only": 1, "no_copy": 1, "allow_on_submit": 1}] + ho_so_fields() + delivery_fields(),
+             "read_only": 1, "no_copy": 1, "allow_on_submit": 1}] + ho_so_fields() + delivery_fields() + issue_fields(),
     }
 
 
@@ -66,6 +67,8 @@ def _workspace():
          "kh_aph_delivery_state": "Khách đã nhận", "kh_aph_ban_ky": ["is", "not set"]}),
         ("Bản ký chờ đối chiếu", "DocType", "Delivery Note", {"docstatus": 1, "is_return": 0,
          "kh_aph_ban_ky": ["is", "set"], "kh_aph_doi_chieu_boi": ["is", "not set"]}),
+        ("Chênh lệch giao nhận cần xử lý", "DocType", "Delivery Note", {"docstatus": 1, "is_return": 0,
+         "kh_aph_chenh_lech_state": ["in", ["Cần xử lý", "Đang xử lý"]]}),
         ("Hóa đơn còn nợ", "DocType", "Sales Invoice", {"docstatus": 1, "outstanding_amount": [">", 0]}),
         ("Hóa đơn quá hạn", "DocType", "Sales Invoice", {"docstatus": 1, "status": "Overdue"}),
         ("Thu tiền", "DocType", "Payment Entry", {"docstatus": 0, "payment_type": "Receive"}),

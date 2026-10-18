@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — ĐANG DỞ: GN09 xử lý chênh lệch giao nhận
+
+Tiếp tục PR #5 trên nhánh `feat/thong-tin-giao-nhan-20261017`, từ `602b73e` (mã nghiệp vụ 1A đã kiểm `5155ca4`). Production vẫn 0.15.2, không đổi tag/image/VM. Đã đọc lại AGENTS trên origin và các quyết định/kiến trúc/bàn giao/runbook.
+
+Đã viết hồ sơ trên DN nguồn: báo chênh lệch, giao người và hạn, chốt kết quả, mở lại có lý do; readonly và server guard, không DocType Nhiệm vụ/sổ mới. Kế toán trưởng (Accounts Manager hoặc Administrator) xử lý ngoại lệ, quyền read/write và scope DN vẫn kiểm riêng. Bằng chứng chốt: đối chiếu không ghi sổ hoặc liên kết phiếu trả/hóa đơn giảm đã submit đúng nguồn/company/customer. Đổi bản ký/ghi chú tự mở lại, giữ lịch sử; chặn hủy chứng từ đang làm căn cứ. Tái dùng cờ Trung tâm Bán hàng và bộ cài rõ ràng.
+
+Cục bộ 293 kh_aph + 107 lab9x = 400 ca đạt; đang bổ sung/kiểm HTTP và Dialog trên ERPNext thật. **Chưa xác nhận CI của GN09**. b014 mong 30 PASS gồm restore (thêm 4 ca HTTP + 1 ca Desk), tổng UAT dự kiến 221. Bước tiếp: đọc CI trên đúng SHA, sửa nguyên nhân nếu lỗi; kiểm ảnh Dialog, nâng cấp/schema/quay lui. Đặc tả 9 nhóm: `docs/dac-ta-chenh-lech-giao-nhan.md`. GN10 xuất ngay, in máy thật và cắt mạng tại commit vẫn còn mở; chốt ca/tiền/nhà máy là các đợt sau.
+
 ## 17/10/2026 — Đợt 1A đã đạt kiểm thử, chưa phát hành
 
 PR [#5](https://github.com/tienduongmarcom/aphvh/pull/5), nhánh `feat/thong-tin-giao-nhan-20261017`, nền `0c1e104` của nhánh bàn giao. Mã nghiệp vụ đã kiểm: **`5155ca48f4a2039d164de419459fcde92a1bfdbb`**. Commit cập nhật hồ sơ sau mốc này chỉ thay tài liệu, không phải SHA đã chạy CI.

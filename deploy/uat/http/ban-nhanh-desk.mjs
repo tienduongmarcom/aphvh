@@ -29,7 +29,20 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'ho-so') {
+    if (mode === 'chenh-lech') {
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "Delivery Note" && cur_frm.doc.kh_aph_chenh_lech_state === "Đang xử lý"');
+        await until('!!cur_frm.custom_buttons["Chốt xử lý chênh lệch"]');
+        await evaluate('cur_frm.custom_buttons["Chốt xử lý chênh lệch"].trigger("click");true');
+        await until('!!window.cur_dialog && !!cur_dialog.fields_dict.cach_xu_ly && cur_dialog.$wrapper.is(":visible")');
+        await evaluate('cur_dialog.set_value("cach_xu_ly", "Phiếu trả hàng");true');
+        const view = await evaluate('({state:cur_frm.doc.kh_aph_chenh_lech_state,assignee:cur_frm.doc.kh_aph_chenh_lech_phu_trach,title:cur_dialog.title,required:cur_dialog.fields_dict.ket_qua.df.reqd,returnVisible:cur_dialog.fields_dict.phieu_tra.$wrapper.is(":visible"),options:cur_dialog.fields_dict.cach_xu_ly.df.options})');
+        if(!view.assignee || !view.required || !view.returnVisible || !view.options.includes('Hóa đơn giảm'))throw Error('Sai Dialog chênh lệch: '+JSON.stringify(view));
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('chenh-lech-giao-nhan.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_CHENH_LECH',status:'PASS',detail:view}));
+    } else if (mode === 'ho-so') {
         await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && cur_frm.doctype === "Delivery Note" && cur_frm.doc.docstatus === 1');
         await until('!!cur_frm.custom_buttons["Đối chiếu bản ký"]');
