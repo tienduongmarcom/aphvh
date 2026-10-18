@@ -40,6 +40,9 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit):
         assert dn["kh_aph_delivery_state"] == expected and dn["kh_aph_nguoi_thuc_giao"] == "Kho UAT"
         assert dn["kh_aph_ban_giao_boi"] == f["ktt"] and dn["kh_aph_ban_giao_luc"]
         state = counts()
+        printed = rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": dn["name"]}, ktt)["html"]
+        assert "ĐÃ XÁC NHẬN XUẤT - BẢN SAO" in printed and dn["name"] in printed and "Kho UAT" in printed
+        assert counts() == state and get("Delivery Note", dn["name"], ktt)["modified"] == dn["modified"]
         again = dispatch(p)
         assert again["reused"] and again["delivery_notes"] == made["delivery_notes"] and counts() == state
         denied(lambda: dispatch({**p, "dispatcher": "Kho khác"}))
@@ -68,8 +71,10 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit):
     made = dispatch(batch)
     assert len(made["delivery_notes"]) == 2 and {n["company"] for n in made["delivery_notes"]} == {f["aph"],f["vh"]}
     state = counts(); assert dispatch(batch)["reused"] and counts() == state
+    vh_note = next(n["name"] for n in made["delivery_notes"] if n["company"] == f["vh"])
     for user in ("scope_co", "scope_wh"):
         denied(lambda: dispatch(batch, phien(f[user])), ("PermissionError",))
+        denied(lambda: rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": vh_note}, phien(f[user])), ("PermissionError",))
     assert counts() == state
     emit("HTTP_014_XUAT_NGAY_NHIEU_NGUON", "PASS", {"later_stock_failure_atomic":True,"retry_failed_batch":True,
         "two_companies":True,"scope_retry_denied":True})

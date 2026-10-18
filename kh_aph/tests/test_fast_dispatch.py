@@ -61,7 +61,7 @@ class FastDispatch(unittest.TestCase):
             note = Record(name="DN-1", company="APH", posting_date="2026-10-18", customer="KH-1",
                           customer_name="Khách", currency="VND", docstatus=0, owner="ktbh", items=[row],
                           check_permission=Mock())
-            self.f.get_doc = Mock(return_value=note)
+            self.f.get_doc = Mock(side_effect=lambda dt, name: note if dt == "Delivery Note" else Record(check_permission=Mock()))
             with self.subTest(net_rate=net_rate), patch.dict(sys.modules, {"kh_aph.print_utils": helpers}):
                 printed = self.m.print_batch("ROOT", "TOKEN")["html"]["notes"][0]
                 self.assertEqual(printed["items"][0]["rate"], "30.000" if net_rate else "0")
@@ -70,6 +70,67 @@ class FastDispatch(unittest.TestCase):
                 self.assertNotIn("valuation_rate", repr(printed))
                 self.assertNotIn("KHÔNG ĐƯỢC IN GIÁ VỐN", repr(printed))
                 note.check_permission.assert_called_once_with("print")
+        note.items.append(Record(item_code="B", item_name="Hàng khác", warehouse="HN", qty=2, uom="Tấn",
+                                 rate=100, amount=200, net_rate=100, net_amount=200))
+        with patch.dict(sys.modules, {"kh_aph.print_utils": helpers}):
+            printed = self.m.print_batch("ROOT", "TOKEN")["html"]["notes"][0]
+            self.assertEqual(printed["total_qty"], "")  # Không cộng 100 Kg với 2 Tấn thành 102.
+            self.assertEqual(printed["total"], "200")
+
+    def printable_fixture(self):
+        class Record(types.SimpleNamespace):
+            def get(self, key, default=None): return getattr(self, key, default)
+        note = Record(name="DN-EXISTING", company="APH", customer="KH", docstatus=1, is_return=0,
+                      items=[Record(item_code="A", warehouse="HN")], check_permission=Mock())
+        records = {("Delivery Note", note.name): note}
+        for dt, name in (("Company", "APH"), ("Customer", "KH"), ("Item", "A"), ("Warehouse", "HN")):
+            records[(dt, name)] = Record(company="APH", check_permission=Mock())
+        self.f.get_doc = Mock(side_effect=lambda dt, name: records[(dt, name)])
+        self.f.db = Mock()
+        self.f.new_doc = Mock(side_effect=AssertionError("In không được tạo phiếu"))
+        self.m._create = Mock(side_effect=AssertionError("In không được tạo đợt"))
+        self.m._render_notes = Mock(return_value={"html": "A5"})
+        return note, records
+
+    def test_existing_manual_note_print_needs_no_order_or_create(self):
+        note, records = self.printable_fixture()
+        for status in (0, 1):
+            note.docstatus = status
+            self.assertEqual(self.m.print_note(note.name), {"html": "A5"})
+            self.m._render_notes.assert_called_with("", [note])
+        self.assertEqual([c.args[0] for c in note.check_permission.call_args_list], ["read", "print"] * 2)
+        for key in (("Company", "APH"), ("Customer", "KH"), ("Item", "A"), ("Warehouse", "HN")):
+            self.assertEqual(records[key].check_permission.call_args.args, ("read",))
+        self.f.new_doc.assert_not_called()
+        self.m._create.assert_not_called()
+        self.assertEqual(self.f.db.mock_calls, [])
+
+    def test_existing_note_rechecks_each_permission_and_scope(self):
+        for key in (("Delivery Note", "DN-EXISTING"), ("Company", "APH"), ("Customer", "KH"),
+                    ("Item", "A"), ("Warehouse", "HN")):
+            with self.subTest(key=key):
+                note, records = self.printable_fixture()
+                records[key].check_permission.side_effect = PermissionError("Ngoài phạm vi")
+                with self.assertRaises(PermissionError): self.m.print_note(note.name)
+                self.m._render_notes.assert_not_called()
+        note, records = self.printable_fixture()
+        note.check_permission.side_effect = lambda right: (_ for _ in ()).throw(PermissionError("Cấm in")) if right == "print" else None
+        with self.assertRaises(PermissionError): self.m.print_note(note.name)
+        note, records = self.printable_fixture()
+        records[("Warehouse", "HN")].company = "VH"
+        with self.assertRaises(ValueError): self.m.print_note(note.name)
+        self.m._render_notes.assert_not_called()
+
+    def test_existing_note_rejects_cancel_return_empty_and_invalid_name(self):
+        for change in ({"docstatus": 2}, {"is_return": 1}, {"items": []}):
+            note, _ = self.printable_fixture()
+            for key, value in change.items(): setattr(note, key, value)
+            with self.subTest(change=change), self.assertRaises(ValueError): self.m.print_note(note.name)
+            self.m._render_notes.assert_not_called()
+        for name in (None, "", " ", {}, ["DN-1"]):
+            with self.subTest(name=name), self.assertRaises(ValueError): self.m.print_note(name)
+        self.m._guard.side_effect = PermissionError("Cờ tắt hoặc không được xem giá")
+        with self.assertRaises(PermissionError): self.m.print_note("DN-EXISTING")
 
     def test_actual_dispatcher_not_fabricated_or_unbounded(self):
         for value in (None, 12, " ", "a\nb", "a"*141):

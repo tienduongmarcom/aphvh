@@ -1,13 +1,15 @@
 # Nghiệm thu mẫu in — 18/10/2026
 
-Mã ứng viên: `7c2217e8737e96700fa050aac446bb3591a830a8`, PR #5. Production hiện là 0.15.2; chỉ kiểm mẫu mới trên môi trường UAT đã cài ứng viên. Không tạo chứng từ thử trên production. Các dòng dưới **chưa nghiệm thu máy in/người dùng thật**.
+Mã bộ mẫu ban đầu: `7c2217e8737e96700fa050aac446bb3591a830a8`, PR #5, đã phát hành trong production0.15.3. Tính năng bổ sung chỉ kiểm trên UAT có dữ liệu giả. Không tạo chứng từ thử trên production. Các dòng dưới **chưa nghiệm thu máy in/người dùng thật**.
+
+Cập nhật18/10: production đã lên0.15.3 theo log VM; chủ dự án chốt gom nghiệm thu thực tế ở cuối khi đủ dữ liệu. Lối in lại A5 từ DN đang bổ sung trong ứng viên mới, chỉ kiểm tự động/UAT với dữ liệu giả trong giai đoạn phát triển.
 
 Người thực hiện: kế toán bán hàng kiểm phiếu nhanh; kế toán kho kiểm thực giao và hai liên; kế toán tổng hợp kiểm thu/chi; kế toán trưởng kiểm chế độ biểu mẫu và quyền. Ghi tên người kiểm, ngày, máy in, phiên bản và kết quả thực tế cho từng dòng.
 
 | Ca | Đầu vào và thao tác | Kết quả cần đạt | Thực tế |
 |---|---|---|---|
 | IN01 | Đơn chung có phiếu giao nháp APH, in nhanh trên giấy A5 ngang, tỷ lệ 100% | Đủ liên Lưu kho/Giao nhận; tên/mã hàng, kg và bao khi có, giá bán thuần, thành tiền/bằng chữ, năm ô ký đọc được; cột thực xuất trống; có dấu CHỜ XUẤT | Chưa kiểm |
-| IN02 | Phiếu đã xác nhận giao, mở lại bản in nhanh | Lượng thực xuất đúng phiếu; đúng người thực giao và thời điểm; có dấu bản sao; không tạo thêm phiếu hay ghi sổ lần nữa | Chưa có nút mở riêng A5 từ DN đã lưu; chờ bổ sung trước kiểm máy in |
+| IN02 | Phiếu đã xác nhận giao, mở lại bản in nhanh | Lượng thực xuất đúng phiếu; đúng người thực giao và thời điểm; có dấu bản sao; không tạo thêm phiếu hay ghi sổ lần nữa | Ứng viên mới đã bổ sung nút, chờ UAT; kiểm máy in thật để cuối |
 | IN03 | Phiếu nhiều dòng, tên hàng/địa chỉ dài, in A5 ngang | Tự sang trang khi cần, lặp tiêu đề bảng, không mất dòng/cắt chữ hoặc tách khối ký; hai liên vẫn phân biệt được | Chưa kiểm |
 | IN04 | In Phiếu nhập kho và Phiếu xuất kho bán hàng APH/VH trên A4 | APH ghi TT133, VH ghi TT99; mẫu điều chỉnh ghi vận dụng; đủ kho, đối tượng, Nợ/Có, yêu cầu/thực tế, đơn vị tính và ô ký; các phần giá theo quyền/nghiệp vụ hiện hành | Chưa kiểm |
 | IN05 | In Phiếu thu chi tiền mặt của APH/VH | Đúng chiều thu/chi, người nộp/nhận, số tiền, tiền chữ, quyển số, chứng từ kèm và năm vị trí ký; không sai company/quỹ | Chưa kiểm |

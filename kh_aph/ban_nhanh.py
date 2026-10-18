@@ -256,20 +256,45 @@ def _create(shared_order, selections, request_id, delivery=None, dispatcher=None
 @frappe.whitelist()
 def print_batch(shared_order, request_id):
     """In phiếu A5 từ đợt đã lập; giá bán trên chứng từ, không ghi sổ."""
-    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay, kh_aph_mau_info, kh_aph_no_co
-    from lab9x.vn_words import so_tien_bang_chu, so_vn
     _guard()
     doc = _order(shared_order)
     names = frappe.get_all("Delivery Note", {F_ORDER: doc.name, F_BATCH: request_id}, pluck="name", order_by="name")
     if not names:
         frappe.throw("Đợt chưa có phiếu xuất")
-    notes = []
+    documents = []
     for name in names:
         dn = frappe.get_doc("Delivery Note", name)
-        _note_scope(dn)
-        dn.check_permission("print")
-        if dn.docstatus == 2:
-            frappe.throw("Đợt có phiếu đã hủy; không in làm căn cứ xuất hàng")
+        _check_print_note(dn)
+        documents.append(dn)
+    return _render_notes(doc.name, documents)
+
+
+@frappe.whitelist()
+def print_note(delivery_note):
+    """Mở A5 từ đúng DN đã lưu, kể cả phiếu lập chuẩn; không tạo/sửa chứng từ."""
+    _guard()
+    if not isinstance(delivery_note, str) or not delivery_note.strip():
+        frappe.throw("Chọn mã phiếu giao hàng đã lưu")
+    dn = frappe.get_doc("Delivery Note", delivery_note)
+    _check_print_note(dn)
+    return _render_notes(dn.get(F_ORDER) or "", [dn])
+
+
+def _check_print_note(dn):
+    _note_scope(dn)
+    dn.check_permission("print")
+    frappe.get_doc("Customer", dn.customer).check_permission("read")
+    if cint(dn.docstatus) not in (0, 1) or cint(dn.get("is_return")) or not dn.items:
+        frappe.throw("Chỉ in A5 phiếu giao nháp hoặc đã xuất; không dùng phiếu hủy/trả hàng")
+
+
+def _render_notes(shared_order, documents):
+    from kh_aph.print_utils import kh_aph_cong_ty, kh_aph_ngay, kh_aph_mau_info, kh_aph_no_co
+    from kh_aph.delivery_info_rules import print_snapshot
+    from lab9x.vn_words import so_tien_bang_chu, so_vn
+    notes = []
+    for dn in documents:
+        info = print_snapshot(dn)
         company = kh_aph_cong_ty(dn.company)
         # Chỉ giá bán thuần trên DN; không truy vấn hoặc đưa giá vốn vào ngữ cảnh in.
         total = sum(flt(r.net_amount if r.get("net_amount") is not None else r.amount) for r in dn.items)
@@ -277,15 +302,15 @@ def print_batch(shared_order, request_id):
                       "posting_date": kh_aph_ngay(dn.posting_date), "customer": dn.customer,
                       "currency": dn.currency, "total": so_vn(total, 2),
                       "total_words": so_tien_bang_chu(total) if dn.currency == "VND" else "",
-                      "total_qty": so_vn(sum(flt(r.qty) for r in dn.items)),
+                      "total_qty": so_vn(sum(flt(r.qty) for r in dn.items)) if len({r.uom for r in dn.items}) == 1 else "",
                       "warehouses": ", ".join(dict.fromkeys(r.warehouse for r in dn.items)),
                       "print_form": kh_aph_mau_info(dn.company, "xuat", True), "accounts": kh_aph_no_co(dn),
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
-                      "delivery_method": dn.get(delivery_info.METHOD), "recipient": dn.get(delivery_info.RECIPIENT),
-                      "phone": dn.get(delivery_info.PHONE), "dispatcher": dn.get(delivery_info.DISPATCHER),
-                      "driver_name": dn.get("driver_name"), "vehicle_no": dn.get("vehicle_no"),
+                      "delivery_method": info["method"], "recipient": info["recipient"],
+                      "phone": info["phone"], "dispatcher": info["dispatcher"],
+                      "driver_name": info["driver"], "vehicle_no": info["vehicle"],
                       "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),
-                      "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": dn.get(delivery_info.HANDED_AT),
+                      "created_by": frappe.utils.get_fullname(dn.owner), "handoff_time": info["time"],
                       "items": [{"item_code": r.item_code, "item_name": r.item_name, "warehouse": r.warehouse,
                                  "qty": so_vn(r.qty), "uom": r.uom,
                                  "bags": so_vn(r.get("kh_aph_bags")) if r.get("kh_aph_bags") else "",
@@ -294,4 +319,4 @@ def print_batch(shared_order, request_id):
                                  "amount": so_vn(r.net_amount if r.get("net_amount") is not None else r.amount, 2)}
                                 for r in dn.items]})
     return {"html": frappe.render_template("templates/ban_nhanh/phieu_dot_xuat.html",
-                                           {"shared_order": doc.name, "notes": notes})}
+                                           {"shared_order": shared_order, "notes": notes})}

@@ -57,6 +57,23 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'in-lai-a5') {
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "Delivery Note"');
+        await until('Object.keys(cur_frm.custom_buttons).some(k=>k.includes("Phiếu xuất kho A5"))');
+        const counts=()=>evaluate(`Promise.all(['Delivery Note','Sales Invoice','GL Entry','Stock Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))`);
+        const before=await counts();
+        await evaluate(`window.__a5={html:'',printed:0,closed:false};window.open=()=>({opener:null,document:{open(){},write(text){__a5.html=text},close(){}},focus(){},print(){__a5.printed++},close(){__a5.closed=true}});true`);
+        const click='Object.entries(cur_frm.custom_buttons).find(([k])=>k.includes("Phiếu xuất kho A5"))[1].trigger("click");true';
+        await evaluate(click);await until('__a5.printed === 1');
+        await evaluate(click);await until('__a5.printed === 2');
+        const view=await evaluate('({html:__a5.html,closed:__a5.closed,name:cur_frm.doc.name,dirty:cur_frm.is_dirty()})');
+        if(view.closed||view.dirty||!view.html.includes(source)||!view.html.includes('size: A5 landscape')||!view.html.includes('Liên: Lưu kho')||!view.html.includes('Liên: Giao nhận'))throw Error('Sai bản in A5: '+JSON.stringify(view));
+        if(JSON.stringify(before)!==JSON.stringify(await counts()))throw Error('In từ DN đã tạo chứng từ hoặc sổ');
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('in-lai-a5.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_IN_LAI_A5',status:'PASS',detail:{button:true,printed_twice:true,two_copies:true,document_clean:true,ledger_unchanged:true}}));
     } else if (mode === 'chenh-lech') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(source)});

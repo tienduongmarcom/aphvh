@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Gom nghiệm thu thật ở cuối; bổ sung lối in lại A5
+
+Chủ dự án chốt chưa đủ hàng hóa/tồn kho nên nghiệm thu thực tế gom cuối, không chặn phát triển đợt2–4; từng phần vẫn kiểm UAT bằng dữ liệu giả. Đã cập nhật kế hoạch và IN02. Đợt5 vẫn chờ chốt nghiệp vụ riêng.
+
+Ứng viên `feat/in-lai-a5-20261018` thêm nút In → Phiếu xuất kho A5 (2 liên) trên DN đã lưu. `ban_nhanh.print_note` dùng renderer chung với print_batch, kiểm read/print/scope/guard, hỗ trợ phiếu lập chuẩn và snapshot cũ; chặn phiếu hủy/trả. Không tạo/sửa phiếu, không ghi sổ, không cần create/submit. Giá bán thuần/snapshot đã lưu, tổng lượng bỏ trống nếu khác ĐVT. Không schema/cờ mới hoặc sửa core. Đặc tả9 nhóm: `docs/dac-ta-in-lai-a5.md`.
+
+Đã kiểm cục bộ305 kh_aph +108 lab9x, JS/Python cú pháp và diff. Thêm HTTP/Chrome bấm nút hai lần, chặn scope/giá, phiếu lập chuẩn/đã xuất và không tăng sổ; kỳ vọng b01438, chưa chạy CI. **ĐANG DỞ:** kiểm bốn cổng trên đúng SHA, đọc artifact/PDF; sau đạt mới ghi hoàn tất kỹ thuật và chuyển đặc tả đợt2. Nghiệm thu thật để cuối. Production giữ0.15.3, chưa tăng version/tag/triển khai.
+
 ## 18/10/2026 — Đối chiếu lại kế hoạch 5 đợt theo production0.15.3
 
 Chủ dự án gửi bảng việc còn lại. Đã cập nhật `docs/ke-hoach-van-hanh-tiep-noi.md` từ mốc0.15.2 sang0.15.3: đồng bộ dữ liệu giao nhận sang mẫu chuẩn/in lại chuẩn/tổng hợp đã nằm trong mã phát hành, không coi là chưa làm. Giữ nền nghiệp vụ đợt2–4 hiện có; phần mở rộng/màn hình thống nhất còn chưa hoàn tất. Sheet Dũng là bước đệm cho đợt3 theo chủ dự án; đợt5 chờ chốt nghiệp vụ.

@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Ứng viên in lại A5, nghiệm thu thật gom cuối
+
+Chủ dự án cho phép gom nghiệm thu dữ liệu/người dùng/máy in thật đến cuối kế hoạch; vẫn kiểm UAT giả từng phần trước phát hành. Ứng viên `feat/in-lai-a5-20261018` thêm nút A5 từ DN đã lưu và API chỉ đọc, dùng renderer chung. Cục bộ305+108 ca đạt, cú pháp/diff đạt; HTTP/Chrome và bốn cổng trên mã mới còn chờ. Production vẫn0.15.3/digest đã xác nhận, chưa có tag/image hoặc triển khai mới. Bước tiếp kiểm CI rồi chuyển đợt2 khi phần kỹ thuật đạt, không chờ dữ liệu thật.
+
 ## 18/10/2026 — Kế hoạch 5 đợt đã đối chiếu lại, không đổi production
 
 Production vẫn0.15.3/digest đã xác nhận ở mục dưới. Kế hoạch tiếp nối đã cập nhật đúng phần đồng bộ dữ liệu mẫu chuẩn/in lại/tổng hợp có trong0.15.3. GN06 còn lối mở lại A5 từ phiếu đã có và nghiệm thu thực tế; IN02 ghi rõ thiếu nút, chưa tính đạt. Đợt2–4 còn phần mở rộng trên nghiệp vụ nền; đợt5 chờ chốt riêng. Lượt này chỉ cập nhật hồ sơ, không đổi mã/cờ/version hoặc triển khai.

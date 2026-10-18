@@ -12,9 +12,11 @@ Quy tắc bắt buộc đọc từ `AGENTS.md`, `docs/quyet-dinh-nghiep-vu.md`, 
 
 ## Thứ tự và trạng thái thật
 
+**Chốt với chủ dự án ngày18/10/2026:** nghiệm thu thực tế với người dùng, hàng hóa/tồn kho/số dư thật và máy in được gom ở cuối khi dữ liệu đủ. Từng phần vẫn phải kiểm kỹ thuật/UAT bằng dữ liệu giả, giữ quyền/chống trùng/so sổ và kiểm nâng/quay lui. Ghi riêng “đã kiểm UAT, chờ nghiệm thu thực tế”; không chặn phát triển đợt2–4 vì dữ liệu thật chưa sẵn sàng. Đợt5 vẫn phải chốt nghiệp vụ riêng trước code.
+
 | Đợt | Kết quả cần có | Mốc 0.15.3 | Điều kiện đóng đợt |
 |---|---|---|---|
-| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Đã triển khai xuất nhanh/xuất ngay, chênh lệch và đồng bộ dữ liệu các đường in; còn lối in lại A5 từ phiếu có sẵn và nghiệm thu thực tế | Bổ sung lối mở lại A5 không lập phiếu mới; kiểm người dùng/máy in theo các mục GN và giữ hồi quy |
+| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Production0.15.3 đã có luồng chính; ứng viên đang bổ sung lối in lại A5 từ phiếu có sẵn | Kiểm kỹ thuật/UAT lối A5 rồi chuyển đợt2; nghiệm thu người dùng/máy in gom cuối |
 | 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ và quỹ nhà máy; chưa có cơ chế chung toàn cửa hàng | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
 | 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất; sheet của Dũng là bước đệm theo chủ dự án | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
 | 4 — Tài chính | Đối chiếu đầy đủ, chốt tháng/báo cáo điều hành | Có nhiều công cụ riêng; chưa chứng minh toàn chuỗi | Đối chiếu dữ liệu đại diện và xác định tạm tính/hoàn tất |
@@ -114,7 +116,7 @@ GN10/GN11 đã kiểm lại trong release0.15.3: xuất ngay tách ý định v�
 
 ### Việc còn lại trước khi đóng đợt 1
 
-1. **Lối in lại A5 từ phiếu đã có:** hiện mẫu nhanh mở trong Dialog lập đợt; nút này tạo DN nháp hoặc xuất ngay. Chưa có nút mở riêng mẫu A5 từ DN đã lưu. `trung_tam_ban.in_lai` đang render mẫu chuẩn, không thay cho lối A5 nhanh. Cần bổ sung thao tác chỉ đọc theo quyền, không tạo lại phiếu hoặc ghi sổ; không hướng dẫn lập đợt mới chỉ để thử máy in.
+1. **Lối in lại A5 từ phiếu đã có:** production0.15.3 chỉ mở mẫu nhanh từ Dialog lập đợt. Ứng viên `feat/in-lai-a5-20261018` bổ sung nút “Phiếu xuất kho A5 (2 liên)” trên DN và API `ban_nhanh.print_note`; dùng chung renderer, không tạo/sửa phiếu hoặc ghi sổ. Còn kiểm UAT trên đúng SHA trước ghi hoàn tất kỹ thuật. `trung_tam_ban.in_lai` vẫn là lối in chuẩn riêng.
 2. **Nghiệm thu người dùng/máy in/dữ liệu đại diện:** theo `docs/nghiem-thu-mau-in-20261018.md`, ghi expected/actual. IN02 còn thiếu lối mở lại A5 nên chưa thể nghiệm thu đầy đủ từ DN. PDF CI và log triển khai không thay kết quả này. Tải thực tế còn chưa đo; quy chế biểu mẫu vẫn là dự thảo.
 
-Sau khi đóng các mục trên mới kết luận đợt1 hoàn tất. Đợt2 bắt đầu bằng đặc tả9 nhóm cho người giữ tiền/chốt ca/bàn giao toàn cửa hàng, tận dụng thu/cọc/thu hộ/quỹ nhà máy hiện có. Đợt3 còn màn nhập lượng một lần; đợt4 còn đối chiếu và chốt chuỗi, không viết lại các nghiệp vụ nền. Đợt5 phải chốt nghiệp vụ riêng trước code.
+Sau khi phần kỹ thuật/UAT đạt, có thể chuyển đợt2; đợt1 giữ trạng thái chờ nghiệm thu thực tế đến cuối theo quyết định mới. Đợt2 bắt đầu bằng đặc tả9 nhóm cho người giữ tiền/chốt ca/bàn giao toàn cửa hàng, tận dụng thu/cọc/thu hộ/quỹ nhà máy hiện có. Đợt3 còn màn nhập lượng một lần; đợt4 còn đối chiếu và chốt chuỗi, không viết lại các nghiệp vụ nền. Đợt5 phải chốt nghiệp vụ riêng trước code.
