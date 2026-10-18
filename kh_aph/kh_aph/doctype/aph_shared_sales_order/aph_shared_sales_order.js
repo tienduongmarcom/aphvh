@@ -74,6 +74,7 @@ async function kh_aph_lap_dot_xuat(frm) {
                     args: {shared_order: frm.doc.name, request_id}});
                 preview.document.open(); preview.document.write(print.message.html); preview.document.close();
                 preview.focus(); preview.print(); dialog.hide();
+                if (dispatch) await frm.reload_doc();
                 frappe.msgprint({title: dispatch ? "Đã xác nhận xuất hàng" : "Đã lập phiếu chờ xuất", indicator: "green",
                     message: names.map(n => frappe.utils.get_form_link("Delivery Note", n, true)).join("<br>") +
                         (dispatch ? "<br>Kho và công nợ đã ghi nhận. Mở lại bản in không xuất hàng lần nữa." :
