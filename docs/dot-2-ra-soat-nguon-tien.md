@@ -1,6 +1,8 @@
 # Đợt 2 — rà nguồn trước khi xây người giữ tiền, chốt ca và bàn giao
 
 Ngày 18/10/2026. Đây là bản rà code và ràng buộc thiết kế, **chưa phải đặc tả đủ để code toàn đợt**, chưa áp schema hoặc thay đổi site. Nguồn nghiệp vụ: `ke-hoach-van-hanh-tiep-noi.md` T01–T07 và các quyết định đã chốt. Nghiệm thu thực tế gom cuối; kiểm UAT dữ liệu giả vẫn bắt buộc từng phần.
+Cập nhật triển khai2A: `dac-ta-nguoi-giu-tien-2a.md` và PR #10 đã có mã metadata/báo cáo nguồn, đang kiểm CI; các nhận xét hiện trạng dưới đây là baseline trước2A. Thiết kế tiếp nối chốt ca/bàn giao ở `thiet-ke-chot-ca-ban-giao-2b.md`, chưa có mã2B. Không suy rằng toàn đợt2 đã xong.
+
 
 ## 1. Mục tiêu và phạm vi
 

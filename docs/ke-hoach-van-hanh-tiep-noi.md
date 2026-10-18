@@ -17,7 +17,7 @@ Quy tắc bắt buộc đọc từ `AGENTS.md`, `docs/quyet-dinh-nghiep-vu.md`, 
 | Đợt | Kết quả cần có | Mốc 0.15.3 | Điều kiện đóng đợt |
 |---|---|---|---|
 | 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Production0.15.3 đã có luồng chính; PR #9 đã bổ sung lối in lại A5, đủ bốn cổng trên1e89ace; chưa phát hành | Kỹ thuật/UAT A5 đạt; chuyển đặc tả đợt2, nghiệm thu người dùng/máy in gom cuối |
-| 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ và quỹ nhà máy; chưa có cơ chế chung toàn cửa hàng | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
+| 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ/quỹ nhà máy; PR #10 có metadata người giữ và báo cáo rà nguồn2A, đang kiểm CI; chốt ca/bàn giao chung2B mới có thiết kế | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
 | 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất; sheet của Dũng là bước đệm theo chủ dự án | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
 | 4 — Tài chính | Đối chiếu đầy đủ, chốt tháng/báo cáo điều hành | Có nhiều công cụ riêng; chưa chứng minh toàn chuỗi | Đối chiếu dữ liệu đại diện và xác định tạm tính/hoàn tất |
 | 5 — Hóa đơn một phần | Yêu cầu theo dòng/lượng/lần giao, hàng đợi MISA | Chưa chốt đặc tả riêng | Chốt nghiệp vụ trước code, không gộp vào bản vá giao nhận |
@@ -122,3 +122,5 @@ GN10/GN11 đã kiểm lại trong release0.15.3: xuất ngay tách ý định v�
 Sau khi phần kỹ thuật/UAT đạt, có thể chuyển đợt2; đợt1 giữ trạng thái chờ nghiệm thu thực tế đến cuối theo quyết định mới. Đợt2 bắt đầu bằng đặc tả9 nhóm cho người giữ tiền/chốt ca/bàn giao toàn cửa hàng, tận dụng thu/cọc/thu hộ/quỹ nhà máy hiện có. Đợt3 còn màn nhập lượng một lần; đợt4 còn đối chiếu và chốt chuỗi, không viết lại các nghiệp vụ nền. Đợt5 phải chốt nghiệp vụ riêng trước code.
 
 Rà nguồn đợt2: `docs/dot-2-ra-soat-nguon-tien.md`. Chưa có schema/code chốt ca mới; phải hoàn thiện field/nguồn tiền/vòng đời/quyền trước triển khai.
+
+Đợt2A: đặc tả9 nhóm `docs/dac-ta-nguoi-giu-tien-2a.md`, ứng viên PR #10; chưa phát hành. Thiết kế2B `docs/thiet-ke-chot-ca-ban-giao-2b.md` chưa có code/schema và chưa PASS ca2B. Không gọi báo cáo phát sinh2A là số tiền đang giữ.

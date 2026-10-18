@@ -77,6 +77,9 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
     assert counts() == before
     emit("HTTP_2A_REPORT_PERMISSION", "PASS", {"no_cost_role_denied": True, "company_scope": True, "native_report": True, "ledger_unchanged": True})
 
+    from b014_cash_extra import chay as extra_cases
+    extra_cases(rpc, get, insert, submit, lst, ktt, f, emit)
+
     if os.environ.get("GITHUB_ACTIONS"):
         proc = subprocess.run(["node", str(Path(__file__).with_name("ban-nhanh-desk.mjs")), cash_note["name"], "nguoi-giu-tien"],
             text=True, capture_output=True, timeout=150)
