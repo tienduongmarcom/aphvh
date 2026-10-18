@@ -11,3 +11,6 @@ class APHBangiaotien(Document):
 
     def before_update_after_submit(self):
         H.protect(self)
+
+    def on_trash(self):
+        H.prevent_delete(self)

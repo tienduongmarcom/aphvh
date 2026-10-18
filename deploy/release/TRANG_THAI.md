@@ -4,7 +4,7 @@
 
 Nhánh `feat/xu-ly-lech-hoan-tien-20261019`, base PR #12 (6431ec0). Đã viết hồ sơ đối chiếu native + dòng căn cứ (xác minh mới/ca khớp từng phía Cash/tệp riêng tư); chốt/mở lại không đổi GL/số đếm cũ. Giữ nguyên chênh lệch lịch sử, gỡ chặn qua hồ sơ có căn cứ; ca lệch cũ chưa có state vẫn được coi đang mở. Hoàn toàn bộ bằng phiếu ngược chiều hai người, cùng Cash không sổ/khác Cash hoặc Bank về Cash một JE mới; không hủy JE gốc. Bank chỉ làm nguồn hoàn đúng gốc, kiểm số dư/giữ chỗ; tiền đã dùng tiếp không hoàn vượt nguồn. Yêu cầu tạo hoàn có mã chống trùng, hủy trước nhận giữ lịch sử và cho lập lại bằng mã mới.
 
-Cục bộ349 kh_aph +108 lab9x PASS; Python/JS/diff đạt. Đã thêm10 ca HTTP/Desk kỳ vọng, b01468 (tổng259 HTTP/Desk); chưa có CI/PASS mã mới. Bước tiếp: push/mở PR draft sau #12, chạy4 cổng đúng SHA, đọc artifact và sửa FAIL; không dùng PASS249 của #12 thay thế. Đặc tả9 nhóm `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`.
+Cục bộ351 kh_aph +108 lab9x PASS; Python/JS/diff đạt. Đã thêm10 ca HTTP/Desk kỳ vọng, b01468 (tổng259 HTTP/Desk); chưa có CI/PASS mã mới. Bước tiếp: push/mở PR draft sau #12, chạy4 cổng đúng SHA, đọc artifact và sửa FAIL; không dùng PASS249 của #12 thay thế. Đặc tả9 nhóm `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`.
 
 Cờ24/phiên bản không đổi; không tag/merge/deploy, production0.15.3. Adapter quỹ nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân không GL còn thiếu; không gọi toàn bộ2B hoàn tất. Nghiệm thu thực tế gom cuối theo anh Tiến.
 

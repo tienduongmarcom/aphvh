@@ -124,6 +124,11 @@ def prevent_change(doc):
     frappe.throw('Giữ nguyên kết quả đã xác nhận; hủy hồ sơ đối chiếu để mở lại vụ lệch')
 
 
+def prevent_delete(doc):
+    if doc.docstatus != 0:
+        frappe.throw('Giữ lịch sử đối chiếu đã xác nhận hoặc hủy; không xóa hồ sơ')
+
+
 def _locked(name):
     guard()
     preliminary = frappe.get_doc(DT, name)

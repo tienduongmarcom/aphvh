@@ -101,3 +101,7 @@ class Handover(unittest.TestCase):
         old=Row(reversal_of='H',reversal_request='T')
         doc=Row(reversal_of='',reversal_request='',get_doc_before_save=lambda:old,is_new=lambda:False)
         with self.assertRaisesRegex(ValueError,'Không thêm, gỡ'):self.m._reverse_origin(doc)
+    def test_sent_or_cancelled_history_cannot_be_deleted(self):
+        self.m.prevent_delete(Row(docstatus=0))
+        for status in (1,2):
+            with self.assertRaisesRegex(ValueError,'không xóa hồ sơ'):self.m.prevent_delete(Row(docstatus=status))

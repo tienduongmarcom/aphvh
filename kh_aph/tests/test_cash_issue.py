@@ -67,3 +67,7 @@ class Issue(unittest.TestCase):
         self.assertFalse(self.m.has_permission(self.doc));self.assertEqual(self.m.query_conditions(),'1=0')
     def test_confirmed_result_is_immutable(self):
         with self.assertRaisesRegex(ValueError,'Giữ nguyên kết quả'):self.m.prevent_change(self.doc)
+    def test_cancelled_history_cannot_be_deleted(self):
+        self.m.prevent_delete(Doc(docstatus=0))
+        for status in (1,2):
+            with self.assertRaisesRegex(ValueError,'không xóa hồ sơ'):self.m.prevent_delete(Doc(docstatus=status))

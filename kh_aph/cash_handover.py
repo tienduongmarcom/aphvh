@@ -192,6 +192,11 @@ def protect(doc):
         frappe.throw("Dùng thao tác nhận bàn giao; không sửa hồ sơ đã gửi")
 
 
+def prevent_delete(doc):
+    if enabled() and doc.docstatus != 0:
+        frappe.throw("Giữ lịch sử bàn giao đã gửi hoặc hủy; không xóa hồ sơ")
+
+
 @contextmanager
 def _updating(doc):
     old = frappe.flags.get("kh_aph_handover_update")

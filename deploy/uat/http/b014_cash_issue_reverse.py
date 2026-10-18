@@ -65,6 +65,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     denied(lambda:rpc('frappe.client.set_value',{'doctype':H,'name':source['name'],'fieldname':'difference','value':0},ktt))
     emit('HTTP_2B_ISSUE_RESOLVE_PROOF','PASS',{'new_verification_and_clean_each_holder':True,'old_values_preserved':True,'no_gl_ple':True,'role_guard':True})
     rpc('kh_aph.cash_issue.reopen',{'name':resolved['name']},ktt)
+    denied(lambda:rpc('frappe.client.delete',{'doctype':R,'name':resolved['name']}))
     assert wallet(acc)['disputed'] and wallet(acc,recipient)['available_amount']==0 and counts()==before
     denied(lambda:rpc('frappe.client.delete',{'doctype':'File','name':file['name']},ktt))
     assert ktt(file['file_url'])=={'uat':'doi-chieu-lech'}
@@ -106,6 +107,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     args={'name':base['name'],'request_id':uuid.uuid4().hex,'reason':'UAT hủy đề nghị hoàn'}
     cancelled=call('create_reverse',args,recipient)
     call('cancel',{'name':cancelled['name']},recipient)
+    denied(lambda:rpc('frappe.client.delete',{'doctype':H,'name':cancelled['name']}))
     assert call('create_reverse',args,recipient)['status']=='Đã hủy'
     assert not get(H,base['name'],ktt).get('reversal_doc') and wallet(temporary,recipient)['reserved_amount']==0
     replacement=call('create_reverse',{**args,'request_id':uuid.uuid4().hex},recipient)

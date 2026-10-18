@@ -17,3 +17,6 @@ class APHDoichieulechtien(Document):
 
     def before_update_after_submit(self):
         I.prevent_change(self)
+
+    def on_trash(self):
+        I.prevent_delete(self)
