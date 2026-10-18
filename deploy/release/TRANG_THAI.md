@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Tag0.15.3 đã đẩy đúng mã, đang phát hành image
+
+Tag remote `v0.15.3` = `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đang chạy. Chưa có image/digest0.15.3 đạt phát hành; chưa chạy diễn tập hoặc nâng VM.
+
+PR #4 và #5 đã merge main, main ở `8a0ea61e5408e1ef1feff8d2f2dde0aed66d9f2d`, chứa mã đóng gói. Giữ manifest production0.15.2 cho đến log triển khai thành công. Bước tiếp đọc kết quả/artifact/digest phát hành rồi chạy runbook0.15.3 trên SSH máy chủ; phiên Codex hiện không kết nối được tên `erpnext-prod`.
+
 ## 18/10/2026 — 0.15.3 sẵn sàng gắn tag; production vẫn0.15.2
 
 Mã đóng gói **`96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`**, kh_aph0.15.3/lab9x0.2.11: đủ [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39103161614), [2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157904), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157858), [3](https://github.com/tienduongmarcom/aphvh/actions/runs/39103157872). Đã đọc artifact: UAT227 PASS/0 FAIL, phiên bản đúng, PDF A5/tổng hợp đạt kiểm hình; nâng/quay lui/ca lỗi khớp và giữ bảo trì. Nền Cổng3 chưa có phát sinh sổ, cần diễn tập bản sao production hiện tại khi triển khai thật.

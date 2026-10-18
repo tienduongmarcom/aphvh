@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Chủ dự án đã đẩy tag0.15.3, workflow phát hành đang chạy
+
+Đã kiểm tag remote `v0.15.3` trỏ đúng `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Chủ dự án gửi log đẩy tag thành công. [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đang chạy lại Cổng2/2b/3/UAT rồi mới dựng và đẩy image. Chưa có digest phát hành0.15.3, chưa triển khai VM.
+
+Nguồn đã thống nhất: PR #4 merge `f05c8a1`; PR #5 merge `8a0ea61e5408e1ef1feff8d2f2dde0aed66d9f2d` vào main. Đã kiểm mã96a7ef0 nằm trong main, phần mã ứng dụng/app lõi/Docker/tools/workflow/UAT/cấu hình khách trên main khớp mã đóng gói; phần sau chỉ thêm hồ sơ. Nghiệm thu máy in/nhân sự và quy chế biểu mẫu còn mở.
+
+**ĐANG DỞ:** theo dõi workflow tag trên đúng SHA, đọc artifact và digest sau khi đạt; sau đó diễn tập bản sao production hiện tại rồi nâng bằng `docs/phat-hanh-0.15.3.md`. Phiên này chưa có SSH tới `erpnext-prod`; production/manifest vẫn0.15.2 cho tới log VM xác nhận.
+
 ## 18/10/2026 — 0.15.3 đủ bốn cổng, nguồn chốt qua PR #5 → main
 
 Chủ dự án yêu cầu lên production và đồng bộ nguồn về main. PR #4 đã merge `f05c8a1`, chứa tag0.15.2 và nguồn PR #1–#3. Quyết định gộp tiếp PR #5 vào main bằng merge giữ lịch sử sau khi đủ cổng; mã đóng gói dùng gắn tag vẫn là **`96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`** (kh_aph0.15.3/lab9x0.2.11), không gắn theo commit hồ sơ/merge chưa chạy cổng riêng.
