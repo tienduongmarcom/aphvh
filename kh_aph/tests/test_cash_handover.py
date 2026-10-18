@@ -78,3 +78,26 @@ class Handover(unittest.TestCase):
         self.assertTrue(self.m.has_permission(Row(from_holder='a',to_holder='b')))
         self.assertFalse(self.m.has_permission(Row(from_holder='b',to_holder='c')))
         self.assertIn("from_holder='a'",self.m.query_conditions())
+    def test_bank_source_only_for_linked_return_to_cash(self):
+        self.c.scope=Mock()
+        self.custody.cash=lambda account:account.startswith('cash')
+        self.m.target=Mock()
+        for doc in [Row(company='APH',from_account='bank',to_account='cash',reversal_of=None),Row(company='APH',from_account='bank',to_account='bank2',reversal_of='H')]:
+            with self.assertRaisesRegex(ValueError,'Bank chỉ làm nguồn'):self.m._scope(doc)
+        self.m._scope(Row(company='APH',from_account='bank',to_account='cash',reversal_of='H'))
+        self.c.scope.assert_called_once_with('APH','cash')
+    def test_bank_return_journal_has_holder_only_on_cash(self):
+        self.custody.cash=lambda account:account.startswith('cash')
+        self.custody.HOLDER='holder'
+        self.u.getdate.return_value='2026-10-19'
+        self.f.get_doc=Mock(return_value=Mock(name='journal'))
+        self.m._journal(Row(name='R',company='APH',from_account='bank',to_account='cash',from_holder='b',to_holder='a'),Decimal(50))
+        rows=self.f.get_doc.call_args.args[0]['accounts']
+        self.assertNotIn('holder',rows[0]);self.assertEqual(rows[1]['holder'],'a')
+        self.assertEqual(rows[0]['credit_in_account_currency'],50);self.assertEqual(rows[1]['debit_in_account_currency'],50)
+    def test_reverse_rejects_native_creation_or_changed_relationship(self):
+        doc=Row(reversal_of='H',reversal_request='T',get_doc_before_save=lambda:None,is_new=lambda:True)
+        with self.assertRaisesRegex(ValueError,'Dùng thao tác'):self.m._reverse_origin(doc)
+        old=Row(reversal_of='H',reversal_request='T')
+        doc=Row(reversal_of='',reversal_request='',get_doc_before_save=lambda:old,is_new=lambda:False)
+        with self.assertRaisesRegex(ValueError,'Không thêm, gỡ'):self.m._reverse_origin(doc)

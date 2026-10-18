@@ -56,7 +56,7 @@ class TestTongHop(unittest.TestCase):
                                  # 0.13: giá sàn, người duyệt giá sàn (kh_aph_gia_san)
                                  "aph_gia_san", "aph_nguoi_duyet_gia_san",
                                  # 0.14: khế ước vay (kh_aph_tien_vay)
-                                 "aph_khe_uoc_vay", "aph_xac_minh_quy", "aph_phan_bo_quy", "aph_chot_ca_tien", "aph_ban_giao_tien"})
+                                 "aph_khe_uoc_vay", "aph_xac_minh_quy", "aph_phan_bo_quy", "aph_chot_ca_tien", "aph_ban_giao_tien", "aph_doi_chieu_lech_tien", "aph_can_cu_doi_chieu_quy"})
 
 
 if __name__ == "__main__":

@@ -436,5 +436,7 @@ doc_events["File"]["before_validate"] = ["kh_aph.ho_so_giao_nhan.protect_file_up
 # Bàn giao tiền giữ nguồn riêng; JE native là một chuyển tiền, không thu khách.
 has_permission["APH Ban giao tien"] = "kh_aph.cash_handover.has_permission"
 permission_query_conditions["APH Ban giao tien"] = "kh_aph.cash_handover.query_conditions"
+has_permission["APH Doi chieu lech tien"] = "kh_aph.cash_issue.has_permission"
+permission_query_conditions["APH Doi chieu lech tien"] = "kh_aph.cash_issue.query_conditions"
 for _event in ("validate", "before_cancel", "before_update_after_submit"):
     doc_events["Journal Entry"].setdefault(_event, []).append("kh_aph.cash_handover.protect_journal")

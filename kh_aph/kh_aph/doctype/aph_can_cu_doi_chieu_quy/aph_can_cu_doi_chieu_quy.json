@@ -1,0 +1,46 @@
+{
+ "doctype": "DocType",
+ "name": "APH Can cu doi chieu quy",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "Quỹ",
+   "fieldtype": "Link",
+   "options": "Account",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "holder",
+   "label": "Người giữ",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "verification",
+   "label": "Xác minh mới",
+   "fieldtype": "Link",
+   "options": "APH Xac minh quy",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "shift",
+   "label": "Ca khớp mới",
+   "fieldtype": "Link",
+   "options": "APH Chot ca tien",
+   "in_list_view": 1
+  }
+ ],
+ "field_order": [
+  "account",
+  "holder",
+  "verification",
+  "shift"
+ ],
+ "istable": 1,
+ "editable_grid": 1
+}

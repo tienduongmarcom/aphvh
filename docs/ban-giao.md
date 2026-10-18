@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 19/10/2026 — ĐANG DỞ: đối chiếu lệch và hoàn bàn giao
+
+Nhánh `feat/xu-ly-lech-hoan-tien-20261019`, base PR #12 (6431ec0). Đã viết hồ sơ đối chiếu native + dòng căn cứ (xác minh mới/ca khớp từng phía Cash/tệp riêng tư); chốt/mở lại không đổi GL/số đếm cũ. Giữ nguyên chênh lệch lịch sử, gỡ chặn qua hồ sơ có căn cứ; ca lệch cũ chưa có state vẫn được coi đang mở. Hoàn toàn bộ bằng phiếu ngược chiều hai người, cùng Cash không sổ/khác Cash hoặc Bank về Cash một JE mới; không hủy JE gốc. Bank chỉ làm nguồn hoàn đúng gốc, kiểm số dư/giữ chỗ; tiền đã dùng tiếp không hoàn vượt nguồn. Yêu cầu tạo hoàn có mã chống trùng, hủy trước nhận giữ lịch sử và cho lập lại bằng mã mới.
+
+Cục bộ349 kh_aph +108 lab9x PASS; Python/JS/diff đạt. Đã thêm10 ca HTTP/Desk kỳ vọng, b01468 (tổng259 HTTP/Desk); chưa có CI/PASS mã mới. Bước tiếp: push/mở PR draft sau #12, chạy4 cổng đúng SHA, đọc artifact và sửa FAIL; không dùng PASS249 của #12 thay thế. Đặc tả9 nhóm `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`.
+
+Cờ24/phiên bản không đổi; không tag/merge/deploy, production0.15.3. Adapter quỹ nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân không GL còn thiếu; không gọi toàn bộ2B hoàn tất. Nghiệm thu thực tế gom cuối theo anh Tiến.
+
 ## 19/10/2026 — Bàn giao tiền đã kiểm đủ bốn cổng; đợt2B còn tiếp
 
 Nhánh `feat/ban-giao-tien-20261018`, [PR #12](https://github.com/tienduongmarcom/aphvh/pull/12), base PR #11 (014c05a). Mã nghiệp vụ/kiểm **`1787448b02c5768b0f1b48ee71da7297f78e268e`**. Đã có Native DocType `APH Ban giao tien`, Workspace/Dialog; cờ24 `kh_aph_cash_handover` mặc định tắt, cần custody/closing. Không tăng version/tag/merge/triển khai, production vẫn0.15.3 với21 cờ.

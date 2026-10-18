@@ -14,6 +14,28 @@ frappe.ui.form.on("APH Ban giao tien", {
       await frm.reload_doc();
       return r;
     };
+    const manager = frappe.session.user === "Administrator" || (frappe.user_roles.some(r => ["Accounts Manager", "System Manager"].includes(r)) && !frappe.user_roles.some(r => ["APH Không xem giá vốn", "Kế toán nhà máy"].includes(r)));
+    if ([1, 2].includes(frm.doc.docstatus) && frm.doc.issue_state === "Chờ xử lý" && manager) {
+      frm.add_custom_button(__("Đối chiếu lệch tiền"), () => frappe.new_doc("APH Doi chieu lech tien", {source_type: frm.doctype, source_name: frm.doc.name}));
+    }
+    if (frm.doc.reversal_doc) frm.add_custom_button(__("Mở phiếu hoàn"), () => frappe.set_route("Form", frm.doctype, frm.doc.reversal_doc));
+    if (frm.doc.docstatus === 1 && ["Đã nhận", "Có chênh lệch"].includes(frm.doc.status) && !frm.doc.reversal_of && frm.doc.received_amount > 0 && frm.doc.to_holder === frappe.session.user && frm.doc.issue_state !== "Chờ xử lý") {
+      frm.add_custom_button(__("Lập phiếu hoàn"), () => {
+        const request_id = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, "0")).join("");
+        const dialog = new frappe.ui.Dialog({title: __("Hoàn toàn bộ số đã nhận"), fields: [
+          {fieldname: "reason", label: __("Lý do hoàn"), fieldtype: "Small Text", reqd: 1},
+          {fieldtype: "HTML", options: __("Phiếu ngược chiều giữ nguyên giao dịch gốc. Người giao ban đầu phải xác nhận nhận lại; tiền đã dùng tiếp không được hoàn vượt nguồn.")}
+        ], primary_action_label: __("Gửi phiếu hoàn"), primary_action: async values => {
+          dialog.get_primary_btn().prop("disabled", true);
+          try {
+            const {message} = await frappe.call({method: "kh_aph.cash_handover.create_reverse", args: {name: frm.doc.name, request_id, reason: values.reason}, freeze: true});
+            dialog.hide();
+            await frappe.set_route("Form", frm.doctype, message.name);
+          } finally { dialog.get_primary_btn().prop("disabled", false); }
+        }});
+        dialog.show();
+      });
+    }
     if (frm.doc.docstatus === 0 && !frm.is_new() && !frm.is_dirty() && frm.doc.from_holder === frappe.session.user) {
       frm.add_custom_button(__("Gửi bàn giao"), () => invoke("send"));
     }

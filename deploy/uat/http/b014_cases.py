@@ -288,3 +288,6 @@ def chay(admin, phien, f, emit):
 
     from b014_cash_handover import chay as handover_cases
     handover_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_cash_issue_reverse import chay as issue_reverse_cases
+    issue_reverse_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

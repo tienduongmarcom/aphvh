@@ -104,11 +104,12 @@ def _workspace():
     if cint(frappe.conf.get("kh_aph_cash_closing")):
         loi_vao += [("Xác minh quỹ", "DocType", "APH Xac minh quy", {}),
                     ("Chốt ca tiền", "DocType", "APH Chot ca tien", {}),
-                    ("Ca tiền chênh lệch", "DocType", "APH Chot ca tien", {"docstatus": 1, "status": "Có chênh lệch"})]
+                    ("Ca tiền chênh lệch", "DocType", "APH Chot ca tien", {"docstatus": 1, "status": "Có chênh lệch", "issue_state": ["!=", "Đã đối chiếu"]})]
     if cint(frappe.conf.get("kh_aph_cash_handover")):
         loi_vao += [("Bàn giao tiền", "DocType", "APH Ban giao tien", {}),
                     ("Bàn giao tiền chờ nhận", "DocType", "APH Ban giao tien", {"docstatus": 1, "status": "Chờ nhận"}),
-                    ("Bàn giao tiền cần xử lý", "DocType", "APH Ban giao tien", {"docstatus": ["in", [1, 2]], "issue_state": "Chờ xử lý"})]
+                    ("Bàn giao tiền cần xử lý", "DocType", "APH Ban giao tien", {"docstatus": ["in", [1, 2]], "issue_state": "Chờ xử lý"}),
+                    ("Đối chiếu lệch tiền", "DocType", "APH Doi chieu lech tien", {})]
     noi_dung = [{"id": "tv-tieu-de", "type": "header", "data": {"text": f"<span class=\"h4\"><b>{WORKSPACE}</b></span>", "col": 12}}]
     noi_dung += [{"id": f"tv-{i}", "type": "shortcut", "data": {"shortcut_name": x[0], "col": 4}} for i, x in enumerate(loi_vao)]
     ws = frappe.get_doc("Workspace", WORKSPACE) if frappe.db.exists("Workspace", WORKSPACE) else frappe.new_doc("Workspace")

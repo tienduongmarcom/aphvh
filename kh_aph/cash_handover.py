@@ -36,7 +36,13 @@ def target(company, account):
 
 def _scope(doc):
     guard()
-    C.scope(doc.company, doc.from_account)
+    if custody.cash(doc.from_account):
+        C.scope(doc.company, doc.from_account)
+    else:
+        if not doc.get("reversal_of") or not custody.cash(doc.to_account):
+            frappe.throw("Bank chỉ làm nguồn của phiếu hoàn bàn giao về đúng Cash gốc")
+        C.scope(doc.company, doc.to_account)
+        target(doc.company, doc.from_account)
     return target(doc.company, doc.to_account)
 
 
@@ -70,9 +76,8 @@ def before_verification(company, account):
 
 
 def _disputed(company, account, holder):
-    # Lát này chưa có nghiệp vụ đóng vụ lệch: giữ nguyên hồ sơ và chặn giao ra
-    # trên ví có lệch chưa xử lý, không cộng lặp các khoản thiếu qua nhiều ca.
-    shifts = frappe.db.sql(f"select name from `tab{C.SHIFT}` where company=%s and account=%s and holder=%s and docstatus=1 and difference!=0 limit 1 for update", (company, account, holder))
+    # Ca lịch sử chưa có issue_state vẫn mở; chỉ service đối chiếu được đóng vụ.
+    shifts = frappe.db.sql(f"select name from `tab{C.SHIFT}` where company=%s and account=%s and holder=%s and docstatus=1 and difference!=0 and coalesce(issue_state,'')!='Đã đối chiếu' limit 1 for update", (company, account, holder))
     handovers = frappe.db.sql(f"""select name from `tab{DT}` where company=%s
         and docstatus in (1,2) and issue_state='Chờ xử lý'
         and ((from_account=%s and from_holder=%s) or (to_account=%s and to_holder=%s))
@@ -88,6 +93,41 @@ def available(company, account, holder, exclude=None):
     # số dương. Không dùng số dương đó để giao vượt tổng quỹ thực có.
     invalid_pool = any(amount < 0 for amount in totals.values())
     return opening, totals.get(holder, money(0)), reserved, invalid_pool or _disputed(company, account, holder)
+
+
+def _source_state(doc, exclude=None):
+    if custody.cash(doc.from_account):
+        return available(doc.company, doc.from_account, doc.from_holder, exclude)
+    # _scope đã khóa Cash của company, đồng bộ với mọi ghi sổ native.
+    # Bank không có số tiền riêng theo người; giữ chỗ toàn tài khoản.
+    expected = C.balance(C.ledger(doc.company, doc.from_account))
+    reserved = sum((money(r.requested_amount) for r in _query(doc.company, doc.from_account)
+        if r.from_account == doc.from_account and r.status in PENDING and r.name != exclude), money(0))
+    return None, expected, reserved, _disputed(doc.company, doc.from_account, doc.from_holder)
+
+
+def _reverse_origin(doc):
+    old = doc.get_doc_before_save()
+    if old and (old.get("reversal_of") or "", old.get("reversal_request") or "") != (doc.get("reversal_of") or "", doc.get("reversal_request") or ""):
+        frappe.throw("Không thêm, gỡ hoặc đổi quan hệ hoàn bàn giao")
+    if not doc.get("reversal_of"):
+        if doc.get("reversal_request"):
+            frappe.throw("Mã yêu cầu hoàn chỉ do máy chủ tạo")
+        return
+    if doc.is_new() and frappe.flags.get("kh_aph_make_reverse") != doc.reversal_of:
+        frappe.throw("Dùng thao tác Hoàn bàn giao trên phiếu gốc")
+    origin = frappe.get_doc(DT, doc.reversal_of, for_update=True)
+    origin.check_permission("read")
+    if origin.docstatus != 1 or origin.status not in ("Đã nhận", "Có chênh lệch") or origin.get("reversal_of") or money(origin.received_amount) <= 0:
+        frappe.throw("Chỉ hoàn toàn bộ bàn giao gốc đã thực nhận lớn hơn 0")
+    if origin.issue_state == "Chờ xử lý":
+        frappe.throw("Đối chiếu vụ lệch nguồn trước khi hoàn")
+    if (doc.company, doc.from_account, doc.to_account, doc.from_holder, doc.to_holder, money(doc.requested_amount)) != (
+            origin.company, origin.to_account, origin.from_account, origin.to_holder, origin.from_holder, money(origin.received_amount)):
+        frappe.throw("Phiếu hoàn phải ngược đúng quỹ/người và toàn bộ số thực nhận gốc")
+    others = frappe.db.sql(f"select name from `tab{DT}` where reversal_of=%s and docstatus!=2 and name!=%s limit 1 for update", (origin.name, doc.name or ''))
+    if others:
+        frappe.throw("Bàn giao gốc đã có phiếu hoàn còn hiệu lực")
 
 
 def validate(doc):
@@ -106,18 +146,19 @@ def validate(doc):
     old = doc.get_doc_before_save()
     if old and old.docstatus == 1:
         frappe.throw("Không sửa hồ sơ bàn giao đã gửi")
+    _reverse_origin(doc)
     doc.requested_amount = C._money(doc.requested_amount)
     if doc.requested_amount <= 0:
         frappe.throw("Số tiền bàn giao dự kiến phải lớn hơn 0")
-    opening, expected, reserved, disputed = available(doc.company, doc.from_account, doc.from_holder)
-    doc.from_verification = opening.name
+    opening, expected, reserved, disputed = _source_state(doc)
+    doc.from_verification = opening.name if opening else None
     if destination.account_type == "Cash":
         C.scope(doc.company, doc.to_account)
         to_opening, _, _, _ = C._state(doc.company, doc.to_account, doc.to_holder)
         doc.to_verification = to_opening.name
     else:
         doc.to_verification = None
-    for field in ("received_amount", "difference", "received_by", "received_at", "receive_hash", "journal_entry", "sent_by", "sent_at", "receive_reason", "assignee", "due_date", "issue_state"):
+    for field in ("received_amount", "difference", "received_by", "received_at", "receive_hash", "journal_entry", "sent_by", "sent_at", "receive_reason", "assignee", "due_date", "issue_state", "issue_resolution", "reversal_doc"):
         doc.set(field, None)
     doc.status = "Nháp"
     if doc._action == "submit":
@@ -134,6 +175,15 @@ def before_cancel(doc):
         frappe.throw("Chỉ người giao được hủy đề nghị của mình", frappe.PermissionError)
     if doc.status not in PENDING or doc.journal_entry:
         frappe.throw("Bàn giao đã nhận không được hủy; cần nghiệp vụ đảo có kiểm soát")
+    if doc.get("reversal_of"):
+        origin = frappe.get_doc(DT, doc.reversal_of, for_update=True)
+        origin.check_permission("read")
+        origin.check_permission("write")
+        if origin.reversal_doc == doc.name:
+            with _updating(origin):
+                origin.reversal_doc = None
+                origin.save()
+            origin.add_comment("Comment", "Đã hủy đề nghị hoàn chưa nhận: " + doc.name)
     doc.status = "Đã hủy"
 
 
@@ -195,8 +245,10 @@ def cancel(name):
 
 
 def _journal(doc, amount):
-    rows = [{"account": doc.from_account, "credit_in_account_currency": amount, custody.HOLDER: doc.from_holder},
+    rows = [{"account": doc.from_account, "credit_in_account_currency": amount},
             {"account": doc.to_account, "debit_in_account_currency": amount}]
+    if custody.cash(doc.from_account):
+        rows[0][custody.HOLDER] = doc.from_holder
     if custody.cash(doc.to_account):
         rows[1][custody.HOLDER] = doc.to_holder
     journal = frappe.get_doc({"doctype": "Journal Entry", "voucher_type": "Cash Entry", "company": doc.company,
@@ -229,8 +281,9 @@ def receive(name, amount, reason=None, assignee=None, due_date=None):
         return result(doc)
     if doc.status != "Chờ nhận":
         frappe.throw("Đề nghị không còn chờ nhận")
-    opening, expected, reserved, disputed = available(doc.company, doc.from_account, doc.from_holder, exclude=doc.name)
-    if opening.name != doc.from_verification:
+    _reverse_origin(doc)
+    opening, expected, reserved, disputed = _source_state(doc, exclude=doc.name)
+    if (opening.name if opening else None) != (doc.from_verification or None):
         frappe.throw("Mốc xác minh nguồn đã đổi; cần kiểm lại bàn giao")
     destination = target(doc.company, doc.to_account)
     if destination.account_type == "Cash":
@@ -240,6 +293,8 @@ def receive(name, amount, reason=None, assignee=None, due_date=None):
             frappe.throw("Mốc xác minh quỹ nhận đã đổi")
     difference = amount - C._money(doc.requested_amount)
     over = amount > expected - reserved or disputed
+    if doc.get("reversal_of") and (difference or over):
+        frappe.throw("Hoàn bàn giao phải nhận đủ đúng số và nguồn còn khả dụng; không hoàn thiếu/thừa")
     if difference or over:
         if not reason or not assignee or not due_date:
             frappe.throw("Chênh lệch/vượt nguồn phải có lý do, người xử lý và hạn xử lý")
@@ -257,6 +312,39 @@ def receive(name, amount, reason=None, assignee=None, due_date=None):
     doc.issue_state = "Chờ xử lý" if difference or over else None
     with _updating(doc):
         doc.save()
+    return result(doc)
+
+
+@frappe.whitelist(methods=["POST"])
+@retry_rpc
+def create_reverse(name, request_id, reason):
+    origin = _locked(name)
+    if frappe.session.user != origin.to_holder or origin.from_holder == origin.to_holder:
+        frappe.throw("Chỉ người đã nhận được lập phiếu hoàn, không lập thay", frappe.PermissionError)
+    if not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 100 or not isinstance(reason, str) or not reason.strip():
+        frappe.throw("Cần mã yêu cầu hoàn và lý do rõ ràng")
+    # Cùng mã yêu cầu trả đúng phiếu cũ kể cả đã hủy; không tạo lại sau mất mạng.
+    existing = frappe.db.sql(f"select name from `tab{DT}` where reversal_of=%s and reversal_request=%s limit 1 for update", (origin.name, request_id))
+    if existing:
+        doc = frappe.get_doc(DT, existing[0][0], for_update=True)
+        doc.check_permission("read")
+        if doc.reason != reason.strip():
+            frappe.throw("Mã yêu cầu hoàn đã dùng với nội dung khác")
+        return result(doc)
+    doc = frappe.get_doc({"doctype": DT, "company": origin.company, "from_account": origin.to_account,
+        "to_account": origin.from_account, "from_holder": origin.to_holder, "to_holder": origin.from_holder,
+        "requested_amount": origin.received_amount, "reason": reason.strip(), "reversal_of": origin.name,
+        "reversal_request": request_id})
+    previous = frappe.flags.get("kh_aph_make_reverse")
+    frappe.flags.kh_aph_make_reverse = origin.name
+    try:
+        doc.insert()
+        doc.submit()
+    finally:
+        frappe.flags.kh_aph_make_reverse = previous
+    with _updating(origin):
+        origin.reversal_doc = doc.name
+        origin.save()
     return result(doc)
 
 
@@ -303,6 +391,8 @@ def schema():
     if not C.enabled() or not custody.enabled():
         frappe.throw("Bàn giao cần bật xác minh/chốt ca và người giữ tiền")
     frappe.reload_doc("kh_aph", "doctype", "aph_ban_giao_tien")
+    from kh_aph import cash_issue
+    cash_issue.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields({"Journal Entry": [{"fieldname": JE_LINK, "label": "Hồ sơ bàn giao tiền", "fieldtype": "Link",
         "options": DT, "read_only": 1, "no_copy": 1, "insert_after": "user_remark"}]})
