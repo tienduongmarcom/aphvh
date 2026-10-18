@@ -1,5 +1,11 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Đối chiếu lại kế hoạch 5 đợt theo production0.15.3
+
+Chủ dự án gửi bảng việc còn lại. Đã cập nhật `docs/ke-hoach-van-hanh-tiep-noi.md` từ mốc0.15.2 sang0.15.3: đồng bộ dữ liệu giao nhận sang mẫu chuẩn/in lại chuẩn/tổng hợp đã nằm trong mã phát hành, không coi là chưa làm. Giữ nền nghiệp vụ đợt2–4 hiện có; phần mở rộng/màn hình thống nhất còn chưa hoàn tất. Sheet Dũng là bước đệm cho đợt3 theo chủ dự án; đợt5 chờ chốt nghiệp vụ.
+
+**ĐANG DỞ GN06:** thiếu nút mở riêng bản A5 từ DN đã lưu; Dialog “Lập phiếu xuất & In” tạo DN, không dùng chỉ để thử máy in. Đã ghi đúng khoảng thiếu ở kế hoạch và IN02; chưa viết tính năng in lại A5 trong lượt đối chiếu này. Nghiệm thu người dùng/máy in/dữ liệu đại diện và quy chế vẫn mở. Bước tiếp là hoàn thiện lối A5 rồi nghiệm thu đợt1; đợt2 cần đặc tả9 nhóm trước code. Chỉ sửa tài liệu, kiểm diff/đối chiếu nguồn; không chạy lại hồi quy hoặc đổi production.
+
 ## 18/10/2026 — Production0.15.3 đã triển khai ĐẠT theo log VM
 
 Anh Tiến gửi log từ `tienduongmarcom@erpnext-prod:~/trien-khai`: image0.15.3 digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**, kết thúc **`=== XONG 0.15.3: ĐẠT ===`**. Digest khớp [workflow39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607), nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đây là xác nhận triển khai từ người vận hành; Codex không SSH hoặc kiểm độc lập giao diện production.
