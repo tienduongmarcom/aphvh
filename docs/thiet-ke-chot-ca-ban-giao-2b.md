@@ -31,6 +31,7 @@ Không ai xác nhận nhận tiền từ chính mình, kể cả Accounts Manage
 - Không chuyển nguồn chưa xác minh, không chiếm một số tiền cho hai đề nghị. Không tự cho số âm vì đặt ca/đổi ngày.
 - Ca qua ngày dùng mốc thời gian cụ thể, không chỉ posting_date. Lùi ngày/hủy/repost sau chốt phải làm xuất hiện ngoại lệ/đối chiếu lại, không ghi đè số đã chốt.
 - Hủy đề nghị chưa nhận giải phóng giữ chỗ. Bàn giao đã nhận không sửa/hủy tay; cần nghiệp vụ đảo có hai phía, kiểm nguồn chưa dùng tiếp và liên kết chứng từ đảo native nếu có. Không hồi phục backup để sửa một bàn giao.
+- Thực đếm vượt nguồn khả dụng vẫn phải được lưu để xử lý lệch, nhưng chưa xác nhận chuyển vượt nguồn hoặc tự tạo tiền mới. Quỹ/người có thiếu/thừa chưa xử lý không tiếp tục giao ra bằng phần tiền đang tranh lệch; luồng nhận thêm và đối chiếu vẫn giữ được. Không cộng cùng một khoản thiếu vào nhiều lần giữ chỗ qua các ca.
 - Bằng chứng/ghi chú thay đổi giữ lịch sử; không xóa bản cũ khi đã nhận. Không tạo DocType Nhiệm vụ riêng để lưu trạng thái trùng.
 
 ## 5. Dữ liệu và công thức
@@ -63,6 +64,7 @@ Chốt ca lưu snapshot bất biến của expected/count/difference và mốc n
 - Khóa quỹ/nguồn theo thứ tự ổn định trong cùng transaction; các đường ghi/hủy/repost GL liên quan phải tương thích khóa này. Khóa riêng đề nghị không đủ chống hai đề nghị chiếm chung tiền.
 - Key/hash duy nhất cho thao tác gửi/nhận/đảo; retry cùng nội dung trả kết quả cũ, đổi nội dung cùng key bị chặn. Không commit giữa chuyển trách nhiệm và JE; lỗi một phía rollback toàn bộ.
 - Đường thu tiền mặt cũ và Dialog phải có token idempotency hoặc định danh nguồn chuẩn; không chỉ chống trùng mã ngân hàng. Kiểm cả phản hồi bị mất sau commit và hai phiên đồng thời.
+- Khi bật2B, lối nhận quỹ nhà máy cũ phải đi qua adapter cùng guard cấm tự nhận/chống trùng; không để manager bypass hoặc hai lối ghi hai JE cho cùng bàn giao. Nguồn cũ chưa rõ người giao cần xác minh có căn cứ, không suy owner và không sửa metadata đã submit của2A.
 - Báo cáo quản lý đọc số trong scope; Dũng vẫn không xem giá vốn kể cả cộng role. Tách báo cáo tiền cá nhân tối thiểu khỏi toàn bộ GL/nguồn có giá vốn.
 
 ## 7. Tác động hệ thống

@@ -1,12 +1,22 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
-## 18/10/2026 — Đợt2A người giữ tiền trên nguồn, đang kiểm
+## 18/10/2026 — Đợt2A người giữ tiền đã kiểm kỹ thuật/UAT;2B còn thiết kế
 
-Theo yêu cầu tiếp tục sau PR #9, nhánh `feat/nguoi-giu-tien-20261018` dựa trên hồ sơ30a8773. Thêm cờ thứ22 `kh_aph_cash_custody` (mặc định tắt), metadata người thực giữ/giao trên PE, JE Account, SI/PI/POS, Funds Receipt/Action và phiếu quỹ nhà máy. Truyền metadata qua thu quầy/thu ngay/JE tự sinh; không tự điền owner hoặc backfill lịch sử. Nguồn đã submit không sửa người giữ; cùng accountCash trên JE không có hai người khác nhau vì GL gộp dòng. Báo cáo Rà người giữ tiền mặt đọc GL có quyền, hiện nguồn chưa xác minh; KHÔNG là số tiền hiện tại theo người và chưa có chốt ca/bàn giao mới.
+Theo yêu cầu tiếp tục sau PR #9, đã làm lớp nguồn đợt2A trên nhánh `feat/nguoi-giu-tien-20261018`, [PR #10](https://github.com/tienduongmarcom/aphvh/pull/10), base nhánhPR #9 (30a8773). Mã nghiệp vụ/kiểm **`929d16a84e1f1e6df32d0a614c228060c5e76c4b`**. Thêm cờ thứ22 `kh_aph_cash_custody` mặc định tắt,10 Custom Field trên PE/JE Account/SI/PI/POS/Funds Receipt–Action/quỹ nhà máy; truyền người thực giữ/giao qua đường thu quầy/thu ngay/JE tự sinh. Nguồn submit không đổi người giữ; không suy owner/backfill. Cùng accountCash trên JE không có hai người khác nhau vì GL gộp dòng.
 
-Cục bộ317 ca ứng dụng đạt, cú pháp Python/JS/diff đạt. Thêm HTTP/Chrome (kỳ vọng b01445, toàn bộ236 PASS); **chưa chạy CI**. Đã đồng bộ cờ mới vào bộ cài/dấu vân/preflight/quay lui/Cổng3 FLAGS_MOI, giữ baseline production0.15.3/21 cờ cũ. Không đổi version/tag hoặc triển khai. PR #9 A5 đã kiểm vẫn chưa phát hành; nhánh này phụ thuộc nguồn PR #9.
+Báo cáo Rà người giữ tiền mặt đọc GL có quyền, nguồn thiếu metadata hiện Chưa xác minh. Đây là phát sinh theo nguồn, KHÔNG là số tiền mỗi người hiện còn giữ; chưa có chốt ca/bàn giao mới. POS tổng hợp/nguồn ngoài adapter vẫn có thể chưa xác minh, chưa kiểm vận hành POS đầy đủ. Đặc tả9 nhóm: `docs/dac-ta-nguoi-giu-tien-2a.md`.
 
-**ĐANG DỞ:** chạy đủ bốn cổng đúng SHA, sửa lỗi thực nếu có và đọc artifact; hoàn thiện đặc tả9 nhóm đợt2A và bước2B chốt ca/bàn giao. Các đường Cash không có metadata (kể cả POS tổng hợp/nguồn ngoài allowlist) phải hiện chưa xác minh, không tuyên bố bao phủ đủ người giữ. Nghiệm thu thật gom cuối theo chủ dự án.
+Cục bộ317 kh_aph +108 lab9x đạt, cú pháp Python/JS/diff đạt. Đủ bốn cổng trên đúng929d16a: [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39133916442), [Cổng2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39133916266), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39133913616), [Cổng3](https://github.com/tienduongmarcom/aphvh/actions/runs/39133918974).
+
+Đã tải/đọc artifact: **236 PASS/0 FAIL**, b01445. Bảy ca2A đạt: mặt+bank tách đúng; nguồn chuẩn/không rõ/không đổi sau submit; Receipt/hoàn→JE chỉ đếm một lần; scope/role/report chỉ đọc; SI thu ngay→PE; PI trả mặt; quỹ nhà máy→JE; Chrome mở vùng Accounts chuẩn và kiểm ô có dữ liệu/form sạch. Core63.508 tệp không đổi. Ảnh `nguoi-giu-tien.png` chụp khung đầu form trước cuộn hoàn tất, không dùng ảnh này làm bằng chứng vị trí ô; bằng chứng hiển thị/dữ liệu là assertion Chrome, chưa là nghiệm thu sử dụng thật.
+
+Cổng3 từ production0.15.3/21 cờ cũ: schema nâng/site mới1.056 mục khớp (bỏ qua đúng6 mục); quay lui schema1.052 mục/tổng/đếm/cờ/versions/cài đặt/giao diện khớp; cờ mới về0. Ca cố ý lỗi quay lui khớp chi tiết/versions và giữ bảo trì. Nền CI chưa có phát sinh sổ (các nhóm0), không thay diễn tập bản sao production có dữ liệu khi phát hành.
+
+Giữ bằng chứng lỗi: [39122361020](https://github.com/tienduongmarcom/aphvh/actions/runs/39122361020) dừng ở Chrome vì vùng Accounts thu gọn, đã sửa thao tác bằng `frm.scroll_to_field`, không bỏ assertion; [39132682231](https://github.com/tienduongmarcom/aphvh/actions/runs/39132682231) thiếu mẫu thuế trên SI thử, đã khai rõ t_aph thay vì nới guard thuế. Lượt929d16a đã kiểm lại cả hai và hai nguồn hóa đơn/quỹ nhà máy.
+
+**Chưa phát hành/merge/tag hoặc triển khai:** production giữ0.15.3/digest đã xác nhận,21 cờ; #9 và #10 chưa đưa vào production. Commit hồ sơ sau929d16a chỉ thay tài liệu, không là mã kiểm nghiệp vụ mới. Nghiệm thu dữ liệu/người dùng/máy in thật gom cuối theo chủ dự án.
+
+**ĐANG DỞ đợt2B:** thiết kế9 nhóm ở `docs/thiet-ke-chot-ca-ban-giao-2b.md`, chưa có code/schema/PASS2B. Bước tiếp chốt blueprint field/DocPerm/khóa/fingerprint cho xác minh tiền bắt đầu và đối chiếu tổng người–quỹ–GL, rồi chốt ca/bàn giao dùng chung. Bao phủ lối quỹ nhà máy cũ, chống tự nhận và token thu tiền mặt cũ; không dùng tổng thu/owner làm tiền đang giữ, không tạo thu khách lần hai. Đợt3–4 vẫn theo kế hoạch; đợt5 chờ nghiệp vụ riêng.
 
 ## 18/10/2026 — Ứng viên in lại A5, nghiệm thu thật gom cuối
 

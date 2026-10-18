@@ -1,6 +1,6 @@
 # Đợt 2A — Người giữ tiền trên nguồn và bảng rà phát sinh
 
-Ngày18/10/2026. Thiết kế và mã ứng viên, chưa phát hành. Nguồn nghiệp vụ: kế hoạch5 đợt/T01–T07, quyết định không FIFO/không tráo company, yêu cầu người giữ trên cả đường thu cũ. Phần chốt ca/bàn giao chung thuộc2B, không coi đã hoàn thành từ2A.
+Ngày18/10/2026. Thiết kế và mã ứng viên đã đạt bốn cổng trên929d16a:317+108 unit,236 UAT PASS/0 FAIL (b01445); chưa phát hành. Bằng chứng và giới hạn ở đầu `ban-giao.md`. Nguồn nghiệp vụ: kế hoạch5 đợt/T01–T07, quyết định không FIFO/không tráo company, yêu cầu người giữ trên cả đường thu cũ. Phần chốt ca/bàn giao chung thuộc2B, không coi đã hoàn thành từ2A.
 
 ## 1. Mục tiêu và phạm vi
 
