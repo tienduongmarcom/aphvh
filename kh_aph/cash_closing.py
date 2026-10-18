@@ -115,6 +115,12 @@ def _state(company, account, holder):
 def validate(doc):
     guard(manager=doc.doctype == OPENING)
     scope(doc.company, doc.account)
+    if doc.get("evidence"):
+        found = frappe.db.sql("""select name from `tabFile` where file_url=%s
+            and attached_to_doctype=%s and attached_to_name=%s and is_private=1 for update""",
+            (doc.evidence, doc.doctype, doc.name))
+        if not doc.evidence.startswith("/private/files/") or not found:
+            frappe.throw("Tệp kiểm đếm phải riêng tư và gắn đúng hồ sơ này")
     if doc.doctype == SHIFT:
         custody._person(doc.holder, doc.company)
         if not doc.holder or doc.holder != frappe.session.user:
@@ -239,6 +245,26 @@ def opening_query_conditions(user=None):
     if not enabled() or roles & {"APH Không xem giá vốn", "Kế toán nhà máy"} or not roles & MANAGERS:
         return "1=0"
     return ""
+
+
+def protect_file(doc, method=None):
+    """Bảo vệ blob trước File.on_trash; rollback CSDL không khôi phục tệp đã xóa."""
+    if not enabled():
+        return
+    old = doc.get_doc_before_save() or doc
+    url = old.get("file_url")
+    if not url:
+        return
+    for dt in (OPENING, SHIFT):
+        if frappe.db.sql(f"select name from `tab{dt}` where docstatus=1 and evidence=%s limit 1 for update", (url,)):
+            if method == "on_trash" or doc.get("content") or any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")):
+                frappe.throw("Tệp thuộc hồ sơ tiền đã xác nhận; giữ nguyên bằng chứng lịch sử")
+
+
+class CashClosingFileMixin:
+    def on_trash(self):
+        protect_file(self, "on_trash")
+        return super().on_trash()
 
 
 def schema():

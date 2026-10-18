@@ -3,6 +3,7 @@ import datetime
 import json
 from concurrent.futures import ThreadPoolExecutor
 import urllib.error
+import uuid
 H = 'kh_aph_nguoi_giu_tien'
 O, S = 'APH Xac minh quy', 'APH Chot ca tien'
 
@@ -26,10 +27,17 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     je(1000)
     before=counts()
     draft=opening()
+    denied(lambda:rpc('frappe.client.save',{'doc':json.dumps({**draft,'evidence':'/files/public.txt'})},ktt),text='Tệp kiểm đếm phải riêng tư')
+    evidence=insert({'doctype':'File','file_name':'kiem-dem-'+uuid.uuid4().hex+'.txt','is_private':1,
+        'attached_to_doctype':O,'attached_to_name':draft['name'],'content':json.dumps({'uat':'kiem-dem'})},ktt)
+    draft=rpc('frappe.client.save',{'doc':json.dumps({**draft,'evidence':evidence['file_url']})},ktt)
     denied(lambda:submit({**draft,'unverified_amount':101},ktt),text='phải bằng đúng')
     confirmed=submit(draft,ktt)
     assert confirmed['gl_balance']==1000 and confirmed['unverified_amount']==100
     assert call('current',args)['expected_amount']==700 and counts()==before
+    denied(lambda:rpc('frappe.client.delete',{'doctype':'File','name':evidence['name']},ktt))
+    assert ktt(evidence['file_url'])=={'uat':'kiem-dem'}
+    denied(lambda:rpc('frappe.client.save',{'doc':json.dumps({**get('File',evidence['name'],ktt),'is_private':0})},ktt))
     emit('HTTP_2B_VERIFY_BALANCED_NO_GL','PASS',{'balance':1000,'known':900,'unknown':100,'no_gl_ple':True})
     denied(lambda: submit(shift(680), ktt), text='Ca lệch phải có')
     draft_close=shift(680,reason='UAT thiếu tiền cần điều tra',assignee=f['ktt2'],due_date=f['date'])
@@ -65,6 +73,10 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     assert call('current',args)['expected_amount']==700
     final=shift(710,reason='UAT đếm thừa',assignee=f['ktt2'],due_date=f['date'])
     assert call('close',{'name':final['name']})['difference']==10
+    ordinary=phien(f['ktt2'])
+    own=insert({'doctype':S,**args,'holder':f['ktt2'],'counted_amount':200},ordinary)
+    assert rpc('kh_aph.cash_closing.close',{'name':own['name']},ordinary)['difference']==0
+    denied(lambda:get(O,fresh['name'],ordinary),('PermissionError',))
     yesterday=(datetime.date.fromisoformat(f['date'])-datetime.timedelta(days=1)).isoformat()
     je(5,f['ktt'],yesterday)
     denied(lambda:call('current',args),text='ghi lùi ngày')

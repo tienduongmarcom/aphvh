@@ -430,3 +430,5 @@ for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice
         _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
         doc_events[_dt][_event] = _handlers + ["kh_aph.cash_closing.lock_ledger"]
 doc_events.setdefault("GL Entry", {})["before_insert"] = "kh_aph.cash_closing.lock_ledger"
+extend_doctype_class.setdefault("File", []).append("kh_aph.cash_closing.CashClosingFileMixin")
+doc_events["File"]["before_validate"] = ["kh_aph.ho_so_giao_nhan.protect_file_update", "kh_aph.cash_closing.protect_file"]
