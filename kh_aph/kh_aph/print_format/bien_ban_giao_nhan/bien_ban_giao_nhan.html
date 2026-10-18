@@ -1,0 +1,125 @@
+{#- Biên bản giao nhận hàng hóa, in từ Phiếu giao hàng: 2 liên trong một lần in (liên 1 giao khách,
+    liên 2 công ty lưu). Đơn giá, thành tiền ĐÃ GỒM THUẾ GTGT (chị Dung chốt 30/09: không tách giá và thuế),
+    tổng tiền thanh toán, số tiền bằng chữ.
+    Thuê xe, nhà xe: thêm người vận chuyển ký. Phiếu nhận hàng trả lại (is_return): biên bản nhận lại
+    hàng hóa, bên giao là khách hàng. -#}
+{%- set cty = kh_aph_cong_ty(doc.company) -%}
+{%- set tra = doc.is_return -%}
+{%- set dons = doc.items | map(attribute="against_sales_order") | select | unique | list -%}
+{%- set thue = doc.kh_aph_hinh_thuc_giao == "Thuê xe, nhà xe" -%}
+{%- set cham = ".............................." -%}
+{%- set dc = kh_aph_dia_chi(doc.shipping_address or doc.address_display) -%}
+{%- set gia = kh_aph_gia_gom_thue(doc) -%}
+{%- set tong = gia.tong -%}
+{#- 0.11.1 (cờ kh_aph_sales_adjust): Q192 mặc định không giá; Q198 cột thực nhận khi có phiếu trả lại loại giao thiếu;
+    R053/Q199 số lượng "bao + kg" hoặc ĐVT bán kèm quy đổi. Cờ tắt: in như cũ. -#}
+{%- set an_gia = kh_aph_bbgn_an_gia(doc) -%}
+{%- set tn = kh_aph_thuc_nhan(doc) -%}
+
+{%- macro ben_cty(nhan) -%}
+  <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ cty.ten }}</div>
+  {%- if cty.dia_chi %}<div>- Địa chỉ: {{ cty.dia_chi }}</div>{% endif %}
+  {%- if cty.mst %}<div>- Mã số thuế: {{ cty.mst }}</div>{% endif %}
+  <div>- Đại diện: {{ kh_aph_ten_nguoi(doc.owner) }}</div>
+{%- endmacro -%}
+
+{%- macro ben_khach(nhan) -%}
+  <div class="aph-party">{{ "BÊN NHẬN" if nhan else "BÊN GIAO" }} ({{ "Bên B" if nhan else "Bên A" }}): {{ doc.customer_name }}</div>
+  <div>- Địa chỉ{{ " giao hàng" if nhan else "" }}: {{ dc or cham }}</div>
+  {%- if doc.tax_id %}<div>- Mã số thuế: {{ doc.tax_id }}</div>{% endif %}
+  <div>- {{ "Người nhận hàng" if nhan else "Người giao trả hàng" }}: {{ doc.kh_aph_nguoi_nhan or cham }}</div>
+{%- endmacro -%}
+
+{%- macro lien(so, ten) -%}
+<div class="aph-vt">
+<table class="aph-head"><tr>
+  <td><b>{{ cty.ten }}</b>{% if cty.dia_chi %}<br>{{ cty.dia_chi }}{% endif %}{% if cty.mst %}<br>MST: {{ cty.mst }}{% endif %}</td>
+  <td class="aph-qh"><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b><u>Độc lập - Tự do - Hạnh phúc</u></b></td>
+</tr></table>
+<table class="aph-title"><tr>
+  <td class="aph-center">
+    <div class="aph-name">{{ "BIÊN BẢN NHẬN LẠI HÀNG HÓA" if tra else "BIÊN BẢN GIAO NHẬN HÀNG HÓA" }}</div>
+    <div>Số: {{ doc.name }} &nbsp;–&nbsp; <span class="aph-date">{{ kh_aph_ngay(doc.posting_date) }}</span></div>
+    <div class="aph-lien">Liên {{ so }}: {{ ten }}</div>
+  </td>
+</tr></table>
+
+<div class="aph-info">
+  {%- if tra %}
+  <div>Căn cứ phiếu giao hàng số {{ doc.return_against or cham }}, hai bên giao nhận lại hàng hóa khách trả như sau.</div>
+  {{ ben_khach(false) }}
+  {{ ben_cty(true) }}
+  {%- else %}
+  <div>Căn cứ {% if dons %}đơn hàng số {{ dons | join(", ") }}{% else %}thỏa thuận mua bán{% endif %}
+    {%- if doc.po_no %}; đơn đặt hàng của khách số {{ doc.po_no }}{% endif %}, hai bên giao nhận hàng hóa như sau.</div>
+  {{ ben_cty(false) }}
+  {%- if thue %}
+  <div class="aph-party">NGƯỜI VẬN CHUYỂN: {{ ("Nhà xe " ~ doc.kh_aph_nha_xe) if doc.kh_aph_nha_xe else cham }}</div>
+  <div>- Lái xe: {{ doc.kh_aph_lai_xe or cham }} &nbsp; Điện thoại: {{ doc.kh_aph_sdt_lai_xe or "............" }} &nbsp; Biển số xe: {{ doc.kh_aph_bien_so_xe or "............" }}</div>
+  {%- endif %}
+  {{ ben_khach(true) }}
+  {%- endif %}
+</div>
+
+<table class="aph-tbl">
+  <thead>
+    <tr>
+      <th class="c-stt">STT</th>
+      <th>Tên hàng hóa, quy cách</th>
+      <th class="c-ma">Mã hàng</th>
+      <th class="c-dvt">ĐVT</th>
+      <th class="c-lo">Số lô</th>
+      <th class="c-sl">Số lượng</th>
+      {%- if tn %}<th class="c-sl">Thực nhận</th>{% endif %}
+      {%- if not an_gia %}
+      <th class="c-tien">Đơn giá{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
+      <th class="c-tien">Thành tiền{% if gia.co_thue %}<br><small>(đã gồm thuế GTGT)</small>{% endif %}</th>
+      {%- endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {%- for row in doc.items %}
+    <tr>
+      <td class="c">{{ loop.index }}</td>
+      <td>{{ row.item_name }}</td>
+      <td class="c">{{ row.item_code }}</td>
+      <td class="c">{{ row.uom }}</td>
+      <td class="c">{{ kh_aph_lo(row) }}</td>
+      <td class="r">{{ kh_aph_sl_hien_thi(row) or kh_aph_so((row.qty or 0) | abs) }}</td>
+      {%- if tn %}<td class="r">{{ kh_aph_so(tn.get(row.name, row.qty)) }}</td>{% endif %}
+      {%- if not an_gia %}
+      {%- set g = gia.dong[loop.index0] %}
+      <td class="r">{{ kh_aph_so(g.don_gia, g.le) }}</td>
+      <td class="r">{{ kh_aph_so(g.thanh_tien, 0) }}</td>
+      {%- endif %}
+    </tr>
+  {%- endfor %}
+    {%- if not an_gia %}
+    <tr class="aph-sum"><td colspan="{{ 8 if tn else 7 }}" class="l">Tổng cộng tiền thanh toán{% if gia.co_thue %} (đã gồm thuế GTGT){% endif %}</td><td class="r">{{ kh_aph_so(tong, 0) }}</td></tr>
+    {%- endif %}
+  </tbody>
+</table>
+<div class="aph-info">
+  {%- if not an_gia %}<div>- Số tiền viết bằng chữ: {{ kh_aph_bang_chu(tong) }}</div>{% endif %}
+  {%- if tra %}
+  <div>- Bên B đã nhận lại đủ số lượng hàng hóa trên. Tình trạng hàng, bao bì: {{ cham }}{{ cham }}</div>
+  {%- else %}
+  <div>- Bên B đã kiểm tra và nhận đủ số lượng hàng hóa trên, đúng chủng loại, quy cách, bao bì nguyên vẹn.
+    Sai khác (nếu có): {{ cham }}{{ cham }}</div>
+  {%- endif %}
+  <div>- Biên bản lập thành 02 liên có giá trị như nhau: liên 1 giao khách hàng, liên 2 {{ cty.ten }} lưu.</div>
+</div>
+
+<table class="aph-sign"><tr>
+  <td><b>ĐẠI DIỆN BÊN GIAO</b><br><i>(Ký, ghi rõ họ tên)</i></td>
+  {%- if thue and not tra %}
+  <td><b>NGƯỜI VẬN CHUYỂN</b><br><i>(Ký, ghi rõ họ tên)</i></td>
+  {%- endif %}
+  <td><b>ĐẠI DIỆN BÊN NHẬN</b><br><i>(Ký, ghi rõ họ tên)</i></td>
+</tr></table>
+</div>
+{%- endmacro -%}
+
+{{ lien(1, "Giao khách hàng") }}
+<div style="page-break-after: always; break-after: page;"></div>
+{{ lien(2, "Lưu tại công ty") }}

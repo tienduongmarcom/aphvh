@@ -7,12 +7,18 @@ Kiểm thử tests/test_print_formats.py báo lỗi nếu .json lệch với ngu
 import json
 import pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parents[1] / "aphvh" / "aph_vh" / "print_format"
-MODIFIED = "2026-09-29 15:00:00.000000"
+ROOT = pathlib.Path(__file__).resolve().parents[1] / "kh_aph" / "kh_aph" / "print_format"
+# Frappe chỉ nạp lại mẫu in khi "modified" mới hơn bản trên site: sửa mẫu nào thì tăng mốc này.
+MODIFIED = "2026-10-15 12:00:00.000000"
 
 FORMATS = {
-    "phieu_nhap_kho_aph": ("Phiếu nhập kho APH", "Purchase Receipt"),
-    "phieu_kho_aph": ("Phiếu kho APH", "Stock Entry"),
+    "phieu_nhap_kho": ("Phiếu nhập kho", "Purchase Receipt"),
+    "phieu_kho": ("Phiếu kho", "Stock Entry"),
+    "phieu_xuat_kho_ban_hang": ("Phiếu xuất kho bán hàng", "Delivery Note"),
+    "bien_ban_giao_nhan": ("Biên bản giao nhận", "Delivery Note"),
+    "phieu_thu_chi": ("Phiếu thu chi", "Payment Entry"),
+    "phieu_ban_hang": ("Phiếu bán hàng", "Sales Invoice"),
+    "bien_ban_doi_soat_cong_no": ("Biên bản đối soát công nợ", "Customer"),
 }
 
 
@@ -22,7 +28,7 @@ def build_doc(folder: str) -> dict:
         "absolute_value": 0,
         "align_labels_right": 0,
         "creation": MODIFIED,
-        "css": (ROOT / "phieu_in_aph.css").read_text(encoding="utf-8"),
+        "css": (ROOT / "phieu_in.css").read_text(encoding="utf-8"),
         "custom_format": 1,
         "default_print_language": "vi",
         "disabled": 0,
@@ -39,7 +45,7 @@ def build_doc(folder: str) -> dict:
         "margin_top": 12.0,
         "modified": MODIFIED,
         "modified_by": "Administrator",
-        "module": "APH VH",
+        "module": "Kh Aph",
         "name": name,
         "owner": "Administrator",
         "page_number": "Hide",

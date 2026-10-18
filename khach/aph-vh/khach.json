@@ -1,0 +1,171 @@
+{
+  "khach_hang": "An Phú Hưng - Vĩnh Hưng",
+  "che_do_du_lieu": "tu_nhap",
+  "ngay_chot": "2026-09-30",
+  "nam_tai_chinh_bat_dau": "01-01",
+  "cong_ty": [
+    {
+      "ten": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI VÀ XUẤT NHẬP KHẨU AN PHÚ HƯNG",
+      "abbr": "APH",
+      "thong_tu": 133,
+      "mst": "2601002157"
+    },
+    {
+      "ten": "CÔNG TY CỔ PHẦN THƯƠNG MẠI VĨNH HƯNG",
+      "abbr": "VH",
+      "thong_tu": 99,
+      "mst": "0500470349"
+    },
+    {
+      "ten": "HỘ KINH DOANH MINH KHANG",
+      "abbr": "MK",
+      "thong_tu": 152
+    },
+    {
+      "ten": "TL",
+      "abbr": "TL",
+      "noi_bo": true
+    }
+  ],
+  "cay_kho": {
+    "dia_diem": [
+      {
+        "ten": "Nhà máy Phú Thọ",
+        "loai": "nha_may",
+        "cong_ty": [
+          "APH"
+        ],
+        "gui": [
+          "VH",
+          "MK"
+        ]
+      },
+      {
+        "ten": "Hà Nội",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH",
+          "MK",
+          "TL"
+        ],
+        "kho_ve_tinh": [
+          "Bác Hiền",
+          "Chị Thoa",
+          "Hải Thành",
+          "Lê Huyên",
+          "Bác Khuyên",
+          "Hằng Viết"
+        ]
+      },
+      {
+        "ten": "Đà Nẵng",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH"
+        ]
+      },
+      {
+        "ten": "Hồ Chí Minh",
+        "loai": "ban_hang",
+        "cong_ty": [
+          "APH",
+          "VH"
+        ]
+      }
+    ]
+  },
+  "ngan_hang": [
+    {
+      "don_vi": "VH",
+      "ngan_hang": "VietinBank",
+      "so_cuoi": "3072",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "VH",
+      "ngan_hang": "ACB",
+      "so_cuoi": "5888",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "VH",
+      "ngan_hang": "MB",
+      "so_cuoi": "9999",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "VH",
+      "ngan_hang": "Sacombank",
+      "so_cuoi": "3333",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "VH",
+      "ngan_hang": "MSB",
+      "so_cuoi": "9913",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "VietinBank",
+      "so_cuoi": "7041",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "ACB",
+      "so_cuoi": "3666",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "MB",
+      "so_cuoi": "9999",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "Sacombank",
+      "so_cuoi": "5555",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "MSB",
+      "so_cuoi": "6688",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "BIDV",
+      "so_cuoi": "1824",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "APH",
+      "ngan_hang": "ABBANK",
+      "so_cuoi": "6868",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "MK",
+      "ngan_hang": "VietinBank",
+      "so_cuoi": "6917",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "MK",
+      "ngan_hang": "ACB",
+      "so_cuoi": "6666",
+      "loai_tien": "VND"
+    },
+    {
+      "don_vi": "MK",
+      "ngan_hang": "MB",
+      "so_cuoi": "8666",
+      "loai_tien": "VND"
+    }
+  ]
+}

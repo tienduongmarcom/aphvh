@@ -1,0 +1,484 @@
+import traceback
+import json, os, secrets, subprocess, uuid, time
+import http.cookiejar, urllib.request, urllib.parse, urllib.error
+from pathlib import Path
+WEB="aphvh-p0-web-uat"
+BACKEND="erp-aph-vh-backend-1"
+DB="erp-aph-vh-db-1"
+SITE="aphvh-web-uat"
+ROOT="/home/frappe/frappe-bench"
+TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Purchase Invoice","Landed Cost Voucher","Repost Item Valuation","APH Pending Receipt","APH Pending Receipt Item","APH Bag Movement","APH Shared Sales Order","APH Shared Sales Order Item","Custom Field","Version","BOM","Work Order","APH Source Change"]
+root_secret=""
+token_secret=""
+factory_password=secrets.token_urlsafe(32)
+def run(args,input=None):
+    p=subprocess.run(args,input=input,text=True,capture_output=True)
+    if p.returncode:
+        message=(p.stdout+p.stderr)[-3500:]
+        for secret in (root_secret,factory_password,token_secret,state.get("admin_password","")):
+            if secret: message=message.replace(secret,"[REDACTED]")
+        raise RuntimeError(message)
+    return p.stdout
+
+def inner(code,input=None):
+    return run(["docker","exec","-i","-w",ROOT+"/sites",WEB,ROOT+"/env/bin/python","-c",code],input)
+
+snapshot_code='''import json,frappe
+frappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")
+frappe.connect()
+try:
+ print("SNAPSHOT:"+json.dumps({"counts":{dt:frappe.db.count(dt) for dt in TRACKED},"series":frappe.db.sql("SELECT name,current FROM `tabSeries` ORDER BY name")}))
+finally:frappe.destroy()
+'''.replace('for dt in TRACKED','for dt in '+repr(TRACKED))
+def snapshot():
+    raw=inner(snapshot_code)
+    return json.loads(next(x[9:] for x in raw.splitlines() if x.startswith("SNAPSHOT:")))
+def session(user,password):
+    op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    def call(method,args=None):
+        data=urllib.parse.urlencode(args).encode() if args is not None else None
+        req=urllib.request.Request("http://127.0.0.1:18091"+method,data=data,
+            headers={"Host":SITE,"X-Frappe-Site-Name":SITE})
+        with op.open(req,timeout=30) as res:return json.load(res)
+    call("/api/method/login",{"usr":user,"pwd":password})
+    assert call("/api/method/frappe.auth.get_logged_user")["message"]==user
+    return call
+
+def emit(case,status,detail):
+    print(json.dumps({"case":case,"status":status,"detail":detail},ensure_ascii=False),flush=True)
+
+state=json.loads(Path((Path.home()/"APHVH_HTTP_UAT_STATE_PATH.txt").read_text().strip()).read_text())
+assert state["site"]==SITE and state["container"]==WEB and state["port"]==18091
+info=json.loads(run(["docker","inspect",WEB]))[0]
+assert info["HostConfig"]["PortBindings"]["8000/tcp"]==[{"HostIp":"127.0.0.1","HostPort":"18091"}]
+source=Path(next(m["Source"] for m in info["Mounts"] if m["Destination"]==ROOT+"/sites"))
+assert source==Path(state["sites_directory"]) and not (source/"frontend").exists()
+assert source.parent.name.startswith("aphvh-http-uat-")
+env=dict(x.split("=",1) for x in json.loads(run(["docker","inspect",DB]))[0]["Config"]["Env"] if "=" in x)
+root_secret=env.get("MARIADB_ROOT_PASSWORD") or env.get("MYSQL_ROOT_PASSWORD")
+if not root_secret:
+    file=env.get("MARIADB_ROOT_PASSWORD_FILE") or env.get("MYSQL_ROOT_PASSWORD_FILE")
+    if file:root_secret=run(["docker","exec",DB,"cat",file]).rstrip("\n")
+assert root_secret,"No restore credential; no fixture created"
+before=snapshot()
+for dt in ("Customer","Item","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry"):
+    assert before["counts"][dt]==0,dt+" not blank"
+admin=session("Administrator",state["admin_password"])
+run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"backup"])
+backup_dir=source/SITE/"private"/"backups"
+backup=max(backup_dir.glob("*-database.sql.gz"),key=lambda p:p.stat().st_mtime)
+assert backup.stat().st_size>0
+restore_path="/tmp/aphvh-http-cost-"+uuid.uuid4().hex+".sql.gz"
+run(["docker","cp",str(backup),BACKEND+":"+restore_path])
+# Verify destination before committing fixtures.
+run(["docker","exec",BACKEND,"test","-s",restore_path])
+restore_record=source.parent/"cost_uat_restore.json"
+restore_record.write_text(json.dumps({"site":SITE,"backup":str(backup),"backend_path":restore_path,"before":before},indent=2))
+os.chmod(restore_record,0o600)
+try:
+    # Fixture masters only; all business documents below go through authenticated HTTP.
+    fixture_code = '''import json,sys,uuid,frappe
+from frappe.utils import today, add_days
+from frappe.utils.password import update_password
+from kh_aph.constants import INV_FLAG,INV_NO,ROLE_FACTORY,ROLE_NO_COST,IG_FIXED_RATE
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')
+p='UAT-INV-'+uuid.uuid4().hex[:8]; payload=json.load(sys.stdin)
+companies={a:frappe.get_doc('Company',frappe.db.get_value('Company',{'abbr':a},'name')) for a in ('APH','VH','MK','TL')}
+warehouses={}
+for a,co in companies.items():
+ warehouses[a]=frappe.get_doc({'doctype':'Warehouse','warehouse_name':p+'-'+a,'company':co.name,'is_group':0,'parent_warehouse':frappe.db.get_value('Warehouse',{'company':co.name,'is_group':1},'name'),'account':co.default_inventory_account}).insert().name
+group=frappe.get_doc({'doctype':'Item Group','item_group_name':p,'parent_item_group':'HH - Hàng hóa','is_group':0}).insert().name
+fixed=frappe.get_doc({'doctype':'Item Group','item_group_name':p+'-FIXED','parent_item_group':'HH - Hàng hóa','is_group':0,IG_FIXED_RATE:1}).insert().name
+supplier=frappe.get_doc({'doctype':'Supplier','supplier_name':p,'supplier_type':'Company','supplier_group':frappe.db.get_value('Supplier Group',{'is_group':0},'name')}).insert().name
+customer=frappe.get_doc({'doctype':'Customer','customer_name':p,'customer_type':'Company','customer_group':frappe.db.get_value('Customer Group',{'is_group':0},'name'),'territory':frappe.db.get_value('Territory',{'is_group':0},'name'),INV_FLAG:INV_NO}).insert()
+taxes=[]
+for a in ('APH','VH'):
+ co=companies[a];tax=frappe.get_doc({'doctype':'Item Tax Template','title':p+'-'+a+'-10','company':co.name,'taxes':[{'tax_type':frappe.db.get_value('Account',{'company':co.name,'account_number':'33311','is_group':0},'name'),'tax_rate':10}]}).insert()
+ taxes.append({'item_tax_template':tax.name,'tax_category':customer.tax_category})
+items={}
+for label,weight in [('trade',25),('cogs',25),('raw',25),('fg',10),('by',5),('fixed',5)]:
+ item=frappe.get_doc({'doctype':'Item','item_code':p+'-'+label,'item_name':p+'-'+label,'item_group':fixed if label=='fixed' else group,'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','kh_aph_kg_per_bag':weight,'taxes':taxes,'item_defaults':[{'company':co.name,'default_warehouse':warehouses[a],'income_account':co.default_income_account,'expense_account':co.default_expense_account,'buying_cost_center':co.cost_center,'selling_cost_center':co.cost_center} for a,co in companies.items()]}).insert()
+ items[label]=item.name
+u=frappe.get_doc({'doctype':'User','email':p.lower()+'@example.invalid','first_name':'Dũng UAT kho','enabled':1,'user_type':'System User','send_welcome_email':0,'roles':[{'role':ROLE_FACTORY},{'role':ROLE_NO_COST}]});u.flags.no_welcome_mail=True;u.insert();update_password(u.name,payload['password'])
+xuong=frappe.get_doc({'doctype':'Cost Center','cost_center_name':p+'-XUONG','company':companies['APH'].name,'parent_cost_center':frappe.db.get_value('Cost Center',{'company':companies['APH'].name,'is_group':1},'name'),'kh_aph_loai_ttcp':'Xưởng sản xuất'}).insert().name if frappe.get_meta('Cost Center').has_field('kh_aph_loai_ttcp') else None
+frappe.db.commit();print('FIXTURE:'+json.dumps({'xuong':xuong,'companies':{a:co.name for a,co in companies.items()},'wh':warehouses,'items':items,'supplier':supplier,'customer':customer.name,'user':u.name,'date':today(),'cost_date':add_days(today(),-3),'sale_date':add_days(today(),-1),'expense':companies['APH'].default_expense_account,'adjustment':companies['APH'].stock_adjustment_account,'cc':companies['APH'].cost_center,'ccs':{a:co.cost_center for a,co in companies.items()},'price_list':frappe.db.get_value('Price List',{'selling':1,'enabled':1},'name')}));frappe.destroy()
+'''
+    raw=inner(fixture_code,json.dumps({'password':factory_password}))
+    f=json.loads(next(l[8:] for l in raw.splitlines() if l.startswith('FIXTURE:')))
+    factory=session(f['user'],factory_password)
+    def rpc(method,args=None,caller=None):return (caller or admin)('/api/method/'+method,args)['message']
+    def get(dt,name):return rpc('frappe.client.get',{'doctype':dt,'name':name})
+    def insert(doc,caller=None):return rpc('frappe.client.insert',{'doc':json.dumps(doc)},caller)
+    def submit(doc,caller=None):return rpc('frappe.client.submit',{'doc':json.dumps(doc)},caller)
+    def cancel(dt,name):return rpc('frappe.client.cancel',{'doctype':dt,'name':name})
+    def deny(action):
+        try: action()
+        except urllib.error.HTTPError as exc:
+            error=json.loads(exc.read())
+            assert error.get('exc_type') in ('ValidationError','PermissionError','NegativeStockError','LinkExistsError','MandatoryError'),error
+            return error.get('exc_type')
+        raise AssertionError('Expected rejection')
+    oracle_code='''import json,sys,frappe
+from kh_aph.bag_stock import balance
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect()
+f=json.load(sys.stdin);out={}
+for a,wh in f['wh'].items():
+ out[a]={}
+ for label,item in f['items'].items():
+  row=frappe.db.get_value('Bin',{'item_code':item,'warehouse':wh},['actual_qty','valuation_rate','stock_value','reserved_qty'],as_dict=True) or {}
+  out[a][label]={k:float(row.get(k) or 0) for k in ('actual_qty','valuation_rate','stock_value','reserved_qty')}
+  out[a][label]['bags']=balance(item,wh)
+out['counts']={dt:frappe.db.count(dt) for dt in ('Purchase Receipt','Stock Ledger Entry','GL Entry','APH Bag Movement')}
+out['customer_debt']=float(frappe.db.sql("SELECT COALESCE(SUM(debit-credit),0) FROM `tabGL Entry` WHERE party_type='Customer' AND party=%s AND is_cancelled=0",f['customer'])[0][0])
+print('ORACLE:'+json.dumps(out,default=str));frappe.destroy()
+'''
+    def oracle():
+        raw=inner(oracle_code,json.dumps(f))
+        return json.loads(next(l[7:] for l in raw.splitlines() if l.startswith('ORACLE:')))
+    def near(actual,expected):assert abs(float(actual or 0)-expected)<0.05,(actual,expected)
+    def stock(a,label,qty,bags,rate=None):
+        result=oracle()[a][label];near(result.get('actual_qty'),qty);near(result['bags'],bags)
+        if rate is not None:near(result.get('valuation_rate'),rate)
+        return result
+    def row(label,qty,bags,rate=None,a='APH'):
+        d={'item_code':f['items'][label],'warehouse':f['wh'][a],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['ccs'][a]}
+        if rate is not None:d['rate']=rate
+        return d
+    def receipt(label,qty,bags,rate,a='APH',posting_date=None):
+        return submit(insert({'doctype':'Purchase Receipt','company':f['companies'][a],'supplier':f['supplier'],'posting_date':posting_date or f['date'],'set_posting_time':1 if posting_date else 0,'posting_time':'08:00:00','currency':'VND','conversion_rate':1,'items':[row(label,qty,bags,rate,a)]}))
+    pending=submit(insert({'doctype':'APH Pending Receipt','company':f['companies']['APH'],'supplier':f['supplier'],'received_date':f['date'],'items':[row('trade',100,4)]}))
+    initial=oracle();assert initial['counts']['Stock Ledger Entry']==initial['counts']['GL Entry']==0,initial
+    stock('APH','trade',0,0)
+    report=rpc('frappe.desk.query_report.run',{'report_name':'Ton kho so luong','filters':json.dumps({'item_code':f['items']['trade']})},factory)
+    assert any(float(r.get('pending_kg',0))==100 and float(r.get('actual_qty',0))==0 for r in report['result']),report
+    emit('HTTP_PENDING_EXCLUDED_FROM_AVAILABLE','PASS',{'pending_kg':100,'available_kg':0,'sle':0,'gl':0})
+    args={'name':pending['name'],'rates':json.dumps({pending['items'][0]['name']:10000}),'reason':'UAT chốt giá/kg'}
+    deny(lambda:rpc('kh_aph.pending_valuation.finalize',args,factory));assert oracle()==initial
+    zero={**args,'rates':json.dumps({pending['items'][0]['name']:0})}
+    deny(lambda:rpc('kh_aph.pending_valuation.finalize',zero));assert oracle()==initial
+    emit('HTTP_PENDING_PRICE_AND_ROLE_GUARDS','PASS','Factory and zero price rejected; no ledger written')
+    deny(lambda:receipt('trade',100,4,0));assert oracle()==initial
+    emit('HTTP_ZERO_VALUED_RECEIPT_REJECTED','PASS','Native receipt with zero price denied; pending stock remains outside SLE')
+    forged_pr={'doctype':'Purchase Receipt','company':f['companies']['APH'],'supplier':f['supplier'],
+        'posting_date':f['date'],'currency':'VND','conversion_rate':1,
+        'kh_aph_pending_receipt':pending['name'],'items':[row('trade',100,4,10000)]}
+    deny(lambda:insert(forged_pr));assert oracle()==initial
+    emit('HTTP_PENDING_NATIVE_LINK_BYPASS_DENIED','PASS','Native PR cannot be manually linked to pending receipt')
+    desk_raw=run(['node','--experimental-websocket',str(Path(__file__).with_name('desk.mjs')),pending['name'],f['items']['trade']])
+    desk=json.loads(next(line for line in desk_raw.splitlines() if line.startswith('{"case":')))
+    assert desk['status']=='PASS',desk
+    pr1=desk['receipt']
+    admin=session('Administrator',state['admin_password'])
+    emit('NATIVE_DESK_FINALIZE_AND_BAG_PREVIEW','PASS',desk['quantity'])
+    stock('APH','trade',100,4,10000)
+    same=oracle();assert rpc('kh_aph.pending_valuation.finalize',args)==pr1 and oracle()==same
+    emit('HTTP_PENDING_FINALIZE_ATOMIC_REPEAT','PASS',{'qty_kg':100,'bags':4,'ma':10000,'receipt':pr1})
+    pr2=receipt('trade',50,2,20000)
+    stock('APH','trade',150,6,13333.3333333333)
+    vhpr=receipt('trade',50,2,5000,'VH')
+    stock('VH','trade',50,2,5000);stock('APH','trade',150,6,13333.3333333333)
+    emit('HTTP_MOVING_AVERAGE_PER_WAREHOUSE','PASS',{'APH_qty':150,'APH_ma':13333.3333333333,'VH_ma':5000})
+    shared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],'transaction_date':f['date'],'delivery_date':f['date'],'selling_price_list':f['price_list'],'currency':'VND','items':[{**row('trade',75,3,20000),'line_id':'bag-line'}]}))
+    so_name=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':shared['name']}),'fields':json.dumps(['name'])})[0]['name']
+    so=get('Sales Order',so_name);assert so['items'][0]['qty']==75 and so['items'][0]['kh_aph_bags']==3
+    assert so['items'][0]['kh_aph_bag_rate']==500000 and so['grand_total']==1500000,so
+    emit('HTTP_SHARED_BAG_PRICE_PER_KG','PASS',{'bags':3,'kg':75,'rate_kg':20000,'rate_bag':500000,'total':1500000})
+    dn=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':so_name})
+    dn['items'][0].update(qty=50,kh_aph_bags=1)
+    baseline=oracle();deny(lambda:insert(dn));assert oracle()==baseline
+    dn['items'][0].update(qty=25,kh_aph_bags=1)
+    dn=submit(insert(dn))
+    stock('APH','trade',125,5,13333.3333333333);near(oracle()['customer_debt'],500000)
+    emit('HTTP_PARTIAL_DISPATCH_BAG_LEDGER','PASS',{'kg':125,'bags':5,'debt':500000,'mismatch_rejected':True})
+    before_change=oracle()
+    stale=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':so_name})
+    stale['items'][0].update(qty=25,kh_aph_bags=1);stale=insert(stale)
+    inner("import json,sys,frappe\nfrappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\nu=frappe.get_doc('User',json.load(sys.stdin)['user']);u.append('roles',{'role':'Sales Manager'});u.save();frappe.db.commit();frappe.destroy()",json.dumps(f))
+    factory=session(f['user'],factory_password)
+    change=submit(insert({'doctype':'APH Source Change','source_order':so_name,'source_row':so['items'][0]['name'],
+        'qty':50,'target_warehouse':f['wh']['VH'],'reason':'UAT shift remaining bags','closed_source':1},factory),factory)
+    after_change=oracle()
+    assert after_change['counts']==before_change['counts'] and after_change['customer_debt']==before_change['customer_debt']
+    near(after_change['APH']['trade']['actual_qty'],125);near(after_change['VH']['trade']['actual_qty'],50)
+    near(after_change['APH']['trade']['reserved_qty'],0);near(after_change['VH']['trade']['reserved_qty'],50)
+    assert change['changed_by']==f['user']
+    assert not change['closed_source'],'Forged client state must be recomputed on submit'
+    assert 'rate' not in json.loads(change['original_row_json'])
+    assert get('Sales Order',so_name)['items'][0]['qty']==25 and get('Sales Order',so_name)['items'][0]['kh_aph_bags']==1
+    forged_cancel=dict(get('APH Source Change',change['name']))
+    forged_cancel.update(docstatus=2,qty=25)
+    same=oracle()
+    deny(lambda:rpc('frappe.client.save',{'doc':json.dumps(forged_cancel)}))
+    assert oracle()==same and get('APH Source Change',change['name'])['docstatus']==1
+    emit('HTTP_SOURCE_CANCEL_JSON_IMMUTABILITY','PASS','Cancellation cannot alter coordinator quantity/history')
+    target=get('Sales Order',change['target_order'])
+    assert target['company']==f['companies']['VH'] and target['items'][0]['qty']==50 and target['items'][0]['kh_aph_bags']==2
+    assert target['items'][0]['kh_aph_shared_line']==so['items'][0]['kh_aph_shared_line']
+    deny(lambda:submit(stale));assert oracle()==after_change
+    emit('HTTP_SOURCE_REMAINDER_NO_COST_AND_STALE_DN','PASS',{'actor':change['changed_by'],'original_kg':25,'target_kg':50,'price_snapshot':False})
+    new_dn=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':target['name']})
+    new_dn['items'][0].update(qty=25,kh_aph_bags=1);new_dn=submit(insert(new_dn))
+    stock('APH','trade',125,5);stock('VH','trade',25,1);near(oracle()['customer_debt'],1000000)
+    figures=rpc('kh_aph.funds.shared_financials',{'name':shared['name']})
+    near(figures['dispatched_debt'],1000000);near(figures['undelivered_value'],500000)
+    emit('HTTP_SOURCE_TARGET_DISPATCH_OWNER_FIGURES','PASS','Only target owner stock/debt changed')
+    same=oracle();deny(lambda:cancel('APH Source Change',change['name']));assert oracle()==same
+    emit('HTTP_SOURCE_CANCEL_DISPATCH_GUARD','PASS','Dispatched target prevents coordinator reversal')
+    new_return=rpc('erpnext.stock.doctype.delivery_note.delivery_note.make_sales_return',{'source_name':new_dn['name']})
+    new_return['items'][0].update(qty=-25,kh_aph_bags=-1);new_return=submit(insert(new_return))
+    def linked_si(note):
+        return rpc('frappe.client.get_list',{'doctype':'Sales Invoice Item','parent':'Sales Invoice','filters':json.dumps({'delivery_note':note}),'fields':json.dumps(['parent'])})[0]['parent']
+    cancel('Sales Invoice',linked_si(new_return['name']));cancel('Delivery Note',new_return['name'])
+    cancel('Sales Invoice',linked_si(new_dn['name']));cancel('Delivery Note',new_dn['name'])
+    cancel('APH Source Change',change['name'])
+    stock('APH','trade',125,5);stock('VH','trade',50,2);near(oracle()['customer_debt'],500000)
+    restored=get('Sales Order',so_name)
+    assert restored['items'][0]['qty']==75 and restored['items'][0]['kh_aph_bags']==3
+    original=get('Delivery Note',dn['name'])
+    assert original['docstatus']==1 and original['company']==f['companies']['APH'] and original['items'][0]['qty']==25
+    emit('HTTP_SOURCE_REVERSE_HISTORY_CONSERVATION','PASS','Native target vouchers reversed before restoring original; first dispatch unchanged')
+    ret=rpc('erpnext.stock.doctype.delivery_note.delivery_note.make_sales_return',{'source_name':dn['name']})
+    ret['items'][0].update(qty=-25,kh_aph_bags=-1)
+    ret=submit(insert(ret));stock('APH','trade',150,6);near(oracle()['customer_debt'],0)
+    emit('HTTP_RETURN_RESTORES_BAGS_KG_DEBT','PASS',{'kg':150,'bags':6,'debt':0})
+    def lcv(receipts,amount):
+        doc={'doctype':'Landed Cost Voucher','company':f['companies']['APH'],'posting_date':f['date'],'distribute_charges_based_on':'Distribute Manually','kh_aph_by_kg':1,'purchase_receipts':[{'receipt_document_type':'Purchase Receipt','receipt_document':r} for r in receipts],'taxes':[{'expense_account':f['expense'],'description':'UAT chi phí chuyến theo kg','amount':amount}]}
+        return submit(insert(doc))
+    landed=lcv([pr1,pr2['name']],150000)
+    charges=sorted(float(r['applicable_charges']) for r in landed['items']);assert charges==[50000,100000],landed
+    # Run the actual pinned ERPNext repost function and require completion, not queued status.
+    repost_code='''import frappe,json
+frappe.init(site='aphvh-web-uat',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')
+from erpnext.stock.doctype.repost_item_valuation.repost_item_valuation import execute_reposting_entry
+for attempt in range(15):
+ names=frappe.get_all('Repost Item Valuation',filters={'docstatus':1,'status':['in',['Queued','In Progress']]},pluck='name',order_by='creation')
+ if not names:break
+ for name in names:execute_reposting_entry(name)
+failed=frappe.get_all('Repost Item Valuation',filters={'docstatus':1,'status':['not in',['Completed','Skipped']]},fields=['name','status','error_log'])
+assert not failed,failed
+frappe.db.commit();print('REPOST:'+json.dumps(frappe.get_all('Repost Item Valuation',fields=['name','status']),default=str));frappe.destroy()
+'''
+    def repost():return inner(repost_code)
+    repost();stock('APH','trade',150,6,14333.3333333333);stock('VH','trade',50,2,5000)
+    emit('HTTP_LANDED_COST_KG_AND_REPOST','PASS',{'charges':charges,'APH_ma':14333.3333333333,'VH_ma':5000})
+    # Independent item: receipts precede yesterday's dispatch; today's LCV must
+    # revalue the dispatched cost in both SLE and GL, while receivable stays fixed.
+    cpr1=receipt('cogs',100,4,10000,posting_date=f['cost_date'])
+    cpr2=receipt('cogs',50,2,20000,posting_date=f['cost_date'])
+    assert cpr1['posting_date']==cpr2['posting_date']==f['cost_date'],(cpr1['posting_date'],cpr2['posting_date'],f['cost_date'])
+    near(cpr1['items'][0]['rate'],10000);near(cpr2['items'][0]['rate'],20000)
+    repost()
+    stock('APH','cogs',150,6,13333.3333333333)
+    cshared=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['cost_date'],'delivery_date':f['sale_date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('cogs',25,1,20000),'line_id':'cogs-line'}]}))
+    cso=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':cshared['name']}),'fields':json.dumps(['name'])})[0]['name']
+    cdn=rpc('erpnext.selling.doctype.sales_order.sales_order.make_delivery_note',{'source_name':cso})
+    cdn.update(posting_date=f['sale_date'],posting_time='12:00:00',set_posting_time=1)
+    cdn=submit(insert(cdn));repost()
+    def sale_cost(note):
+        gl=rpc('frappe.client.get_list',{'doctype':'GL Entry','filters':json.dumps({
+            'voucher_type':'Delivery Note','voucher_no':note,'account':f['expense'],'is_cancelled':0}),
+            'fields':json.dumps(['debit','credit'])})
+        sle=rpc('frappe.client.get_list',{'doctype':'Stock Ledger Entry','filters':json.dumps({
+            'voucher_type':'Delivery Note','voucher_no':note,'item_code':f['items']['cogs'],'is_cancelled':0}),
+            'fields':json.dumps(['stock_value_difference'])})
+        return {'gl':sum(float(r['debit'])-float(r['credit']) for r in gl),
+                'sle':-sum(float(r['stock_value_difference']) for r in sle)}
+    initial_cogs=sale_cost(cdn['name'])
+    near(initial_cogs['gl'],333333.3333333333);near(initial_cogs['sle'],333333.3333333333)
+    stock('APH','cogs',125,5,13333.3333333333);near(oracle()['customer_debt'],500000)
+    emit('HTTP_BACKDATED_DISPATCH_COGS_GL_SLE','PASS',initial_cogs)
+    c_landed=lcv([cpr1['name'],cpr2['name']],150000);repost()
+    after_cogs=sale_cost(cdn['name'])
+    near(after_cogs['gl'],358333.3333333333);near(after_cogs['sle'],358333.3333333333)
+    stock('APH','cogs',125,5,14333.3333333333);near(oracle()['customer_debt'],500000)
+    emit('HTTP_LATE_LANDED_COST_REPOSTS_DISPATCH_COGS','PASS',{'cost':after_cogs,'debt':500000})
+    cancel('Sales Invoice',linked_si(cdn['name']));cancel('Delivery Note',cdn['name']);repost()
+    stock('APH','cogs',150,6,14333.3333333333);near(oracle()['customer_debt'],0)
+    reversed_cost=sale_cost(cdn['name']);near(reversed_cost['gl'],0);near(reversed_cost['sle'],0)
+    emit('HTTP_REPOSTED_DISPATCH_CANCEL_REVERSE','PASS',{'kg':150,'bags':6,'debt':0,'active_cost':reversed_cost})
+    raw_pr=receipt('raw',100,4,10000)
+    abnormal_doc={'doctype':'Stock Entry','stock_entry_type':'Material Issue',
+        'company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt bất thường',
+        'kh_aph_loss_reason':'UAT một bao hỏng, ghi chi phí riêng','items':[{
+            'item_code':f['items']['raw'],'qty':25,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+            's_warehouse':f['wh']['APH'],'expense_account':f['expense'],'cost_center':f['cc']}]}
+    import copy
+    bad_account=copy.deepcopy(abnormal_doc)
+    bad_account['items'][0]['expense_account']=get('Company',f['companies']['APH'])['default_inventory_account']
+    prior_loss=oracle();deny(lambda:submit(insert(bad_account)));assert oracle()==prior_loss
+    abnormal=submit(insert(abnormal_doc))
+    stock('APH','raw',75,3,10000)
+    expense_rows=rpc('frappe.client.get_list',{'doctype':'GL Entry','filters':json.dumps({
+        'voucher_type':'Stock Entry','voucher_no':abnormal['name'],'account':f['expense'],'is_cancelled':0}),
+        'fields':json.dumps(['debit','credit'])})
+    near(sum(float(r['debit'])-float(r['credit']) for r in expense_rows),250000)
+    cancel('Stock Entry',abnormal['name']);stock('APH','raw',100,4,10000)
+    emit('HTTP_ABNORMAL_LOSS_EXPENSE_SEPARATE','PASS',{'lost_kg':25,'lost_bags':1,'expense':250000,'cancel_restored':True,'asset_account_denied':True})
+
+    def production():
+        rows=[]
+        for label,qty,bags,source in [('raw',100,4,True),('fg',70,7,False),('by',20,4,False),('fixed',5,1,False)]:
+            d={'item_code':f['items'][label],'qty':qty,'kh_aph_bags':bags,'uom':'Kg','conversion_factor':1,'cost_center':f['cc'],'expense_account':f['adjustment'],'s_warehouse' if source else 't_warehouse':f['wh']['APH']}
+            if label=='fixed':d.update(basic_rate=5000,set_basic_rate_manually=1)
+            rows.append(d)
+        return {'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg','company':f['companies']['APH'],'posting_date':f['date'],'kh_aph_loss_type':'Hao hụt tự nhiên','kh_aph_loss_reason':'UAT giảm ẩm tự nhiên 5 kg','items':rows,'additional_costs':[{'expense_account':f['expense'],'description':'UAT chi phí sản xuất','amount':90000}]}
+    prod=submit(insert(production()))
+    # 0.11.1: cờ kh_aph_factory_costing bật trên UAT -> phiếu mới dùng kg-v4 (kg-v3 + hệ số phẩm cấp; hệ số mặc định 1 nên số liệu không đổi).
+    assert prod['kh_aph_costing_rule']=='kg-v4',prod
+    near(prod['total_incoming_value'],1090000);stock('APH','raw',0,0);stock('APH','fg',70,7);stock('APH','by',20,4);stock('APH','fixed',5,1,5000)
+    by_item={r['item_code']:r for r in prod['items']}
+    near(by_item[f['items']['fg']]['additional_cost'],70000);near(by_item[f['items']['by']]['additional_cost'],20000);near(by_item[f['items']['fixed']]['additional_cost'],0)
+    emit('HTTP_PRODUCTION_KG_BYPRODUCT_ADDITIONAL_COST','PASS',{'input_value':1000000,'additional_cost':90000,'output_value':1090000,'fg_kg':70,'byproduct_kg':20,'fixed_kg':5,'natural_weight_loss':5})
+    baseline=oracle();deny(lambda:cancel('Purchase Receipt',raw_pr['name']));assert oracle()==baseline
+    forged={'doctype':'APH Bag Movement','item_code':f['items']['raw'],'warehouse':f['wh']['APH'],'bags':999}
+    deny(lambda:insert(forged));assert oracle()==baseline
+    emit('HTTP_BAG_HISTORY_AND_CANCEL_GUARDS','PASS','Consumed input cancellation and direct bag-ledger injection rejected')
+    raw_lcv=lcv([raw_pr['name']],100000);repost()
+    recalculated=get('Stock Entry',prod['name'])
+    near(recalculated['total_incoming_value'],1190000)
+    stock('APH','fixed',5,1,5000)
+    near(sum(float(oracle()['APH'][label].get('stock_value',0)) for label in ('fg','by','fixed')),1190000)
+    emit('HTTP_PRODUCTION_INPUT_COST_REPOST','PASS',{'late_raw_cost':100000,'reposted_output_value':1190000,'fixed_byproduct_rate':5000})
+    cancel('Landed Cost Voucher',raw_lcv['name']);repost()
+    cancel('Stock Entry',prod['name']);stock('APH','raw',100,4,10000)
+    for label in ('fg','by','fixed'):stock('APH',label,0,0)
+    emit('HTTP_PRODUCTION_CANCEL_REVERSE','PASS',{'raw_kg':100,'raw_bags':4,'output_kg':0,'output_bags':0})
+    bom=submit(insert({'doctype':'BOM','company':f['companies']['APH'],'item':f['items']['fg'],
+        'quantity':70,'uom':'Kg','is_active':1,'is_default':1,'currency':'VND','conversion_rate':1,
+        'items':[{'item_code':f['items']['raw'],'qty':100,'uom':'Kg','conversion_factor':1,'rate':10000}]}))
+    wo=submit(insert({'doctype':'Work Order','company':f['companies']['APH'],'production_item':f['items']['fg'],
+        'bom_no':bom['name'],'qty':70,'source_warehouse':f['wh']['APH'],'wip_warehouse':f['wh']['APH'],
+        'fg_warehouse':f['wh']['APH'],'skip_transfer':1,'use_multi_level_bom':0}))
+    mfg=rpc('erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry',
+        {'work_order_id':wo['name'],'purpose':'Manufacture','qty':70})
+    mfg['stock_entry_type']='Sản xuất theo kg'
+    mfg['kh_aph_xuong']=f['xuong']  # 0.11.1: phiếu sản xuất theo kg bắt buộc chọn xưởng (trung tâm chi phí)
+    mfg['kh_aph_loss_type']='Hao hụt tự nhiên'
+    mfg['kh_aph_loss_reason']='UAT giảm ẩm tự nhiên 5 kg'
+    mfg['additional_costs']=[{'expense_account':f['expense'],'description':'UAT manufacture costs','amount':90000}]
+    for r in mfg['items']:
+        r['kh_aph_bags']=4 if r['item_code']==f['items']['raw'] else 7
+    for label,qty,bags in [('by',20,4),('fixed',5,1)]:
+        mfg['items'].append({'item_code':f['items'][label],'qty':qty,'kh_aph_bags':bags,'uom':'Kg',
+            'conversion_factor':1,'t_warehouse':f['wh']['APH'],'secondary_item_type':'By-Product',
+            'valuation_type':'Manual','allow_zero_valuation_rate':1 if label=='by' else 0,
+            'basic_rate':5000 if label=='fixed' else 0,'set_basic_rate_manually':1 if label=='fixed' else 0,
+            'expense_account':f['adjustment'],'cost_center':f['cc']})
+    mfg=submit(insert(mfg))
+    near(mfg['total_incoming_value'],1090000);near(get('Work Order',wo['name'])['produced_qty'],70)
+    stock('APH','raw',0,0);stock('APH','fg',70,7);stock('APH','by',20,4);stock('APH','fixed',5,1,5000)
+    emit('HTTP_BOM_WORK_ORDER_MANUFACTURE','PASS',{'produced_kg':70,'byproduct_kg':20,'fixed_kg':5,'total_value':1090000})
+    cancel('Stock Entry',mfg['name']);near(get('Work Order',wo['name'])['produced_qty'],0)
+    stock('APH','raw',100,4)
+    for label in ('fg','by','fixed'):stock('APH',label,0,0)
+    emit('HTTP_WORK_ORDER_MANUFACTURE_CANCEL','PASS',{'produced_qty':0,'raw_kg':100,'raw_bags':4})
+    for a in ('VH','MK'):
+        co=get('Company',f['companies'][a])
+        source_pr=receipt('raw',25,1,5000,a)
+        drying=submit(insert({'doctype':'Stock Entry','stock_entry_type':'Đóng gói theo kg',
+            'company':co['name'],'posting_date':f['date'],'items':[
+                {'item_code':f['items']['raw'],'qty':25,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+                 's_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']},
+                {'item_code':f['items']['fg'],'qty':20,'kh_aph_bags':2,'uom':'Kg','conversion_factor':1,
+                 't_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']},
+                {'item_code':f['items']['by'],'qty':5,'kh_aph_bags':1,'uom':'Kg','conversion_factor':1,
+                 't_warehouse':f['wh'][a],'expense_account':co['stock_adjustment_account'],'cost_center':co['cost_center']}],
+            'additional_costs':[{'expense_account':co['default_expense_account'],'amount':25000,'description':'UAT sấy nguyên bao'}]}))
+        near(drying['total_incoming_value'],150000);stock(a,'raw',0,0);stock(a,'fg',20,2,6000);stock(a,'by',5,1,6000)
+        emit('HTTP_DRYING_FULL_BAGS_'+a,'PASS',{'company':a,'input_bags':1,'output_kg':25,'service_cost':25000,'subcontracting_order':drying.get('subcontracting_order')})
+        cancel('Stock Entry',drying['name']);stock(a,'raw',25,1,5000);stock(a,'fg',0,0);stock(a,'by',0,0)
+
+    # Full source closure and chain reversal never rewrite earlier vouchers.
+    baseline_full=oracle()
+    full=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['date'],'delivery_date':f['date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('trade',25,1,20000),'line_id':'full-source-line'}]}))
+    def company_orders(root):
+        names=rpc('frappe.client.get_list',{'doctype':'Sales Order','filters':json.dumps({'kh_aph_shared_order':root,'docstatus':1}),'fields':json.dumps(['name'])})
+        return [get('Sales Order',r['name']) for r in names]
+    full_so=company_orders(full['name'])[0]
+    desk_raw=run(['node','--experimental-websocket',str(Path(__file__).with_name('source-desk.mjs')),full_so['name'],f['wh']['VH']])
+    desk=json.loads(next(line for line in desk_raw.splitlines() if line.startswith('{"case":')))
+    assert desk['status']=='PASS',desk
+    admin=session('Administrator',state['admin_password'])
+    full_change=get('APH Source Change',desk['change']['name'])
+    full_target=get('Sales Order',full_change['target_order'])
+    assert get('Sales Order',full_so['name'])['status']=='Closed'
+    near(oracle()['customer_debt'],0)
+    assert oracle()['counts']==baseline_full['counts']
+    emit('NATIVE_DESK_SOURCE_CHANGE_FULL','PASS',{'closed_original':full_so['name'],'target':full_target['name'],'qty':25})
+    # Explicit reopen must be blocked while the source-change coordinator is active.
+    same=oracle()
+    deny(lambda:rpc('erpnext.selling.doctype.sales_order.sales_order.update_status',{'status':'Draft','name':full_so['name']}))
+    assert oracle()==same and get('Sales Order',full_so['name'])['status']=='Closed'
+    emit('HTTP_SOURCE_CLOSED_REOPEN_GUARD','PASS','Transferred source cannot reserve stock twice')
+    second=submit(insert({'doctype':'APH Source Change','source_order':full_target['name'],
+        'source_row':full_target['items'][0]['name'],'qty':25,'target_warehouse':f['wh']['MK'],'reason':'UAT second full source change'}))
+    third=get('Sales Order',second['target_order'])
+    assert third['company']==f['companies']['MK'] and third['items'][0]['qty']==25
+    same=oracle();deny(lambda:cancel('APH Source Change',full_change['name']));assert oracle()==same
+    cancel('APH Source Change',second['name']);cancel('APH Source Change',full_change['name'])
+    back=get('Sales Order',full_so['name'])
+    assert back['docstatus']==1 and back['status']!='Closed' and back['items'][0]['qty']==25
+    cancel('APH Shared Sales Order',full['name'])
+    assert oracle()==baseline_full,json.dumps({"before":baseline_full,"after":oracle()})
+    emit('HTTP_SOURCE_FULL_CHAIN_REVERSE','PASS','Reverse descendants first; original contract restored; no GL/SLE')
+    multiple=submit(insert({'doctype':'APH Shared Sales Order','customer':f['customer'],
+        'transaction_date':f['date'],'delivery_date':f['date'],
+        'selling_price_list':f['price_list'],'currency':'VND',
+        'items':[{**row('trade',25,1,20000),'line_id':'removed-line'},
+                 {**row('trade',50,2,20000),'line_id':'unchanged-line'}]}))
+    multi_so=company_orders(multiple['name'])[0]
+    removed=next(r for r in multi_so['items'] if r['kh_aph_shared_line']=='removed-line')
+    move=submit(insert({'doctype':'APH Source Change','source_order':multi_so['name'],
+        'source_row':removed['name'],'qty':25,'target_warehouse':f['wh']['VH'],'reason':'UAT move one entire row'}))
+    remaining=get('Sales Order',multi_so['name'])
+    assert len(remaining['items'])==1 and remaining['items'][0]['kh_aph_shared_line']=='unchanged-line' and remaining['items'][0]['qty']==50
+    cancel('APH Source Change',move['name'])
+    back=get('Sales Order',multi_so['name'])
+    assert sorted((r['kh_aph_shared_line'],r['qty'],r['kh_aph_bags']) for r in back['items'])==[('removed-line',25,1),('unchanged-line',50,2)]
+    assert all(r['kh_aph_bag_rate']==500000 for r in back['items']),back['items']
+    near(back['grand_total'],1500000)
+    cancel('APH Shared Sales Order',multiple['name']);assert oracle()==baseline_full,json.dumps({"before":baseline_full,"after":oracle()})
+    emit('HTTP_SOURCE_MULTIROW_RESTORE','PASS','Moved row restored; other row and contract quantity preserved')
+
+
+except Exception as exc:
+    detail={'type':type(exc).__name__,'error':str(exc)[-2500:]}
+    if isinstance(exc,urllib.error.HTTPError):
+        try:
+            payload=json.loads(exc.read());detail['response']={k:payload.get(k) for k in ('exc_type','exception','_server_messages')}
+        except Exception:pass
+    if 'cpr1' in locals():
+        try:
+            detail['cogs_fixture']={'receipts':[{'name':r['name'],'date':r['posting_date'],
+                'time':r.get('posting_time'),'rate':r['items'][0]['rate']} for r in (cpr1,cpr2)],
+                'stock':oracle()['APH']['cogs'],
+                'sle':rpc('frappe.client.get_list',{'doctype':'Stock Ledger Entry',
+                    'filters':json.dumps({'item_code':f['items']['cogs']}),
+                    'fields':json.dumps(['voucher_no','posting_date','posting_time','actual_qty','qty_after_transaction','valuation_rate','stock_value','stock_value_difference','is_cancelled'])})}
+        except Exception:pass
+    detail['traceback']=traceback.format_exc()[-2500:]
+    emit('HTTP_INVENTORY_RUNNER','FAIL',detail)
+finally:
+    # Stop only UAT web so no request can write during restoration.
+    run(["docker","stop",WEB])
+    try:
+        run(["docker","exec","-w",ROOT,BACKEND,"bench","--site",SITE,"restore",restore_path,"--db-root-password",root_secret])
+    finally:
+        run(["docker","start",WEB])
+    inner('''import frappe
+frappe.init(site="aphvh-web-uat",sites_path="/home/frappe/frappe-bench/sites")
+try:
+ frappe.connect();frappe.clear_cache()
+finally:frappe.destroy()
+''')
+    run(["docker","restart",WEB])
+    after=snapshot()
+    assert before==after,"Baseline counts or Series differ after restore"
+    emit("HTTP_UAT_RESTORE","PASS",{"counts":after["counts"],"series_restored":True})
+print("CI HTTP suite completed; actual user identities and wider stress are outside this test.")

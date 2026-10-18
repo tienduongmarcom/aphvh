@@ -1,6 +1,6 @@
-"""0.2.4: gom chuỗi màn hình Dũng + thông báo/báo cáo kho, so với bản dịch đang chạy (po + aphvh vi.csv 0.2.3)."""
+"""0.2.4: gom chuỗi màn hình Dũng + thông báo/báo cáo kho, so với bản dịch đang chạy (po + kh_aph vi.csv 0.2.3)."""
 import re, json, glob, os, csv, polib
-T='/tmp/claude-0/-home-claude-aphvh/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
+T='/tmp/claude-0/-home-claude-kh_aph/d2acb522-ba05-58f5-8225-01c43da2a258/scratchpad/tr/'
 E=T+'erpnext/erpnext/'
 def po(p):
     d={}
@@ -9,7 +9,7 @@ def po(p):
     return d
 cur={**po(T+'frappe/frappe/locale/vi.po'),**po(T+'erpnext/erpnext/locale/vi.po')}
 app={}
-for r in csv.reader(open('/home/claude/aphvh/aphvh/translations/vi.csv')):
+for r in csv.reader(open('/home/claude/kh_aph/kh_aph/translations/vi.csv')):
     app[(r[0].replace('\\n','\n'), r[2] if len(r)>2 else '')]=r[1].replace('\\n','\n')
 def now(s,c=''):
     return app.get((s,c)) or cur.get((s,c)) or (cur.get((s,'')) if c else None)

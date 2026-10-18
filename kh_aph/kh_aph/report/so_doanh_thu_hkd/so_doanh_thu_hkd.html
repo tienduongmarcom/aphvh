@@ -1,0 +1,66 @@
+{%
+var so = function (v) {
+	v = Math.round(flt(v));
+	var s = Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+	return (v < 0 ? "-" : "") + s;
+};
+var ngay = function (d) { return d ? frappe.datetime.str_to_user(d) : ""; };
+var cuoi = data.length ? data[data.length - 1] : {};
+var mau = filters.mau_so || "S2a-HKD";
+var s1 = mau === "S1a-HKD";
+%}
+<style>
+	.hkd { font-family: "Times New Roman", serif; font-size: 12.5px; color: #000; }
+	.hkd table { width: 100%; border-collapse: collapse; }
+	.hkd .bang th, .hkd .bang td { border: 1px solid #000; padding: 3px 5px; }
+	.hkd .bang th { text-align: center; }
+	.hkd .r { text-align: right; white-space: nowrap; }
+	.hkd .c { text-align: center; }
+	.hkd .b td { font-weight: bold; }
+	.hkd .dau td { border: 0; vertical-align: top; }
+</style>
+<div class="hkd">
+	<table class="dau"><tr>
+		<td style="width:58%">
+			<b>HỘ, CÁ NHÂN KINH DOANH:</b> {%= cuoi.ten_ho || filters.company %}<br>
+			Địa chỉ: {%= cuoi.dia_chi || ".............................." %}<br>
+			Mã số thuế: {%= cuoi.mst || ".............................." %}
+		</td>
+		<td class="c"><b>Mẫu số {%= mau %}</b><br><i>(Kèm theo Thông tư số 152/2025/TT-BTC của Bộ trưởng Bộ Tài chính)</i></td>
+	</tr></table>
+	<h3 style="text-align:center;margin:12px 0 2px">SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ</h3>
+	<div class="c">Địa điểm kinh doanh: {%= cuoi.dia_chi || ".............................." %}</div>
+	<div class="c">Kỳ kê khai: từ {%= ngay(filters.from_date) %} đến {%= ngay(filters.to_date) %}</div>
+	<div class="r" style="margin:4px 0">Đơn vị tính: đồng</div>
+	<table class="bang">
+		<thead>
+		{% if (s1) { %}
+			<tr><th style="width:18%">Ngày tháng</th><th>Giao dịch</th><th style="width:20%">Số tiền</th></tr>
+			<tr><th>A</th><th>B</th><th>1</th></tr>
+		{% } else { %}
+			<tr><th colspan="2">Chứng từ</th><th rowspan="2">Diễn giải</th><th rowspan="2" style="width:18%">Số tiền</th></tr>
+			<tr><th style="width:18%">Số hiệu</th><th style="width:12%">Ngày tháng</th></tr>
+			<tr><th>A</th><th>B</th><th>C</th><th>1</th></tr>
+		{% } %}
+		</thead>
+		<tbody>
+		{% for (var i = 0; i < data.length; i++) { var r = data[i]; %}
+			{% if (r.kieu === "ct") { %}
+				{% if (s1) { %}
+				<tr><td class="c">{%= ngay(r.ngay) %}</td><td>{%= r.dien_giai %}</td><td class="r">{%= so(r.so_tien) %}</td></tr>
+				{% } else { %}
+				<tr><td>{%= r.so %}</td><td class="c">{%= ngay(r.ngay) %}</td><td>{%= r.dien_giai %}</td><td class="r">{%= so(r.so_tien) %}</td></tr>
+				{% } %}
+			{% } else if (r.kieu === "nganh") { %}
+				<tr class="b"><td colspan="{%= s1 ? 3 : 4 %}">{%= r.dien_giai %}</td></tr>
+			{% } else { %}
+				<tr class="b"><td colspan="{%= s1 ? 2 : 3 %}">{%= r.dien_giai %}</td><td class="r">{%= so(r.so_tien) %}</td></tr>
+			{% } %}
+		{% } %}
+		</tbody>
+	</table>
+	<table class="dau" style="margin-top:14px"><tr>
+		<td style="width:50%"></td>
+		<td class="c"><i>Ngày ..... tháng ..... năm .......</i><br><b>NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/<br>CÁ NHÂN KINH DOANH</b><br><i>(Ký, họ tên, đóng dấu nếu có)</i></td>
+	</tr></table>
+</div>

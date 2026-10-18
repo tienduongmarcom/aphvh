@@ -1,0 +1,56 @@
+{
+ "name": "APH Lich su gia han",
+ "istable": 1,
+ "editable_grid": 0,
+ "fields": [
+  {
+   "fieldname": "han_cu",
+   "label": "Hạn cũ",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "han_moi",
+   "label": "Hạn mới",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ly_do",
+   "label": "Lý do",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "nguoi",
+   "label": "Người gia hạn",
+   "fieldtype": "Link",
+   "options": "User",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "luc",
+   "label": "Lúc",
+   "fieldtype": "Datetime",
+   "read_only": 1
+  }
+ ],
+ "field_order": [
+  "han_cu",
+  "han_moi",
+  "ly_do",
+  "nguoi",
+  "luc"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 19:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 19:00:00.000000",
+ "permissions": []
+}

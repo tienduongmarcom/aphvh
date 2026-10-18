@@ -1,0 +1,42 @@
+{
+ "name": "APH Dong phieu quy nha may",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "dien_giai",
+   "label": "Diễn giải",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "khoan_muc",
+   "label": "Khoản mục (chi phí nhỏ)",
+   "fieldtype": "Link",
+   "options": "APH Khoan muc chi nha may",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "so_tien",
+   "label": "Số tiền",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "in_list_view": 1,
+   "reqd": 1,
+   "non_negative": 1
+  }
+ ],
+ "permissions": [],
+ "field_order": [
+  "dien_giai",
+  "khoan_muc",
+  "so_tien"
+ ],
+ "doctype": "DocType",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "modified": "2026-10-14 13:00:00.000000",
+ "owner": "Administrator",
+ "creation": "2026-10-14 13:00:00.000000"
+}

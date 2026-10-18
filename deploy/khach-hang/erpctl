@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Lệnh docker compose của khách này; đọc tên dự án và các tệp từ .env cùng thư mục.
+set -euo pipefail
+D="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+set -a; source "$D/.env"; set +a
+F=(-f "$D/compose.yaml" -f "$D/overrides/compose.mariadb.yaml" -f "$D/overrides/compose.redis.yaml" -f "$D/overrides/compose.runtime.yaml")
+[ "${ERP_HTTPS:-0}" = 1 ] && F+=(-f "$D/overrides/compose.https.yaml")
+exec docker compose --project-name "${PROJECT:?thiếu PROJECT}" --env-file "$D/.env" "${F[@]}" "$@"

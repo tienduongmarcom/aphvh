@@ -5,4 +5,5 @@
 Dockerfile
 .dockerignore
 .ruff_cache
-deploy
+deploy/khach-hang
+deploy/cloud

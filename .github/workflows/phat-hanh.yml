@@ -1,0 +1,61 @@
+# Phát hành: đẩy tag dạng v0.6.1 -> chạy test -> Cổng 2 (site trắng theo từng khách) -> dựng image -> đẩy lên GitHub Container Registry (ghcr.io).
+# Image dùng phiên bản app làm nhãn; KHÔNG dùng nhãn "latest" khi triển khai cho khách.
+name: Phát hành image
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  packages: write
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/kh-aph-erpnext
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
+jobs:
+  candidate-uat:
+    uses: ./.github/workflows/uat-candidate.yml
+  cong-2:
+    uses: ./.github/workflows/cong-2-site-trang.yml
+  cong-2b:
+    uses: ./.github/workflows/cong-2b-dien-tap.yml
+  cong-3:
+    uses: ./.github/workflows/cong-3-nang-cap-production.yml
+  phat-hanh:
+    needs: [candidate-uat, cong-2, cong-2b, cong-3]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+      - name: Kiểm phiên bản khớp tag
+        run: |
+          V=$(python3 -c "import re;print(re.search(r'\"(.+)\"',open('kh_aph/__init__.py').read()).group(1))")
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v${V}" ]; then echo "Tag ${GITHUB_REF_NAME} không khớp phiên bản app ${V}"; exit 1; fi
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then echo "Release requires an immutable reviewed version tag"; exit 1; fi
+          if [ "${V}" = "0.9.1" ]; then echo "Refusing to overwrite production 0.9.1; bump release version after acceptance"; exit 1; fi
+          echo "VERSION=${V}" >> "$GITHUB_ENV"
+      - name: Test đơn vị
+        run: |
+          (cd apps/lab9x && python3 -m unittest discover -s lab9x/tests -t .)
+          PYTHONPATH=apps/lab9x python3 -m unittest discover -s kh_aph/tests -t .
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Dựng và đẩy image (Dockerfile chạy lại test trong image)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: ERPNEXT_IMAGE=${{ env.ERPNEXT_IMAGE }}
+          tags: |
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}

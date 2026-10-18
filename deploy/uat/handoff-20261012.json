@@ -1,0 +1,32 @@
+{
+  "status": "UAT_CANDIDATE_NOT_PRODUCTION_RELEASE",
+  "evidence_commit": "3dfb324ef90286c38b672748b2fcebfeb450c18e",
+  "candidate_run": 38152420145,
+  "blank_site_run": 38152420181,
+  "unit_tests": 216,
+  "unit_skipped": 0,
+  "http_business_pass": 79,
+  "http_fail": 0,
+  "restore_pass": 3,
+  "artifact_id": 11707502120,
+  "artifact_sha256": "a475ba647f7564b95ff45a84a1ee4ef47b0aca35518c3f42c7b575c372699c4a",
+  "runtime": {
+    "frappe": "16.35.0",
+    "erpnext": "16.36.1",
+    "kh_aph": "0.9.1",
+    "lab9x": "0.2.0"
+  },
+  "production_changed": false,
+  "new_desk_case": "NATIVE_DESK_FINALIZE_AND_BAG_PREVIEW",
+  "new_desk_evidence": "Read Actions run for the exact handoff commit; baseline above predates Desk addition",
+  "not_accepted": [
+    "planned_receipts_deposits_intercompany_allocation",
+    "unknown_payer_bank_import_reconciliation",
+    "change_source_after_partial_dispatch",
+    "all_native_desk_roles",
+    "actual_frontend_runtime_and_user_roles",
+    "opening_physical_bag_migration",
+    "downstream_backdated_sales_cogs",
+    "all_202_original_decisions"
+  ]
+}

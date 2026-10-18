@@ -1,0 +1,73 @@
+{
+  "doctype": "DocType",
+  "name": "APH Shared Sales Order Item",
+  "module": "Kh Aph",
+  "custom": 0,
+  "istable": 1,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "line_id",
+      "label": "Định danh dòng",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "item_code",
+      "label": "Mã hàng",
+      "fieldtype": "Link",
+      "options": "Item",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "warehouse",
+      "label": "Kho nguồn",
+      "fieldtype": "Link",
+      "options": "Warehouse",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "company",
+      "label": "Đơn vị sở hữu",
+      "fieldtype": "Link",
+      "options": "Company",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "qty",
+      "label": "Số lượng kg",
+      "fieldtype": "Float",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "rate",
+      "label": "Giá bán/kg",
+      "fieldtype": "Currency",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "amount",
+      "label": "Thành tiền",
+      "fieldtype": "Currency",
+      "read_only": 1,
+      "in_list_view": 1
+    }
+  ],
+  "field_order": [
+    "line_id",
+    "item_code",
+    "warehouse",
+    "company",
+    "qty",
+    "rate",
+    "amount"
+  ],
+  "permissions": []
+}

@@ -1,0 +1,87 @@
+{
+  "doctype": "DocType",
+  "name": "APH Funds Route",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "track_changes": 1,
+  "is_submittable": 1,
+  "fields": [
+    {
+      "fieldname": "receiving_company",
+      "label": "Đơn vị thực nhận",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Company"
+    },
+    {
+      "fieldname": "owner_company",
+      "label": "Đơn vị chủ hàng (trống: cọc chung)",
+      "fieldtype": "Link",
+      "options": "Company"
+    },
+    {
+      "fieldname": "holding_account",
+      "label": "Tài khoản tiền giữ/chưa phân bổ",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Account"
+    },
+    {
+      "fieldname": "due_from_account",
+      "label": "Phải thu đơn vị thực nhận trên sổ chủ hàng",
+      "fieldtype": "Link",
+      "options": "Account"
+    },
+    {
+      "fieldname": "reason",
+      "label": "Lý do/thỏa thuận",
+      "fieldtype": "Small Text",
+      "reqd": 1
+    },
+    {
+      "fieldname": "approved_by",
+      "label": "Người duyệt",
+      "fieldtype": "Link",
+      "read_only": 1,
+      "options": "User"
+    },
+    {
+      "fieldname": "approved_at",
+      "label": "Thời điểm duyệt",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "receiving_company",
+    "owner_company",
+    "holding_account",
+    "due_from_account",
+    "reason",
+    "approved_by",
+    "approved_at"
+  ],
+  "permissions": [
+    {
+      "role": "Accounts Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1,
+      "print": 1,
+      "report": 1,
+      "export": 0
+    },
+    {
+      "role": "Accounts User",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "submit": 0,
+      "cancel": 0,
+      "print": 0,
+      "report": 0
+    }
+  ]
+}

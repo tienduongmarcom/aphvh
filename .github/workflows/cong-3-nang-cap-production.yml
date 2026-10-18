@@ -1,0 +1,287 @@
+# Cổng 3: diễn tập ĐÚNG đường đi của site production `frontend`:
+# image production 0.15.1 (đang chạy từ 17/10/2026 13:22, 21 cờ bật, bộ cài, cây kho, có khách + nhà cung cấp) -> diễn tập bản sao
+# tách biệt -> dấu sai bị từ chối -> trien_khai_frontend.sh (bảo trì xuyên suốt, so sổ chi tiết) -> chạy lại bộ cài -> so schema
+# với site dựng mới -> quay-lui.sh về 0.15.1 -> cố ý làm hỏng nâng cấp: tự quay lui, giữ bảo trì, dữ liệu như trước.
+# Toàn bộ chạy trên dữ liệu giả của máy CI; không chạm máy chủ hay dữ liệu thật.
+name: Cổng 3 - nâng cấp từ bản production
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+  push:
+    branches: ["fix/p0-uat-v091-20261010", "thu/erpnext-v16.50", "thu/erpnext-v16.51.1", "feat/ban-hang-nhanh-20261016", "feat/ho-so-giao-nhan-20261017"]
+permissions:
+  contents: read
+  packages: read
+env:
+  ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
+  PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
+  PROD_TAG: "0.15.1"
+  # Digest image 0.15.1 đang chạy trên erpnext-prod từ 17/10/2026 13:22 (docker images --digests).
+  # Trước: 0.14.2 sha256:0f528c3c1f0e0021eb9d864ba03bd4581af51f9857b736f584d16b442c81a8a3,
+  #        0.14.0 sha256:3a259c9b239dc00dacb0fcb79c421c93306a9e9a6813fcd329fd122cc3192a02,
+  # Trước: 0.13.0 sha256:e313659262389598d10b9f90c6005d753b377e6789ecc0114ac371a87e8214a2,
+  #        0.12.1 sha256:897f81c2554fbd89bb24268f261f1c9ec9a402bccb37bcf4795c19f7aeeafaa3,
+  #        0.11.4 sha256:54bf5a99f0174b234429e8e4541dc587e13e509461fb53fe8d0d9caa1543a881,
+  #        0.11.3 sha256:716f1401b5e0143d08f1ee29044226a79173056766f7091e87cf354af44bd2d8,
+  #        0.11.2 sha256:f2417393b5ea6c65a901502b342741614111356df13758dc873f5cd534a09ca3,
+  #        0.11.1 sha256:9335dfa1f2d9199ecc2c49a14bba86ce331cecd62395b1a66e113d78d50f8424
+  PROD_DIGEST: sha256:c4b61eb4b2924d50f64bbeaf83623da3e7259f9484b28d6f3e228939912edf47
+  # 21 cờ đã bật trên frontend
+  FLAGS_CU: >-
+    kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order
+    kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp
+    kh_aph_funds_workflow kh_aph_source_change
+    kh_aph_factory_costing kh_aph_factory_cash kh_aph_sales_adjust kh_aph_data_review
+    kh_aph_kho_chuan kh_aph_sales_p1 kh_aph_quan_tri kh_aph_du_lieu kh_aph_dau_ky
+    kh_aph_kho_van_hanh kh_aph_gia_san
+    kh_aph_trung_tam_ban kh_aph_tien_vay
+  # cờ mới của lượt sau (để trống thì bước 3 chỉ kiểm gõ sai site)
+  FLAGS_MOI: ""
+jobs:
+  dien-tap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    defaults:
+      run:
+        shell: bash   # bash --noprofile --norc -eo pipefail: lỗi trước "| tee" cũng làm dừng bước
+    env:
+      CUSTOM_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
+      PULL_POLICY: missing
+      HTTP_BIND: 127.0.0.1
+      HTTP_PORT: "18092"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kiểm ranh giới ngoại lệ mẫu in trên checkout
+        run: python3 deploy/release/test_print_defaults_gate.py
+      - name: Giải phóng đĩa runner (image ERPNext 16.50 lớn hơn)
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/.ghcup || true
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Kéo đúng image production 0.15.1
+        run: |
+          if [ -n "$PROD_DIGEST" ]; then
+            docker pull "$PROD_IMAGE@$PROD_DIGEST"
+            docker tag "$PROD_IMAGE@$PROD_DIGEST" "$PROD_IMAGE:$PROD_TAG"
+          else
+            docker pull "$PROD_IMAGE:$PROD_TAG"
+          fi
+          d=$(docker image inspect "$PROD_IMAGE:$PROD_TAG" --format '{{json .RepoDigests}}')
+          echo "::notice title=Image production đã kéo::$PROD_IMAGE:$PROD_TAG $d"
+          docker run --rm --entrypoint bash "$PROD_IMAGE:$PROD_TAG" -c 'cd /home/frappe/frappe-bench && bench version' | tee "$RUNNER_TEMP/log-0-phien-ban.txt"
+          grep -q "kh_aph 0.15.1" "$RUNNER_TEMP/log-0-phien-ban.txt"
+      - uses: docker/setup-buildx-action@v3
+      - name: Dựng bản ứng viên (không đẩy)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/tienduongmarcom/kh-aph-erpnext:ung-vien
+          build-args: ERPNEXT_IMAGE=${{ env.ERPNEXT_IMAGE }}
+      - name: Hàm dùng chung
+        run: |
+          cat > "$RUNNER_TEMP/ham.sh" <<'EOF'
+          cd "$RUNNER_TEMP/erp/ci"
+          dv() { ./erpctl exec -T -w /home/frappe/frappe-bench/sites backend /home/frappe/frappe-bench/env/bin/python - "$1" < "$GITHUB_WORKSPACE/deploy/release/dau_van_site.py"; }
+          so() { python3 "$GITHUB_WORKSPACE/deploy/release/so_dau_van.py" "$@"; }
+          ex() { ./erpctl exec -T backend bench --site "$@" </dev/null; }
+          EOF
+      - name: 1. dung.sh bằng image production 0.15.1, bật 21 cờ + bộ cài + cây kho 0.11.2 (giống frontend hiện tại)
+        run: |
+          export ERP_HOME="$RUNNER_TEMP/erp"
+          ./deploy/khach-hang/dung.sh ci "$PROD_TAG" khach/aph-vh/khach.json </dev/null 2>&1 | tee "$RUNNER_TEMP/log-1.txt"
+          grep -q "== XONG" "$RUNNER_TEMP/log-1.txt"
+          source "$RUNNER_TEMP/ham.sh"
+          for f in $FLAGS_CU; do ex frontend set-config -p "$f" 1; done
+          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-1b.txt"
+          grep -q '"idempotent": true' "$RUNNER_TEMP/log-1b.txt"
+          # Production đã dựng cây kho chuẩn ở 0.11.2: dựng y như vậy trước khi lấy dấu vân.
+          ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
+          ex frontend execute kh_aph.kho_chuan.dung --kwargs '{"duong_dan": "/tmp/khach.json", "xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-1c.txt"
+          grep -q '"da_tao": \[".' "$RUNNER_TEMP/log-1c.txt"
+          # Production đã có danh mục khách / nhà cung cấp (từ 15/10/2026): site CI cũng phải có dữ liệu.
+          ex frontend execute frappe.client.insert --kwargs '{"doc": {"doctype": "Customer", "customer_name": "Khách diễn tập CI", "kh_aph_ma": "KH0000069"}}' > "$RUNNER_TEMP/log-1d.txt"
+          ex frontend execute frappe.client.insert --kwargs '{"doc": {"doctype": "Supplier", "supplier_name": "NCC diễn tập CI", "kh_aph_ma": "NCC0000001"}}' >> "$RUNNER_TEMP/log-1d.txt"
+          grep -q '"name": "KH0000069"' "$RUNNER_TEMP/log-1d.txt"
+          dv frontend | tee "$RUNNER_TEMP/dv-0-truoc.txt"
+          python3 - "$RUNNER_TEMP/dv-0-truoc.txt" <<'EOF'
+          import json,sys
+          d=json.loads([l for l in open(sys.argv[1]) if l.startswith("DAU_VAN ")][0][8:])
+          print(f"::notice title=Dấu vân trước nâng cấp (so với frontend thật)::schema {d['schema']['so_muc']} mục, sha {d['schema']['sha256'][:16]}")
+          EOF
+          grep -q '"kh_aph": "0.15.1"' "$RUNNER_TEMP/dv-0-truoc.txt"
+      - name: 1b. Diễn tập bản sao TÁCH BIỆT (dien_tap_ban_sao.sh, image ứng viên); production không đổi gì
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          PB="$(grep -o '__version__ = "[^"]*"' "$GITHUB_WORKSPACE/kh_aph/__init__.py" | cut -d'"' -f2)"
+          echo "PB=$PB" >> "$GITHUB_ENV"
+          BE="$(./erpctl ps -q backend)"; echo "BE=$BE" >> "$GITHUB_ENV"
+          ./erpctl exec -T backend bash -c 'cat sites/apps.txt; ls -la sites/assets; readlink -f sites/assets/* 2>/dev/null' | md5sum > "$RUNNER_TEMP/assets-truoc.txt"
+          cd "$GITHUB_WORKSPACE"
+          BE="$BE" IMG=ghcr.io/tienduongmarcom/kh-aph-erpnext:ung-vien DAU_RA="$RUNNER_TEMP" \
+            bash deploy/release/dien_tap_ban_sao.sh "$PB" $FLAGS_MOI </dev/null 2>&1 | tee "$RUNNER_TEMP/log-1e.txt"
+          grep -q "DIỄN TẬP $PB: ĐẠT" "$RUNNER_TEMP/log-1e.txt"
+          grep -q "^chi_tiet: khớp" "$RUNNER_TEMP/log-1e.txt"
+          test -s "$RUNNER_TEMP/dien-tap-$PB.ok"
+          # Không còn sót tài nguyên của lượt diễn tập.
+          if docker ps -a --format '{{.Names}}' | grep '^dt-'; then echo "Sót container diễn tập"; exit 1; fi
+          if docker volume ls -q | grep '^dt-'; then echo "Sót ổ diễn tập"; exit 1; fi
+          if docker network ls --format '{{.Name}}' | grep '^dt-'; then echo "Sót mạng diễn tập"; exit 1; fi
+          cd "$RUNNER_TEMP/erp/ci"
+          # Production: dữ liệu, schema, cờ, phiên bản, tệp giao diện y nguyên; không còn site tạm trong ổ sites.
+          ./erpctl exec -T backend bash -c 'cat sites/apps.txt; ls -la sites/assets; readlink -f sites/assets/* 2>/dev/null' | md5sum > "$RUNNER_TEMP/assets-sau.txt"
+          diff "$RUNNER_TEMP/assets-truoc.txt" "$RUNNER_TEMP/assets-sau.txt"
+          if ./erpctl exec -T backend ls sites | grep '^dt-'; then echo "Site tạm nằm trong ổ production"; exit 1; fi
+          dv frontend > "$RUNNER_TEMP/dv-0b-sau-dien-tap.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-0b-sau-dien-tap.txt" --phan schema,dem,tong,chi_tiet,co,versions | tee "$RUNNER_TEMP/log-1f.txt"
+      - name: 1c. Dấu diễn tập sai (cờ khác / khach.json khác) thì bộ triển khai dừng TRƯỚC khi bật bảo trì
+        run: |
+          D="$RUNNER_TEMP/dien-tap-$PB.ok"
+          IMG_ID="$(docker image inspect ghcr.io/tienduongmarcom/kh-aph-erpnext:ung-vien -f '{{.Id}}')"
+          CHUNG=(--pb "$PB" --image "$IMG_ID" --nguon "$(git rev-parse HEAD)" --khach khach/aph-vh/khach.json --site frontend)
+          python3 deploy/release/dau_dien_tap.py kiem "$D" "${CHUNG[@]}" --co $FLAGS_MOI
+          if python3 deploy/release/dau_dien_tap.py kiem "$D" "${CHUNG[@]}" --co $FLAGS_MOI kh_aph_co_khac; then exit 1; fi
+          if python3 deploy/release/dau_dien_tap.py kiem "$D" --pb "$PB" --image sha256:khac --nguon "$(git rev-parse HEAD)" --khach khach/aph-vh/khach.json --site frontend --co $FLAGS_MOI; then exit 1; fi
+          set +e
+          BE="$BE" ERP_DIR="$RUNNER_TEMP/erp/ci" TAG=ung-vien SAO_LUU_CLOUD=0 DAU_RA="$RUNNER_TEMP" LOG_RA="$RUNNER_TEMP" \
+            bash deploy/release/trien_khai_frontend.sh "$PB" $FLAGS_MOI kh_aph_co_khac </dev/null > "$RUNNER_TEMP/log-1g.txt" 2>&1; rc=$?
+          set -e
+          tail -5 "$RUNNER_TEMP/log-1g.txt"
+          test "$rc" -ne 0
+          grep -q "dấu diễn tập không khớp" "$RUNNER_TEMP/log-1g.txt"
+          if grep -q "BẬT BẢO TRÌ" "$RUNNER_TEMP/log-1g.txt"; then echo "Đã bật bảo trì dù dấu sai"; exit 1; fi
+          cd "$RUNNER_TEMP/erp/ci"
+          if ./erpctl exec -T backend bash -c 'cat sites/frontend/site_config.json' | grep -q '"maintenance_mode": 1'; then exit 1; fi
+      - name: 2. trien_khai_frontend.sh lên bản ứng viên (bảo trì xuyên suốt, so sổ chi tiết, mở lại)
+        run: |
+          set -a; source "$RUNNER_TEMP/erp/ci/.env"; set +a
+          BE="$BE" ERP_DIR="$RUNNER_TEMP/erp/ci" TAG=ung-vien SAO_LUU_CLOUD=0 DAU_RA="$RUNNER_TEMP" LOG_RA="$RUNNER_TEMP" \
+            bash deploy/release/trien_khai_frontend.sh "$PB" $FLAGS_MOI </dev/null 2>&1 | tee "$RUNNER_TEMP/log-2.txt"
+          grep -q "=== XONG $PB: ĐẠT ===" "$RUNNER_TEMP/log-2.txt"
+          grep -q "^chi_tiet: khớp" "$RUNNER_TEMP/log-2.txt"
+          cd "$RUNNER_TEMP/erp/ci"
+          grep -q "^CUSTOM_TAG=ung-vien$" .env
+          # Sao lưu trước nâng cấp đủ 4 thành phần + sha256.
+          BK="$(grep -lx "$PROD_TAG" sao-luu/*/phien-ban-truoc.txt | head -1 | xargs dirname)"
+          ls -l "$BK"; (cd "$BK" && sha256sum -c sha256.txt)
+          # Đã mở lại: không bảo trì, lịch chạy chạy, worker chạy.
+          if ./erpctl exec -T backend bash -c 'cat sites/frontend/site_config.json' | grep -q '"maintenance_mode": 1'; then echo "Còn bảo trì"; exit 1; fi
+          if ./erpctl exec -T backend bash -c 'cat sites/frontend/site_config.json' | grep -q '"pause_scheduler": 1'; then echo "Lịch chạy còn dừng"; exit 1; fi
+          test "$(./erpctl ps --status running -q queue-short queue-long scheduler | wc -l)" -eq 3
+          source "$RUNNER_TEMP/ham.sh"
+          dv frontend | tee "$RUNNER_TEMP/dv-1-sau-nang-cap.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-1-sau-nang-cap.txt" --phan tong,dem,chi_tiet | tee "$RUNNER_TEMP/log-2b.txt"
+      - name: 3. Bộ cài production từ chối khi gõ sai site / site có dữ liệu mà không khai co_du_lieu
+        run: |
+          trap 'echo "::error title=Bước 3 dòng $LINENO::$BASH_COMMAND (mã $?)"' ERR
+          source "$RUNNER_TEMP/ham.sh"
+          if ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "site-sai"}' > "$RUNNER_TEMP/log-3b.txt" 2>&1; then
+            echo "::error title=Bước 3::bộ cài KHÔNG từ chối khi gõ sai site"; exit 1
+          fi
+          if ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend"}' > "$RUNNER_TEMP/log-3c.txt" 2>&1; then
+            echo "::error title=Bước 3::bộ cài KHÔNG từ chối site có dữ liệu"; exit 1
+          fi
+          if ! grep -q "chưa có dữ liệu nghiệp vụ" "$RUNNER_TEMP/log-3c.txt"; then
+            echo "::error title=Bước 3::thiếu thông báo 'chưa có dữ liệu nghiệp vụ'"; exit 1
+          fi
+          echo "::notice title=Bước 3::bộ cài từ chối đúng cả hai trường hợp"
+      - name: 4. Chạy lại bộ cài + cây kho + kiểm (không đổi gì)
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          ex frontend execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "frontend", "co_du_lieu": 1}' | tee "$RUNNER_TEMP/log-4a.txt"
+          grep -q '"idempotent": true' "$RUNNER_TEMP/log-4a.txt"
+          ex frontend execute kh_aph.cai_dat_tinh_nang.kiem --kwargs '{"xac_nhan_site": "frontend", "co_du_lieu": 1}' | tee "$RUNNER_TEMP/log-4b.txt"
+          grep -q '"idempotent": true' "$RUNNER_TEMP/log-4b.txt"
+          ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
+          ex frontend execute kh_aph.kho_chuan.dung --kwargs '{"duong_dan": "/tmp/khach.json", "xac_nhan_site": "frontend"}' | tee "$RUNNER_TEMP/log-4f.txt"
+          grep -q '"da_tao": \[\]' "$RUNNER_TEMP/log-4f.txt"
+          ex frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "$RUNNER_TEMP/log-4c.txt"
+          grep -q "KHÔNG ĐẠT: 0" "$RUNNER_TEMP/log-4c.txt"
+          grep -q "Cây kho chuẩn đủ" "$RUNNER_TEMP/log-4c.txt"
+          dv frontend | tee "$RUNNER_TEMP/dv-2-sau-cai.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-2-sau-cai.txt" --phan tong,chi_tiet | tee "$RUNNER_TEMP/log-4d.txt"
+      - name: 5. So schema với site dựng mới cùng bản (đường UAT)
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          set -a; source .env; set +a
+          ./erpctl exec -T backend bash -c 'bench new-site doi-chieu --mariadb-user-host-login-scope="172.%.%.%" --db-root-username root --db-root-password "'"$DB_PASSWORD"'" --admin-password ci-doi-chieu --install-app erpnext --install-app lab9x --install-app kh_aph' </dev/null > "$RUNNER_TEMP/log-5a.txt" 2>&1
+          ex doi-chieu execute kh_aph.khach_hang.ap_dung --kwargs '{"duong_dan": "/tmp/khach.json"}' > "$RUNNER_TEMP/log-5b.txt" 2>&1
+          for f in $FLAGS_CU $FLAGS_MOI; do ex doi-chieu set-config -p "$f" 1; done
+          ex doi-chieu execute kh_aph.cai_dat_tinh_nang.cai --kwargs '{"xac_nhan_site": "doi-chieu"}' > "$RUNNER_TEMP/log-5c.txt" 2>&1
+          grep -q '"idempotent": true' "$RUNNER_TEMP/log-5c.txt"
+          dv doi-chieu > "$RUNNER_TEMP/dv-3-doi-chieu.txt"
+          # Chỉ bỏ qua 6 chứng từ native đã đối chiếu: tên mặc định đổi theo bản nền
+          # with Item Image → Modern with Images → Classic (16.51.1); tên phải khớp chính DocType.
+          # 5 chứng từ app đặt mẫu riêng (install.DEFAULT_PRINT_FORMATS) KHÔNG bỏ qua: phải khớp mẫu của app.
+          so "$RUNNER_TEMP/dv-2-sau-cai.txt" "$RUNNER_TEMP/dv-3-doi-chieu.txt" --phan schema,co \
+            --bo-qua '^PS\|(POS Invoice|Purchase Invoice|Purchase Order|Quotation|Request for Quotation|Sales Order)\|\|default_print_format\|\1( with Item Image| Modern with Images| Classic)$' | tee "$RUNNER_TEMP/log-5d.txt"
+          ./erpctl exec -T backend bash -c 'bench drop-site doi-chieu --force --no-backup --db-root-username root --db-root-password "'"$DB_PASSWORD"'"' </dev/null > "$RUNNER_TEMP/log-5e.txt" 2>&1
+      - name: 6. quay-lui.sh về 0.15.1, cờ trả về như bản sao lưu
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          BK="$(grep -lx "$PROD_TAG" sao-luu/*/phien-ban-truoc.txt | head -1 | xargs dirname | xargs basename)"
+          echo "Bản sao lưu: $BK"
+          ./quay-lui.sh "$BK" --tu-dong </dev/null 2>&1 | tee "$RUNNER_TEMP/log-6.txt"
+          grep -q "^CUSTOM_TAG=$PROD_TAG$" .env
+          for f in $FLAGS_MOI; do grep -qx "$f 0" "sao-luu/$BK/co-sau-quay-lui.txt" || { echo "Cờ mới còn bật sau quay lui: $f"; exit 1; }; done
+          for f in $FLAGS_CU; do grep -qx "$f 1" "sao-luu/$BK/co-sau-quay-lui.txt" || { echo "Cờ cũ bị tắt sau quay lui: $f"; exit 1; }; done
+          # quay-lui.sh tạo lại container (đổi image): chép lại khach.json trước khi kiểm.
+          ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
+          ex frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' | tee "$RUNNER_TEMP/log-6b.txt"
+          grep -q "KHÔNG ĐẠT: 0" "$RUNNER_TEMP/log-6b.txt"
+          dv frontend | tee "$RUNNER_TEMP/dv-4-sau-quay-lui.txt"
+          so "$RUNNER_TEMP/dv-0-truoc.txt" "$RUNNER_TEMP/dv-4-sau-quay-lui.txt" --phan schema,dem,tong,co,versions,cai_dat,giao_dien | tee "$RUNNER_TEMP/log-6c.txt"
+      - name: 7. Cố ý làm hỏng bước kiểm khi nâng cấp → tự quay lui, GIỮ bảo trì, dữ liệu như trước
+        run: |
+          source "$RUNNER_TEMP/ham.sh"
+          grep -q "^CUSTOM_TAG=$PROD_TAG$" .env
+          ./erpctl exec -T backend bench --site frontend set-maintenance-mode off </dev/null
+          ./erpctl exec -T backend bench --site frontend scheduler resume </dev/null
+          ./erpctl up -d
+          dv frontend > "$RUNNER_TEMP/dv-5-truoc-hong.txt"
+          cp khach.json khach.json.goc
+          python3 - <<'EOF'
+          import json
+          d = json.load(open("khach.json"))
+          d["cong_ty"].append({"ten": "CONG TY KHONG TON TAI", "abbr": "ZZ", "thong_tu": 133})
+          json.dump(d, open("khach.json", "w"), ensure_ascii=False)
+          EOF
+          set +e
+          ./nang-cap.sh ung-vien </dev/null > "$RUNNER_TEMP/log-7.txt" 2>&1; rc=$?
+          set -e
+          cp khach.json.goc khach.json
+          tail -15 "$RUNNER_TEMP/log-7.txt"
+          test "$rc" -ne 0
+          grep -q "TỰ QUAY LUI" "$RUNNER_TEMP/log-7.txt"
+          grep -q "Đã quay về $PROD_TAG" "$RUNNER_TEMP/log-7.txt"
+          grep -q "ĐANG Ở CHẾ ĐỘ BẢO TRÌ" "$RUNNER_TEMP/log-7.txt"
+          grep -q "^CUSTOM_TAG=$PROD_TAG$" .env
+          ./erpctl exec -T backend bash -c 'cat sites/frontend/site_config.json' | grep -q '"maintenance_mode": 1'
+          dv frontend > "$RUNNER_TEMP/dv-6-sau-quay-lui-tu-dong.txt"
+          so "$RUNNER_TEMP/dv-5-truoc-hong.txt" "$RUNNER_TEMP/dv-6-sau-quay-lui-tu-dong.txt" --phan dem,tong,chi_tiet,versions | tee "$RUNNER_TEMP/log-7b.txt"
+      - name: Nhật ký khi lỗi
+        if: failure()
+        run: |
+          # GitHub chỉ giữ 10 chú thích mỗi bước: in log mới nhất trước.
+          for f in $(ls -t "$RUNNER_TEMP"/log-*.txt 2>/dev/null | head -8); do
+            [ -f "$f" ] || continue
+            loi_dong="$(grep -E "Error|Exception|LỖI|DỪNG|lỗi" "$f" | grep -v "During handling" | tail -4 | tr '\n\r' '  ' | cut -c1-900)"
+            echo "::error title=$(basename "$f")::${loi_dong:+[dòng lỗi] $loi_dong · }$(tail -c 600 "$f" | tr '\n\r' '  ' | sed 's/%/%25/g')"
+          done
+          cd "$RUNNER_TEMP/erp/ci" 2>/dev/null && ./erpctl ps -a && ./erpctl logs --tail 80 backend 2>&1 | tail -80 || true
+      - name: Gom bằng chứng
+        if: always()
+        run: |
+          mkdir -p bang-chung
+          cp "$RUNNER_TEMP"/log-*.txt "$RUNNER_TEMP"/dv-*.txt bang-chung/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cong-3-bang-chung
+          path: bang-chung/

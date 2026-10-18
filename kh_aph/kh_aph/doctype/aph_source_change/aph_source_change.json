@@ -1,0 +1,159 @@
+{
+  "doctype": "DocType",
+  "name": "APH Source Change",
+  "module": "Kh Aph",
+  "autoname": "hash",
+  "is_submittable": 1,
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "source_order",
+      "label": "Đơn nguồn đang hiệu lực",
+      "fieldtype": "Link",
+      "options": "Sales Order",
+      "reqd": 1
+    },
+    {
+      "fieldname": "source_row",
+      "label": "Dòng nguồn",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "qty",
+      "label": "Lượng chưa giao đổi nguồn (kg)",
+      "fieldtype": "Float",
+      "reqd": 1
+    },
+    {
+      "fieldname": "target_warehouse",
+      "label": "Kho mới",
+      "fieldtype": "Link",
+      "options": "Warehouse",
+      "reqd": 1
+    },
+    {
+      "fieldname": "reason",
+      "label": "Lý do đổi nguồn",
+      "fieldtype": "Small Text",
+      "reqd": 1
+    },
+    {
+      "fieldname": "shared_order",
+      "label": "Đơn chung",
+      "fieldtype": "Link",
+      "options": "APH Shared Sales Order",
+      "read_only": 1
+    },
+    {
+      "fieldname": "line_id",
+      "label": "Dòng hợp đồng",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "source_company",
+      "label": "Chủ hàng nguồn cũ",
+      "fieldtype": "Link",
+      "options": "Company",
+      "read_only": 1
+    },
+    {
+      "fieldname": "target_company",
+      "label": "Chủ hàng nguồn mới",
+      "fieldtype": "Link",
+      "options": "Company",
+      "read_only": 1
+    },
+    {
+      "fieldname": "target_order",
+      "label": "Đơn nguồn mới",
+      "fieldtype": "Link",
+      "options": "Sales Order",
+      "read_only": 1
+    },
+    {
+      "fieldname": "original_row_json",
+      "label": "Snapshot số lượng trước đổi",
+      "fieldtype": "Long Text",
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "changed_by",
+      "label": "Người đổi nguồn",
+      "fieldtype": "Link",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "changed_at",
+      "label": "Thời điểm đổi",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "source_item",
+      "label": "Mã hàng đổi nguồn",
+      "fieldtype": "Link",
+      "options": "Item",
+      "read_only": 1
+    },
+    {
+      "fieldname": "closed_source",
+      "label": "Nguồn cũ đóng hết lượng còn lại",
+      "fieldtype": "Check",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "source_order",
+    "source_row",
+    "qty",
+    "target_warehouse",
+    "reason",
+    "shared_order",
+    "line_id",
+    "source_company",
+    "target_company",
+    "target_order",
+    "original_row_json",
+    "changed_by",
+    "changed_at",
+    "source_item",
+    "closed_source"
+  ],
+  "permissions": [
+    {
+      "role": "Sales User",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 0,
+      "print": 0,
+      "report": 1
+    },
+    {
+      "role": "Sales Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1,
+      "print": 0,
+      "report": 1
+    },
+    {
+      "role": "Accounts Manager",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "submit": 1,
+      "cancel": 1,
+      "print": 0,
+      "report": 1
+    }
+  ]
+}
