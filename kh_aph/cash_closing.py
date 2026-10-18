@@ -55,13 +55,15 @@ def lock_ledger(doc, method=None):
 def ledger(company, account):
     # scope() đã kiểm quyền GL, Company và Account. SQL current read cố ý lấy
     # đủ cả dòng hủy, chỉ một quỹ; không trả toàn bộ sổ qua API.
-    rows = frappe.db.sql("""select name, posting_date, creation, debit, credit,
-        is_cancelled, voucher_type, voucher_no from `tabGL Entry`
+    rows = frappe.db.sql("""select * from `tabGL Entry`
         where company=%s and account=%s order by name limit 10001 for update""", (company, account), as_dict=True)
     if len(rows) > 10000:
         frappe.throw("Quỹ vượt 10.000 dòng sổ; chưa hỗ trợ chốt trên tập này, không cắt bớt dữ liệu")
     sources = {}
     for row in rows:
+        # Kiểm trên đủ field của current read, kể cả Accounting Dimension tùy
+        # chỉnh. Không chỉ kiểm quyền loại GL rồi bỏ qua User Permission từng dòng.
+        frappe.get_doc({"doctype": "GL Entry", **row}).check_permission("read")
         key = (row.voucher_type, row.voucher_no)
         if key not in sources:
             source = None
