@@ -63,3 +63,5 @@ Lượt3dadd51/UAT39141849273 đã qua cùng-quỹ/thiếu và retry/chuyển Ca
 Không tắt riêng cờ bàn giao sau khi đã vận hành; projection trách nhiệm cùng-quỹ cần dữ liệu bàn giao. Khôi phục phải dùng snapshot/image/cờ tương ứng theo runbook, không tắt cờ để xóa tác động trách nhiệm.
 
 Chênh lệch có issue_state riêng ngay trên hồ sơ nguồn (Chờ xử lý). Hủy đề nghị chưa chuyển giải phóng giữ chỗ nhưng không đóng vụ lệch/quan sát đã lưu, không xóa tệp căn cứ; danh sách cần xử lý và guard ví vẫn bao gồm hồ sơ hủy có issue_state này. Chưa có thao tác đóng vụ ở lát này. UAT bổ sung nhận thừa25/20, nhận0/10, tệp sau hủy và hủy vượt nguồn vẫn còn vụ cần xử lý; số ca emit không giảm.
+
+Nếu bất kỳ nhóm trách nhiệm hoặc Chưa xác minh đang âm (ví dụ chi50 thiếu người giữ sau phân bổ100 cho A), chặn giao ra dù A còn số dương100: không được lấy100 vượt tổng quỹ50. Không tự suy người đã chi; cần đối chiếu nguồn/xác minh lại có căn cứ. UAT giữ ca này trong nhóm vượt nguồn.

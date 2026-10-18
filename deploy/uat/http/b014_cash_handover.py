@@ -116,6 +116,10 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     call('cancel',{'name':over['name']})
     assert wallet(over_source)['disputed'] and wallet(over_source)['available_amount']==0
     assert get(DT,over['name'],ktt)['issue_state']=='Chờ xử lý'
+    negative=account('unknown-negative');journal(negative,100);verify(negative,100)
+    journal(negative,-50)  # Thiếu người thực chi: nguồn chưa rõ âm, không được dùng làm nguồn.
+    assert wallet(negative)['expected_amount']==100 and wallet(negative)['available_amount']==0
+    denied(lambda:call('send',{'name':draft(negative,negative,80)['name']}),text='chênh lệch chưa xử lý')
     denied(lambda:rpc('kh_aph.cash_handover.send',{'name':first['name']},phien(f['dung'])),('PermissionError',))
     denied(lambda:insert({'doctype':DT,'company':f['vh'],'from_account':source2,'to_account':dest,'from_holder':f['scope_co'],'to_holder':f['ktt2'],'requested_amount':1,'reason':'ngoài phạm vi'},phien(f['scope_co'])),('PermissionError',))
     emit('HTTP_2B_HANDOVER_OVER_SOURCE','PASS',{'count_saved_without_transfer':True,'money_not_invented':True,'scope_and_no_cost':True})

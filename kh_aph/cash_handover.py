@@ -84,7 +84,10 @@ def available(company, account, holder, exclude=None):
     opening, previous, rows, totals = C._state(company, account, holder)
     reserved = sum((money(r.requested_amount) for r in _query(company, account)
         if r.from_account == account and r.from_holder == holder and r.status in PENDING and r.name != exclude), money(0))
-    return opening, totals.get(holder, money(0)), reserved, _disputed(company, account, holder)
+    # Chi thiếu người giữ có thể làm nhóm chưa rõ âm trong khi một người còn
+    # số dương. Không dùng số dương đó để giao vượt tổng quỹ thực có.
+    invalid_pool = any(amount < 0 for amount in totals.values())
+    return opening, totals.get(holder, money(0)), reserved, invalid_pool or _disputed(company, account, holder)
 
 
 def validate(doc):
