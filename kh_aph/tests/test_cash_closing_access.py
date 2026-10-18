@@ -72,3 +72,9 @@ class ClosingAccess(unittest.TestCase):
         company.check_permission.assert_called_once_with('read')
         acc.check_permission.assert_called_once_with('read')
         self.f.db.sql.assert_not_called()
+
+    def test_admin_automatic_all_roles_is_not_a_no_cost_profile(self):
+        self.f.session.user='Administrator'
+        self.f.get_roles.return_value=['System Manager','APH Không xem giá vốn','Kế toán nhà máy']
+        self.m.guard()
+        self.assertEqual(self.m.roles_for(),{'System Manager'})

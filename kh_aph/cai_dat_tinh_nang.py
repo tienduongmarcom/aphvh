@@ -30,7 +30,7 @@ FLAGS = (
     # 0.13
     "kh_aph_kho_van_hanh", "kh_aph_gia_san",
     # 0.14
-    "kh_aph_trung_tam_ban", "kh_aph_tien_vay", "kh_aph_cash_custody", "kh_aph_cash_closing",
+    "kh_aph_trung_tam_ban", "kh_aph_tien_vay", "kh_aph_cash_custody", "kh_aph_cash_closing", "kh_aph_cash_handover",
 )
 CAM_SITE = ("erpnext.local",)
 

@@ -432,3 +432,9 @@ for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice
 doc_events.setdefault("GL Entry", {})["before_insert"] = "kh_aph.cash_closing.lock_ledger"
 extend_doctype_class.setdefault("File", []).append("kh_aph.cash_closing.CashClosingFileMixin")
 doc_events["File"]["before_validate"] = ["kh_aph.ho_so_giao_nhan.protect_file_update", "kh_aph.cash_closing.protect_file"]
+
+# Bàn giao tiền giữ nguồn riêng; JE native là một chuyển tiền, không thu khách.
+has_permission["APH Ban giao tien"] = "kh_aph.cash_handover.has_permission"
+permission_query_conditions["APH Ban giao tien"] = "kh_aph.cash_handover.query_conditions"
+for _event in ("validate", "before_cancel", "before_update_after_submit"):
+    doc_events["Journal Entry"].setdefault(_event, []).append("kh_aph.cash_handover.protect_journal")

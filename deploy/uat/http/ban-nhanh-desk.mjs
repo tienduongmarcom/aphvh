@@ -57,6 +57,31 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'ban-giao-tien') {
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/aph-ban-giao-tien/'+encodeURIComponent(source)});
+        await until('!!window.cur_frm && cur_frm.doctype === "APH Ban giao tien" && !!cur_frm.custom_buttons["Xác nhận thực nhận"]');
+        const counts = () => evaluate("Promise.all(['Journal Entry','GL Entry','Payment Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))");
+        const before=await counts();
+        await evaluate('cur_frm.custom_buttons["Xác nhận thực nhận"].trigger("click");true');
+        await until('!!window.cur_dialog && !!cur_dialog.fields_dict.amount');
+        await evaluate('window.__receiveDialog=cur_dialog;true');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.cash_handover.receive*',requestStage:'Response'}]});
+        await evaluate('__receiveDialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<300&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('Chưa chặn được phản hồi nhận tiền sau commit');
+        await until('!__receiveDialog.get_primary_btn().prop("disabled")');
+        const after=await counts();
+        if(after[0]!==before[0]+1||after[1]!==before[1]+2||after[2]!==before[2])throw Error('Lần nhận đầu chưa ghi đúng một chuyển tiền');
+        await evaluate('frappe.msg_dialog?.hide();__receiveDialog.get_primary_btn().trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doc.status === "Đã nhận" && !cur_frm.is_dirty()');
+        const retried=await counts();
+        if(JSON.stringify(after)!==JSON.stringify(retried))throw Error('Retry tạo thêm chuyển tiền');
+        await evaluate('cur_frm.scroll_to_field("received_amount",false);true');
+        await pause(700);
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('ban-giao-tien.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_2B_HANDOVER_LOST_RESPONSE',status:'PASS',detail:{lost_response_after_commit:true,same_dialog_retry:true,one_je_two_gl:true,ple_unchanged:true}}));
     } else if (mode === 'chot-ca') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-chot-ca-tien/'+encodeURIComponent(source)});

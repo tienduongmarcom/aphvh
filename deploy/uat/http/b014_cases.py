@@ -285,3 +285,6 @@ def chay(admin, phien, f, emit):
 
     from b014_cash_closing import chay as closing_cases
     closing_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_cash_handover import chay as handover_cases
+    handover_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

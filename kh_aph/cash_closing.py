@@ -13,6 +13,13 @@ SHIFT = "APH Chot ca tien"
 MANAGERS = {"Accounts Manager", "System Manager"}
 
 
+def roles_for(user=None):
+    # Frappe trả MỌI role cho Administrator, gồm cả profile cấm vốn tự động.
+    # Đây không phải người dùng bị gán profile NoCost; kiểm actor tự thân vẫn áp dụng.
+    user = user or frappe.session.user
+    return {"System Manager"} if user == "Administrator" else set(frappe.get_roles(user))
+
+
 def enabled():
     return cint(frappe.conf.get(FLAG))
 
@@ -20,7 +27,7 @@ def enabled():
 def guard(manager=False):
     if not enabled() or not custody.enabled():
         frappe.throw("Cần bật xác minh/chốt ca và người giữ tiền trước khi sử dụng")
-    roles = set(frappe.get_roles())
+    roles = roles_for()
     if roles & {"APH Không xem giá vốn", "Kế toán nhà máy"} or not roles & (MANAGERS if manager else MANAGERS | {"Accounts User"}):
         frappe.throw("Chưa có quyền xác minh/chốt ca tiền", frappe.PermissionError)
 
@@ -104,6 +111,10 @@ def _state(company, account, holder):
         totals = position(allocations, opening.source_rows, rows)
     except ValueError as exc:
         frappe.throw(str(exc))
+    from kh_aph import cash_handover
+    changes, _ = cash_handover.transfer_state(company, account, opening.name)
+    for user, amount in changes.items():
+        totals[user] = totals.get(user, money(0)) + amount
     previous = latest(SHIFT, company, account, holder)
     if previous and previous.verification == opening.name:
         if not unchanged(previous.source_rows, rows):
@@ -117,16 +128,25 @@ def _state(company, account, holder):
 def validate(doc):
     guard(manager=doc.doctype == OPENING)
     scope(doc.company, doc.account)
+    check_evidence(doc)
+
+    if doc.doctype == SHIFT:
+        custody._person(doc.holder, doc.company)
+        if not doc.holder or doc.holder != frappe.session.user:
+            frappe.throw("Người giữ phải tự đăng nhập chốt ca của mình", frappe.PermissionError)
+    _validate_snapshot(doc)
+
+
+def check_evidence(doc):
     if doc.get("evidence"):
         found = frappe.db.sql("""select name from `tabFile` where file_url=%s
             and attached_to_doctype=%s and attached_to_name=%s and is_private=1 for update""",
             (doc.evidence, doc.doctype, doc.name))
         if not doc.evidence.startswith("/private/files/") or not found:
             frappe.throw("Tệp kiểm đếm phải riêng tư và gắn đúng hồ sơ này")
-    if doc.doctype == SHIFT:
-        custody._person(doc.holder, doc.company)
-        if not doc.holder or doc.holder != frappe.session.user:
-            frappe.throw("Người giữ phải tự đăng nhập chốt ca của mình", frappe.PermissionError)
+
+
+def _validate_snapshot(doc):
     if doc.get_doc_before_save() and cint(doc.get_doc_before_save().docstatus) == 1:
         frappe.throw("Hồ sơ đã xác nhận giữ nguyên; lập bản xác minh mới có lý do thay vì sửa lịch sử")
     rows = ledger(doc.company, doc.account)
@@ -134,6 +154,8 @@ def validate(doc):
     if doc._action == "submit" and doc.source_hash != digest:
         frappe.throw("Sổ đã đổi từ lúc lưu nháp; lưu lại, kiểm số phải có rồi xác nhận")
     if doc.doctype == OPENING:
+        from kh_aph import cash_handover
+        cash_handover.before_verification(doc.company, doc.account)
         previous = latest(OPENING, doc.company, doc.account)
         if doc._action == "submit" and (doc.previous_verification or "") != (previous.name if previous else ""):
             frappe.throw("Đã có xác minh khác; lưu và kiểm lại bản nháp")
@@ -160,6 +182,11 @@ def validate(doc):
             frappe.throw("Tổng phân bổ và chưa xác minh phải bằng đúng số dư sổ quỹ")
     else:
         opening, previous, rows, totals = _state(doc.company, doc.account, doc.holder)
+        from kh_aph import cash_handover
+        _, transfer_hash = cash_handover.transfer_state(doc.company, doc.account, opening.name)
+        if doc._action == "submit" and (doc.transfer_hash or "") != transfer_hash:
+            frappe.throw("Trách nhiệm tiền đã đổi sau lưu nháp; lưu và kiểm lại ca")
+        doc.transfer_hash = transfer_hash
         if doc._action == "submit" and (doc.previous_shift or "") != (previous.name if previous else ""):
             frappe.throw("Ca khác đã chốt; lưu và kiểm lại ca này")
         if doc._action == "submit" and doc.verification != opening.name:
@@ -215,7 +242,9 @@ def current(company, account):
     """Chỉ trả phần tiền của người đang đăng nhập; không lộ các nguồn hoặc người khác."""
     scope(company, account)
     opening, previous, rows, totals = _state(company, account, frappe.session.user)
-    return {"verification": opening.name, "previous_shift": previous.name if previous else "",
+    from kh_aph import cash_handover
+    extra = cash_handover.wallet(company, account) if cash_handover.enabled() else {}
+    return {"verification": opening.name, "previous_shift": previous.name if previous else "", **extra,
             "expected_amount": totals.get(frappe.session.user, 0), "checked_at": now_datetime()}
 
 
@@ -223,7 +252,7 @@ def has_permission(doc, user=None, permission_type=None):
     user = user or frappe.session.user
     if not enabled():
         return False
-    roles = set(frappe.get_roles(user))
+    roles = roles_for(user)
     if roles & {"APH Không xem giá vốn", "Kế toán nhà máy"}:
         return False
     if roles & MANAGERS:
@@ -233,7 +262,7 @@ def has_permission(doc, user=None, permission_type=None):
 
 def query_conditions(user=None):
     user = user or frappe.session.user
-    roles = set(frappe.get_roles(user))
+    roles = roles_for(user)
     if not enabled() or roles & {"APH Không xem giá vốn", "Kế toán nhà máy"}:
         return "1=0"
     if roles & MANAGERS:
@@ -243,7 +272,7 @@ def query_conditions(user=None):
 
 def opening_query_conditions(user=None):
     user = user or frappe.session.user
-    roles = set(frappe.get_roles(user))
+    roles = roles_for(user)
     if not enabled() or roles & {"APH Không xem giá vốn", "Kế toán nhà máy"} or not roles & MANAGERS:
         return "1=0"
     return ""
@@ -257,7 +286,8 @@ def protect_file(doc, method=None):
     url = old.get("file_url")
     if not url:
         return
-    for dt in (OPENING, SHIFT):
+    types = (OPENING, SHIFT, "APH Ban giao tien") if cint(frappe.conf.get("kh_aph_cash_handover")) else (OPENING, SHIFT)
+    for dt in types:
         if frappe.db.sql(f"select name from `tab{dt}` where docstatus=1 and evidence=%s limit 1 for update", (url,)):
             if method == "on_trash" or doc.get("content") or any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")):
                 frappe.throw("Tệp thuộc hồ sơ tiền đã xác nhận; giữ nguyên bằng chứng lịch sử")

@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — ĐANG DỞ: bàn giao tiền sau xác minh/chốt ca
+
+Nhánh `feat/ban-giao-tien-20261018`, base PR #11 (014c05a). Đã viết giữ chỗ, nhận cùng Cash/chuyển Cash khác/nộp Bank, chặn nhận thay/tự nhận, số đếm vượt nguồn lưu không chuyển, retry và khóa nguồn; cờ24 kh_aph_cash_handover mặc định tắt. Native DocType APH Ban giao tien, JE liên kết được bảo vệ, ca có transfer_hash, tệp riêng tư giữ blob. 335 unit app +108 lõi nền trước; chưa có kết quả tích hợp cho mã này. Bước tiếp: chạy các cổng đúng SHA, đọc artifact, sửa mọi FAIL; không dùng PASS PR #11 thay thế. Đặc tả9 nhóm docs/dac-ta-ban-giao-tien-2b.md.
+
+Chưa có đảo bàn giao/đóng vụ lệch, adapter nhà máy/thu quầy cũ hoặc quyền tiền riêng không GL. Ví có lệch bị chặn giao ra toàn bộ trong lát này; chưa coi toàn bộ2B xong. Không tăng version/tag/deploy, production vẫn0.15.3. Nghiệm thu thực tế cuối theo anh Tiến.
+
+
 ## 18/10/2026 — Lát xác minh quỹ và chốt ca 2B đã kiểm; bàn giao tiền còn tiếp
 
 Nhánh `feat/chot-ca-tien-mat-20261018`, [PR #11](https://github.com/tienduongmarcom/aphvh/pull/11), base PR #10 (14dceff). Mã nghiệp vụ/kiểm **`022322cab2eea0dade0848fa133bbb6c19199273`**. Không tăng version/tag hoặc triển khai: production vẫn0.15.3 theo xác nhận vận hành đã có; các PR #9–#11 chưa phát hành.

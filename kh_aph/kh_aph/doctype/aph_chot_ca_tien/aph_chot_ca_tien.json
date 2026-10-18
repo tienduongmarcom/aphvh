@@ -137,6 +137,14 @@
    "fieldtype": "Datetime",
    "read_only": 1,
    "no_copy": 1
+  },
+  {
+   "fieldname": "transfer_hash",
+   "label": "Dấu trách nhiệm tiền",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "no_copy": 1,
+   "hidden": 1
   }
  ],
  "field_order": [
@@ -157,7 +165,8 @@
   "source_hash",
   "source_rows",
   "closed_by",
-  "closed_at"
+  "closed_at",
+  "transfer_hash"
  ],
  "permissions": [
   {

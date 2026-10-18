@@ -37,7 +37,7 @@ env:
     kh_aph_kho_van_hanh kh_aph_gia_san
     kh_aph_trung_tam_ban kh_aph_tien_vay
   # cờ mới của lượt sau (để trống thì bước 3 chỉ kiểm gõ sai site)
-  FLAGS_MOI: "kh_aph_cash_custody kh_aph_cash_closing"
+  FLAGS_MOI: "kh_aph_cash_custody kh_aph_cash_closing kh_aph_cash_handover"
 jobs:
   dien-tap:
     runs-on: ubuntu-24.04

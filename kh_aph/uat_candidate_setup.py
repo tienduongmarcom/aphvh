@@ -76,6 +76,8 @@ def schema(cho_phep_du_lieu=False):
     cash_custody.schema()
     from kh_aph import cash_closing
     cash_closing.schema()
+    from kh_aph import cash_handover
+    cash_handover.schema()
     tien_vay.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)
