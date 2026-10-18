@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Kế hoạch 5 đợt đã đối chiếu lại, không đổi production
+
+Production vẫn0.15.3/digest đã xác nhận ở mục dưới. Kế hoạch tiếp nối đã cập nhật đúng phần đồng bộ dữ liệu mẫu chuẩn/in lại/tổng hợp có trong0.15.3. GN06 còn lối mở lại A5 từ phiếu đã có và nghiệm thu thực tế; IN02 ghi rõ thiếu nút, chưa tính đạt. Đợt2–4 còn phần mở rộng trên nghiệp vụ nền; đợt5 chờ chốt riêng. Lượt này chỉ cập nhật hồ sơ, không đổi mã/cờ/version hoặc triển khai.
+
 ## 18/10/2026 — Production0.15.3 đã triển khai ĐẠT
 
 Người vận hành gửi log `erpnext-prod/frontend`, trong `~/trien-khai`: **`=== XONG 0.15.3: ĐẠT ===`**, image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3`, digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**, khớp workflow39105247607/nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đã đổi `khach/aph-vh/phien-ban.yaml` và baseline Cổng3 sang bản production này; chưa chạy lại diễn tập CI từ baseline mới.

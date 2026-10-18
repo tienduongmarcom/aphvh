@@ -4,7 +4,7 @@
 
 Anh Tiến cung cấp lại lịch sử chat “Lỗi kết nối app Work” và ba đề xuất về bán hàng/bàn giao, nhà máy, tổng thể; sau đối chiếu đã yêu cầu tiếp tục và chấp thuận kế hoạch ngày 17/10/2026. Tài liệu này giữ mạch công việc để agent khác không cần hỏi lại. Không dùng yêu cầu NocoBase hoặc hệ thống 8082 làm baseline. Không xác nhận toàn bộ 202 quyết định; nguồn gốc đầy đủ 202 câu chưa có trong các tệp vừa nhận.
 
-Baseline đã triển khai: kh_aph 0.15.2, nguồn24b795cc28f47ca2f31aef8edbbd8e5984c12ee3, ERPNext 16.51.1/Frappe 16.52.0/lab9x 0.2.10. Digest image `sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333`. Phát hành 39030251134 đạt; diễn tập VM 10171255a25ef6 khớp tổng/đếm/chi tiết và người vận hành báo triển khai ĐẠT. Cục bộ375 ca và UAT 215 PASS là bằng chứng cho phạm vi 0.15.2, không nghiệm thu cho các mục chưa viết bên dưới.
+Baseline đã triển khai: kh_aph 0.15.3, nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`, ERPNext 16.51.1/Frappe 16.52.0/lab9x 0.2.11. Digest image `sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`. [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đạt đủ bốn cổng; 302+108 ca cục bộ, UAT227 PASS/0 FAIL. Người vận hành đã gửi log `=== XONG 0.15.3: ĐẠT ===` với digest khớp. Đây là bằng chứng mã/phát hành/triển khai, không thay nghiệm thu nhân sự, dữ liệu hoặc máy in thật.
 
 Giữ 4 Company APH/VH/MK/TL, TL=XB; MISA chỉ hóa đơn thuế; native ERPNext sở hữu chứng từ/sổ. Không làm lại cọc, thu hộ, giá vốn, sản xuất đã có. Mục tiêu mới là giảm thao tác, truy người thực giao và người thực giữ tiền, liên kết các nghiệp vụ có sẵn. Nhân viên kho/vận hành có thể ký giấy mà không có tài khoản phần mềm.
 
@@ -12,11 +12,11 @@ Quy tắc bắt buộc đọc từ `AGENTS.md`, `docs/quyet-dinh-nghiep-vu.md`, 
 
 ## Thứ tự và trạng thái thật
 
-| Đợt | Kết quả cần có | Mốc0.15.2 | Điều kiện đóng đợt |
+| Đợt | Kết quả cần có | Mốc 0.15.3 | Điều kiện đóng đợt |
 |---|---|---|---|
-| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Có phiếu nháp nhanh + in, chống trùng, hồ sơ bản ký/đối chiếu; phần còn lại chưa đủ | Hoàn tất các mục GN dưới đây, test người dùng đại diện và giữ hồi quy |
+| 1 — Bán hàng/giao nhận | Phiếu nhanh, người giao/nhận, thực giao và hồ sơ ký/chênh lệch | Đã triển khai xuất nhanh/xuất ngay, chênh lệch và đồng bộ dữ liệu các đường in; còn lối in lại A5 từ phiếu có sẵn và nghiệm thu thực tế | Bổ sung lối mở lại A5 không lập phiếu mới; kiểm người dùng/máy in theo các mục GN và giữ hồi quy |
 | 2 — Tiền | Người giữ, chốt ca, bàn giao và ngoại lệ | Có thu/cọc/thu hộ và quỹ nhà máy; chưa có cơ chế chung toàn cửa hàng | Bao phủ mọi đường thu, đối chiếu quỹ, không tự nhận/không ghi nợ hai lần |
-| 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
+| 3 — Nhà máy | Nhập lượng một lần, nối chứng từ | Có nghiệp vụ nền; chưa có màn hình nhập ngắn thống nhất; sheet của Dũng là bước đệm theo chủ dự án | Nhận/sản xuất/đóng gói/xuất hoạt động theo quyền, không lộ giá vốn |
 | 4 — Tài chính | Đối chiếu đầy đủ, chốt tháng/báo cáo điều hành | Có nhiều công cụ riêng; chưa chứng minh toàn chuỗi | Đối chiếu dữ liệu đại diện và xác định tạm tính/hoàn tất |
 | 5 — Hóa đơn một phần | Yêu cầu theo dòng/lượng/lần giao, hàng đợi MISA | Chưa chốt đặc tả riêng | Chốt nghiệp vụ trước code, không gộp vào bản vá giao nhận |
 
@@ -28,13 +28,13 @@ Thứ tự trên không cấm khảo sát điểm nối tiền trong đợt 1; k
 |---|---|---|---|
 | GN01 | Một cửa sổ lập phiếu & in | `ban_nhanh.preview/create_drafts/print_batch`, JS DocType đơn chung | Bảo toàn token khi lỗi; thêm dữ liệu giao nhận vào nội dung chống trùng, không cho cùng token thay địa chỉ/người nhận |
 | GN02 | Đặt/đã xuất/nháp/còn lập, nhiều kho/company | `dispatch_plan.py`, `ban_nhanh._rows`, UAT b014 và scope | Giữ ca giao từng phần, không vượt lượng, nháp sửa/hủy được tính lại; lỗi nhóm sau không để phiếu dở |
-| GN03 | Người nhận/lái xe, điện thoại, biển số, địa chỉ, cách giao theo từng đợt | Phiếu nhanh hiện có ô trống trên giấy; chưa có đầy đủ dữ liệu trong Dialog | Kiểm meta native trước chọn field; địa chỉ phải gắn đúng Customer và có quyền đọc; không nhận tùy ý field hệ thống/giá từ client |
-| GN04 | Người xuất thực tế khác người nhập | `delivery_status` lưu User thao tác/thời gian, chưa thay được tên người ký thực giao | Trường người giao thực tế không bắt là User; kho nhập trước xác nhận; lưu riêng với actor/time của phần mềm |
+| GN03 | Người nhận/lái xe, điện thoại, biển số, địa chỉ, cách giao theo từng đợt | Đã có trong Dialog, server allowlist/quyền địa chỉ và nội dung chống trùng; triển khai0.15.3 | Giữ hồi quy Customer/Address/kiểu dữ liệu/scope; nghiệm thu cách nhân viên nhập thực tế |
+| GN04 | Người xuất thực tế khác người nhập | Đã có `kh_aph_nguoi_thuc_giao`, tách người ký thực giao khỏi actor/time server | Giữ quyền kho và khóa sau xuất; nghiệm thu tên thực giao với nhân viên đại diện |
 | GN05 | Dự kiến, thực giao tại kho, thực nhận của khách | DN nháp/submit là nguồn lượng; có biên bản thực nhận trong luồng điều chỉnh | Không tạo sổ lượng thứ hai; xác định rõ mốc thay qty nháp và mốc dùng chứng từ điều chỉnh sau xuất; không nhầm nhận thiếu với lỗi nhập |
-| GN06 | In2 liên, tên người lập, người giao/nhận, bản sao không xuất lại | `templates/ban_nhanh/phieu_dot_xuat.html`, bộ mẫu chuẩn và `trung_tam_ban` in lại | Kiểm từng đường in; phiếu nhanh hiện chưa đủ2 liên và thông tin theo đề xuất. Escape dữ liệu người/địa chỉ, không lộ giá qua bản in số lượng |
+| GN06 | In2 liên, tên người lập, người giao/nhận, bản sao không xuất lại | A5 nhanh đã có2 liên, giá bán thuần và dấu nháp/bản sao. Mẫu chuẩn dùng `kh_aph_giao_nhan`; in lại chuẩn dùng mẫu đó; `delivery_slip.render` có metadata/khối ký riêng từng DN | Dữ liệu các đường in đã đồng bộ trong0.15.3. Còn nút mở lại A5 từ phiếu có sẵn, không tạo DN mới; kiểm quyền/không tăng sổ và nghiệm thu giấy A5/người dùng |
 | GN07 | In không xuất kho/nợ; xác nhận thực giao mới ghi sổ | `delivery_status.confirm`, `delivery_receivable`, caHTTP b014 | Mọi đường mới đi cùng service; lặp handoff/pickup không ghiGL/SLE/SI lần hai; không cho người thiếu submit quyền xuất ngay |
 | GN08 | Hồ sơ ký và dấu đối chiếu | `ho_so_giao_nhan.py`, `ban_014.js`, ca b014 hồ sơ | Giữ tệp riêng đúng phiếu, chặn xóa blob, thay tệp/ghi chú mất dấu, timestamp cũ bị chặn |
-| GN09 | Chênh lệch cần xử lý có người phụ trách/kết quả | 0.15.2 chỉ có ghi chú; ứng viên PR #5 đã có `delivery_issue.py`, Dialog, lối Workspace và ca b014 chênh lệch | Báo/giao người-hạn/chốt/mở lại, chứng từ đúng nguồn, đổi bằng chứng tự mở lại, hủy nguồn đúng native; đặc tả và giới hạn tại `dac-ta-chenh-lech-giao-nhan.md`, kết quả CI tại đầu bàn giao |
+| GN09 | Chênh lệch cần xử lý có người phụ trách/kết quả | Đã triển khai0.15.3: `delivery_issue.py`, Dialog, Workspace và ca b014 chênh lệch | Giữ hồi quy báo/giao/chốt/mở lại, căn cứ và hủy native; nghiệm thu người phụ trách thực tế, theo giới hạn trong `dac-ta-chenh-lech-giao-nhan.md` |
 | GN10 | Khách tự lấy/xuất ngay có quyền | PR #5 có `create_and_dispatch` và lựa chọn trong Dialog, dùng controller native | Đã kiểm hai cách giao, rollback nhóm sau, scope/submit, retry/đồng thời trên mã bdb91a8; mặc định in vẫn nháp, không thêm sổ |
 | GN11 | Mất mạng/thao tác lặp/đồng thời | Khóa đơn/SO, signature/token và ca Chrome chặn phản hồi200 sau commit | Đã kiểm DN đã submit rồi retry cùng Dialog không tăng sổ; vẫn cần số đo tải/kiểm môi trường vận hành thật |
 | GN12 | Scope công ty/kho trên preview, tạo, thử lại, in | `ban_nhanh._note_scope`, ca b014Company/Warehouse | Giữ đối chứng dương và từ chối ngoài phạm vi; đổi quyền sau tạo vẫn không đọc/in được phiếu cũ ngoài quyền |
@@ -106,12 +106,15 @@ HD01 hóa đơn một phần: yêu cầu từng dòng/lượng, gắn lần giao
 
 ## Điểm dừng hiện tại
 
-Đã triển khai lát 1A và GN09 trên nhánh `feat/thong-tin-giao-nhan-20261017`, PR #5: GN01 thông tin tham gia token; GN03 nhận hàng/địa chỉ theo đợt; GN04 người thực giao và dấu xác nhận server; GN06 bản in nhanh hai liên. GN09 có vòng báo/giao người-hạn/chốt/mở lại trên DN, liên kết chứng từ chuẩn đúng nguồn, bảo vệ chốt–hủy đồng thời; thay bằng chứng tự mở lại. Hủy phiếu nguồn có hồ sơ đòi trưởng, kết thúc theo cancel native mà không nhận hàng giả, rollback dấu hồ sơ nếu cancel bị chặn. Có hai đặc tả 9 nhóm tại `docs/dac-ta-giao-nhan-dot-1.md` và `docs/dac-ta-chenh-lech-giao-nhan.md`. SHA/run được ghi ở đầu `docs/ban-giao.md` và `deploy/release/TRANG_THAI.md`; production vẫn 0.15.2, chưa phát hành các lát này.
+Production0.15.3 đã chứa các lát1A, GN09, GN10/GN11 và bộ mẫu mới; PR #5 đã gộp main. GN01 thông tin tham gia token; GN03 địa chỉ/người nhận theo đợt; GN04 tách người thực giao khỏi actor/time server. GN09 có vòng báo/giao/chốt/mở lại, căn cứ đúng nguồn, bảo vệ chốt–hủy đồng thời và giữ lịch sử. Đặc tả tại `docs/dac-ta-giao-nhan-dot-1.md`, `docs/dac-ta-chenh-lech-giao-nhan.md`, `docs/dac-ta-xuat-ngay.md`.
 
-GN10 và ca mất phản hồi GN11 đã bổ sung, kiểm đúng mã `bdb91a8` (406 cục bộ/227 UAT/bốn cổng, link ở đầu bàn giao). Xuất ngay tách ý định với lập nháp, nguyên tử nhiều nguồn, dùng lại kết quả sau commit. Chrome đã thực sự chặn phản hồi200 rồi retry cùng Dialog, không chỉ gọi API lặp.
+GN10/GN11 đã kiểm lại trong release0.15.3: xuất ngay tách ý định với lập nháp, nguyên tử nhiều nguồn, retry sau commit không tăng sổ; có ca Chrome chặn phản hồi200 thật. Không mở lại phần đã hoàn thành như một tính năng chưa làm.
 
-Đợt 1 chưa đóng: bước tiếp GN06 đồng bộ các đường in chuẩn/in lại/phiếu tổng hợp với dữ liệu đợt mới, giữ fallback phiếu cũ/phiếu trả, không gán một người nhận chung cho nhiều DN. Kiểm escape/ẩn giá/bản sao/PDF và nghiệm thu máy in thật. Nhân sự/dữ liệu thật và tải thực tế còn mở. Giữ các đợt tiền/nhà máy/tài chính và hóa đơn một phần ở phạm vi riêng đã ghi trên.
+Đồng bộ dữ liệu giao nhận đã có: `print_utils.kh_aph_giao_nhan` dùng snapshot mới và fallback phiếu cũ/phiếu trả; mẫu Phiếu xuất kho bán hàng/Biên bản giao nhận gọi helper này; `trung_tam_ban.in_lai` render mẫu chuẩn; `delivery_slip.render` tách metadata/khối ký từng DN. Đây là phần mã đã phát hành, không còn là việc chưa triển khai.
 
-### Điều chỉnh GN06 ngày 18/10/2026
+### Việc còn lại trước khi đóng đợt 1
 
-Chủ dự án yêu cầu phiếu xuất nhanh theo PDF A5 đang dùng: A5 ngang có giá bán/thành tiền/tiền chữ và năm ô ký, vẫn hai liên và metadata giao nhận. Đã sửa template/API in và kiểm cục bộ300 ca, PDF giả; chưa kiểm CI/HTTP/máy in thật. Mốc xanh bdb91a8 là trước sửa A5. Mẫu chuẩn/in lại/tổng hợp chưa đổi, quy tắc không giá của các mẫu đó chưa bị ghi đè. Xem đầu ban-giao/TRANG_THAI cho điểm tiếp nối.
+1. **Lối in lại A5 từ phiếu đã có:** hiện mẫu nhanh mở trong Dialog lập đợt; nút này tạo DN nháp hoặc xuất ngay. Chưa có nút mở riêng mẫu A5 từ DN đã lưu. `trung_tam_ban.in_lai` đang render mẫu chuẩn, không thay cho lối A5 nhanh. Cần bổ sung thao tác chỉ đọc theo quyền, không tạo lại phiếu hoặc ghi sổ; không hướng dẫn lập đợt mới chỉ để thử máy in.
+2. **Nghiệm thu người dùng/máy in/dữ liệu đại diện:** theo `docs/nghiem-thu-mau-in-20261018.md`, ghi expected/actual. IN02 còn thiếu lối mở lại A5 nên chưa thể nghiệm thu đầy đủ từ DN. PDF CI và log triển khai không thay kết quả này. Tải thực tế còn chưa đo; quy chế biểu mẫu vẫn là dự thảo.
+
+Sau khi đóng các mục trên mới kết luận đợt1 hoàn tất. Đợt2 bắt đầu bằng đặc tả9 nhóm cho người giữ tiền/chốt ca/bàn giao toàn cửa hàng, tận dụng thu/cọc/thu hộ/quỹ nhà máy hiện có. Đợt3 còn màn nhập lượng một lần; đợt4 còn đối chiếu và chốt chuỗi, không viết lại các nghiệp vụ nền. Đợt5 phải chốt nghiệp vụ riêng trước code.
