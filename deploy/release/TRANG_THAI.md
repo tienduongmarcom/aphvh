@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 18/10/2026 — Image0.15.3 đã phát hành đạt, chưa triển khai VM
+
+[Workflow39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) thành công toàn bộ trên tag `v0.15.3`, nguồn `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3`, manifest digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**. Đã đọc log push/metadata và artifact: UAT227 PASS/0 FAIL, core nguyên vẹn, Cổng2/2b/3 đạt, so nâng/quay lui/ca lỗi khớp. kh_aph0.15.3/lab9x0.2.11, nền và21 cờ giữ nguyên.
+
+**Bước tiếp trên SSH máy chủ:** checkout tag trong `~/trien-khai`, diễn tập trên bản sao hiện tại rồi nâng bằng chuỗi `&&` ở `docs/phat-hanh-0.15.3.md`. Nền Cổng3 không có phát sinh sổ, không thay diễn tập dữ liệu thật hiện tại. Phiên Codex không có SSH; chưa ghi đã diễn tập hoặc nâng VM. Production/manifest vẫn0.15.2/digest cũ cho đến log `=== XONG 0.15.3: ĐẠT ===` và digest khớp; sau xác nhận mới đổi manifest và baseline Cổng3. Không đổi tag/image đã phát hành.
+
 ## 18/10/2026 — Tag0.15.3 đã đẩy đúng mã, đang phát hành image
 
 Tag remote `v0.15.3` = `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đang chạy. Chưa có image/digest0.15.3 đạt phát hành; chưa chạy diễn tập hoặc nâng VM.

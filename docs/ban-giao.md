@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 18/10/2026 — Image0.15.3 phát hành đạt; chờ diễn tập và nâng VM
+
+[Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đã thành công toàn bộ trên tag `v0.15.3` = `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Đã đọc log job phát hành117613939264: kiểm phiên bản/tag đạt, 302+108 unit đạt cả runner và build, image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.15.3` đẩy thành công với manifest digest **`sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496`**. Nhãn revision đúng mã đóng gói.
+
+Đã tải và đọc artifact của chính workflow tag: UAT227 PASS/0 FAIL, phiên bản0.15.3/0.2.11, core63.508 tệp không đổi; Cổng3 tổng/đếm/chi tiết khớp, schema1.046 mục/cờ khớp site mới, quay lui schema1.034 mục/versions/cài đặt/giao diện khớp, ca lỗi khớp và giữ bảo trì. Nền Cổng3 chưa có phát sinh sổ; vẫn bắt buộc diễn tập bản sao dữ liệu production hiện tại trên VM.
+
+**ĐANG DỞ — bước người vận hành:** vào phiên SSH `tienduongmarcom@erpnext-prod`, trong `~/trien-khai` checkout đúng tag, chạy `dien_tap_ban_sao.sh 0.15.3` rồi chỉ khi đạt mới `trien_khai_frontend.sh 0.15.3`; chuỗi lệnh có `&&` tại `docs/phat-hanh-0.15.3.md`. Giữ21 cờ, không thêm cờ. Phiên Codex không có kết nối SSH VM nên chưa tự chạy diễn tập/nâng; production/manifest vẫn0.15.2. Khi có log `=== XONG 0.15.3: ĐẠT ===` và digest khớp, cập nhật manifest và baseline Cổng3 theo bản production mới. Chưa nghiệm thu máy in/nhân sự thật hoặc ban hành quy chế biểu mẫu.
+
 ## 18/10/2026 — Chủ dự án đã đẩy tag0.15.3, workflow phát hành đang chạy
 
 Đã kiểm tag remote `v0.15.3` trỏ đúng `96a7ef0352b45c31b8d26428aad3ddbcafeeb37c`. Chủ dự án gửi log đẩy tag thành công. [Workflow phát hành39105247607](https://github.com/tienduongmarcom/aphvh/actions/runs/39105247607) đang chạy lại Cổng2/2b/3/UAT rồi mới dựng và đẩy image. Chưa có digest phát hành0.15.3, chưa triển khai VM.
