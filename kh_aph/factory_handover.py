@@ -73,6 +73,9 @@ def _load(name):
         frappe.throw('Chọn đúng phiếu bàn giao nhà máy; tải lại nếu đơn vị vừa đổi')
     if frappe.session.user not in (source.get(custody.HOLDER), source.nguoi_nhan):
         frappe.throw('Chỉ người giữ hoặc người nhận của phiếu được thao tác', frappe.PermissionError)
+    from frappe.permissions import has_user_permission
+    if not has_user_permission(source, user=frappe.session.user, ptype='read'):
+        frappe.throw('Phiếu nguồn ngoài phạm vi được cấp', frappe.PermissionError)
     return source
 
 

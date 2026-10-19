@@ -57,6 +57,7 @@
 
 // Chốt ca dùng cùng snapshot chuẩn, hai bước xem số rồi tự xác nhận.
 (function () {
+  if(kh_aph.personal_shift_dialog)return;
   function shift(company) {
     const request_id=Array.from(crypto.getRandomValues(new Uint8Array(16)), n=>n.toString(16).padStart(2,"0")).join("");
     let generation=0, loading=false, d;
@@ -77,10 +78,11 @@
       frappe.call({method:"kh_aph.personal_cash.prepare_shift",args:{...values,request_id},freeze:true}).then(r=>{
         const v=r.message;
         if(v.docstatus===1){d.hide();frappe.msgprint(__("Ca này đã chốt: ")+v.name);return;}
-        frappe.confirm(__("Phải có: ")+format_currency(v.expected_amount,"VND")+"<br>"+__("Thực đếm: ")+format_currency(v.counted_amount,"VND")+"<br>"+__("Chênh lệch: ")+format_currency(v.difference,"VND"),()=>frappe.call({method:"kh_aph.personal_cash.confirm_shift",args:{name:v.name},freeze:true}).then(()=>{d.hide();frappe.msgprint(__("Đã chốt ca: ")+v.name);}));
+        frappe.confirm(frappe.utils.escape_html(values.company)+"<br>"+frappe.utils.escape_html(values.account)+"<br>"+__("Phải có: ")+format_currency(v.expected_amount,"VND")+"<br>"+__("Thực đếm: ")+format_currency(v.counted_amount,"VND")+"<br>"+__("Chênh lệch: ")+format_currency(v.difference,"VND"),()=>frappe.call({method:"kh_aph.personal_cash.confirm_shift",args:{name:v.name},freeze:true}).then(()=>{d.hide();frappe.msgprint(__("Đã chốt ca: ")+v.name);}));
       }).always(()=>{loading=false;d.get_primary_btn().prop("disabled",false);});
     }});d.show();if(company)d.set_value("company",company);
   }
+  kh_aph.personal_shift_dialog=shift;
   ["Customer","APH Phieu quy nha may"].forEach(doctype=>frappe.ui.form.on(doctype,{refresh(frm){
     if((frappe.boot.kh_aph||{}).factory_handover && (frappe.session.user==="Administrator" || ["Accounts User","Accounts Manager","System Manager","Kế toán bán hàng","Kế toán nhà máy"].some(role=>frappe.user.has_role(role)))) frm.add_custom_button(__("Chốt ca tiền của tôi"),()=>shift(frm.doc.company||frappe.defaults.get_user_default("Company")));
   }}));

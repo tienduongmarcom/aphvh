@@ -28,8 +28,10 @@ frappe.ui.form.on("APH Phieu quy nha may", {
         }});dialog.show();
       });
     }
-    if (enabled && frm.doc.docstatus === 1 && frm.doc.ban_giao_tien) {
+    if (enabled && frm.doc.docstatus === 1 && frm.doc.ban_giao_tien && [frm.doc.kh_aph_nguoi_giu_tien,frm.doc.nguoi_nhan].includes(caller)) {
+      const source_name=frm.doc.name;
       call("kh_aph.factory_handover.status",{name:frm.doc.name}).then(r=>{
+        if(frm.doc.name!==source_name)return;
         const value=r.message;
         if (["Chờ nhận","Vượt nguồn cần xử lý"].includes(value.status) && value.from_holder===caller) {
           frm.add_custom_button(__("Hủy đề nghị bàn giao"),()=>frappe.confirm(__("Giải phóng giữ chỗ và giữ lịch sử đề nghị?"),()=>call("kh_aph.cash_handover.cancel",{name:value.root}).then(()=>frm.reload_doc())));

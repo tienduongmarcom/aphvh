@@ -75,6 +75,9 @@ class FactoryHandover(unittest.TestCase):
         self.assertEqual(self.m._load('S'),self.source)
         self.co.check_permission.assert_called_once_with('read');self.custody._person.assert_called_with('dung','APH')
         self.assertIn('order by name for update',self.f.db.sql.call_args.args[0])
+        self.permissions.has_user_permission.return_value=False
+        with self.assertRaises(PermissionError):self.m._load('S')
+        self.permissions.has_user_permission.return_value=True
         self.source.holder='other'
         with self.assertRaises(PermissionError):self.m._load('S')
     def test_scope_rejects_changed_factory_and_account_permission(self):
