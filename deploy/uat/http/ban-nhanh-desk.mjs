@@ -74,10 +74,19 @@ try {
         await until('!!window.cur_dialog && !!cur_dialog.fields_dict.available_amount && cur_dialog.$wrapper.is(":visible")');
         await evaluate(`window.__personal = cur_dialog; __personal.set_value('company',${JSON.stringify(payload.company)});true`);
         await until(`__personal.get_value('account') === ${JSON.stringify(payload.account)}`);
+        const principal = await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)");
+        if(principal!==payload.user)throw Error('Wrong server browser principal');
+        const probe = await evaluate(`frappe.call({method:'kh_aph.personal_cash.current',args:{company:${JSON.stringify(payload.company)},account:${JSON.stringify(payload.account)}}}).then(r=>({ok:true,amount:r.message.expected_amount}),e=>({ok:false,status:e.status,error:e.responseJSON?.exc_type,message:e.responseJSON?.exception}))`);
+        if(!probe.ok||Number(probe.amount)!==payload.expected)throw Error('Personal browser API: '+JSON.stringify(probe));
         await command('Fetch.enable',{patterns:[{urlPattern:'*/api/method/kh_aph.personal_cash.current',requestStage:'Response'}]});
         await evaluate('__personal.get_primary_btn().trigger("click");true');
         for(let i=0;i<120&&!lostResponse;i++)await pause(250);
-        if(!lostResponse)throw Error('No personal response intercepted');
+        if(!lostResponse){
+            const view=await evaluate('({company:__personal.get_value("company"),account:__personal.get_value("account"),values:__personal.get_values(true),disabled:__personal.get_primary_btn().prop("disabled"),notice:frappe.msg_dialog?.$body?.text()?.slice(0,500)})');
+            const shot=await command('Page.captureScreenshot',{format:'png'});
+            fs.writeFileSync('tien-ca-nhan.png',Buffer.from(shot.data,'base64'));
+            throw Error('No personal response intercepted: '+JSON.stringify({view,diagnostics:diagnostics.slice(-5)}));
+        }
         await until('!__personal.get_primary_btn().prop("disabled")');
         await evaluate('frappe.msg_dialog?.hide();true');
         await command('Fetch.disable');
