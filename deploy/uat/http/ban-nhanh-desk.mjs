@@ -109,6 +109,8 @@ try {
         await command('Page.navigate',{url});
         await until('!!window.frappe?.query_report && frappe.query_report.report_name==="Chot ngay va can xu ly" && frappe.query_report.data?.length>0');
         if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong report principal');
+        await until('frappe.request.ajax_count===0');
+        if(await evaluate('!!frappe.msg_dialog?.$wrapper.is(":visible")'))throw Error('Handled report warning must be shown in its row, without blocking popup');
         const groups=await evaluate('[...new Set(frappe.query_report.data.map(r=>r.group))]');
         if(!['Tiền mặt hiện tại','Ngân hàng','Hàng / hồ sơ'].every(name=>groups.includes(name)))throw Error('Missing day-close groups: '+JSON.stringify(groups));
         const screenshot=await command('Page.captureScreenshot',{format:'png'});

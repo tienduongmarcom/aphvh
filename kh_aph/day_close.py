@@ -18,6 +18,19 @@ def _row(group, status, **values):
     return {'group': group, 'status': status, **values}
 
 
+def _position(company, account, holder):
+    # C._state vẫn kiểm đầy đủ. Khi lỗi đối chiếu đã được biểu diễn thành
+    # dòng trong báo cáo, chỉ bỏ message mới của lỗi ấy khỏi hàng đợi popup.
+    # Không xóa message có trước, không nuốt PermissionError hoặc lỗi khác.
+    messages = frappe.local.message_log
+    start = len(messages)
+    try:
+        return C._state(company, account, holder)
+    except frappe.ValidationError:
+        del messages[start:]
+        raise
+
+
 def _cash(company):
     result = []
     accounts = rows('Account', {'company': company, 'account_type': 'Cash', 'is_group': 0, 'disabled': 0}, ['name'])
@@ -32,7 +45,7 @@ def _cash(company):
             result.append(_row('Tiền mặt hiện tại', 'Chưa xác minh người giữ', account=name, amount=C.balance(ledger)))
             continue
         try:
-            _, _, _, totals = C._state(company, name, frappe.session.user)
+            _, _, _, totals = _position(company, name, frappe.session.user)
         except frappe.ValidationError as exc:
             result.append(_row('Tiền mặt hiện tại', 'Cần xác minh lại: ' + str(exc), account=name, doctype=C.OPENING, document=opening.name))
             continue
@@ -43,7 +56,7 @@ def _cash(company):
                 result.append(_row('Tiền mặt hiện tại', 'Chưa xác minh người giữ', account=name, amount=amount))
                 continue
             try:
-                _, previous, _, _ = C._state(company, name, holder)
+                _, previous, _, _ = _position(company, name, holder)
             except frappe.ValidationError as exc:
                 result.append(_row('Tiền mặt hiện tại', 'Cần xác minh lại: ' + str(exc), account=name, holder=holder))
                 continue

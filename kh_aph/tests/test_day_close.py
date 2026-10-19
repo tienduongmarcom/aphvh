@@ -58,3 +58,19 @@ class DayClose(unittest.TestCase):
         self.assertEqual([r['status'] for r in result],['Đã khớp theo sao kê native','Chưa xác định đối tượng'])
         self.f.get_doc.assert_any_call('Bank Account','BA')
         self.assertEqual(self.m.rows.call_args.args[1]['company'],'APH')
+
+    def test_handled_verification_error_keeps_row_but_not_duplicate_popup(self):
+        self.f.local=types.SimpleNamespace(message_log=['prior message'])
+        def invalid(*args):
+            self.f.local.message_log.append('reverify this cash')
+            raise ValueError('cần xác minh lại')
+        self.c._state=Mock(side_effect=invalid)
+        with self.assertRaisesRegex(ValueError,'cần xác minh lại'):
+            self.m._position('APH','cash','me')
+        self.assertEqual(self.f.local.message_log,['prior message'])
+        def forbidden(*args):
+            self.f.local.message_log.append('permission denied')
+            raise PermissionError('scope')
+        self.c._state.side_effect=forbidden
+        with self.assertRaises(PermissionError):self.m._position('APH','cash','me')
+        self.assertEqual(self.f.local.message_log,['prior message','permission denied'])
