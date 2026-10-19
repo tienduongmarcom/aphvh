@@ -79,6 +79,7 @@ try {
         for(let i=0;i<120&&!lostResponse;i++)await pause(250);
         if(!lostResponse)throw Error('No personal response intercepted');
         await until('!__personal.get_primary_btn().prop("disabled")');
+        await evaluate('frappe.msg_dialog?.hide();true');
         await command('Fetch.disable');
         await evaluate('__personal.get_primary_btn().trigger("click");true');
         await until(`Number(__personal.get_value('expected_amount')) === ${payload.expected}`);

@@ -11,6 +11,7 @@
 			{fieldtype: "HTML", options: __("Số tiền theo trách nhiệm đã xác minh của chính bạn. Phần chưa xác minh được kế toán xử lý riêng. Đây là màn hình xem, không ghi thu hoặc bàn giao.")},
 			{fieldname: "company", label: __("Đơn vị"), fieldtype: "Link", options: "Company", reqd: 1,
 				onchange() {
+					if (!d) return;
 					const selected = d.get_value("company"), request = ++generation;
 					clear(); d.set_value("account", ""); d.set_df_property("account", "options", "");
 					if (!selected) return;
