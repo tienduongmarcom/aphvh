@@ -51,7 +51,8 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
             denied(lambda:current(),('PermissionError',))
             denied(lambda:rpc(API+'accounts',{'company':f['aph']},dung),('PermissionError',))
         finally:
-            rpc('frappe.client.delete',{'doctype':'User Permission','name':permission['name']},ktt)
+            # Native delete không có message; dùng caller thô như ca quyền cũ.
+            ktt('/api/method/frappe.client.delete',{'doctype':'User Permission','name':permission['name']})
         emit('HTTP_2B_PERSONAL_SCOPE_NO_GL','PASS',{'own_only':True,'factory_with_manager_still_restricted':True,'native_gl_opening_still_denied':True,'read_only':True})
 
         # Hai nghiệp vụ chuẩn tăng trách nhiệm, không cộng lại cả phiếu quỹ và JE.
