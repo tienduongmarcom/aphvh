@@ -343,3 +343,23 @@ def sync_resolution(root):
         if source.get(LINK) != root.name or not _bound(root):
             frappe.throw('Nguồn bàn giao không khớp phiếu nhà máy')
         _sync(source)
+
+
+def checked_cancel_backlinks(doc):
+    """Chỉ miễn đúng bản nguồn gương; giữ nguyên mọi backlink tĩnh/động khác.
+
+    Native Cancel gọi sau khi ghi docstatus2. Nguồn vẫn giữ Link đến H đã
+    hủy để xem lịch sử; không dùng ignore_links hay bỏ cả một DocType.
+    """
+    if not active() or not doc.get(SOURCE_FIELD) or not _bound(doc):
+        return False
+    source = _SOURCE.get()[1]
+    if (doc.docstatus != 2 or doc.status != 'Đã hủy' or doc.journal_entry
+            or source.get(LINK) != doc.name or frappe.session.user != doc.from_holder):
+        return False
+    from frappe.model.delete_doc import get_linked_docs, get_dynamic_linked_docs, raise_link_exists_exception
+    from kh_aph import factory_cash as F
+    for ref in get_linked_docs(doc, method='Cancel') + get_dynamic_linked_docs(doc, method='Cancel'):
+        if (ref['reference_doctype'], ref['reference_docname']) != (F.DT, source.name):
+            raise_link_exists_exception(doc, ref['reference_doctype'], ref['reference_docname'])
+    return True

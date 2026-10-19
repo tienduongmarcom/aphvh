@@ -3,6 +3,11 @@ from kh_aph import cash_handover as H
 
 
 class APHBangiaotien(Document):
+    def check_no_back_links_exist(self):
+        from kh_aph import factory_handover
+        if not factory_handover.checked_cancel_backlinks(self):
+            return super().check_no_back_links_exist()
+
     def validate(self):
         H.validate(self)
 

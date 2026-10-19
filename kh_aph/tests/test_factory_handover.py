@@ -116,3 +116,20 @@ class FactoryHandover(unittest.TestCase):
         self.source.holder='dung';self.source.tai_khoan_nhan=None
         with self.assertRaisesRegex(ValueError,'Chọn quỹ'):self.m.send_source(self.source)
         self.f.db.sql.assert_not_called()
+
+    def test_cancel_keeps_only_exact_source_backlink_exception(self):
+        native=types.ModuleType('frappe.model.delete_doc')
+        native.get_linked_docs=Mock(return_value=[{'reference_doctype':'Factory','reference_docname':'S'}])
+        native.get_dynamic_linked_docs=Mock(return_value=[])
+        native.raise_link_exists_exception=Mock(side_effect=ValueError('linked other'))
+        self.doc.docstatus=2;self.doc.status='Đã hủy';self.doc.journal_entry=None
+        with patch.dict(sys.modules,{'frappe.model.delete_doc':native}):
+            self.assertFalse(self.m.checked_cancel_backlinks(self.doc))
+            native.get_linked_docs.assert_not_called()
+            with self.m.operation(self.source):
+                self.assertTrue(self.m.checked_cancel_backlinks(self.doc))
+                native.get_dynamic_linked_docs.return_value=[{'reference_doctype':'Other','reference_docname':'X'}]
+                with self.assertRaisesRegex(ValueError,'linked other'):self.m.checked_cancel_backlinks(self.doc)
+                native.raise_link_exists_exception.assert_called_once_with(self.doc,'Other','X')
+                self.doc.journal_entry='JE'
+                self.assertFalse(self.m.checked_cancel_backlinks(self.doc))
