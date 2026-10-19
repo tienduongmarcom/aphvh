@@ -20,20 +20,26 @@ if [ -n "${SNAPSHOT_CMD:-}" ]; then echo "0/5 Snapshot VM"; MOI="$MOI" bash -c "
 # cuối cùng: tự quay lui không làm mất giao dịch. Worker + lịch chạy dừng (không chạy việc nền bằng code mới trên CSDL chưa migrate).
 # Đạt thì mở lại, trừ khi GIU_BAO_TRI=1 (trien_khai_frontend.sh còn bước sau, tự mở lại khi xong).
 # Lỗi sau khi đã bật bảo trì: GIỮ bảo trì để kiểm; mở bằng tay: ./erpctl exec -T backend bench --site frontend set-maintenance-mode off
-#   && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d
+#   && ./erpctl restart backend && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d
 ex() { ./erpctl exec -T backend bench --site frontend "$@" </dev/null; }
 bat_bao_tri() {
   ex set-maintenance-mode on
+  # Frappe16.52 giữ site_config trong RAM từng web worker 60 giây.
+  # CLI đổi file không xóa cache của worker đang chạy; nạp lại trước bước tiếp.
+  ./erpctl restart backend
   ex scheduler pause
   ./erpctl stop queue-short queue-long scheduler
 }
 mo_lai() {
   ex set-maintenance-mode off
+  # Frappe16.52 giữ site_config trong RAM từng web worker 60 giây.
+  # CLI đổi file không xóa cache của worker đang chạy; nạp lại trước bước tiếp.
+  ./erpctl restart backend
   ex scheduler resume
   ./erpctl up -d
 }
 giu_bao_tri() { echo "!!! SITE ĐANG Ở CHẾ ĐỘ BẢO TRÌ (người dùng chưa vào được). Kiểm xong rồi mở lại:"
-  echo "    cd $(pwd) && ./erpctl exec -T backend bench --site frontend set-maintenance-mode off && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d"; }
+  echo "    cd $(pwd) && ./erpctl exec -T backend bench --site frontend set-maintenance-mode off && ./erpctl restart backend && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d"; }
 quay_lui() {
   echo "$1"
   if [ "$TU_QUAY_LUI" = 1 ]; then echo "TỰ QUAY LUI về $CU..."; ./quay-lui.sh "$NGAY" --tu-dong && echo "Đã quay về $CU. Xem lỗi ở trên, KHÔNG nâng cấp lại tới khi sửa." || echo "QUAY LUI CŨNG LỖI: gọi người hỗ trợ ngay, bản sao lưu ở sao-luu/$NGAY"

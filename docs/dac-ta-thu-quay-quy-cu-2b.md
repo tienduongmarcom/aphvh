@@ -39,3 +39,7 @@ Ca cũ vẫn phải đạt. Thêm HTTP: retry tiền mặt chuẩn hóa 31/31.00
 ## 9. Triển khai và khôi phục
 
 Không thêm cờ; hai field PE cài rõ ràng trong cash_custody.schema (cờ22 mặc định tắt), không after_migrate. Quầy dùng mã khi custody bật; cờ tắt không đọc field mới. Không tăng version/tag/triển khai trong lát này. Khi phát hành cần đủ schema/caller đã nâng, diễn tập bản sao production và khôi phục image + DB/files/cờ theo runbook; không xóa dấu PE để xử lý lỗi. Bản quỹ cũ vẫn còn hạn chế nói trên nên chưa gọi đợt2B hoàn tất.
+
+## Lỗi triển khai phát hiện khi kiểm
+
+Cổng2b39192414323/db2201f: sau nâng cấp, probe200/pong rồi bước kéo image không tồn tại (đã dừng trước khi sửa gì) nhận503. Log có hai Gunicorn worker. Đối chiếu Frappe16.52.0 `app.py` gọi init với cached=True; config.py cache site_config trong RAM từng worker TTL60. Đổi maintenance bằng CLI không xóa cache trong các web process đang chạy. Sửa nang-cap.sh và trien_khai_frontend.sh: restart riêng backend sau cả bật/tắt bảo trì, trước sao lưu hoặc mở worker. Không clear/restart dữ liệu hay sửa core. Cổng2b tăng thêm20 probe bắt buộc200/pong ngay sau readiness (mỗi probe một lần, không retry/bỏ qua503), giữ nguyên assert kéo lỗi không gián đoạn web. Giữ run FAIL làm bằng chứng, chạy lại bốn cổng đúng SHA cuối. Khi mở bằng tay cũng phải nạp lại backend sau tắt bảo trì.

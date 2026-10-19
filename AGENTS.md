@@ -124,6 +124,10 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   image chép tệp giao diện vào ổ, worker production nhận việc của site tạm). Diễn tập dùng tài nguyên riêng gắn nhãn
   `vn.9xlab.dien-tap=<mã lượt>`. Nâng cấp luôn trong chế độ bảo trì từ trước sao lưu tới khi kiểm xong; lỗi thì giữ bảo trì.
 
+- **Frappe16.52.0 cache site_config trong RAM từng web worker TTL60:** đổi maintenance bằng CLI không xóa cache đó. Sau bật/tắt phải restart backend trước sao lưu/mở site; không chỉ chờ một ping200 (worker khác có thể503). Cổng2b39192414323 đã bắt lỗi này, giữ20 probe nghiêm sau readiness.
+
+- **Frappe16.52.0 `frappe.call` trả jqXHR:** dùng `.always(...)` để mở lại nút cả thành công/lỗi; không gọi trực tiếp `.finally(...)`. Đã gặp ở Chrome mất phản hồi thu quầy (UAT39190026643), đối chiếu `frappe/public/js/frappe/request.js` đúng tag. Nếu cần Promise native phải chuyển rõ ràng; kiểm bằng trình duyệt thật, không chỉ kiểm cú pháp.
+
 - Frappe `BaseDocument.update` nhận mapping, không nhận kwargs. Update-after-submit không gọi `before_validate`: giá trị
   dẫn xuất (giá/bao) phải tính lại ở server.
 - Phiếu nhập lùi ngày phải `set_posting_time` và chờ repost hoàn tất trước khi đọc giá vốn MA.

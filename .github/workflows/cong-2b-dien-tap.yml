@@ -54,6 +54,12 @@ jobs:
           # Tách web đang khởi động sau nâng cấp khỏi ca kéo image lỗi ở bước 3.
           # Không chỉ sleep một khoảng cố định và không nhận 200 sai nội dung là đạt.
           python3 "$GITHUB_WORKSPACE/deploy/release/cho_http.py" "http://127.0.0.1:18090/api/method/ping" --timeout 180
+          # Một worker có thể pong trong khi worker khác còn cache bảo trì.
+          # Sau readiness, mỗi probe chỉ một lần, không retry/bỏ qua 503.
+          for probe in $(seq 1 20); do
+            response_ping="$(curl -fsS --max-time 10 "http://127.0.0.1:18090/api/method/ping")"
+            python3 -c 'import json,sys; assert json.loads(sys.argv[1]) == {"message":"pong"}' "$response_ping"
+          done
       - name: 3. nang-cap.sh - bản không tồn tại phải giữ nguyên bản B
         working-directory: ${{ runner.temp }}/erp/ci
         run: |
