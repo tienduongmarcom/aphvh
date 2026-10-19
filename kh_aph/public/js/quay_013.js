@@ -32,7 +32,7 @@
 						(r.message.phieu_thu || []).forEach((pe) => window.open(
 							`/printview?doctype=Payment%20Entry&name=${encodeURIComponent(pe)}&format=${encodeURIComponent("Phiếu thu chi")}&trigger_print=1`));
 						frappe.show_alert({message: __("Đã ghi {0}", [r.message.phieu_thu.join(", ")]), indicator: "green"});
-					}}).finally(() => {
+					}}).always(() => {
 						sending = false;
 						d.get_primary_btn().prop("disabled", false);
 					});
