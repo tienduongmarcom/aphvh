@@ -62,7 +62,7 @@ Unit: cờ/guest/role trước đọc; số hữu hạn/6 số lẻ/bao nguyên;
 
 HTTP giả: PO10kg×20.000; NoCost preview chỉ lượng; Company/role sai chặn. Phiếu cân riêng tư mới phải gắn đúng PR và giữ private; script report được include từ nguồn chung. Nhận4kg gồm1kg có vấn đề tạo PR4kg theo giá20.000, không tự trả/giảm giá, còn6. Retry không tăng PR/SLE/GL/PLE, đổi nội dung chặn; giá client/kho khác Company/sửa dấu chặn. Hai phiên nhận4kg khi còn6: chỉ một thành công, còn2. Chrome từ báo cáo lượng, phiên nhà máy riêng, nhận1kg/bỏ200 sau commit/retry cùng Dialog: một PR/một SLE, còn1, form không có giá vốn; phải xem ảnh đúng SHA.
 
-Năm case mới: HTTP_3A_RECEIVING_SCOPE_PREVIEW, HTTP_3A_RECEIVING_PARTIAL_REPLAY, HTTP_3A_RECEIVING_TAMPER, HTTP_3A_RECEIVING_RACE, DESK_3A_RECEIVING_RETRY. Dự kiến b01494/toàn HTTP285; chưa PASS trước run xanh và đọc artifact. Nghiệm thu nhân sự/dữ liệu/máy in thật vẫn gom cuối.
+Năm case mới: HTTP_3A_RECEIVING_SCOPE_PREVIEW, HTTP_3A_RECEIVING_PARTIAL_REPLAY, HTTP_3A_RECEIVING_TAMPER, HTTP_3A_RECEIVING_RACE, DESK_3A_RECEIVING_RETRY. Đã PASS b01494/toàn HTTP285 trên 1fffcbaa9b40faf5b33fe246a6d4c7faf68c7b61; bốn cổng success và artifact/ảnh đã đọc/xem (20/10/2026), liên kết trong docs/ban-giao.md. Nghiệm thu nhân sự/dữ liệu/máy in thật vẫn gom cuối.
 
 ## 9. Triển khai và khôi phục
 

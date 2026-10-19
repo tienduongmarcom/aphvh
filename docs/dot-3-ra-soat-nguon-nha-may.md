@@ -4,7 +4,7 @@ Baseline production0.15.3 theo người vận hành; nhánh phát triển nối 
 
 | Mã | Nguồn đã có, bằng chứng code | Phần bổ sung thực sự / giới hạn |
 |---|---|---|
-| NM01a nhận từ PO | price_visibility.validate_purchase_receipt, native PO.make_purchase_receipt, bag_stock, factory_costing.validate_gia_tam | PR #17 đang kiểm facade/Dialogue lượng và hồ sơ; giá từ PO, một PR/nonce/khóa, hàng có vấn đề vẫn nhập đủ lượng và ghi riêng phần cần đàm phán |
+| NM01a nhận từ PO | price_visibility.validate_purchase_receipt, native PO.make_purchase_receipt, bag_stock, factory_costing.validate_gia_tam | PR #17 đã đủ4 cổng đúng1fffcba,285 HTTP/Desk PASS; facade/Dialog lượng và hồ sơ; giá từ PO, một PR/nonce/khóa, hàng có vấn đề vẫn nhập đủ lượng và ghi riêng phần cần đàm phán |
 | NM01b chờ định giá | APH Pending Receipt.validate, pending_valuation.finalize, Ton kho so luong.pending_kg | Có nhập lượng ngoài khả dụng và chốt giá tạo PR duy nhất; chưa gom cửa sổ nhận. Nếu nối từ PO phải giữ đúng từng dòng PO qua phiếu chờ đến PR, tính phần còn/giữ chỗ giữa phiếu chờ và nhập có giá, không tạo thêm một nhập độc lập |
 | NM01c chuyển đến | Stock Entry native/Material Request; kho_van_hanh.tao_yeu_cau_chuyen; cây kho Company | Chưa có cửa sổ nhận chuyến đến. Phải phân biệt chuyển cùng Company với mua/bán khác Company; không dùng PR mua để nhận mọi chuyến chuyển |
 | NM02 sản xuất | stock_entry_kg.StockEntryKgCosting, validate_kg_entry, allocate_finished_cost_by_kg; loại Sản xuất theo kg, kg-v3/kg-v4; lab9x.costing_rules/gia_thanh | Backend chia kg/hệ số/phụ phẩm và snapshot khi repost đã có. Chưa có Dialog chọn lệnh/định mức/dây chuyền rồi ghi đầu vào–đầu ra–dở dang–chênh lệch một lần. Không ép thiếu đầu ra thành hao hụt hoặc tự đưa đầu vào chưa dùng ra khỏi kho |
@@ -20,7 +20,7 @@ Hàng có vấn đề thường giữ lại dùng ngay, đàm phán giảm giá 
 
 ## Thứ tự kỹ thuật kế tiếp
 
-1. Đọc đủ4 cổng/ảnh PR #17 đúng mã; chỉ sửa khi có lỗi thực tế. Chưa phát hành production từ PR này.
+1. Đã đọc đủ4 cổng/artifact và xem ảnh PR #17 đúng1fffcba (20/10/2026); 285 HTTP/Desk PASS. Chưa phát hành production từ PR này.
 2. Chốt đặc tả9 nhóm NM01b: nguồn PO hoặc nhận chưa có PO, chống trùng/giữ phần đã nhận giữa pending và PR, người nhận/tệp/chất lượng; giữ native finalize và quyền kế toán chốt giá.
 3. Rà meta native Work Order/BOM/Stock Entry đúng nền, thiết kế facade NM02/03; nguồn không xem giá vốn phải có kiểm quyền độc lập, từng hành động/field/Company/Warehouse. Chọn mẻ/lệnh/dây chuyền và dữ liệu dở dang thật, không tạo “sổ sản xuất” nhập lần hai.
 4. Gom NM04/05 bằng service đã có; phân biệt sản xuất/đóng gói/đổi bao, bán/chuyển, hồ sơ ký từng loại.
