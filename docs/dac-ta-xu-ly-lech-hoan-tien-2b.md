@@ -54,3 +54,6 @@ Schema rõ trong bộ cài, không after_migrate; cài lại không tự xử l�
 ## Bằng chứng đang kiểm
 
 UAT39176704265/d415cf3 FAIL tại upload căn cứ lặp sau khi hai ca đóng/mở vụ đã PASS. Frappe16.52.0 File.before_insert/save_file dùng chung URL khi nội dung trùng, guard cũ nhầm File mới với sửa blob cũ. Bản sửa chỉ cho tạo tham chiếu File mới riêng tư khi byte sau xử lý native khớp blob đang bảo vệ và người thao tác có quyền đọc File gốc; không tin content_hash client, không cho nhánh này sửa File đã tồn tại. Đọc byte thô để không thay encoding PDF/ảnh, giữ guard sửa/xóa/chuyển công khai. UAT giữ nội dung trùng, kiểm URL/blob cũ;354+108 unit đạt, chờ4 cổng mã sửa. Nguồn primary đã đối chiếu: frappe/core/doctype/file/file.py tại tag v16.52.0.
+
+
+UAT39178203449/810fe9d: tệp trùng, hai phiên chốt và ca nguồn lỗi thời đã PASS; FAIL native CancelledLinkError khi đối chiếu bàn giao đã hủy có quan sát. Đã đối chiếu Document._validate_links và BaseDocument.get_invalid_links của Frappe16.52.0. Controller ứng dụng chỉ lọc cancelled_links cho đúng source_name là bàn giao hủy có receive_hash/issue_state sau guard manager/quyền/phạm vi/khóa; mọi invalid link, link hủy khác và bảng con vẫn qua native. Không ignore_links, không sửa core;357+108 unit đạt, chờ CI mã sửa. Giữ nguyên ca nguồn hủy trong bộ UAT.

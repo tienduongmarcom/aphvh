@@ -55,6 +55,20 @@ def _active(source, exclude=None):
         (source.doctype, source.name, exclude or ''))
 
 
+def cancelled_links(doc, links):
+    """Chỉ nguồn bàn giao đã hủy có quan sát được dùng làm tham chiếu lịch sử.
+
+    Native vẫn kiểm mọi link không tồn tại và link hủy ở các trường khác/child.
+    Không dùng ignore_links; quyền/phạm vi/khóa nguồn vẫn kiểm trước ngoại lệ.
+    """
+    if doc.source_type != H.DT or not any(row[0] == 'source_name' for row in links):
+        return links
+    source = source_for(doc)
+    if source.docstatus == 2 and source.receive_hash and source.issue_state:
+        return [row for row in links if row[0] != 'source_name']
+    return links
+
+
 def validate(doc):
     source = source_for(doc)
     old = doc.get_doc_before_save()

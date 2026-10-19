@@ -71,3 +71,18 @@ class Issue(unittest.TestCase):
         self.m.prevent_delete(Doc(docstatus=0))
         for status in (1,2):
             with self.assertRaisesRegex(ValueError,'không xóa hồ sơ'):self.m.prevent_delete(Doc(docstatus=status))
+    def test_cancelled_observed_handover_is_history_not_a_new_transfer(self):
+        self.doc.source_type=self.h.DT
+        self.source.docstatus=2;self.source.receive_hash='observed';self.source.issue_state='Chờ xử lý'
+        links=[('source_name','H','nguồn'),('other_field','V','căn cứ khác')]
+        self.assertEqual(self.m.cancelled_links(self.doc,links),[links[1]])
+        self.m.source_for.assert_called_once_with(self.doc)
+    def test_cancelled_unobserved_source_does_not_get_exception(self):
+        self.doc.source_type=self.h.DT;self.source.docstatus=2;self.source.receive_hash=None
+        links=[('source_name','H','nguồn')]
+        self.assertEqual(self.m.cancelled_links(self.doc,links),links)
+    def test_cancelled_other_source_type_keeps_native_validation(self):
+        self.doc.source_type=self.c.SHIFT
+        links=[('source_name','S','ca')]
+        self.assertEqual(self.m.cancelled_links(self.doc,links),links)
+        self.m.source_for.assert_not_called()

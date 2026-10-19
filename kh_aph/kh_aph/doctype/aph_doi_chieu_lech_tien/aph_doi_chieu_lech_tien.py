@@ -3,6 +3,10 @@ from kh_aph import cash_issue as I
 
 
 class APHDoichieulechtien(Document):
+    def get_invalid_links(self, is_submittable=False):
+        invalid, cancelled = super().get_invalid_links(is_submittable=is_submittable)
+        return invalid, I.cancelled_links(self, cancelled)
+
     def validate(self):
         I.validate(self)
 
