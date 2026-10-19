@@ -76,6 +76,7 @@ Thứ tự trên không cấm khảo sát điểm nối tiền trong đợt 1; k
 | T06 | Thiếu/thừa, nộpbank, giữquáhạn | PR #12 lưu số thực/thiếu/thừa, người/hạn xử lý; vượt nguồn lưu quan sát không chuyển; hủy đề nghị vẫn giữ vụ lệch/tệp. Ví có lệch hoặc nhóm chưa rõ âm bị chặn giao ra. Đã có nộp Bank; PR #13 thêm đóng/mở lại có căn cứ và hoàn toàn bộ bằng phiếu ngược, đã kiểm đúng8fc93b7. Nhắc quá hạn và adapter cũ chưa đầy đủ |
 | T07 | Ngân hàng/sao kê/ngoại lệ | Có quyềnFile/Bank, mãgiaodịch chung và đối soát; chưa có bảngchốt ngày người phụtrách/hạn xử lý thống nhất |
 | T08 | Thu quầy không ghi lặp sau mất phản hồi | PR #14: mã lượt theo người + Company, dấu nội dung trên PE; cùng cửa sổ gửi lại trả PE cũ, hai hình thức cùng lượt chỉ hai PE. Dấu giả/sửa/xóa bị chặn, hủy không tự tái thu. HTTP và Chrome đã kiểm, đủ bốn cổng đúngc02;263 HTTP/Desk PASS/0FAIL. Giới hạn: đóng/tải lại trang tạo mã mới thì phải kiểm phiếu đã thu trước khi thu tiếp |
+| T09 | Tiền cá nhân không cấp GL | Đang kiểm facade/Dialog chỉ đọc trên nhánh feat/tien-ca-nhan-20261019, base PR #14. Dùng cùng mốc/công thức/khóa, không trả GL/nguồn/người khác; NoCost/nhà máy chỉ quỹ cấu hình kể cả cộng quản lý. Chưa có CI trên mã mới; chưa cấp chốt/nhận/hoàn và chưa nối adapter nhà máy. Đặc tả docs/dac-ta-tien-ca-nhan-2b.md |
 
 Không tự gán người giữ cho khoản lịch sử chưa rõ; phảihiện chưa xácminh. Phải kiểm phiên đồngthời/khóa ghi, số tiền hữu hạn, tối đa2 sốlẻ và quyềnCompany trước mọi ghi sổ.
 

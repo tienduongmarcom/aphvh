@@ -13,7 +13,7 @@
 				d.get_primary_btn().prop("disabled", true);
 				frappe.call({method: "kh_aph.delivery_issue.cap_nhat", freeze: true,
 					args: {name: frm.doc.name, modified: frm.doc.modified, action, values: JSON.stringify(values)}
-				}).then(() => {d.hide(); return frm.reload_doc();}).finally(() => d.get_primary_btn().prop("disabled", false));
+				}).then(() => {d.hide(); return frm.reload_doc();}).always(() => d.get_primary_btn().prop("disabled", false));
 			}});
 		d.show();
 	}

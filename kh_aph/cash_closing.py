@@ -101,11 +101,13 @@ def _money(value):
         frappe.throw(str(exc))
 
 
-def _state(company, account, holder):
+def _state(company, account, holder, *, ledger_reader=None):
     opening = latest(OPENING, company, account)
     if not opening:
         frappe.throw("Quỹ chưa có xác minh số bắt đầu")
-    rows = ledger(company, account)
+    # Facade tiền cá nhân có scope riêng và chỉ đọc cột Cash/metadata.
+    # Không thay quyền GL hoặc nguồn của luồng chốt ca native.
+    rows = (ledger_reader or ledger)(company, account)
     allocations = {r.holder: r.amount for r in opening.allocations}
     allocations[""] = opening.unverified_amount
     try:

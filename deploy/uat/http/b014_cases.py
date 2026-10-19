@@ -294,3 +294,6 @@ def chay(admin, phien, f, emit):
 
     from b014_cashier_request import chay as cashier_cases
     cashier_cases(rpc, get, insert, lst, denied, ktt, ktbh, f, phien, emit)
+
+    from b014_personal_cash import chay as personal_cases
+    personal_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

@@ -117,7 +117,8 @@ def snapshot():
     raw=inner(snapshot_code)
     return json.loads(next(x[9:] for x in raw.splitlines() if x.startswith("SNAPSHOT:")))
 def session(user,password):
-    op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    jar=http.cookiejar.CookieJar()
+    op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     def call(method,args=None):
         data=urllib.parse.urlencode(args).encode() if args is not None else None
         req=urllib.request.Request("http://127.0.0.1:18091"+method,data=data,
@@ -125,6 +126,8 @@ def session(user,password):
         with op.open(req,timeout=30) as res:return json.load(res)
     call("/api/method/login",{"usr":user,"pwd":password})
     assert call("/api/method/frappe.auth.get_logged_user")["message"]==user
+    # Cookie UAT chỉ truyền qua stdin cho Chrome, không đưa mật khẩu vào argv/log.
+    call.browser_cookies=lambda:[{"name":c.name,"value":c.value,"url":"http://127.0.0.1:18091"} for c in jar]
     return call
 
 def emit(case,status,detail):

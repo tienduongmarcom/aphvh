@@ -82,6 +82,7 @@ def boot_session(bootinfo):
         "hn_storekeeper": is_hn_storekeeper(),
         "factory_price_groups": factory_price_groups(),
         "cash_custody": cint(frappe.conf.get("kh_aph_cash_custody")),
+        "cash_closing": cint(frappe.conf.get("kh_aph_cash_closing")),
     }
 
 

@@ -146,6 +146,12 @@ jinja = {
 }
 
 # APHVH UAT child query correction v1
+for _personal_dt in ("Customer", "APH Phieu quy nha may"):
+    _personal_scripts = doctype_js.get(_personal_dt, [])
+    if isinstance(_personal_scripts, str):
+        _personal_scripts = [_personal_scripts]
+    doctype_js[_personal_dt] = _personal_scripts + ["public/js/tien_ca_nhan.js"]
+
 override_whitelisted_methods.update({
     "frappe.client.get_list": "kh_aph.cost_query_api.get_list",
     "frappe.client.get_value": "kh_aph.cost_query_api.get_value",

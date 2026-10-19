@@ -1,5 +1,13 @@
 # Bàn giao dự án APH-VH
 
+## 19/10/2026 — ĐANG DỞ kiểm tiền cá nhân không GL
+
+Nhánh `feat/tien-ca-nhan-20261019`, base PR #14/a50f5f1. Bổ sung facade chỉ đọc `personal_cash.accounts/current`, Dialog trên Customer/Phiếu quỹ nhà máy; chung công thức/mốc/khóa với chốt ca, chỉ đọc cột Cash/metadata. NoCost/nhà máy kể cả cộng quản lý chỉ đúng quỹ cấu hình, Company/Account User Permission; không cấp GL/nguồn hoặc đổi quyền chốt ca. Không trả nguồn/đối ứng/phân bổ người khác. Không schema/cờ/version/tag/merge/deploy, production vẫn0.15.3/21 cờ. Đã sửa cleanup jqXHR của Dialog chênh lệch từ finally sang always, chưa kiểm riêng mất phản hồi ở lối này.
+
+Cục bộ375 kh_aph +108 lab9x đạt, Python/JS/diff đạt. Thêm5 ca HTTP/Desk (b014 dự kiến77): scope/no GL, nguồn nhà máy/PE/chưa rõ, giữ chỗ/delta cùng Cash, Chrome dùng phiên nhà máy thật trên UAT dùng một lần và bỏ200/đọc lại, hủy/vụ lệch/mốc lỗi. Chưa có kết quả CI của lát này, không lấy PASS PR #14 thay. Bước tiếp: chạy/đọc bốn cổng cùng SHA, sửa lỗi nếu có và ghi artifact. Đặc tả9 nhóm `docs/dac-ta-tien-ca-nhan-2b.md`.
+
+**ĐANG DỞ đợt2B:** facade là bước nền chỉ đọc, chưa phải adapter quỹ nhà máy sang canonical giữ chỗ/đối chiếu hoặc quyền tự chốt/nhận/hoàn cho nhà máy. Sau kiểm facade cần nối adapter và bảng chốt ngày/ngoại lệ. Nghiệm thu nhân sự/dữ liệu/máy in thật gom cuối theo anh Tiến.
+
 
 ## 19/10/2026 — Thu quầy/quỹ cũ và bảo trì đã kiểm đủ bốn cổng
 

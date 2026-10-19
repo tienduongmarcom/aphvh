@@ -10,9 +10,16 @@ if (state.site !== 'aphvh-web-uat' || state.container !== 'aphvh-p0-web-uat' || 
 const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
-const login = await fetch(base + '/api/method/login', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({usr:'Administrator',pwd:state.admin_password})});
-if (!login.ok || (await login.json()).message !== 'Logged In') throw Error('UAT browser login failed');
-const cookies = login.headers.getSetCookie().map(s => s.split(';')[0]).map(s => {let n=s.indexOf('=');return {name:s.slice(0,n),value:s.slice(n+1),url:base}});
+let cookies;
+if (mode === 'tien-ca-nhan') {
+    // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
+    cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
+    if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
+} else {
+    const login = await fetch(base + '/api/method/login', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({usr:'Administrator',pwd:state.admin_password})});
+    if (!login.ok || (await login.json()).message !== 'Logged In') throw Error('UAT browser login failed');
+    cookies = login.headers.getSetCookie().map(s => s.split(';')[0]).map(s => {let n=s.indexOf('=');return {name:s.slice(0,n),value:s.slice(n+1),url:base}});
+}
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aphvh-desk-uat-'));
 const chrome = spawn('google-chrome', ['--headless','--no-sandbox','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-address=127.0.0.1','--remote-debugging-port=19229','--user-data-dir='+profile,'about:blank'], {stdio:'ignore'});
 let ws, sequence=0;
@@ -57,6 +64,30 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'tien-ca-nhan') {
+        const payload = JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:1100,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/aph-phieu-quy-nha-may/'+encodeURIComponent(payload.source)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Tiền tôi đang giữ"]');
+        if(await evaluate('frappe.session.user')!==payload.user)throw Error('Browser must use restricted factory user');
+        await evaluate('cur_frm.custom_buttons["Tiền tôi đang giữ"].trigger("click");true');
+        await until('!!window.cur_dialog && !!cur_dialog.fields_dict.available_amount && cur_dialog.$wrapper.is(":visible")');
+        await evaluate(`window.__personal = cur_dialog; __personal.set_value('company',${JSON.stringify(payload.company)});true`);
+        await until(`__personal.get_value('account') === ${JSON.stringify(payload.account)}`);
+        await command('Fetch.enable',{patterns:[{urlPattern:'*/api/method/kh_aph.personal_cash.current',requestStage:'Response'}]});
+        await evaluate('__personal.get_primary_btn().trigger("click");true');
+        for(let i=0;i<120&&!lostResponse;i++)await pause(250);
+        if(!lostResponse)throw Error('No personal response intercepted');
+        await until('!__personal.get_primary_btn().prop("disabled")');
+        await command('Fetch.disable');
+        await evaluate('__personal.get_primary_btn().trigger("click");true');
+        await until(`Number(__personal.get_value('expected_amount')) === ${payload.expected}`);
+        await until('!__personal.get_primary_btn().prop("disabled")');
+        const view = await evaluate('({expected:Number(__personal.get_value("expected_amount")),available:Number(__personal.get_value("available_amount")),reserved:Number(__personal.get_value("reserved_amount")),readonly:__personal.fields_dict.expected_amount.df.read_only,clean:!cur_frm.is_dirty(),user:frappe.session.user,accounts:__personal.fields_dict.account.df.options.split("\\n").filter(Boolean)})');
+        if(view.expected!==payload.expected||view.available!==payload.expected||view.reserved!==0||!view.readonly||!view.clean||JSON.stringify(view.accounts)!==JSON.stringify([payload.account]))throw Error('Wrong personal projection: '+JSON.stringify(view));
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('tien-ca-nhan.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_2B_PERSONAL_NO_GL',status:'PASS',detail:{factory_user:true,no_admin_session:true,own_amount:view.expected,readonly:true,document_clean:true,retry_after_lost_response:true}}));
     } else if (mode === 'thu-quay') {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});

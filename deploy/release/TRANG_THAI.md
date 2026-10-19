@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 19/10/2026 — ĐANG DỞ kiểm tiền cá nhân không GL
+
+Nhánh `feat/tien-ca-nhan-20261019`, base PR #14/a50f5f1. Facade/Dialog tiền cá nhân chỉ đọc, không schema/cờ/version/tag/merge/deploy. Production theo log người vận hành vẫn0.15.3/21 cờ; candidate24 cờ. Cục bộ375 kh_aph +108 lab9x, Python/JS/diff đạt;5 ca HTTP/Desk mới, b014 dự kiến77. Chưa có bốn cổng trên mã này, không dùng PASS PR #14 thay. Chi tiết và phạm vi quyền tại `docs/dac-ta-tien-ca-nhan-2b.md`; bước tiếp chạy/đọc CI cùng SHA.
+
+**ĐANG DỞ:** adapter quỹ nhà máy sang giữ chỗ/đối chiếu, quyền chốt/nhận/hoàn nhà máy và bảng chốt ngày còn tiếp. Facade chỉ là bước nền không GL. Nghiệm thu nhân sự/dữ liệu/máy in thật gom cuối. Khi phát hành vẫn diễn tập bản sao production có dữ liệu và rollback snapshot/image/cờ theo runbook.
+
 
 ## 19/10/2026 — Thu quầy/quỹ cũ và bảo trì đã kiểm đủ bốn cổng
 
