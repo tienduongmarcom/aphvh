@@ -4,11 +4,13 @@
 
 Nhánh `feat/xu-ly-lech-hoan-tien-20261019`, base PR #12 (6431ec0). Đã viết hồ sơ đối chiếu native + dòng căn cứ (xác minh mới/ca khớp từng phía Cash/tệp riêng tư); chốt/mở lại không đổi GL/số đếm cũ. Giữ nguyên chênh lệch lịch sử, gỡ chặn qua hồ sơ có căn cứ; ca lệch cũ chưa có state vẫn được coi đang mở. Hoàn toàn bộ bằng phiếu ngược chiều hai người, cùng Cash không sổ/khác Cash hoặc Bank về Cash một JE mới; không hủy JE gốc. Bank chỉ làm nguồn hoàn đúng gốc, kiểm số dư/giữ chỗ; tiền đã dùng tiếp không hoàn vượt nguồn. Yêu cầu tạo hoàn có mã chống trùng, hủy trước nhận giữ lịch sử và cho lập lại bằng mã mới.
 
-Cục bộ357 kh_aph +108 lab9x PASS; Python/JS/diff đạt. Đã thêm10 ca HTTP/Desk kỳ vọng, b01468 (tổng259 HTTP/Desk); chưa có CI/PASS mã mới. Bước tiếp: push/mở PR draft sau #12, chạy4 cổng đúng SHA, đọc artifact và sửa FAIL; không dùng PASS249 của #12 thay thế. Đặc tả9 nhóm `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`.
+Cục bộ358 kh_aph +108 lab9x PASS; Python/JS/diff đạt. Đã thêm10 ca HTTP/Desk kỳ vọng, b01468 (tổng259 HTTP/Desk); chưa có CI/PASS mã mới. Bước tiếp: push/mở PR draft sau #12, chạy4 cổng đúng SHA, đọc artifact và sửa FAIL; không dùng PASS249 của #12 thay thế. Đặc tả9 nhóm `docs/dac-ta-xu-ly-lech-hoan-tien-2b.md`.
 
 Giữ bằng chứng UAT39176704265 trên d415cf3 FAIL sau hai ca đối chiếu/đóng mở đã đạt: upload tệp cùng nội dung bị guard blob chặn vì native Frappe dedupe file_url. Đã đối chiếu File.before_insert/save_file/get_content của Frappe16.52.0: sửa chỉ cho File mới riêng tư thêm tham chiếu khi byte native khớp blob gốc và có quyền đọc; File đã tồn tại/đổi công khai/sửa/xóa vẫn bị chặn. Unit bổ sung ba ranh giới; UAT giữ nguyên nội dung trùng và thêm assertion URL chung/blob còn nguyên. Chưa có PASS mã sửa.
 
 UAT39178203449/810fe9d đã kiểm lại qua tệp trùng, hai phiên chốt đối chiếu và ca nguồn lỗi thời; FAIL ở nguồn bàn giao đã hủy vì Dynamic Link native cấm link tới docstatus2. Sửa riêng controller hồ sơ đối chiếu: giữ toàn bộ invalid link/child và link hủy khác, chỉ chấp nhận source_name của bàn giao đã hủy có receive_hash/issue_state sau kiểm manager/quyền/phạm vi/khóa nguồn. Không ignore_links hoặc sửa core; ba unit bổ sung,357+108 đạt. Chờ kiểm lại đúng mã sửa.
+
+UAT39184751627/033a89a đã qua cả5 ca đối chiếu (kể cả nguồn hủy), FAIL ở assertion hai phản hồi tạo hoàn đồng thời bằng nhau. Native sanitize Currency None thành0 lúc ghi DB, còn result cũ trả raw trước/sau load: chuẩn hóa ba trường tiền qua money và link JE rỗng vềNone. Giữ assertion, bổ sung in hai phản hồi nếu còn lệch; unit tái hiện fresh None/DB0,358+108 đạt. Chưa có PASS mã sửa, còn kiểm các ca hoàn phía sau.
 
 Cờ24/phiên bản không đổi; không tag/merge/deploy, production0.15.3. Adapter quỹ nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân không GL còn thiếu; không gọi toàn bộ2B hoàn tất. Nghiệm thu thực tế gom cuối theo anh Tiến.
 

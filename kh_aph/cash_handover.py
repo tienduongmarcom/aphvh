@@ -220,7 +220,11 @@ def _locked(name):
 
 
 def result(doc):
-    return {key: doc.get(key) for key in ("name", "status", "requested_amount", "received_amount", "difference", "journal_entry")}
+    # Native chuẩn hóa Currency None thành 0 khi ghi DB; phản hồi trước/sau
+    # load phải cùng hợp đồng để retry không trả kết quả khác chỉ vì kiểu dữ liệu.
+    return {"name": doc.name, "status": doc.status,
+        **{key: money(doc.get(key)) for key in ("requested_amount", "received_amount", "difference")},
+        "journal_entry": doc.get("journal_entry") or None}
 
 
 @frappe.whitelist(methods=["POST"])

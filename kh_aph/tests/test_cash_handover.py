@@ -105,3 +105,8 @@ class Handover(unittest.TestCase):
         self.m.prevent_delete(Row(docstatus=0))
         for status in (1,2):
             with self.assertRaisesRegex(ValueError,'không xóa hồ sơ'):self.m.prevent_delete(Row(docstatus=status))
+    def test_pending_retry_response_is_same_before_and_after_native_db_defaults(self):
+        fresh=Row(name='H',status='Chờ nhận',requested_amount=Decimal('40'),received_amount=None,difference=None,journal_entry=None)
+        loaded=Row(name='H',status='Chờ nhận',requested_amount=40.0,received_amount=0.0,difference=0.0,journal_entry='')
+        self.assertEqual(self.m.result(fresh),self.m.result(loaded))
+        self.assertEqual(self.m.result(fresh)['received_amount'],Decimal(0))

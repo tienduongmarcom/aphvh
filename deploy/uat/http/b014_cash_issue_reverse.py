@@ -121,7 +121,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     denied(lambda:call('create_reverse',args),('PermissionError',))
     clients=[phien(f['ktt2']),phien(f['ktt2'])]
     with ThreadPoolExecutor(max_workers=2) as pool:replies=list(pool.map(lambda i:call('create_reverse',args,clients[i]),range(2)))
-    assert replies[0]==replies[1]
+    assert replies[0]==replies[1],replies
     reverse=replies[0];assert wallet(same,recipient)['reserved_amount']==40
     denied(lambda:call('create_reverse',{**args,'request_id':uuid.uuid4().hex},recipient),text='đã có phiếu hoàn')
     denied(lambda:call('receive',{'name':reverse['name'],'amount':40},recipient),('PermissionError',))
@@ -139,7 +139,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         r=call('create_reverse',args,recipient)
         clients=[phien(f['ktt']),phien(f['ktt'])]
         with ThreadPoolExecutor(max_workers=2) as pool:answers=list(pool.map(lambda i:call('receive',{'name':r['name'],'amount':60},clients[i]),range(2)))
-        assert answers[0]==answers[1]
+        assert answers[0]==answers[1],answers
         after=counts();assert after['Journal Entry']==before['Journal Entry']+1 and after['GL Entry']==before['GL Entry']+2
         assert after['Payment Entry']==before['Payment Entry'] and after['Payment Ledger Entry']==before['Payment Ledger Entry']
         assert wallet(src)['expected_amount']==200

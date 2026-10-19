@@ -57,3 +57,6 @@ UAT39176704265/d415cf3 FAIL tại upload căn cứ lặp sau khi hai ca đóng/m
 
 
 UAT39178203449/810fe9d: tệp trùng, hai phiên chốt và ca nguồn lỗi thời đã PASS; FAIL native CancelledLinkError khi đối chiếu bàn giao đã hủy có quan sát. Đã đối chiếu Document._validate_links và BaseDocument.get_invalid_links của Frappe16.52.0. Controller ứng dụng chỉ lọc cancelled_links cho đúng source_name là bàn giao hủy có receive_hash/issue_state sau guard manager/quyền/phạm vi/khóa; mọi invalid link, link hủy khác và bảng con vẫn qua native. Không ignore_links, không sửa core;357+108 unit đạt, chờ CI mã sửa. Giữ nguyên ca nguồn hủy trong bộ UAT.
+
+
+UAT39184751627/033a89a: cả5 ca đối chiếu, bao gồm nguồn hủy, đã PASS. FAIL ở equality hai phản hồi tạo hoàn đồng thời. BaseDocument.get_valid_dict Frappe16.52.0 sanitize Currency None thành0 khi ghi; result raw có khác biểu diễn trước/sau load. Chuẩn hóa phản hồi Handover bằng money cho ba trường tiền và None cho JE rỗng, không đổi tiền/phiếu. Unit fresh None vs DB0;358+108 đạt. Assertion đồng thời giữ nguyên và bổ sung hai payload khi FAIL để không mất bằng chứng. Chờ kiểm đúng mã sửa; các ca hoàn phía sau chưa được kết luận.
