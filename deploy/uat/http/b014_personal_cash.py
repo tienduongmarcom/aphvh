@@ -67,7 +67,10 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         baseline = counts()
         assert current()['expected_amount']==332 and current()['available_amount']==332
         assert counts()==baseline
-        denied(lambda:get('Journal Entry',source['journal_entry'],dung),('PermissionError',))
+        # Không suy quyền JE của người có sẵn Accounts Manager là bị chặn.
+        # Facade này phải không trả JE/nguồn, bất kể quyền native có sẵn.
+        own = current()
+        assert set(own)==set(value) and source['journal_entry'] not in json.dumps(own)
         emit('HTTP_2B_PERSONAL_SOURCES_UNKNOWN','PASS',{'factory_je_once':True,'pe_holder':True,'unknown_not_owner':True,'no_source_exposure':True})
 
         handover = insert({'doctype':'APH Ban giao tien','company':f['aph'],'from_account':account,'to_account':account,
