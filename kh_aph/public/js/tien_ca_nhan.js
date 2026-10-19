@@ -3,7 +3,7 @@
 	frappe.provide("kh_aph");
 	if (kh_aph.personal_cash_dialog) return;
 	kh_aph.personal_cash_dialog = function (company) {
-		let loading = false, generation = 0;
+		let loading = false, generation = 0, company_generation = 0;
 		const output = ["expected_amount", "reserved_amount", "available_amount", "status", "checked_at"];
 		let d;
 		const clear = () => {if (d) output.forEach(key => d.set_value(key, null));};
@@ -12,11 +12,12 @@
 			{fieldname: "company", label: __("Đơn vị"), fieldtype: "Link", options: "Company", reqd: 1,
 				onchange() {
 					if (!d) return;
-					const selected = d.get_value("company"), request = ++generation;
+					const selected = d.get_value("company"), request = ++company_generation;
+					++generation;
 					clear(); d.set_value("account", ""); d.set_df_property("account", "options", "");
 					if (!selected) return;
 					frappe.call({method: "kh_aph.personal_cash.accounts", args: {company: selected}}).then(r => {
-						if (request !== generation || d.get_value("company") !== selected) return;
+						if (request !== company_generation || d.get_value("company") !== selected) return;
 						const accounts = r.message || [];
 						d.set_df_property("account", "options", ["", ...accounts].join("\n"));
 						if (accounts.length === 1) d.set_value("account", accounts[0]);

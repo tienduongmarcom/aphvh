@@ -23,10 +23,13 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     opening = submit(insert({'doctype':'APH Xac minh quy',**args,'reason':'UAT tiền cá nhân không cấp GL',
         'allocations':[{'holder':f['dung'],'amount':300},{'holder':f['ktt'],'amount':600}], 'unverified_amount':100},ktt),ktt)
     old = get('Company', f['aph'], ktt).get('kh_aph_quy_nha_may')
+    old_vh = get('Company', f['vh'], ktt).get('kh_aph_quy_nha_may')
+    vh_account = lst('Account', {'company':f['vh'],'account_type':'Cash','is_group':0,'disabled':0}, ['name'], ktt)[0]['name']
     dung = phien(f['dung'])
     def current(caller=dung, **extra): return rpc(API+'current', {**args, **extra}, caller)
     try:
         rpc('frappe.client.set_value',{'doctype':'Company','name':f['aph'],'fieldname':'kh_aph_quy_nha_may','value':account},ktt)
+        rpc('frappe.client.set_value',{'doctype':'Company','name':f['vh'],'fieldname':'kh_aph_quy_nha_may','value':vh_account},ktt)
         before = counts()
         assert rpc(API+'accounts',{'company':f['aph']},dung)==[account]
         value = current()
@@ -86,7 +89,8 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         emit('HTTP_2B_PERSONAL_HANDOVER_DELTA','PASS',{'own_reservations':True,'same_cash_delta':True,'no_extra_gl_ple':True})
 
         if os.environ.get('GITHUB_ACTIONS')!='true': raise RuntimeError('Chrome chỉ chạy UAT CI dùng một lần')
-        payload = {'company':f['aph'],'source':source['name'],'user':f['dung'],'expected':332,'account':account}
+        payload = {'company':f['aph'],'source':source['name'],'user':f['dung'],'expected':332,'account':account,
+            'other_company':f['vh'],'other_account':vh_account}
         proc = subprocess.run(['node', str(Path(__file__).with_name('ban-nhanh-desk.mjs')), json.dumps(payload), 'tien-ca-nhan'],
             input=json.dumps({'cookies':dung.browser_cookies()}), text=True,capture_output=True,timeout=180)
         assert proc.returncode==0,(proc.stdout[-2000:],proc.stderr[-2000:])
@@ -116,3 +120,4 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         emit('HTTP_2B_PERSONAL_CANCEL_AND_ISSUE','PASS',{'cancel_delta_correct':True,'own_issue_only':True,'invalid_anchor_denied':True,'no_reassignment':True})
     finally:
         rpc('frappe.client.set_value',{'doctype':'Company','name':f['aph'],'fieldname':'kh_aph_quy_nha_may','value':old or ''},ktt)
+        rpc('frappe.client.set_value',{'doctype':'Company','name':f['vh'],'fieldname':'kh_aph_quy_nha_may','value':old_vh or ''},ktt)

@@ -86,9 +86,16 @@ try {
         await until('!__personal.get_primary_btn().prop("disabled")');
         const view = await evaluate('({expected:Number(__personal.get_value("expected_amount")),available:Number(__personal.get_value("available_amount")),reserved:Number(__personal.get_value("reserved_amount")),readonly:__personal.fields_dict.expected_amount.df.read_only,clean:!cur_frm.is_dirty(),user:frappe.session.user,accounts:__personal.fields_dict.account.df.options.split("\\n").filter(Boolean)})');
         if(view.expected!==payload.expected||view.available!==payload.expected||view.reserved!==0||!view.readonly||!view.clean||JSON.stringify(view.accounts)!==JSON.stringify([payload.account]))throw Error('Wrong personal projection: '+JSON.stringify(view));
+        await evaluate(`__personal.set_value('company',${JSON.stringify(payload.other_company)});true`);
+        await until(`__personal.get_value('account') === ${JSON.stringify(payload.other_account)}`);
+        await evaluate(`__personal.set_value('company',${JSON.stringify(payload.company)});true`);
+        await until(`__personal.get_value('account') === ${JSON.stringify(payload.account)}`);
+        await evaluate('__personal.get_primary_btn().trigger("click");true');
+        await until(`Number(__personal.get_value('expected_amount')) === ${payload.expected}`);
+        await until('!__personal.get_primary_btn().prop("disabled")');
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('tien-ca-nhan.png',Buffer.from(screenshot.data,'base64'));
-        console.log(JSON.stringify({case:'DESK_2B_PERSONAL_NO_GL',status:'PASS',detail:{factory_user:true,no_admin_session:true,own_amount:view.expected,readonly:true,document_clean:true,retry_after_lost_response:true}}));
+        console.log(JSON.stringify({case:'DESK_2B_PERSONAL_NO_GL',status:'PASS',detail:{factory_user:true,no_admin_session:true,own_amount:view.expected,readonly:true,document_clean:true,retry_after_lost_response:true,switch_company_roundtrip:true}}));
     } else if (mode === 'thu-quay') {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
