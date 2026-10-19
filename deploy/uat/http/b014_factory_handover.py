@@ -40,7 +40,7 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit,feature):
     enabled=False
     try:
         denied(lambda:rpc('kh_aph.personal_cash.prepare_shift',{'company':f['aph'],'account':source_account,'request_id':'off','counted_amount':600},dung))
-        feature(True);enabled=True
+        enabled=True;feature(True)
         assert rpc('kh_aph.factory_cash.xac_nhan_nhan',{'name':old_received['name'],'so_thuc_nhan':5,'tai_khoan_nhan':target},ktt)==old_result
         denied(lambda:rpc('kh_aph.factory_cash.xac_nhan_nhan',{'name':legacy['name'],'so_thuc_nhan':20,'tai_khoan_nhan':target},ktt),text='chuyển tiếp')
         denied(lambda:rpc('kh_aph.factory_handover.connect_pending',{'name':legacy['name'],'tai_khoan_nhan':target},ktt),('PermissionError',))

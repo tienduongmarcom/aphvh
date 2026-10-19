@@ -178,7 +178,7 @@ try:
             try:
                 with urllib.request.urlopen("http://127.0.0.1:18091/api/method/ping",timeout=2) as response:
                     if json.load(response) == {"message":"pong"}: break
-            except (urllib.error.URLError,TimeoutError): pass
+            except (urllib.error.URLError,TimeoutError,ConnectionError): pass
             time.sleep(0.25)
         else: raise RuntimeError("UAT web không sẵn sàng sau đổi cờ")
     b014_cases.chay(admin,lambda user:session(user,factory_password),fixture,emit,factory_feature)
@@ -192,7 +192,7 @@ except Exception as exc:
             data=json.loads(body);detail['http_error']={k:data.get(k) for k in ('exc_type','exception','_server_messages')}
         except ValueError:detail['http_error']=body[:1000]
     import traceback
-    detail["trace"]="".join(traceback.format_exc().splitlines(True)[-12:])[-2000:]
+    detail["trace"]=traceback.format_exc()[-6000:]
     emit("HTTP_014_RUNNER","FAIL",detail)
 finally:
     # Stop only UAT web so no request can write during restoration.
