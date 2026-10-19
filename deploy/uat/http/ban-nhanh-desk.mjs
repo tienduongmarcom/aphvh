@@ -74,6 +74,7 @@ try {
         await until('!!window.cur_dialog && !!cur_dialog.fields_dict.available_amount && cur_dialog.$wrapper.is(":visible")');
         await evaluate(`window.__personal = cur_dialog; __personal.set_value('company',${JSON.stringify(payload.company)});true`);
         await until(`__personal.get_value('account') === ${JSON.stringify(payload.account)}`);
+        await until(`__personal.get_values(true)?.company === ${JSON.stringify(payload.company)} && __personal.get_values(true)?.account === ${JSON.stringify(payload.account)}`);
         const principal = await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)");
         if(principal!==payload.user)throw Error('Wrong server browser principal');
         const probe = await evaluate(`frappe.call({method:'kh_aph.personal_cash.current',args:{company:${JSON.stringify(payload.company)},account:${JSON.stringify(payload.account)}}}).then(r=>({ok:true,amount:r.message.expected_amount}),e=>({ok:false,status:e.status,error:e.responseJSON?.exc_type,message:e.responseJSON?.exception}))`);
@@ -93,8 +94,11 @@ try {
         await evaluate('__personal.get_primary_btn().trigger("click");true');
         await until(`Number(__personal.get_value('expected_amount')) === ${payload.expected}`);
         await until('!__personal.get_primary_btn().prop("disabled")');
-        const view = await evaluate('({expected:Number(__personal.get_value("expected_amount")),available:Number(__personal.get_value("available_amount")),reserved:Number(__personal.get_value("reserved_amount")),readonly:__personal.fields_dict.expected_amount.df.read_only,clean:!cur_frm.is_dirty(),user:frappe.session.user,accounts:__personal.fields_dict.account.df.options.split("\\n").filter(Boolean)})');
-        if(view.expected!==payload.expected||view.available!==payload.expected||view.reserved!==0||!view.readonly||!view.clean||JSON.stringify(view.accounts)!==JSON.stringify([payload.account]))throw Error('Wrong personal projection: '+JSON.stringify(view));
+        // BaseControl.get_value() của Frappe16.52 trả undefined cho Read/0.
+        // Kiểm cả số gốc và phần hiển thị; không đổi undefined/NaN thành0 để che lỗi.
+        await until('__personal.fields_dict.reserved_amount.value === 0');
+        const view = await evaluate('({expected:Number(__personal.get_value("expected_amount")),available:Number(__personal.get_value("available_amount")),reserved:__personal.fields_dict.reserved_amount.value,reserved_text:$(__personal.fields_dict.reserved_amount.disp_area).text().trim(),readonly:__personal.fields_dict.expected_amount.df.read_only,clean:!cur_frm.is_dirty(),user:frappe.session.user,accounts:__personal.fields_dict.account.df.options.split("\\n").filter(Boolean)})');
+        if(view.expected!==payload.expected||view.available!==payload.expected||view.reserved!==0||!view.reserved_text.includes('0')||/[1-9]/.test(view.reserved_text)||!view.readonly||!view.clean||JSON.stringify(view.accounts)!==JSON.stringify([payload.account]))throw Error('Wrong personal projection: '+JSON.stringify(view));
         await evaluate(`__personal.set_value('company',${JSON.stringify(payload.other_company)});true`);
         await until(`__personal.get_value('account') === ${JSON.stringify(payload.other_account)}`);
         await evaluate(`__personal.set_value('company',${JSON.stringify(payload.company)});true`);
