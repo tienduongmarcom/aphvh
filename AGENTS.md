@@ -132,6 +132,8 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
 
 - **Frappe16.52.0 Currency chỉ đọc:** `BaseControl.get_value()` dùng `value || undefined`, nên số0 trả undefined dù ô vẫn hiển thị0. Ca trình duyệt phải kiểm cả `control.value === 0` và vùng hiển thị; không đổi undefined thành0 để che lỗi. Native `frappe.client.delete` thành công có thể không có khóa `message`; cleanup quyền UAT dùng phản hồi raw, không suy xóa thất bại từ khóa thiếu.
 
+- **Frappe16.52.0 lỗi đã bắt trong report:** `frappe.throw` vẫn đưa thông báo vào `frappe.local.message_log`. Khi bắt ValidationError để hiển thị thành dòng cần xử lý, chỉ gỡ các thông báo mới của chính lần gọi đó; giữ thông báo trước và không nuốt PermissionError. Kiểm Chrome không còn popup che bảng. Native cancel còn kiểm backlink sau `on_cancel`: nếu nguồn gương cần giữ lịch sử, chỉ ngoại lệ đúng nguồn dưới capability và vẫn kiểm mọi liên kết tĩnh/động khác; không dùng `ignore_links`.
+
 - Frappe `BaseDocument.update` nhận mapping, không nhận kwargs. Update-after-submit không gọi `before_validate`: giá trị
   dẫn xuất (giá/bao) phải tính lại ở server.
 - Phiếu nhập lùi ngày phải `set_posting_time` và chờ repost hoàn tất trước khi đọc giá vốn MA.
