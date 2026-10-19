@@ -300,3 +300,6 @@ def chay(admin, phien, f, emit, factory_feature):
 
     from b014_factory_handover import chay as factory_cases
     factory_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit, factory_feature)
+
+    from b014_factory_receiving import chay as receiving_cases
+    receiving_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)

@@ -16,3 +16,8 @@
 13. Phiếu giao riêng/tổng hợp đúng từng DN; PDF kiểm CI, chưa máy in thực. Quyền thay đổi trạng thái giữ đúng scope xử lý đơn.
 
 Nếu cần đối chiếu từng câu1–202 phải lấy bản quyết định gốc từ người dùng/nguồn được họ xác nhận; không hỏi lại từng câu và không bịa số thứ tự.
+
+
+## Bổ sung19/10/2026 — chất lượng hàng nhận nhà máy
+
+Anh Tiến xác nhận khi triển khai đợt3: hàng có vấn đề thường không trả lại mà đàm phán giảm giá; thường vẫn đưa vào dùng ngay, giá điều chỉnh sau. Ghi đủ lượng thực nhận dùng vào kho, tách lượng có vấn đề như phần trong tổng lượng và lưu ghi chú đàm phán; không tự tạo trả hàng/trừ lượng hoặc tự giảm giá. Kế toán mua xử lý giá điều chỉnh theo chứng từ và đối chiếu hiện có. Đây là trường hợp thông thường, không suy mọi chuyến đều cấm trả hàng hoặc không cần kiểm chất lượng.

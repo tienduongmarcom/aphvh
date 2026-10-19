@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (['tien-ca-nhan','quy-nha-may','chot-ngay'].includes(mode)) {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -64,6 +64,38 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'nhan-hang-nha-may') {
+        const payload=JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/query-report/'+encodeURIComponent('Ton kho so luong')+'?'+new URLSearchParams({company:payload.company})});
+        await until('!!window.frappe?.query_report && frappe.query_report.report_name==="Ton kho so luong" && Array.from(document.querySelectorAll("button")).some(b=>b.textContent.trim()==="Nhận hàng nhà máy")');
+        if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong receiving principal');
+        await evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.trim()==="Nhận hàng nhà máy").click();true');
+        await until('!!window.cur_dialog?.fields_dict.purchase_order');
+        await evaluate(`cur_dialog.set_value('purchase_order',${JSON.stringify(payload.purchase_order)});true`);
+        await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.items && !!cur_dialog.fields_dict.receiver');
+        await evaluate('window.__receiving=cur_dialog;__receiving.set_value("receiver","Nhân viên kho ký giấy");__receiving.fields_dict.items.df.data[0].qty=1;__receiving.fields_dict.items.df.data[0].bags=0;__receiving.fields_dict.items.grid.refresh();true');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.factory_receiving.receive',requestStage:'Response'}]});
+        await evaluate('__receiving.get_primary_btn().trigger("click");true');
+        await until('!!cur_dialog?.confirm_dialog && cur_dialog.$wrapper.is(":visible")');
+        await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<300&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('No committed receipt response intercepted');
+        const requestId=new URLSearchParams(lostResponse.request.postData).get('request_id');
+        if(!requestId)throw Error('Missing receiving request');
+        await until('frappe.request.ajax_count===0 && !__receiving.get_primary_btn().prop("disabled")');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        await command('Fetch.disable');
+        await evaluate('__receiving.get_primary_btn().trigger("click");true');
+        await until('!!cur_dialog?.confirm_dialog && cur_dialog.$wrapper.is(":visible")');
+        await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doctype==="Purchase Receipt" && cur_frm.doc.docstatus===1 && frappe.request.ajax_count===0');
+        if(await evaluate('!!cur_frm.doc.items[0].rate || !!cur_frm.doc.grand_total'))throw Error('Restricted form received purchase prices');
+        const name=await evaluate('cur_frm.doc.name');
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('nha-may-nhan-hang.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_3A_RECEIVING_RETRY',status:'PASS',detail:{name,restricted_principal:true,response_dropped_after_200:true,same_dialog_retry:true,no_cost_values:true}}));
     } else if (mode === 'quy-nha-may') {
         const payload=JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:1100,deviceScaleFactor:1,mobile:false});

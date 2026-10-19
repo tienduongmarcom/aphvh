@@ -1,4 +1,14 @@
 frappe.query_reports["Ton kho so luong"] = {
+	onload(report) {
+        if (!frappe.boot?.kh_aph?.factory_receiving) return;
+        if (frappe.session.user !== "Administrator" && !(frappe.user_roles || []).some(r =>
+            ["Kế toán nhà máy", "Stock User", "Stock Manager", "Accounts Manager", "System Manager"].includes(r))) return;
+        report.page.add_inner_button("Nhận hàng nhà máy", () => {
+            frappe.require("form.bundle.js", () =>
+                frappe.require("/assets/kh_aph/js/factory_receiving.js", () =>
+                    kh_aph.receiving.pick(report.get_filter_value("company"))));
+        });
+    },
 	filters: [
 		{
 			fieldname: "company",
