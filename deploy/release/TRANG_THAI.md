@@ -4,7 +4,7 @@
 
 Nhánh `feat/nhan-hang-nha-may-20261019`, base PR #16/565910a. Đã có facade orders/preview/receive, Dialog trên PO và lối vào Tồn kho số lượng; một PR native, nonce/payload chống trùng, khóa Company→PO, người thực nhận/phiếu cân riêng tư/ghi chú và lượng có vấn đề nằm trong tổng lượng nhập. Chủ dự án xác nhận hàng thường giữ lại dùng ngay, đàm phán giảm giá sau; ghi vào quyết định nghiệp vụ, không tự tạo trả hàng hoặc giảm giá. Cờ26 factory_receiving mặc định tắt, không thêm quyền GL hoặc bypass PR.
 
-Cục bộ402 kh_aph +108 lab9x đạt; JS/diff đạt. Đặc tả9 nhóm docs/dac-ta-nhan-hang-nha-may-3a.md. Thêm5 ca HTTP/Chrome dự kiến285 tổng/b01494; CHƯA có CI trên mã này. Bước tiếp: chốt mã, mở PR nối #16, chạy4 cổng, đọc artifact/ảnh và sửa lỗi thực tế. Chưa tăng version/tag/merge/deploy, production theo xác nhận vẫn0.15.3/21 cờ.
+Cục bộ404 kh_aph +108 lab9x đạt; JS/diff đạt. [PR #17](https://github.com/tienduongmarcom/aphvh/pull/17), đặc tả9 nhóm docs/dac-ta-nhan-hang-nha-may-3a.md. Thêm5 ca HTTP/Chrome dự kiến285 tổng/b01494; đang kiểm mã cuối. Các run b31c976 hủy khi bổ sung current read for_update cho PO/children/mã lượt/File sau chờ khóa và bảo vệ before_update_after_submit/chuẩn hóa datetime qua JSON; không dùng làm bằng chứng mã sau. Đối chiếu Document/mapper Frappe16.52, không commit giữa chuỗi. Bước tiếp: chạy4 cổng đúng mã cuối, đọc artifact/ảnh và sửa lỗi thực tế. Chưa tăng version/tag/merge/deploy, production theo xác nhận vẫn0.15.3/21 cờ.
 
 Lát này mới nhận Kg từ PO có giá hợp lệ, không lô/sê-ri/gia công/giao thẳng. Luồng chờ định giá hiện có giữ nguyên, chưa gom cửa sổ; nhận chuyển đến, sản xuất/dở dang/đóng gói/xuất và bảng ngày nhà máy còn tiếp. Chưa gọi NM01 hoặc đợt3 hoàn tất. Nghiệm thu nhân sự/dữ liệu/máy in thật vẫn gom cuối.
 

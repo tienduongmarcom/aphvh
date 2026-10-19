@@ -454,7 +454,7 @@ for _event in ("validate", "before_update_after_submit", "on_trash"):
     doc_events["Payment Entry"][_event] = _handlers + ["kh_aph.cashier_request.protect"]
 
 # Nhận nhanh nhà máy: dấu nguồn giữ cả khi tắt cờ; không cấp thêm quyền chứng từ.
-for _event, _method in (("validate", "protect"), ("on_trash", "prevent_delete")):
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete")):
     _old = doc_events["Purchase Receipt"].get(_event, [])
     if isinstance(_old, str):
         _old = [_old]

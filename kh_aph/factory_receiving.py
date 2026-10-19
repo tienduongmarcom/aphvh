@@ -40,8 +40,8 @@ def _number(value):
         frappe.throw('Số lượng phải hữu hạn, không âm và tối đa 6 số lẻ')
 
 
-def _source(name, state=True):
-    doc = frappe.get_doc('Purchase Order', name)
+def _source(name, state=True, lock=False):
+    doc = frappe.get_doc('Purchase Order', name, for_update=lock)
     doc.check_permission('read')
     frappe.get_doc('Company', doc.company).check_permission('read')
     frappe.get_doc('Supplier', doc.supplier).check_permission('read')
@@ -134,7 +134,7 @@ def _claim_ticket(url):
     if len(names) != 1:
         frappe.throw('Chọn một tệp phiếu cân riêng tư có quyền truy cập')
     frappe.db.sql('SELECT name FROM `tabFile` WHERE name=%s FOR UPDATE', names[0])
-    file = frappe.get_doc('File', names[0])
+    file = frappe.get_doc('File', names[0], for_update=True)
     file.check_permission('read'); file.check_permission('write')
     if file.owner != frappe.session.user or file.attached_to_name:
         frappe.throw('Tải phiếu cân mới của bạn cho lần nhận này; không lấy tệp của hồ sơ khác')
@@ -162,15 +162,15 @@ def receive(purchase_order, request_id, rows, received_date, receiver, ticket=No
     # Cùng company tuần tự qua mọi lượt; PO được khóa trước đọc lại lượng còn nhận.
     frappe.db.sql('SELECT name FROM `tabCompany` WHERE name=%s FOR UPDATE', doc.company)
     frappe.db.sql('SELECT name FROM `tabPurchase Order` WHERE name=%s FOR UPDATE', purchase_order)
-    doc = _source(purchase_order, state=False)
-    old = frappe.db.get_value('Purchase Receipt', {PREFIX+'request': key}, 'name')
+    doc = _source(purchase_order, state=False, lock=True)
+    old = frappe.db.sql('SELECT name FROM `tabPurchase Receipt` WHERE kh_aph_receiving_request=%s FOR UPDATE', key)
     if old:
-        receipt = frappe.get_doc('Purchase Receipt', old)
+        receipt = frappe.get_doc('Purchase Receipt', old[0][0], for_update=True)
         receipt.check_permission('read')
         if receipt.get(PREFIX+'payload') != payload or receipt.docstatus != 1:
             frappe.throw('Lượt nhận đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
         return _result(receipt)
-    doc = _source(purchase_order)
+    doc = _source(purchase_order, lock=True)
     for name, values in selected.items():
         row = next((r for r in doc.items if r.name == name), None)
         if not row:
@@ -213,6 +213,13 @@ def receive(purchase_order, request_id, rows, received_date, receiver, ticket=No
     return _result(receipt)
 
 
+def _stamp_value(doc, field):
+    value = doc.get(PREFIX+field)
+    if field == 'price_review':
+        return cint(value)
+    return str(value or '')
+
+
 def protect(doc, method=None):
     values = [doc.get(PREFIX+f) for f in STAMP]
     quality = any(r.get('kh_aph_receiving_quality_qty') for r in (doc.get('items') or []))
@@ -225,11 +232,11 @@ def protect(doc, method=None):
             frappe.throw('Dấu nhận hàng chỉ được tạo qua cửa sổ nhận hàng')
     else:
         old = doc.get_doc_before_save()
-        if old and any((old.get(PREFIX+f) or '') != (doc.get(PREFIX+f) or '') for f in STAMP):
+        if old and any(_stamp_value(old, f) != _stamp_value(doc, f) for f in STAMP):
             frappe.throw('Không sửa dấu và hồ sơ thực nhận; giữ lịch sử trên phiếu gốc')
         if old:
-            previous = {r.name: r.get('kh_aph_receiving_quality_qty') or 0 for r in (old.get('items') or [])}
-            if any((r.get('kh_aph_receiving_quality_qty') or 0) != previous.get(r.name, 0) for r in (doc.get('items') or [])):
+            previous = {r.name: _number(r.get('kh_aph_receiving_quality_qty') or 0) for r in (old.get('items') or [])}
+            if any(_number(r.get('kh_aph_receiving_quality_qty') or 0) != previous.get(r.name, 0) for r in (doc.get('items') or [])):
                 frappe.throw('Không sửa lượng hàng có vấn đề đã ghi nhận')
 
 

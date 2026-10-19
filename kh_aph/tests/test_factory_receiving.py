@@ -102,3 +102,28 @@ class Receiving(unittest.TestCase):
         with self.assertRaises(ValueError):self.m._claim_ticket('/private/files/a.pdf')
         file.attached_to_name=None
         self.assertIs(self.m._claim_ticket('/private/files/a.pdf'),file)
+
+    def test_retry_uses_current_lookup_after_company_and_po_locks(self):
+        self.m.guard=Mock()
+        self.m._source=Mock(return_value=Row(company='APH'))
+        self.f.db.sql.side_effect=[[],[],[['PR']]]
+        old=Row(name='PR',docstatus=1,kh_aph_receiving_payload='hash',check_permission=Mock())
+        self.f.get_doc.return_value=old
+        row={'source_row':'R','warehouse':'WH','qty':4,'bags':0,'quality_qty':0}
+        with patch.object(self.m.hashlib,'sha256',return_value=Mock(hexdigest=lambda:'hash')):
+            result=self.m.receive('PO','nonce',[row],'2026-10-19','Người ký')
+        self.assertEqual(result['name'],'PR')
+        self.assertIn('tabCompany',self.f.db.sql.call_args_list[0].args[0])
+        self.assertIn('tabPurchase Order',self.f.db.sql.call_args_list[1].args[0])
+        self.assertIn('FOR UPDATE',self.f.db.sql.call_args_list[2].args[0])
+        self.m._source.assert_called_with('PO',state=False,lock=True)
+        self.f.get_doc.assert_called_once_with('Purchase Receipt','PR',for_update=True)
+
+    def test_readonly_time_and_quantity_survive_native_json_roundtrip(self):
+        from datetime import datetime
+        old=Row(kh_aph_receiving_at=datetime(2026,10,19,12),kh_aph_receiving_request='real',items=[Row(name='R',kh_aph_receiving_quality_qty=1)])
+        doc=Row(old);doc.update(is_new=lambda:False,get_doc_before_save=lambda:old,
+            kh_aph_receiving_at='2026-10-19 12:00:00',items=[Row(name='R',kh_aph_receiving_quality_qty='1.0')])
+        self.m.protect(doc)
+        doc['items'][0]['kh_aph_receiving_quality_qty']=2
+        with self.assertRaises(ValueError):self.m.protect(doc)

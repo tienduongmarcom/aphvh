@@ -24,7 +24,7 @@ Chủ dự án chốt19/10/2026: hàng có vấn đề thường giữ lại, v�
 
 Kg dương/tối đa6 số lẻ; bao nguyên không âm, khớp kg×quy cách. Kg có vấn đề không âm/không vượt tổng kg; không sửa kg/bao cho khớp sai lệch. Không nhận vượt phần còn lại qua facade. Đơn đóng/tạm dừng hoặc hàng cần lô/sê-ri/gia công/giao thẳng dùng quy trình chuẩn. Giá0 bị chặn, hướng chờ định giá. Giá tạm giữ dấu của PO và kiểm nhóm sẵn có; không lấy giá từ client/chọn thuế suất tự động.
 
-Mã lượt theo actor+PO+nonce; payload gồm dòng/kho/lượng/ngày/người/tệp/ghi chú. Khóa Company→PO rồi đọc lại lượng. Retry đúng nội dung trả PR cũ, không thêm sổ; đổi nội dung hoặc PR đã hủy bị chặn. PO đóng sau đó vẫn cho đọc kết quả cũ khi còn quyền. Đóng/tải lại cửa sổ tạo nonce mới: phải kiểm phiếu đã nhận trước khi nhận tiếp.
+Mã lượt theo actor+PO+nonce; payload gồm dòng/kho/lượng/ngày/người/tệp/ghi chú. Khóa Company→PO rồi đọc lại PO và children bằng get_doc(for_update=True); lookup mã lượt cũng SELECT FOR UPDATE, File đọc for_update sau khóa. Không dùng consistent read cũ để tính phần còn lại sau chờ phiên khác. Retry đúng nội dung trả PR cũ, không thêm sổ; đổi nội dung hoặc PR đã hủy bị chặn. PO đóng sau đó vẫn cho đọc kết quả cũ khi còn quyền. Đóng/tải lại cửa sổ tạo nonce mới: phải kiểm phiếu đã nhận trước khi nhận tiếp.
 
 Phiếu cân phải là File riêng tư do caller tải, chưa gắn hồ sơ khác, có read/write; URL /private/files/. Khóa File rồi gắn vào PR cùng transaction, lỗi rollback toàn chuỗi. Hủy theo native và kiểm hàng đã dùng; PR có dấu không xóa kể cả hủy. Dấu/quan sát không sửa tay sau lưu; sửa nghiệp vụ đi chuỗi sửa/hủy có lịch sử.
 
@@ -58,7 +58,7 @@ Một PR chuẩn sở hữu tồn/giá/SLE/GL/sổ bao và lượng PO đã nh�
 
 ## 8. Tiêu chí nghiệm thu
 
-Unit: cờ/guest/role trước đọc; số hữu hạn/6 số lẻ/bao nguyên; từ chối giá giả/dòng trùng/kho sai Company; preview chỉ lượng; giả/đổi dấu kể cả cờ tắt; NULL key phiếu native; tệp riêng tư/ownership/hồ sơ khác.
+Unit: cờ/guest/role trước đọc; số hữu hạn/6 số lẻ/bao nguyên; từ chối giá giả/dòng trùng/kho sai Company; preview chỉ lượng; giả/đổi dấu kể cả cờ tắt và update-after-submit; datetime/số qua JSON giữ nguyên nghĩa; NULL key phiếu native; tệp riêng tư/ownership/hồ sơ khác.
 
 HTTP giả: PO10kg×20.000; NoCost preview chỉ lượng; Company/role sai chặn. Nhận4kg gồm1kg có vấn đề tạo PR4kg theo giá20.000, không tự trả/giảm giá, còn6. Retry không tăng PR/SLE/GL/PLE, đổi nội dung chặn; giá client/kho khác Company/sửa dấu chặn. Hai phiên nhận4kg khi còn6: chỉ một thành công, còn2. Chrome từ báo cáo lượng, phiên nhà máy riêng, nhận1kg/bỏ200 sau commit/retry cùng Dialog: một PR/một SLE, còn1, form không có giá vốn; phải xem ảnh đúng SHA.
 
