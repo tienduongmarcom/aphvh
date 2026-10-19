@@ -128,6 +128,10 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
 
 - **Frappe16.52.0 `frappe.call` trả jqXHR:** dùng `.always(...)` để mở lại nút cả thành công/lỗi; không gọi trực tiếp `.finally(...)`. Đã gặp ở Chrome mất phản hồi thu quầy (UAT39190026643), đối chiếu `frappe/public/js/frappe/request.js` đúng tag. Nếu cần Promise native phải chuyển rõ ràng; kiểm bằng trình duyệt thật, không chỉ kiểm cú pháp.
 
+- **Phiên UAT HTTP/Desk:** mở Desk khởi tạo CSRF trong session. Không truyền cookie của caller urllib không có CSRF header sang Chrome rồi dùng lại để POST; dùng phiên trình duyệt riêng cùng nhân sự giả, vẫn kiểm principal server. Không tắt CSRF để chữa bộ thử. Đã gặp ở UAT39224149992 sau khi ca Chrome PASS.
+
+- **Frappe16.52.0 Currency chỉ đọc:** `BaseControl.get_value()` dùng `value || undefined`, nên số0 trả undefined dù ô vẫn hiển thị0. Ca trình duyệt phải kiểm cả `control.value === 0` và vùng hiển thị; không đổi undefined thành0 để che lỗi. Native `frappe.client.delete` thành công có thể không có khóa `message`; cleanup quyền UAT dùng phản hồi raw, không suy xóa thất bại từ khóa thiếu.
+
 - Frappe `BaseDocument.update` nhận mapping, không nhận kwargs. Update-after-submit không gọi `before_validate`: giá trị
   dẫn xuất (giá/bao) phải tính lại ở server.
 - Phiếu nhập lùi ngày phải `set_posting_time` và chờ repost hoàn tất trước khi đọc giá vốn MA.
