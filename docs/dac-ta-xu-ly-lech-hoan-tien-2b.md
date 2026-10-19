@@ -51,7 +51,7 @@ Hoàn cùng Cash/khác Cash/Bank về Cash, số dư/giữ chỗ/đếm GL/PLE �
 Schema rõ trong bộ cài, không after_migrate; cài lại không tự xử lý lịch sử. Ca lệch cũ có issue_state trống vẫn bị chặn cho đến có hồ sơ đối chiếu hợp lệ. Cờ24/phiên bản giữ nguyên; không tag/merge/deploy. Diễn tập CI nâng/site mới/rollback và cố ý lỗi; khi phát hành còn cần bản sao production có dữ liệu. Không tắt riêng cờ sau phát sinh. Nghiệm thu người dùng/dữ liệu/máy in thật gom cuối theo anh Tiến.
 
 
-## Bằng chứng đang kiểm
+## Lịch sử các lượt kiểm
 
 UAT39176704265/d415cf3 FAIL tại upload căn cứ lặp sau khi hai ca đóng/mở vụ đã PASS. Frappe16.52.0 File.before_insert/save_file dùng chung URL khi nội dung trùng, guard cũ nhầm File mới với sửa blob cũ. Bản sửa chỉ cho tạo tham chiếu File mới riêng tư khi byte sau xử lý native khớp blob đang bảo vệ và người thao tác có quyền đọc File gốc; không tin content_hash client, không cho nhánh này sửa File đã tồn tại. Đọc byte thô để không thay encoding PDF/ảnh, giữ guard sửa/xóa/chuyển công khai. UAT giữ nội dung trùng, kiểm URL/blob cũ;354+108 unit đạt, chờ4 cổng mã sửa. Nguồn primary đã đối chiếu: frappe/core/doctype/file/file.py tại tag v16.52.0.
 
@@ -60,3 +60,12 @@ UAT39178203449/810fe9d: tệp trùng, hai phiên chốt và ca nguồn lỗi th�
 
 
 UAT39184751627/033a89a: cả5 ca đối chiếu, bao gồm nguồn hủy, đã PASS. FAIL ở equality hai phản hồi tạo hoàn đồng thời. BaseDocument.get_valid_dict Frappe16.52.0 sanitize Currency None thành0 khi ghi; result raw có khác biểu diễn trước/sau load. Chuẩn hóa phản hồi Handover bằng money cho ba trường tiền và None cho JE rỗng, không đổi tiền/phiếu. Unit fresh None vs DB0;358+108 đạt. Assertion đồng thời giữ nguyên và bổ sung hai payload khi FAIL để không mất bằng chứng. Chờ kiểm đúng mã sửa; các ca hoàn phía sau chưa được kết luận.
+
+
+## Kết quả mã cuối — 19/10/2026
+
+Mã nghiệp vụ/kiểm **8fc93b7a1b674aee3722fe7b1f59de760a2f088d**, PR #13:358 kh_aph +108 lab9x unit PASS; **259 HTTP/Desk PASS,0 FAIL**, b01468, thêm hai kiểm kỹ thuật core/site trắng cũng PASS. Bộ ca `deploy/uat/http/b014_cash_issue_reverse.py` giữ249 ca cũ và thêm10 HTTP/Desk, gồm cả nguồn hủy/tệp trùng/hai phiên/mất phản hồi. Đã tải/đọc artifact và xem hoan-tien.png: phiếu ngược đã gửi/chờ nhận, liên kết gốc, form sạch; sau browser Python xác nhận nhận lại và quỹ/sổ khớp. Core63.508 tệp không đổi.
+
+Cổng2 [39186195911](https://github.com/tienduongmarcom/aphvh/actions/runs/39186195911), Cổng2b [39186264582](https://github.com/tienduongmarcom/aphvh/actions/runs/39186264582), UAT [39186262143](https://github.com/tienduongmarcom/aphvh/actions/runs/39186262143), Cổng3 [39186267181](https://github.com/tienduongmarcom/aphvh/actions/runs/39186267181) đều success đúng mã. Schema nâng/site mới1063/1063 (bỏ qua6/6), rollback1052/1052/đếm/tổng/cờ/versions/cài đặt/giao diện khớp; ba cờ mới về0. Cố ý lỗi tự quay lui/giữ bảo trì, chi tiết/versions khớp. Nền CI GL0, không thay diễn tập bản sao production có dữ liệu. Ba FAIL lịch sử phía trên đã được kiểm lại, không bỏ assertion.
+
+Production vẫn0.15.3, không tăng version/tag/merge/deploy. Hồ sơ sau8fc93b7 chỉ đổi tài liệu, không là mã nghiệp vụ mới. Adapter nhà máy/thu quầy cũ, token thu cũ và quyền cá nhân tối thiểu không GL còn thiếu; nghiệm thu thực tế gom cuối.
