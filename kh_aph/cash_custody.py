@@ -33,6 +33,8 @@ def schema():
         if dt in ("Payment Entry", "APH Funds Action"):
             fields[dt].append(_field(PAYER, "Người thực giao/chi tiền mặt", insert_after="paid_from" if dt == "Payment Entry" else "bank_account"))
     fields["Journal Entry Account"] = [_field(HOLDER, "Người thực giữ tiền mặt", insert_after="account")]
+    from kh_aph.cashier_request import fields as cashier_fields
+    fields["Payment Entry"].extend(cashier_fields())
     create_custom_fields(fields)
     frappe.reload_doc("kh_aph", "report", "ra_nguoi_giu_tien_mat")
 

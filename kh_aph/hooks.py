@@ -440,3 +440,9 @@ has_permission["APH Doi chieu lech tien"] = "kh_aph.cash_issue.has_permission"
 permission_query_conditions["APH Doi chieu lech tien"] = "kh_aph.cash_issue.query_conditions"
 for _event in ("validate", "before_cancel", "before_update_after_submit"):
     doc_events["Journal Entry"].setdefault(_event, []).append("kh_aph.cash_handover.protect_journal")
+
+# Mã lượt thu chỉ được sinh trong RPC quầy; giữ cả phiếu hủy để chống lặp.
+for _event in ("validate", "before_update_after_submit", "on_trash"):
+    _handlers = doc_events["Payment Entry"].get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    doc_events["Payment Entry"][_event] = _handlers + ["kh_aph.cashier_request.protect"]

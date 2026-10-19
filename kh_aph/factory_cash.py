@@ -11,6 +11,7 @@ Phần thuần ở factory_cash_rules.py.
 """
 import frappe
 from frappe.utils import cint, flt, now_datetime
+from kh_aph.cash_transaction import retry_rpc
 
 from kh_aph.factory_cash_rules import (LOAI_BAN_GIAO, LOAI_CHI, LOAI_THU, TT_CHO_NHAN, TT_GHI_SO, TT_HUY,
                                      VAI_TRO_NHA_MAY, bi_khoa_gia, kiem_phieu, trang_thai_nhan, vi_pham_khoa_gia)
@@ -97,7 +98,18 @@ def validate_phieu(doc):
         doc.customer = None
     if doc.loai != LOAI_BAN_GIAO:
         doc.nguoi_nhan = None
+    else:
+        _nguoi_nhan(doc)
     doc.tong_tien = sum(float(d.so_tien or 0) for d in doc.dong)
+
+
+def _nguoi_nhan(doc):
+    """Người nhận độc lập với người lập và người thực giữ, không suy người giữ từ owner."""
+    from kh_aph import cash_custody
+    if doc.nguoi_nhan in (doc.owner, doc.get(cash_custody.HOLDER)):
+        frappe.throw("Người lập/người giữ tiền không được tự nhận bàn giao")
+    if cash_custody.enabled():
+        cash_custody._person(doc.nguoi_nhan, doc.company)
 
 
 def _tao_je(doc, dong, ghi_chu):
@@ -152,20 +164,21 @@ def truoc_huy(doc):
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_rpc
 def xac_nhan_nhan(name, so_thuc_nhan, tai_khoan_nhan):
-    """Người nhận (hoặc kế toán trưởng) đếm tiền và xác nhận; ghi sổ theo số thực nhận."""
+    """Đúng người nhận đếm và xác nhận; gửi lại cùng kết quả không ghi sổ lần hai."""
     _can_bat()
     frappe.db.sql(f"SELECT name FROM `tab{DT}` WHERE name=%s FOR UPDATE", name)
-    doc = frappe.get_doc(DT, name)
+    doc = frappe.get_doc(DT, name, for_update=True)
     doc.check_permission("read")
     # Người nhận có thể chỉ có quyền đọc phiếu; vẫn phải nằm trong phạm vi
     # Company được cấp. Không đòi quyền đọc GL/Account của hồ sơ nhà máy.
     company_doc = frappe.get_doc("Company", doc.company)
     company_doc.check_permission("read")
-    roles = set(frappe.get_roles())
-    if frappe.session.user != doc.nguoi_nhan and not roles & {"Accounts Manager", "System Manager"}:
-        frappe.throw("Chỉ người nhận hoặc kế toán trưởng xác nhận", frappe.PermissionError)
-    if doc.docstatus != 1 or doc.loai != LOAI_BAN_GIAO or doc.trang_thai != TT_CHO_NHAN:
+    if frappe.session.user != doc.nguoi_nhan:
+        frappe.throw("Chỉ đúng người nhận xác nhận; quản lý không nhận thay", frappe.PermissionError)
+    _nguoi_nhan(doc)
+    if doc.docstatus != 1 or doc.loai != LOAI_BAN_GIAO:
         frappe.throw("Phiếu không ở trạng thái chờ nhận")
     from kh_aph.funds_rules import money
     try:
@@ -174,6 +187,14 @@ def xac_nhan_nhan(name, so_thuc_nhan, tai_khoan_nhan):
         frappe.throw(str(exc))
     if so <= 0:
         frappe.throw("Số tiền nhận phải lớn hơn 0")
+    if doc.trang_thai != TT_CHO_NHAN:
+        account = frappe.db.get_value("Journal Entry Account", {
+            "parent": doc.journal_entry, "parenttype": "Journal Entry", "debit_in_account_currency": [">", 0]}, "account") if doc.journal_entry else None
+        if (doc.nhan_boi == frappe.session.user and doc.journal_entry and account == tai_khoan_nhan
+                and float(doc.so_thuc_nhan or 0) == so
+                and frappe.db.get_value("Journal Entry", doc.journal_entry, "docstatus") == 1):
+            return {"name": doc.name, "trang_thai": doc.trang_thai, "so_thuc_nhan": so}
+        frappe.throw("Phiếu đã xử lý với kết quả khác; kiểm tra hồ sơ, không nhận lại")
     quy = _quy(doc.company)
     a = frappe.db.get_value("Account", tai_khoan_nhan, ["company", "account_type", "is_group"], as_dict=True)
     if not a or a.company != doc.company or a.is_group or a.account_type not in ("Cash", "Bank") or tai_khoan_nhan == quy:

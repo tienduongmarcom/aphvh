@@ -3,6 +3,8 @@
 	const bat = () => (frappe.boot.kh_aph || {}).gia_san;
 
 	function thu_tien(company, customer, hoa_don) {
+		const request_id = [...crypto.getRandomValues(new Uint8Array(16))].map(v => v.toString(16).padStart(2, "0")).join("");
+		let sending = false;
 		const d = new frappe.ui.Dialog({
 			title: __("Thu tiền"),
 			fields: [
@@ -21,13 +23,19 @@
 			],
 			primary_action_label: __("Ghi phiếu thu"),
 			primary_action(v) {
-				frappe.call({method: "kh_aph.ban_quay.thu_tien", args: {...v, hoa_don: hoa_don || []}, freeze: true,
+				if (sending) return;
+				sending = true;
+				d.get_primary_btn().prop("disabled", true);
+				frappe.call({method: "kh_aph.ban_quay.thu_tien", args: {...v, request_id, hoa_don: hoa_don || []}, freeze: true,
 					callback: (r) => {
 						d.hide();
 						(r.message.phieu_thu || []).forEach((pe) => window.open(
 							`/printview?doctype=Payment%20Entry&name=${encodeURIComponent(pe)}&format=${encodeURIComponent("Phiếu thu chi")}&trigger_print=1`));
 						frappe.show_alert({message: __("Đã ghi {0}", [r.message.phieu_thu.join(", ")]), indicator: "green"});
-					}});
+					}}).finally(() => {
+						sending = false;
+						d.get_primary_btn().prop("disabled", false);
+					});
 			},
 		});
 		d.show();

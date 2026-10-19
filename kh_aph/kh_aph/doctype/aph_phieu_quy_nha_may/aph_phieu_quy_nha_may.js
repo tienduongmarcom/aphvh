@@ -1,6 +1,6 @@
 frappe.ui.form.on("APH Phieu quy nha may", {
 	refresh(frm) {
-		if (frm.doc.docstatus === 1 && frm.doc.loai === "Bàn giao tiền" && frm.doc.trang_thai === "Chờ nhận") {
+		if (frm.doc.docstatus === 1 && frm.doc.loai === "Bàn giao tiền" && frm.doc.trang_thai === "Chờ nhận" && frm.doc.nguoi_nhan === frappe.session.user) {
 			frm.add_custom_button(__("Xác nhận đã nhận tiền"), () => {
 				frappe.prompt([
 					{fieldname: "so_thuc_nhan", label: __("Số tiền đếm được"), fieldtype: "Currency", reqd: 1, default: frm.doc.tong_tien},

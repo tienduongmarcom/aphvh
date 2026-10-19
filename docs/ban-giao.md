@@ -1,5 +1,12 @@
 # Bàn giao dự án APH-VH
 
+
+## 19/10/2026 — ĐANG DỞ: chống lặp thu quầy và chặn nhận thay quỹ cũ
+
+Nhánh `feat/thu-quay-quy-nha-may-20261019`, kế thừa PR #13/2618e72. Chưa phát hành, production vẫn0.15.3/21 cờ. Đặc tả `docs/dac-ta-thu-quay-quy-cu-2b.md`: token thu quầy lưu trên PE khi custody bật, khóa Company, replay đúng hai PE/kiểm nội dung và quyền, giữ dấu cả phiếu hủy; quỹ nhà máy chỉ đúng người nhận, không tự nhận/nhận thay, retry cùng kết quả không ghi JE nữa. Không thêm cờ, không cấp GL nhà máy.
+
+Đang chạy unit và chuẩn bị bốn cổng trên đúng SHA; chưa tuyên bố kiểm tích hợp đạt. Còn adapter đầy đủ quỹ nhà máy sang giữ chỗ/đối chiếu mới và quyền tiền cá nhân tối thiểu, bảng chốt ngày. Nghiệm thu thực tế gom cuối. Bước tiếp theo: hoàn tất ca HTTP/Desk, chạy bốn cổng, ghi run/bằng chứng.
+
 ## 19/10/2026 — Đối chiếu lệch và hoàn bàn giao đã kiểm đủ bốn cổng
 
 Nhánh `feat/xu-ly-lech-hoan-tien-20261019`, [PR #13](https://github.com/tienduongmarcom/aphvh/pull/13), base PR #12 (6431ec0). Mã nghiệp vụ/kiểm **`8fc93b7a1b674aee3722fe7b1f59de760a2f088d`**. Cờ24 `kh_aph_cash_handover` mặc định tắt, cần custody/closing. Không tăng version/tag/merge/deploy: production vẫn0.15.3/21 cờ, các PR #9–#13 chưa phát hành.

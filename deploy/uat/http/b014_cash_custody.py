@@ -15,7 +15,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
     def counts(): return {dt: len(lst(dt, {}, ["name"], ktt)) for dt in ("GL Entry", "Payment Ledger Entry", "Payment Entry", "Journal Entry")}
 
     # Màn thu cũ: tiền mặt có người giữ, chuyển khoản không tự nhận metadata mặt.
-    received = rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh2"],
+    received = rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b014-cash-custody-1", "company": f["aph"], "customer": f["kh2"],
         "tien_mat": 100000, "chuyen_khoan": 200000, "tk_ngan_hang": f["acc"]["bank"],
         "ma_gd": f["p"] + "-custody-" + uuid.uuid4().hex[:6], "nguoi_giu_tien": f["ktbh"]}, ktbh)
     notes = [get("Payment Entry", name, ktt) for name in received["phieu_thu"]]
