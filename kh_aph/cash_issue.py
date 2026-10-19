@@ -121,6 +121,9 @@ def before_submit(doc):
 def _mark(doc, state):
     source = source_for(doc)
     source.db_set({'issue_state': state, 'issue_resolution': doc.name if state == CLOSED else None})
+    if source.doctype == H.DT:
+        from kh_aph import factory_handover
+        factory_handover.sync_resolution(source)
     source.add_comment('Comment', 'Đối chiếu lệch tiền — ' + escape(state) + ': ' + escape(doc.name) + '<br>' + escape(doc.result or ''))
 
 

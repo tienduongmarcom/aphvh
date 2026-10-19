@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (mode === 'tien-ca-nhan') {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -64,6 +64,56 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
+    } else if (mode === 'quy-nha-may') {
+        const payload=JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1280,height:1100,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/aph-phieu-quy-nha-may/'+encodeURIComponent(payload.source)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Chốt ca tiền của tôi"]');
+        if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong factory principal');
+        await evaluate('cur_frm.custom_buttons["Chốt ca tiền của tôi"].trigger("click");true');
+        await until('!!window.cur_dialog && !!cur_dialog.fields_dict.counted_amount');
+        await evaluate(`window.__factoryShift=cur_dialog; __factoryShift.set_value('company',${JSON.stringify(payload.company)});true`);
+        await until(`__factoryShift.get_value('account')===${JSON.stringify(payload.account)}`);
+        await evaluate(`__factoryShift.set_value('counted_amount',${payload.amount});true`);
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.personal_cash.prepare_shift',requestStage:'Response'}]});
+        await evaluate('__factoryShift.get_primary_btn().trigger("click");true');
+        for(let i=0;i<300&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('No committed preview response intercepted');
+        await until('!__factoryShift.get_primary_btn().prop("disabled") && frappe.request.ajax_count===0');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        await command('Fetch.disable');
+        lostResponse=null;
+        await evaluate('__factoryShift.get_primary_btn().trigger("click");true');
+        await until('!!cur_dialog?.confirm_dialog && cur_dialog.$wrapper.is(":visible")');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.personal_cash.confirm_shift',requestStage:'Response'}]});
+        await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<300&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('No committed close response intercepted');
+        const shift=new URLSearchParams(lostResponse.request.postData).get('name');
+        if(!shift)throw Error('Missing confirmed shift');
+        await until('frappe.request.ajax_count===0');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        await command('Fetch.disable');
+        await evaluate('__factoryShift.get_primary_btn().trigger("click");true');
+        await until('!__factoryShift.$wrapper.is(":visible")');
+        await until('frappe.request.ajax_count===0');
+        const clean=await evaluate('!cur_frm.is_dirty()');
+        if(!clean)throw Error('Factory source changed while closing');
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('nha-may-chot-ca.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_2B_FACTORY_SHIFT_RETRY',status:'PASS',detail:{shift,restricted_principal:true,preview_and_confirmation_200_dropped:true,same_dialog_retry:true,source_clean:true}}));
+    } else if (mode === 'chot-ngay') {
+        const payload=JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1600,height:1100,deviceScaleFactor:1,mobile:false});
+        const url=base+'/desk/query-report/'+encodeURIComponent('Chot ngay va can xu ly')+'?'+new URLSearchParams({company:payload.company,day:payload.day});
+        await command('Page.navigate',{url});
+        await until('!!window.frappe?.query_report && frappe.query_report.report_name==="Chot ngay va can xu ly" && frappe.query_report.data?.length>0');
+        if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong report principal');
+        const groups=await evaluate('[...new Set(frappe.query_report.data.map(r=>r.group))]');
+        if(!['Tiền mặt hiện tại','Ngân hàng','Hàng / hồ sơ'].every(name=>groups.includes(name)))throw Error('Missing day-close groups: '+JSON.stringify(groups));
+        const screenshot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('chot-ngay.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:'DESK_2B_DAY_CLOSE',status:'PASS',detail:{native_report:true,manager_principal:true,groups}}));
     } else if (mode === 'tien-ca-nhan') {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:1100,deviceScaleFactor:1,mobile:false});

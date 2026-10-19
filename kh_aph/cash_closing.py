@@ -129,15 +129,21 @@ def _state(company, account, holder, *, ledger_reader=None):
 
 
 def validate(doc):
-    guard(manager=doc.doctype == OPENING)
-    scope(doc.company, doc.account)
+    from kh_aph import personal_cash as P
+    P.shift_origin(doc)
+    personal = P.shift_allowed(doc)
+    if personal:
+        P._shift_scope(doc.company, doc.account)
+    else:
+        guard(manager=doc.doctype == OPENING)
+        scope(doc.company, doc.account)
     check_evidence(doc)
 
     if doc.doctype == SHIFT:
         custody._person(doc.holder, doc.company)
         if not doc.holder or doc.holder != frappe.session.user:
             frappe.throw("Người giữ phải tự đăng nhập chốt ca của mình", frappe.PermissionError)
-    _validate_snapshot(doc)
+    _validate_snapshot(doc, ledger_reader=P._ledger if personal else None)
 
 
 def check_evidence(doc):
@@ -149,10 +155,10 @@ def check_evidence(doc):
             frappe.throw("Tệp kiểm đếm phải riêng tư và gắn đúng hồ sơ này")
 
 
-def _validate_snapshot(doc):
+def _validate_snapshot(doc, *, ledger_reader=None):
     if doc.get_doc_before_save() and cint(doc.get_doc_before_save().docstatus) == 1:
         frappe.throw("Hồ sơ đã xác nhận giữ nguyên; lập bản xác minh mới có lý do thay vì sửa lịch sử")
-    rows = ledger(doc.company, doc.account)
+    rows = (ledger_reader or ledger)(doc.company, doc.account)
     encoded, digest = anchor(rows)
     if doc._action == "submit" and doc.source_hash != digest:
         frappe.throw("Sổ đã đổi từ lúc lưu nháp; lưu lại, kiểm số phải có rồi xác nhận")
@@ -184,7 +190,7 @@ def _validate_snapshot(doc):
         if doc._action == "submit" and allocated + doc.unverified_amount != amount:
             frappe.throw("Tổng phân bổ và chưa xác minh phải bằng đúng số dư sổ quỹ")
     else:
-        opening, previous, rows, totals = _state(doc.company, doc.account, doc.holder)
+        opening, previous, rows, totals = _state(doc.company, doc.account, doc.holder, ledger_reader=ledger_reader) if ledger_reader else _state(doc.company, doc.account, doc.holder)
         from kh_aph import cash_handover
         _, transfer_hash = cash_handover.transfer_state(doc.company, doc.account, opening.name)
         if doc._action == "submit" and (doc.transfer_hash or "") != transfer_hash:

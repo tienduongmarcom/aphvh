@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 19/10/2026 — ĐANG DỞ hoàn thiện quỹ nhà máy và chốt ngày 2B
+
+Nhánh `feat/hoan-tat-quy-nha-may-20261019`, base PR #15/35d7d42. Đã viết adapter nguồn factory→H chung, chốt ca tự thân qua capability, bảng native Chốt ngày và cần xử lý; cờ25 kh_aph_factory_handover mặc định tắt. Không cấp GL/JE/H/snapshot native cho nhà máy, không sửa C.guard. Không version/tag/merge/deploy; production vẫn0.15.3/21 cờ theo xác nhận gần nhất.
+
+Cục bộ392 kh_aph đạt; đang hoàn thiện/chạy kiểm tích hợp cùng mã. Thêm12 ca HTTP/Chrome cuối b014, dự kiến89 (toàn HTTP280); chưa có CI trên mã mới, không dùng PASS PR #15 thay. Đặc tả9 nhóm: docs/dac-ta-hoan-tat-quy-nha-may-2b.md. Bước tiếp đọc4 cổng và artifact/ảnh, sửa lỗi thực tế nếu có rồi chốt hồ sơ. Nghiệm thu nhân sự/dữ liệu/máy in thật vẫn gom cuối; đợt3–4 và nghiệp vụ hóa đơn một phần chưa nằm trong lát này.
+
 ## 19/10/2026 — Tiền cá nhân chỉ đọc đã kiểm đủ bốn cổng
 
 Nhánh `feat/tien-ca-nhan-20261019`, [PR #15](https://github.com/tienduongmarcom/aphvh/pull/15), base PR #14/a50f5f1. Mã nghiệp vụ/kiểm cuối **`fe3140ad38e3febea317a32f07b1aee7f0b6969a`**. Không tăng version/tag/merge/deploy, không thêm schema/cờ/DocPerm. Production theo xác nhận người vận hành vẫn0.15.3/21 cờ; candidate24 cờ, ba cờ tiền mới mặc định tắt.

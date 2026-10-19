@@ -164,6 +164,23 @@
    "read_only": 1,
    "allow_on_submit": 1,
    "no_copy": 1
+  },
+  {
+   "fieldname": "personal_request",
+   "label": "Mã lượt chốt cá nhân",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "personal_payload",
+   "label": "Dấu nội dung chốt cá nhân",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
   }
  ],
  "field_order": [
@@ -187,7 +204,9 @@
   "closed_at",
   "transfer_hash",
   "issue_state",
-  "issue_resolution"
+  "issue_resolution",
+  "personal_request",
+  "personal_payload"
  ],
  "permissions": [
   {

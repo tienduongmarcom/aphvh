@@ -237,6 +237,15 @@
    "no_copy": 1,
    "allow_on_submit": 1,
    "options": "APH Ban giao tien"
+  },
+  {
+   "fieldname": "factory_source",
+   "label": "Phiếu quỹ nhà máy gốc",
+   "fieldtype": "Link",
+   "options": "APH Phieu quy nha may",
+   "read_only": 1,
+   "no_copy": 1,
+   "unique": 1
   }
  ],
  "field_order": [
@@ -266,7 +275,8 @@
   "issue_resolution",
   "reversal_of",
   "reversal_request",
-  "reversal_doc"
+  "reversal_doc",
+  "factory_source"
  ],
  "permissions": [
   {

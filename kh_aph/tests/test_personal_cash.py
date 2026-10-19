@@ -67,6 +67,43 @@ class PersonalCash(unittest.TestCase):
             else: setattr(self.package, key, value)
         self.p.stop()
 
+    def test_shift_capability_never_allows_other_holder_or_opening(self):
+        doc = Row(doctype=self.c.SHIFT,company='APH',account='cash',holder='me',personal_request='R',flags=Row())
+        self.assertFalse(self.m.shift_allowed(doc))
+        with self.m._shift_operation(doc):
+            self.assertTrue(self.m.shift_allowed(doc))
+            for key,value in [('holder','other'),('company','VH'),('doctype','APH Xac minh quy'),('personal_request','other')]:
+                old=doc[key];doc[key]=value;self.assertFalse(self.m.shift_allowed(doc));doc[key]=old
+        self.assertFalse(self.m.shift_allowed(doc))
+        with self.assertRaises(PermissionError):self.m.shift_origin(doc)
+
+    def test_shift_prepare_retry_normalizes_money_and_rejects_changed_payload(self):
+        from kh_aph.cash_closing_rules import money
+        self.c._money=money
+        self.m._shift_scope=Mock()
+        saved=[]
+        self.f.db.sql.side_effect=lambda *a,**k:[] if not saved else [('S',)]
+        def get_doc(*args,**kwargs):
+            if len(args)==1:
+                doc=Row(args[0]);doc.flags=Row();doc.name='S';doc.docstatus=0
+                doc.insert=lambda:saved.append(doc)
+                return doc
+            return saved[0]
+        self.f.get_doc=get_doc
+        first=self.m.prepare_shift('APH','cash','R',10,reason='đếm')
+        self.assertEqual(self.m.prepare_shift('APH','cash','R','10.00',reason='đếm'),first)
+        self.assertEqual(len(saved),1)
+        with self.assertRaisesRegex(ValueError,'nội dung khác'):self.m.prepare_shift('APH','cash','R',11,reason='đếm')
+        self.assertFalse(self.m.shift_allowed(saved[0]))
+        self.assertNotIn('personal_payload',first);self.assertNotIn('source_rows',first)
+
+    def test_shift_confirm_checks_actor_before_native_submit(self):
+        self.m._shift_scope=Mock()
+        doc=Row(company='APH',account='cash',holder='other',personal_request='R',docstatus=0,flags=Row(),submit=Mock())
+        self.f.get_doc=Mock(return_value=doc)
+        with self.assertRaises(PermissionError):self.m.confirm_shift('S')
+        doc.submit.assert_not_called()
+
     def test_flags_guest_and_unrelated_roles_fail_before_read(self):
         self.c.enabled.return_value = False
         with self.assertRaises(ValueError): self.m.current('APH', 'cash')

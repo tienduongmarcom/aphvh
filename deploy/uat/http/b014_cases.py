@@ -14,7 +14,7 @@ def lai(du_no, ls, ngay):
     return float(round(du_no * ls / 100 * ngay / 365)) if ngay > 0 else 0.0
 
 
-def chay(admin, phien, f, emit):
+def chay(admin, phien, f, emit, factory_feature):
     ktt, ktt2, ktbh, tp, nvbh, dung = (phien(f[k]) for k in ("ktt", "ktt2", "ktbh", "tp", "nvbh", "dung"))
     d = f["date"]
     hom_nay = datetime.date.fromisoformat(d)
@@ -297,3 +297,6 @@ def chay(admin, phien, f, emit):
 
     from b014_personal_cash import chay as personal_cases
     personal_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_factory_handover import chay as factory_cases
+    factory_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit, factory_feature)

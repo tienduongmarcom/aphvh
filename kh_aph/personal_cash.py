@@ -119,3 +119,94 @@ def current(company, account):
     return {"expected_amount": expected, "reserved_amount": reserved,
         "available_amount": money(0) if disputed else max(money(0), expected - reserved),
         "disputed": bool(disputed), "checked_at": now_datetime()}
+
+
+# Capability chốt tự thân: không mở quyền đọc native snapshot/GL cho nhà máy.
+from contextlib import contextmanager
+from contextvars import ContextVar
+import hashlib
+import json
+
+_SHIFT_OPERATION = ContextVar('personal_shift_operation', default=None)
+
+
+def shift_allowed(doc):
+    current = _SHIFT_OPERATION.get()
+    return bool(current and current == (frappe.session.user, doc.company, doc.account, doc.get('personal_request'))
+        and doc.doctype == C.SHIFT and doc.holder == frappe.session.user)
+
+
+def shift_origin(doc):
+    if doc.get('personal_request') or doc.get('personal_payload'):
+        if not shift_allowed(doc):
+            frappe.throw('Dùng thao tác chốt ca cá nhân; không sửa dấu yêu cầu', frappe.PermissionError)
+    elif doc.doctype == C.SHIFT:
+        doc.set('personal_request', None)
+        doc.set('personal_payload', None)
+
+
+@contextmanager
+def _shift_operation(doc):
+    token = _SHIFT_OPERATION.set((frappe.session.user, doc.company, doc.account, doc.personal_request))
+    try:
+        doc.flags.ignore_permissions = True
+        yield
+    finally:
+        _SHIFT_OPERATION.reset(token)
+
+
+def _shift_result(doc):
+    return {key: doc.get(key) for key in ('name', 'docstatus', 'expected_amount', 'counted_amount', 'difference', 'status')}
+
+
+def _shift_scope(company, account):
+    from kh_aph import factory_handover
+    if not factory_handover.enabled():
+        frappe.throw('Chốt ca cá nhân chưa được bật')
+    factory_handover.guard()
+    _scope(company, account)
+
+
+@frappe.whitelist(methods=['POST'])
+@retry_rpc
+def prepare_shift(company, account, request_id, counted_amount, reason=None, assignee=None, due_date=None):
+    _shift_scope(company, account)
+    if not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 100:
+        frappe.throw('Cần mã lượt chốt ca')
+    amount = C._money(counted_amount)
+    if amount < 0:
+        frappe.throw('Số thực đếm không được âm')
+    reason = (reason or '').strip()
+    payload = hashlib.sha256(json.dumps([str(amount.quantize(money("0.01"))), reason, assignee or '', due_date or '']).encode()).hexdigest()
+    key = hashlib.sha256(json.dumps([frappe.session.user, company, account, request_id]).encode()).hexdigest()
+    existing = frappe.db.sql(f'select name from `tab{C.SHIFT}` where personal_request=%s for update', (key,))
+    if existing:
+        doc = frappe.get_doc(C.SHIFT, existing[0][0], for_update=True)
+        if doc.holder != frappe.session.user or doc.personal_payload != payload:
+            frappe.throw('Mã lượt chốt đã dùng với nội dung khác; kiểm hồ sơ trước khi lập lượt mới')
+        return _shift_result(doc)
+    doc = frappe.get_doc({'doctype': C.SHIFT, 'company': company, 'account': account,
+        'holder': frappe.session.user, 'counted_amount': amount, 'reason': reason,
+        'assignee': assignee or None, 'due_date': due_date or None,
+        'personal_request': key, 'personal_payload': payload})
+    with _shift_operation(doc):
+        doc.insert()
+    return _shift_result(doc)
+
+
+@frappe.whitelist(methods=['POST'])
+@retry_rpc
+def confirm_shift(name):
+    # Đọc metadata trước để khóa Cash theo cùng thứ tự; không trả snapshot.
+    preliminary = frappe.get_doc(C.SHIFT, name)
+    _shift_scope(preliminary.company, preliminary.account)
+    doc = frappe.get_doc(C.SHIFT, name, for_update=True)
+    if ((doc.company, doc.account) != (preliminary.company, preliminary.account)
+            or doc.holder != frappe.session.user or not doc.get('personal_request')):
+        frappe.throw('Chỉ tự chốt ca cá nhân đúng hồ sơ', frappe.PermissionError)
+    if doc.docstatus not in (0, 1):
+        frappe.throw('Ca không còn hiệu lực')
+    with _shift_operation(doc):
+        if doc.docstatus == 0:
+            doc.submit()
+    return _shift_result(doc)

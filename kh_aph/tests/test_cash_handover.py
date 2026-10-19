@@ -13,7 +13,7 @@ class Handover(unittest.TestCase):
     def setUp(self):
         import kh_aph
         self.package=kh_aph
-        self.names=('cash_handover','cash_closing','cash_custody')
+        self.names=('cash_handover','cash_closing','cash_custody','factory_handover')
         self.saved={k:getattr(kh_aph,k,None) for k in self.names}
         self.f=types.ModuleType('frappe');self.f.conf={'kh_aph_cash_handover':1}
         self.f.session=Row(user='a');self.f.flags=Row()
@@ -26,9 +26,10 @@ class Handover(unittest.TestCase):
         self.c.guard=Mock();self.c.enabled=lambda:True
         self.c.roles_for=lambda user=None: set(self.f.get_roles(user))
         self.u=types.ModuleType('frappe.utils');self.u.cint=lambda n:int(n or 0);self.u.now_datetime=Mock();self.u.getdate=Mock()
+        self.factory=types.ModuleType('kh_aph.factory_handover');self.factory.active=lambda:False;self.factory.route=lambda fn:fn;self.factory.validate_origin=Mock()
         self.custody=types.ModuleType('kh_aph.cash_custody')
-        self.p=patch.dict(sys.modules,{'frappe':self.f,'frappe.utils':self.u,'kh_aph.cash_closing':self.c,'kh_aph.cash_custody':self.custody})
-        self.p.start();kh_aph.cash_closing=self.c;kh_aph.cash_custody=self.custody
+        self.p=patch.dict(sys.modules,{'frappe':self.f,'frappe.utils':self.u,'kh_aph.cash_closing':self.c,'kh_aph.cash_custody':self.custody,'kh_aph.factory_handover':self.factory})
+        self.p.start();kh_aph.cash_closing=self.c;kh_aph.cash_custody=self.custody;kh_aph.factory_handover=self.factory
         sys.modules.pop('kh_aph.cash_handover',None)
         self.m=importlib.import_module('kh_aph.cash_handover')
     def tearDown(self):

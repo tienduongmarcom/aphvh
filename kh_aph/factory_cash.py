@@ -80,7 +80,11 @@ def _quy(company):
 def validate_phieu(doc):
     _can_bat()
     old = doc.get_doc_before_save()
-    for field in KET_QUA_NHAN:
+    from kh_aph import factory_handover
+    if factory_handover.enabled() and doc.loai == LOAI_BAN_GIAO:
+        from kh_aph import cash_closing
+        cash_closing.lock_ledger(doc)
+    for field in (*KET_QUA_NHAN, "ban_giao_tien", "quy_giao", "xu_ly_chenh_lech"):
         current = doc.get(field)
         previous = old.get(field) if old else None
         if str(current or "") != str(previous or ""):
@@ -100,7 +104,8 @@ def validate_phieu(doc):
         doc.nguoi_nhan = None
     else:
         _nguoi_nhan(doc)
-    doc.tong_tien = sum(float(d.so_tien or 0) for d in doc.dong)
+    from kh_aph.funds_rules import money
+    doc.tong_tien = float(sum((money(d.so_tien) for d in doc.dong), money(0)))
 
 
 def _nguoi_nhan(doc):
@@ -135,6 +140,10 @@ def ghi_so(doc):
     _can_bat()
     quy = _quy(doc.company)
     if doc.loai == LOAI_BAN_GIAO:
+        from kh_aph import cash_handover, factory_handover
+        if factory_handover.enabled():
+            factory_handover.send_source(doc)
+            return
         doc.db_set("trang_thai", TT_CHO_NHAN)
         return
     if doc.loai == LOAI_THU:
@@ -156,6 +165,11 @@ def ghi_so(doc):
 
 
 def truoc_huy(doc):
+    from kh_aph import cash_handover, factory_handover
+    if doc.loai == LOAI_BAN_GIAO and (factory_handover.enabled() or doc.get("ban_giao_tien")):
+        factory_handover.cancel_source(doc)
+        doc.db_set("trang_thai", TT_HUY)
+        return
     if doc.journal_entry and frappe.db.get_value("Journal Entry", doc.journal_entry, "docstatus") == 1:
         je = frappe.get_doc("Journal Entry", doc.journal_entry)
         je.flags.ignore_permissions = True
@@ -165,11 +179,20 @@ def truoc_huy(doc):
 
 @frappe.whitelist(methods=["POST"])
 @retry_rpc
-def xac_nhan_nhan(name, so_thuc_nhan, tai_khoan_nhan):
+def xac_nhan_nhan(name, so_thuc_nhan, tai_khoan_nhan, reason=None, assignee=None, due_date=None):
     """Đúng người nhận đếm và xác nhận; gửi lại cùng kết quả không ghi sổ lần hai."""
     _can_bat()
+    from kh_aph import factory_handover
+    if factory_handover.enabled():
+        return factory_handover.receive_source(name, so_thuc_nhan, tai_khoan_nhan, reason, assignee, due_date)
+    return _legacy_receive(name, so_thuc_nhan, tai_khoan_nhan)
+
+
+def _legacy_receive(name, so_thuc_nhan, tai_khoan_nhan):
     frappe.db.sql(f"SELECT name FROM `tab{DT}` WHERE name=%s FOR UPDATE", name)
     doc = frappe.get_doc(DT, name, for_update=True)
+    if getattr(doc, "ban_giao_tien", None):
+        frappe.throw("Phiếu đã nối bàn giao chung; không nhận bằng đường cũ khi tắt cờ")
     doc.check_permission("read")
     # Người nhận có thể chỉ có quyền đọc phiếu; vẫn phải nằm trong phạm vi
     # Company được cấp. Không đòi quyền đọc GL/Account của hồ sơ nhà máy.
@@ -231,3 +254,8 @@ def validate_khoa_gia(doc, method=None):
 def protect_submitted(doc):
     """Kết quả nhận/ghi sổ do server cập nhật; không mở đường sửa tay sau submit."""
     frappe.throw("Phiếu quỹ đã gửi không được sửa trực tiếp; dùng xác nhận nhận tiền hoặc hủy theo quyền")
+
+
+def prevent_delete(doc):
+    if doc.get('ban_giao_tien'):
+        frappe.throw('Giữ phiếu nhà máy đã nối bàn giao, kể cả đã hủy')
