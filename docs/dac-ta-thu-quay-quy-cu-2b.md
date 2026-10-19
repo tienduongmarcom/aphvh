@@ -43,3 +43,15 @@ Không thêm cờ; hai field PE cài rõ ràng trong cash_custody.schema (cờ22
 ## Lỗi triển khai phát hiện khi kiểm
 
 Cổng2b39192414323/db2201f: sau nâng cấp, probe200/pong rồi bước kéo image không tồn tại (đã dừng trước khi sửa gì) nhận503. Log có hai Gunicorn worker. Đối chiếu Frappe16.52.0 `app.py` gọi init với cached=True; config.py cache site_config trong RAM từng worker TTL60. Đổi maintenance bằng CLI không xóa cache trong các web process đang chạy. Sửa nang-cap.sh và trien_khai_frontend.sh: restart riêng backend sau cả bật/tắt bảo trì, trước sao lưu hoặc mở worker. Không clear/restart dữ liệu hay sửa core. Cổng2b tăng thêm20 probe bắt buộc200/pong ngay sau readiness (mỗi probe một lần, không retry/bỏ qua503), giữ nguyên assert kéo lỗi không gián đoạn web. Giữ run FAIL làm bằng chứng, chạy lại bốn cổng đúng SHA cuối. Khi mở bằng tay cũng phải nạp lại backend sau tắt bảo trì.
+
+## Kết quả chốt 19/10/2026
+
+Mã ứng viên/kiểm **c02c3764dae495a48b564931062cbae3e78d9db3**, PR #14. 365 kh_aph +108 lab9x cục bộ đạt; Python/JS/shell/diff đạt. Cả bốn cổng success trên cùng SHA: [2](https://github.com/tienduongmarcom/aphvh/actions/runs/39195670324), [2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39195680580), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39195678186), [3](https://github.com/tienduongmarcom/aphvh/actions/runs/39195684243). Đã tải/đọc artifact cuối: 263 HTTP/Desk PASS/0FAIL, b01472; core63.508 tệp không đổi, fresh setup idempotent. Đã xem thu-quay.png có toast phiếu thu, kiểm mất HTTP200 sau commit rồi gửi lại cùng Dialog chỉ một PE, GL/PLE không tăng lần nữa. ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11.
+
+Cổng2b qua20 probe nghiêm, image lỗi không đổi bản đang chạy, khôi phục ci-b vềci-a. Cổng3: nâng/site mới1065/1065 lệch0, bỏ qua6/6; rollback1052/1052 khớp đếm/tổng/cờ/versions/cài đặt/giao diện, ba cờ tiền mới về0. Cố ý lỗi tự khôi phục, so chi tiết/versions khớp, maintenance_mode=1. Nền CI GL0: vẫn cần diễn tập bản sao production có dữ liệu khi phát hành.
+
+Giữ các FAIL và nguyên nhân: UAT39190026643/a6fae60 do finally không có trên jqXHR (đã sửa always); Cổng2b39192414323/db2201f do cache bảo trì từng worker (đã sửa restart backend); UAT39193896826/b7 cả263 ca parsedPASS nhưng grep thiếu dòng Chrome compactJSON (đã chuẩn hóa qua emit và assert đúng một case PASS, giữ nguyên số72 và điều kiện kiểm). Các run hủy khi đổi mã/trùng không là bằng chứng cuối.
+
+Nguồn Frappe16.52.0 đã đối chiếu: [request.js trả jqXHR/always](https://github.com/frappe/frappe/blob/v16.52.0/frappe/public/js/frappe/request.js#L309), [request init](https://github.com/frappe/frappe/blob/v16.52.0/frappe/app.py#L217), [cached=is_request](https://github.com/frappe/frappe/blob/v16.52.0/frappe/__init__.py#L200), [cache site_config TTL60 trong RAM](https://github.com/frappe/frappe/blob/v16.52.0/frappe/config.py#L149). Không sửa core.
+
+Chưa phát hành/triển khai hoặc nghiệm thu nhân sự, dữ liệu và máy in thật. Adapter đầy đủ quỹ nhà máy, tiền cá nhân không GL và bảng chốt ngày còn tiếp; không đánh dấu toàn đợt2B hoàn tất.

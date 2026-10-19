@@ -1,11 +1,23 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
 
-## 19/10/2026 — ĐANG DỞ: chống lặp thu quầy và chặn nhận thay quỹ cũ
+## 19/10/2026 — Thu quầy/quỹ cũ và bảo trì đã kiểm đủ bốn cổng
 
-Nhánh `feat/thu-quay-quy-nha-may-20261019`, kế thừa PR #13/2618e72. Chưa phát hành, production vẫn0.15.3/21 cờ. Đặc tả `docs/dac-ta-thu-quay-quy-cu-2b.md`: token thu quầy lưu trên PE khi custody bật, khóa Company, replay đúng hai PE/kiểm nội dung và quyền, giữ dấu cả phiếu hủy; quỹ nhà máy chỉ đúng người nhận, không tự nhận/nhận thay, retry cùng kết quả không ghi JE nữa. Không thêm cờ, không cấp GL nhà máy.
+Nhánh `feat/thu-quay-quy-nha-may-20261019`, [PR #14](https://github.com/tienduongmarcom/aphvh/pull/14), base PR #13/2618e72. Mã cuối **`c02c3764dae495a48b564931062cbae3e78d9db3`**. Không tăng version/tag/merge/deploy; production theo xác nhận gần nhất vẫn0.15.3/21 cờ.
 
-Đang chạy unit và chuẩn bị bốn cổng trên đúng SHA; chưa tuyên bố kiểm tích hợp đạt. Còn adapter đầy đủ quỹ nhà máy sang giữ chỗ/đối chiếu mới và quyền tiền cá nhân tối thiểu, bảng chốt ngày. Nghiệm thu thực tế gom cuối. Bước tiếp theo: hoàn tất ca HTTP/Desk, chạy bốn cổng, ghi run/bằng chứng.
+Thu quầy có mã lượt theo người gọi + Company, dấu nội dung ngay trên PE và khóa Company xuyên suốt hai hình thức thu. Gửi lại nguyên cửa sổ trả đúng PE cũ; đổi nội dung/hủy phiếu không tự ghi thu lại. Server chặn giả/sửa/sao chép/xóa dấu; không backfill hay suy người giữ từ owner. Khi custody bật, caller quầy phải gửi request_id. Đóng/mở lại hoặc tải lại trang tạo lượt mới: nhân viên cần kiểm phiếu đã thu trước khi thu tiếp.
+
+Quỹ nhà máy cũ chặn người lập/người giữ tự nhận và quản lý/Admin nhận thay; đúng người nhận gửi lại cùng số/tài khoản trả kết quả cũ, không tạo JE lần nữa. Chưa phải adapter đầy đủ sang giữ chỗ/đối chiếu mới. Không cấp GL cho nhà máy. Thủ tục nâng cấp nạp lại backend sau bật/tắt bảo trì, khắc phục cache site_config TTL60 từng web worker trước sao lưu/mở lại; Cổng2b kiểm thêm20 probe nghiêm, không retry/bỏ qua503.
+
+Cục bộ **365 kh_aph +108 lab9x** đạt, Python/JS/shell/diff đạt. Đúngc02: [Cổng2](https://github.com/tienduongmarcom/aphvh/actions/runs/39195670324), [Cổng2b](https://github.com/tienduongmarcom/aphvh/actions/runs/39195680580), [UAT](https://github.com/tienduongmarcom/aphvh/actions/runs/39195678186) và [Cổng3](https://github.com/tienduongmarcom/aphvh/actions/runs/39195684243) đều success.
+
+Đã tải/đọc artifact UAT đúngc02: **263 HTTP/Desk PASS,0 FAIL**, b01472; hai kiểm kỹ thuật core/site trắng cũng PASS. Core63.508 tệp không đổi, ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11. Ba ca HTTP mới kiểm retry/đổi nội dung, hai phiên cùng lượt tiền mặt+bank chỉ hai PE, giả dấu/hủy/giữ lịch sử. Chrome cố ý bỏ HTTP200 sau commit rồi gửi lại cùng Dialog, một PE và GL/PLE không tăng lần nữa. Đã xem thu-quay.png: form khách native, toast Đã ghi ACC-PAY-2026-00008, không lỗi. Cổng2b đã đọc log:20 probe nghiêm, kéo image không tồn tại không gián đoạn web, khôi phục ci-b vềci-a đạt.
+
+Cổng3 đúngc02 đã tải/đọc artifact: schema nâng/site mới **1.065/1.065**, lệch0, bỏ qua6/6; rollback **1.052/1.052**, đếm/tổng/cờ/versions/cài đặt/giao diện khớp, ba cờ custody/closing/handover về0. Ca cố ý lỗi tự khôi phục đúng0.15.3, đếm/tổng/chi tiết/versions khớp và workflow kiểm maintenance_mode=1. Nền CI có GL0, không thay diễn tập bản sao production có dữ liệu khi phát hành.
+
+Giữ các FAIL: [39190026643/a6fae60](https://github.com/tienduongmarcom/aphvh/actions/runs/39190026643) dùng finally trên jqXHR, sửa always theo request.js Frappe16.52.0; [39192414323/db2201f](https://github.com/tienduongmarcom/aphvh/actions/runs/39192414323) một worker pong rồi worker khác503 do cache bảo trì, sửa nạp lại backend; [39193896826/b7](https://github.com/tienduongmarcom/aphvh/actions/runs/39193896826) cả263 ca parsedPASS nhưng grep đếm thiếu dòng Chrome compactJSON, sửa chuẩn hóa qua emit và assert đúng một case PASS, giữ nguyên số72/assertion. Các lượt hủy khi đổi mã/trùng Cổng2 không dùng làm bằng chứng cuối.
+
+**ĐANG DỞ đợt2B:** nối đầy đủ quỹ nhà máy vào giữ chỗ/đối chiếu và quyền tiền cá nhân tối thiểu không GL, sau đó bảng chốt ngày/ngoại lệ. Cần rà cách hoàn tất Dialog chênh lệch giao nhận còn dùng then(...).finally theo cùng phiên bản; chưa kiểm riêng tình huống mất phản hồi của lối đó. Đặc tả9 nhóm: `docs/dac-ta-thu-quay-quy-cu-2b.md`. Nghiệm thu nhân sự/dữ liệu/máy in thật gom cuối theo anh Tiến. Bước tiếp theo: đặc tả và nối adapter quỹ nhà máy vào cùng nguồn giữ chỗ/đối chiếu, xây giao diện tiền cá nhân tối thiểu; không cấp GL để vượt chặn NoCost.
 
 ## 19/10/2026 — Đối chiếu lệch và hoàn bàn giao đã kiểm đủ bốn cổng
 
