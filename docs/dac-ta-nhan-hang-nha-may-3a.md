@@ -2,7 +2,7 @@
 
 ## 1. Mục tiêu và phạm vi
 
-Bắt đầu NM01: nhập lượng một lần theo đơn mua đã xác nhận, không nhập hoặc xem giá vốn; tạo và xác nhận một Purchase Receipt chuẩn. Dùng Dialog trên PO và lối vào từ báo cáo Tồn kho số lượng, không Page/SPA/sổ kho hay DocType nhiệm vụ mới.
+Bắt đầu NM01: nhập lượng một lần theo đơn mua đã xác nhận, không nhập hoặc xem giá vốn; tạo và xác nhận một Purchase Receipt chuẩn. Dùng Dialog trên PO và lối vào từ báo cáo Tồn kho số lượng (native render_include dùng chung JS, không phụ thuộc /assets/kh_aph riêng), không Page/SPA/sổ kho hay DocType nhiệm vụ mới.
 
 Lát này chỉ nhận hàng tồn Kg/hệ số1, có giá dương hợp lệ, không lô/sê-ri/gia công/giao thẳng/đơn giá đơn vị. Các loại còn lại dùng chứng từ chuẩn. Gom nhập chờ định giá, nhận chuyến chuyển đến, sản xuất/dở dang/đóng gói/xuất và bảng ngày nhà máy còn tiếp. Không gọi NM01 hoặc đợt3 hoàn tất.
 
@@ -60,7 +60,7 @@ Một PR chuẩn sở hữu tồn/giá/SLE/GL/sổ bao và lượng PO đã nh�
 
 Unit: cờ/guest/role trước đọc; số hữu hạn/6 số lẻ/bao nguyên; từ chối giá giả/dòng trùng/kho sai Company; preview chỉ lượng; giả/đổi dấu kể cả cờ tắt và update-after-submit; datetime/số qua JSON giữ nguyên nghĩa; NULL key phiếu native; tệp riêng tư/ownership/hồ sơ khác.
 
-HTTP giả: PO10kg×20.000; NoCost preview chỉ lượng; Company/role sai chặn. Nhận4kg gồm1kg có vấn đề tạo PR4kg theo giá20.000, không tự trả/giảm giá, còn6. Retry không tăng PR/SLE/GL/PLE, đổi nội dung chặn; giá client/kho khác Company/sửa dấu chặn. Hai phiên nhận4kg khi còn6: chỉ một thành công, còn2. Chrome từ báo cáo lượng, phiên nhà máy riêng, nhận1kg/bỏ200 sau commit/retry cùng Dialog: một PR/một SLE, còn1, form không có giá vốn; phải xem ảnh đúng SHA.
+HTTP giả: PO10kg×20.000; NoCost preview chỉ lượng; Company/role sai chặn. Phiếu cân riêng tư mới phải gắn đúng PR và giữ private; script report được include từ nguồn chung. Nhận4kg gồm1kg có vấn đề tạo PR4kg theo giá20.000, không tự trả/giảm giá, còn6. Retry không tăng PR/SLE/GL/PLE, đổi nội dung chặn; giá client/kho khác Company/sửa dấu chặn. Hai phiên nhận4kg khi còn6: chỉ một thành công, còn2. Chrome từ báo cáo lượng, phiên nhà máy riêng, nhận1kg/bỏ200 sau commit/retry cùng Dialog: một PR/một SLE, còn1, form không có giá vốn; phải xem ảnh đúng SHA.
 
 Năm case mới: HTTP_3A_RECEIVING_SCOPE_PREVIEW, HTTP_3A_RECEIVING_PARTIAL_REPLAY, HTTP_3A_RECEIVING_TAMPER, HTTP_3A_RECEIVING_RACE, DESK_3A_RECEIVING_RETRY. Dự kiến b01494/toàn HTTP285; chưa PASS trước run xanh và đọc artifact. Nghiệm thu nhân sự/dữ liệu/máy in thật vẫn gom cuối.
 

@@ -12,16 +12,22 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit):
     orders=rpc('kh_aph.factory_receiving.orders',{'company':f['aph']},dung)
     assert po['name'] in [x['name'] for x in orders] and all(set(x)=={'name','supplier'} for x in orders)
     denied(lambda:rpc('kh_aph.factory_receiving.orders',{'company':f['vh']},phien(f['scope_co'])),('PermissionError',))
+    script=rpc('frappe.desk.query_report.get_script',{'report_name':'Ton kho so luong'},dung)['script']
+    assert 'kh_aph.receiving.open' in script and '{% include' not in script and '/assets/kh_aph/js/factory_receiving.js' not in script
     view=rpc('kh_aph.factory_receiving.preview',{'purchase_order':po['name']},dung)
     assert set(view)=={'purchase_order','company','supplier','price_mode','items'}
     assert view['items'][0]['remaining']==10 and not any(k in json.dumps(view) for k in ('"rate"','"amount"','"valuation_rate"'))
     denied(lambda:rpc('kh_aph.factory_receiving.preview',{'purchase_order':po['name']},phien(f['tp'])),('PermissionError',))
     emit('HTTP_3A_RECEIVING_SCOPE_PREVIEW','PASS',{'restricted_principal':True,'quantity_only':True})
     row={'source_row':view['items'][0]['source_row'],'warehouse':f['kho'],'qty':4,'bags':0,'quality_qty':1}
+    file=insert({'doctype':'File','file_name':f['p']+'-phieu-can.txt','is_private':1,'content':'Can UAT '+f['p']},dung)
     args={'purchase_order':po['name'],'request_id':f['p']+'-nhan-1','rows':json.dumps([row]),
-          'received_date':f['date'],'receiver':'Nhân viên kho ký giấy','note':'UAT nhận từng phần, hàng có vấn đề vẫn dùng, chờ đàm phán giảm giá'}
+          'received_date':f['date'],'receiver':'Nhân viên kho ký giấy','ticket':file['file_url'],'note':'UAT nhận từng phần, hàng có vấn đề vẫn dùng, chờ đàm phán giảm giá'}
     result=rpc('kh_aph.factory_receiving.receive',args,dung)
     receipt=get('Purchase Receipt',result['name'])
+    attached=get('File',file['name'],dung)
+    assert attached['is_private']==1 and attached['attached_to_doctype']=='Purchase Receipt' and attached['attached_to_name']==result['name']
+    assert receipt['kh_aph_receiving_ticket']==file['file_url']
     assert receipt['kh_aph_receiving_price_review']==1 and receipt['items'][0]['kh_aph_receiving_quality_qty']==1
     assert receipt['docstatus']==1 and receipt['items'][0]['qty']==4 and receipt['items'][0]['rate']==20000
     assert receipt['items'][0]['purchase_order']==po['name'] and receipt['kh_aph_receiving_actor']==f['dung']
@@ -42,7 +48,7 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit):
     a,b=phien(f['dung']),phien(f['dung'])
     def racing(pair):
         token,caller=pair
-        try:return rpc('kh_aph.factory_receiving.receive',{**args,'request_id':token},caller)['name']
+        try:return rpc('kh_aph.factory_receiving.receive',{**args,'request_id':token,'ticket':''},caller)['name']
         except Exception as exc:
             if not hasattr(exc,'read'):raise
             data=json.loads(exc.read())

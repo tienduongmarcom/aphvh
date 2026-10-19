@@ -63,6 +63,9 @@ if (!kh_aph.receiving.open) {
             }}); dialog.show();
         }});
     };
+}
+if (frappe.ui.form?.on && !kh_aph.receiving.form_registered) {
+    kh_aph.receiving.form_registered = true;
     frappe.ui.form.on("Purchase Order", {refresh(frm) {
         if (!frappe.boot?.kh_aph?.factory_receiving || frm.doc.docstatus !== 1) return;
         frm.add_custom_button("Nhận hàng nhà máy", () => {
