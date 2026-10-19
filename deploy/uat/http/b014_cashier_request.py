@@ -66,4 +66,7 @@ def chay(rpc, get, insert, lst, denied, ktt, ktbh, f, phien, emit):
     proc = subprocess.run(["node", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
         json.dumps({"company": f["aph"], "customer": f["kh2"]}), "thu-quay"], text=True, capture_output=True, timeout=180)
     assert proc.returncode == 0, (proc.stdout[-2500:], proc.stderr[-2500:])
-    print(proc.stdout, end="")
+    results = [json.loads(line) for line in proc.stdout.splitlines() if line.startswith('{"case":')]
+    assert len(results) == 1 and results[0]["case"] == "DESK_2B_CASHIER_LOST_RESPONSE" and results[0]["status"] == "PASS", proc.stdout
+    value = results[0]
+    emit(value["case"], value["status"], value.get("detail"))
