@@ -127,3 +127,16 @@ class Receiving(unittest.TestCase):
         self.m.protect(doc)
         doc['items'][0]['kh_aph_receiving_quality_qty']=2
         with self.assertRaises(ValueError):self.m.protect(doc)
+
+    def test_receive_retries_whole_rpc_after_snapshot_conflict(self):
+        class Conflict(Exception):pass
+        self.f.QueryDeadlockError=Conflict
+        self.f.local=Row(form_dict={'cmd':'kh_aph.factory_receiving.receive'})
+        self.m.guard=Mock();self.m._source=Mock(return_value=Row(company='APH'))
+        self.f.db.sql.side_effect=[[],Conflict('1020'),[],[],[['PR']]]
+        self.f.get_doc.return_value=Row(name='PR',docstatus=1,kh_aph_receiving_payload='hash',check_permission=Mock())
+        row={'source_row':'R','warehouse':'WH','qty':4,'bags':0,'quality_qty':0}
+        with patch.object(self.m.hashlib,'sha256',return_value=Mock(hexdigest=lambda:'hash')),patch('kh_aph.cash_transaction.time.sleep'):
+            self.assertEqual(self.m.receive('PO','nonce',[row],'2026-10-19','Người ký')['name'],'PR')
+        self.assertEqual(self.m._source.call_count,3)
+        self.f.db.rollback.assert_called_once();self.f.db.commit.assert_not_called()

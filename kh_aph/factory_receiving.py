@@ -6,6 +6,7 @@ import json
 
 import frappe
 from frappe.utils import cint, getdate, today, now_datetime
+from kh_aph.cash_transaction import retry_rpc
 
 FLAG = 'kh_aph_factory_receiving'
 PREFIX = 'kh_aph_receiving_'
@@ -142,6 +143,7 @@ def _claim_ticket(url):
 
 
 @frappe.whitelist(methods=['POST'])
+@retry_rpc
 def receive(purchase_order, request_id, rows, received_date, receiver, ticket=None, note=None):
     guard()
     doc = _source(purchase_order, state=False)
