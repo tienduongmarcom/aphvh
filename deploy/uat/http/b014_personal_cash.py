@@ -91,8 +91,11 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         if os.environ.get('GITHUB_ACTIONS')!='true': raise RuntimeError('Chrome chỉ chạy UAT CI dùng một lần')
         payload = {'company':f['aph'],'source':source['name'],'user':f['dung'],'expected':332,'account':account,
             'other_company':f['vh'],'other_account':vh_account}
+        # Desk khởi tạo CSRF trên session; không dùng lại cookie ấy cho caller
+        # urllib không có CSRF header. Hai phiên riêng, cùng đúng nhân sự giả.
+        browser_actor = phien(f['dung'])
         proc = subprocess.run(['node', str(Path(__file__).with_name('ban-nhanh-desk.mjs')), json.dumps(payload), 'tien-ca-nhan'],
-            input=json.dumps({'cookies':dung.browser_cookies()}), text=True,capture_output=True,timeout=180)
+            input=json.dumps({'cookies':browser_actor.browser_cookies()}), text=True,capture_output=True,timeout=180)
         assert proc.returncode==0,(proc.stdout[-2000:],proc.stderr[-2000:])
         results=[json.loads(line) for line in proc.stdout.splitlines() if line.startswith('{"case":')]
         assert len(results)==1 and results[0]['case']=='DESK_2B_PERSONAL_NO_GL' and results[0]['status']=='PASS',proc.stdout
