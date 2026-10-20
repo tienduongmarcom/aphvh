@@ -34,7 +34,7 @@ if (!kh_aph.ux.buoc_tiep) {
         }
         if (dt === "Sales Invoice" && d.docstatus === 1 && !d.is_return && Number(d.outstanding_amount) > 0 && co("Thu tiền"))
             return {text: "Khách còn nợ hóa đơn này. Ghi đúng số tiền thực nhận; phần dư để chưa phân bổ, không tự cấn hóa đơn khác.",
-                nut: [["Ghi nhận thanh toán", kh_aph.ux.thu_tien ? () => kh_aph.ux.thu_tien(d.customer, [d.name]) : "Thu tiền"]]};
+                nut: [["Ghi nhận thanh toán", kh_aph.ux.thu_tien ? () => kh_aph.ux.thu_tien(d.customer, [d.name], d.company) : "Thu tiền"]]};
         return null;
     };
     kh_aph.ux.buoc_tiep = function(frm) {

@@ -1,7 +1,7 @@
 app_name = "kh_aph"
 app_title = "Vận hành doanh nghiệp"
 app_publisher = "9xLab"
-app_description = "App riêng của khách An Phú Hưng - Vĩnh Hưng, chạy trên lõi 9xLab (lab9x)"
+app_description = "Vận hành bán hàng, kho vận, nhà máy và kế toán trên lõi 9xLab"
 app_email = "tienduongmarcom@gmail.com"
 app_license = "Proprietary"
 
