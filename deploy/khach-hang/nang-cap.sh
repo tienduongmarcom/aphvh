@@ -81,7 +81,8 @@ fi
 sleep 20
 echo "3/5 Migrate"
 # Từ 0.7.0 lõi 9xLab (lab9x) là app riêng: site cũ chưa cài thì cài trước khi migrate (chạy lại được).
-if ! ./erpctl exec -T backend bench --site frontend list-apps </dev/null | grep -q '^lab9x'; then
+APPS=$(./erpctl exec -T backend bench --site frontend list-apps </dev/null)
+if ! grep -q '^lab9x' <<<"$APPS"; then
   ./erpctl exec -T backend bench --site frontend install-app lab9x </dev/null || { quay_lui "CÀI LÕI lab9x LỖI."; exit 3; }
 fi
 if ! ./erpctl exec -T backend bench --site frontend migrate </dev/null; then
@@ -89,7 +90,13 @@ if ! ./erpctl exec -T backend bench --site frontend migrate </dev/null; then
 fi
 echo "4/5 Kiểm sau nâng cấp"
 ./erpctl exec -T backend bash -c 'cat > /tmp/khach.json' < khach.json
-if ! ./erpctl exec -T backend bench --site frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' </dev/null | tee "sao-luu/$NGAY/kiem-sau-nang-cap.txt" | grep -q "KHÔNG ĐẠT: 0"; then
+# Ghi đủ kết quả ra tệp RỒI mới đọc. Không dùng `| tee | grep -q`: với pipefail, grep -q thoát ngay khi thấy chữ "KHÔNG ĐẠT: 0"
+# làm tee chết vì SIGPIPE -> cả lệnh báo lỗi dù kiểm ĐẠT (0.16.1 bị quay lui oan ngày 20/10/2026; tệp kiểm bị cắt giữa chừng).
+KIEM_OK=1
+./erpctl exec -T backend bench --site frontend execute kh_aph.kiem_trien_khai.chay --kwargs '{"duong_dan": "/tmp/khach.json"}' </dev/null > "sao-luu/$NGAY/kiem-sau-nang-cap.txt" || KIEM_OK=0
+cat "sao-luu/$NGAY/kiem-sau-nang-cap.txt"
+grep -q "KHÔNG ĐẠT: 0" "sao-luu/$NGAY/kiem-sau-nang-cap.txt" || KIEM_OK=0
+if [ "$KIEM_OK" != 1 ]; then
   quay_lui "KIỂM KHÔNG ĐẠT. Xem sao-luu/$NGAY/kiem-sau-nang-cap.txt."; exit 4
 fi
 if [ "${GIU_BAO_TRI:-0}" = 1 ]; then
