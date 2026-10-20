@@ -48,11 +48,11 @@ _LAM = {
 }
 _NHANH = {
     'ban_hang': [('Lập đơn bán hàng', 'DocType', 'APH Shared Sales Order', None, 'New'),
-                 ('Ghi nhận thu tiền', 'DocType', 'Payment Entry', None, 'New'),
-                 ('Xem công nợ khách', 'Report', 'Tong hop ban hang theo khach', None, '')],
+                 ('Tìm khách, xem nợ, thu tiền', 'DocType', 'Customer', None, 'List'),
+                 ('Tổng hợp bán theo khách', 'Report', 'Tong hop ban hang theo khach', None, '')],
     'kho': [('Tồn kho và nhận/chuyển hàng', 'Report', 'Ton kho so luong', None, ''),
             ('Kiểm kê', 'DocType', 'Stock Reconciliation', None, 'New')],
-    'tien': [('Ghi nhận thu tiền', 'DocType', 'Payment Entry', None, 'New'),
+    'tien': [('Tìm khách, xem nợ, thu tiền', 'DocType', 'Customer', None, 'List'),
              ('Khách cần gọi hôm nay', 'Report', 'Khach can goi hom nay', None, '')],
     'nha_may': [('Nhận hàng / chuyển / ghi sản xuất', 'Report', 'Ton kho so luong', None, ''),
                 ('Phiếu quỹ nhà máy', 'DocType', 'APH Phieu quy nha may', None, 'New')],
@@ -71,6 +71,17 @@ VAI_TRO = {
     'kho': ('Thủ kho bán hàng', 'Stock User', 'Stock Manager', 'Accounts Manager', 'System Manager'),
     'tien': ('Accounts User', 'Accounts Manager', 'Kế toán bán hàng', 'System Manager'),
     'nha_may': ('Kế toán nhà máy', 'Stock Manager', 'Accounts Manager', 'System Manager'),
+}
+
+
+# Module Profile theo nhóm: chỉ ẩn phân hệ chắc chắn không dùng (ẩn menu, không thay quyền chứng từ).
+_AN = ('Manufacturing', 'Projects', 'Assets', 'Quality Management', 'Support', 'Maintenance', 'Subcontracting',
+       'Website', 'Portal', 'Social', 'CRM', 'Telephony', 'Communication', 'EDI', 'Regional', 'Bulk Transaction')
+AN_THEO_NHOM = {
+    'ban_hang': _AN + ('Buying',),
+    'kho': _AN,
+    'tien': _AN,
+    'nha_may': tuple(m for m in _AN if m != 'Manufacturing'),
 }
 
 
@@ -115,11 +126,21 @@ def _workspace(nhom):
     return ten
 
 
+def _module_profile(nhom):
+    ten = '9xLab - ' + NHOM[nhom]
+    doc = frappe.get_doc('Module Profile', ten) if frappe.db.exists('Module Profile', ten) else frappe.new_doc('Module Profile')
+    doc.module_profile_name = ten
+    doc.set('block_modules', [{'module': m} for m in AN_THEO_NHOM[nhom] if frappe.db.exists('Module Def', m)])
+    doc.flags.ignore_permissions = True
+    doc.save() if not doc.is_new() else doc.insert()
+    return ten
+
+
 def schema():
-    """Dựng/làm mới bốn Workspace mới (idempotent). Không đụng Workspace cũ."""
+    """Dựng/làm mới bốn Workspace mới và bốn Module Profile (idempotent). Không đụng Workspace cũ, không gán cho ai."""
     if not enabled():
         return
-    return [_workspace(n) for n in NHOM]
+    return [_workspace(n) for n in NHOM] + [_module_profile(n) for n in NHOM]
 
 
 def _ke_hoach(bang):
@@ -133,6 +154,11 @@ def _ke_hoach(bang):
         cu = frappe.db.get_value('User', user, 'default_workspace')
         if cu != NHOM[nhom]:
             ke.append({'user': user, 'viec': 'default_workspace', 'tu': cu, 'den': NHOM[nhom]})
+        if dong.get('module_profile'):
+            mp = '9xLab - ' + NHOM[nhom]
+            cu_mp = frappe.db.get_value('User', user, 'module_profile')
+            if cu_mp != mp:
+                ke.append({'user': user, 'viec': 'module_profile', 'tu': cu_mp, 'den': mp})
         for kho in dong.get('kho') or []:
             if nhom not in ('kho', 'nha_may'):
                 frappe.throw(f'{user}: chỉ nhóm kho/nhà máy mới giới hạn kho; bán hàng giữ chọn nhiều nguồn')
@@ -157,9 +183,86 @@ def ap_dung_nguoi_dung(bang, chay_that=0):
     if not cint(chay_that):
         return {'chay_thu': True, 'thay_doi': ke}
     for k in ke:
-        if k['viec'] == 'default_workspace':
-            frappe.db.set_value('User', k['user'], 'default_workspace', k['den'])
+        if k['viec'] in ('default_workspace', 'module_profile'):
+            u = frappe.get_doc('User', k['user'])
+            u.set(k['viec'], k['den'])
+            u.save(ignore_permissions=True)
         else:
             frappe.get_doc({'doctype': 'User Permission', 'user': k['user'], 'allow': 'Warehouse',
                             'for_value': k['den'], 'apply_to_all_doctypes': 1}).insert()
     return {'chay_thu': False, 'thay_doi': ke}
+
+
+# ---------------------------------------------------------------- UX-3: tìm khách, công nợ một khách (chỉ đọc)
+
+def _guard_doc():
+    if not enabled():
+        frappe.throw('Chưa bật giao diện theo công việc')
+    if frappe.session.user == 'Guest':
+        frappe.throw('Cần đăng nhập', frappe.PermissionError)
+
+
+@frappe.whitelist(methods=['POST'])
+def tim_khach(q):
+    """Tìm khách theo mã, tên, tên gọi tắt, MST, số điện thoại (khách hoặc liên hệ). Chỉ trong phạm vi quyền đọc;
+    trả danh sách để người dùng tự chọn, không tự chọn kết quả đầu tiên."""
+    _guard_doc()
+    q = str(q or '').strip()
+    if len(q) < 2 or len(q) > 60:
+        frappe.throw('Gõ từ 2 đến 60 ký tự')
+    like = f'%{q}%'
+    found = {}
+    def add(rows, reason):
+        for r in rows:
+            found.setdefault(r.name, {'name': r.name, 'customer_name': r.customer_name, 'tax_id': r.get('tax_id') or '',
+                                       'mobile_no': r.get('mobile_no') or '', 'khop': reason})
+    fields = ['name', 'customer_name', 'tax_id', 'mobile_no']
+    for field, reason in (('name', 'mã'), ('customer_name', 'tên'), ('tax_id', 'MST'), ('mobile_no', 'điện thoại')):
+        add(frappe.get_list('Customer', filters={field: ['like', like], 'disabled': 0}, fields=fields, limit_page_length=20), reason)
+    digits = ''.join(ch for ch in q if ch.isdigit())
+    if len(digits) >= 6:
+        contacts = frappe.get_list('Contact', filters=[['Contact Phone', 'phone', 'like', f'%{digits}%']], pluck='name',
+                                   limit_page_length=20)
+        if contacts:
+            links = frappe.get_all('Dynamic Link', filters={'parenttype': 'Contact', 'parent': ['in', contacts],
+                                   'link_doctype': 'Customer'}, pluck='link_name')
+            if links:
+                add(frappe.get_list('Customer', filters={'name': ['in', links], 'disabled': 0}, fields=fields,
+                                    limit_page_length=20), 'điện thoại liên hệ')
+    return sorted(found.values(), key=lambda r: (r['customer_name'] or '', r['name']))[:30]
+
+
+@frappe.whitelist(methods=['POST'])
+def cong_no_khach(customer):
+    """Công nợ một khách theo từng đơn vị người dùng được xem: hóa đơn còn nợ, quá hạn, tiền đã nhận chưa phân bổ.
+    Mỗi số tách theo đơn vị, không cộng/trừ chéo đơn vị."""
+    _guard_doc()
+    from frappe.utils import getdate, today, flt
+    frappe.get_doc('Customer', customer).check_permission('read')
+    companies = frappe.get_list('Company', pluck='name', limit_page_length=0)
+    def safe(fn):
+        try:
+            return fn(), True
+        except frappe.PermissionError:
+            return [], False
+    invoices, xem_hd = safe(lambda: frappe.get_list('Sales Invoice', filters={'customer': customer, 'docstatus': 1, 'outstanding_amount': ['>', 0],
+                               'company': ['in', companies]}, fields=['name', 'company', 'posting_date', 'due_date', 'outstanding_amount'],
+                               order_by='posting_date asc', limit_page_length=200))
+    payments, xem_tien = safe(lambda: frappe.get_list('Payment Entry', filters={'party_type': 'Customer', 'party': customer, 'docstatus': 1,
+                               'unallocated_amount': ['>', 0], 'company': ['in', companies]},
+                               fields=['name', 'company', 'posting_date', 'unallocated_amount'], limit_page_length=200))
+    out = {}
+    for c in companies:
+        out[c] = {'company': c, 'phai_thu': 0.0, 'qua_han': 0.0, 'chua_phan_bo': 0.0, 'hoa_don': [], 'tien_chua_phan_bo': []}
+    for r in invoices:
+        d = out[r.company]
+        d['phai_thu'] += flt(r.outstanding_amount)
+        if r.due_date and getdate(r.due_date) < getdate(today()):
+            d['qua_han'] += flt(r.outstanding_amount)
+        d['hoa_don'].append({'name': r.name, 'posting_date': str(r.posting_date), 'due_date': str(r.due_date or ''),
+                             'outstanding': flt(r.outstanding_amount)})
+    for r in payments:
+        d = out[r.company]
+        d['chua_phan_bo'] += flt(r.unallocated_amount)
+        d['tien_chua_phan_bo'].append({'name': r.name, 'posting_date': str(r.posting_date), 'amount': flt(r.unallocated_amount)})
+    return {'customer': customer, 'xem_hoa_don': xem_hd, 'xem_tien': xem_tien, 'don_vi': [v for v in out.values() if v['hoa_don'] or v['tien_chua_phan_bo']]}

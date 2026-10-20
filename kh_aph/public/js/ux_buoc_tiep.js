@@ -31,8 +31,9 @@ if (!kh_aph.ux.buoc_tiep) {
                 if (nut.length) return {text: "Có chênh lệch giao nhận đang chờ xử lý.", nut};
             }
         }
-        if (dt === "Sales Invoice" && d.docstatus === 1 && Number(d.outstanding_amount) > 0 && co("Thu tiền"))
-            return {text: "Khách còn nợ hóa đơn này. Ghi đúng số tiền thực nhận; không tự cấn hóa đơn khác.", nut: [["Ghi nhận thanh toán", "Thu tiền"]]};
+        if (dt === "Sales Invoice" && d.docstatus === 1 && !d.is_return && Number(d.outstanding_amount) > 0 && co("Thu tiền"))
+            return {text: "Khách còn nợ hóa đơn này. Ghi đúng số tiền thực nhận; phần dư để chưa phân bổ, không tự cấn hóa đơn khác.",
+                nut: [["Ghi nhận thanh toán", kh_aph.ux.thu_tien ? () => kh_aph.ux.thu_tien(d.customer, [d.name]) : "Thu tiền"]]};
         return null;
     };
     kh_aph.ux.buoc_tiep = function(frm) {

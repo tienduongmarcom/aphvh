@@ -505,3 +505,11 @@ for _dt in ("APH Shared Sales Order", "Delivery Note", "Sales Invoice"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/ux_buoc_tiep.js"]
+
+for _dt in ("Customer", "Sales Invoice"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ux_thu_tien.js"]
+_lists = doctype_list_js.get("Customer", [])
+_lists = [_lists] if isinstance(_lists, str) else list(_lists)
+doctype_list_js["Customer"] = _lists + ["public/js/ux_thu_tien.js", "public/js/ux_customer_list.js"]

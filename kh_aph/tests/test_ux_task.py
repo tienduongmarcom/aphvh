@@ -75,9 +75,32 @@ class UX(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.m._ke_hoach([{'user': 'ban@x', 'nhom': 'khac'}])
 
+    def test_search_needs_two_chars_and_lists_all_matches(self):
+        with self.assertRaises(ValueError): self.m.tim_khach('a')
+        self.f.get_list = Mock(side_effect=lambda dt, **kw: [Row(name='KH1', customer_name='Minh Anh'), Row(name='KH2', customer_name='Minh Anh')]
+                               if dt == 'Customer' else [])
+        got = self.m.tim_khach('Minh Anh')
+        self.assertEqual([r['name'] for r in got], ['KH1', 'KH2'])
+
+    def test_receivable_split_per_company_no_cross_netting(self):
+        self.f.get_doc = Mock(return_value=Row(check_permission=Mock()))
+        utils = sys.modules['frappe.utils']
+        utils.getdate = lambda v: str(v); utils.today = lambda: '2026-10-20'; utils.flt = lambda v: float(v or 0)
+        def gl(dt, **kw):
+            if dt == 'Company': return ['APH', 'VH']
+            if dt == 'Sales Invoice': return [Row(name='SI1', company='APH', posting_date='2026-10-01', due_date='2026-10-10', outstanding_amount=100)]
+            if dt == 'Payment Entry': return [Row(name='PE1', company='VH', posting_date='2026-10-02', unallocated_amount=70)]
+        self.f.get_list = gl
+        got = {d['company']: d for d in self.m.cong_no_khach('KH1')['don_vi']}
+        self.assertEqual((got['APH']['phai_thu'], got['APH']['qua_han'], got['APH']['chua_phan_bo']), (100.0, 100.0, 0.0))
+        self.assertEqual((got['VH']['phai_thu'], got['VH']['chua_phan_bo']), (0.0, 70.0))
+
     def test_next_step_js_only_clicks_existing_buttons(self):
         js = (pathlib.Path(__file__).resolve().parents[1] / 'public/js/ux_buoc_tiep.js').read_text(encoding='utf-8')
         self.assertNotIn('frappe.call', js)
+        pay = (pathlib.Path(__file__).resolve().parents[1] / 'public/js/ux_thu_tien.js').read_text(encoding='utf-8')
+        self.assertIn('kh_aph.ban_quay.thu_tien', pay)  # ghi bằng hàm thu tiền đã kiểm, không hàm ghi mới
+        self.assertEqual(pay.count('method: "kh_aph.'), 3)
         self.assertNotIn('"Xuất và In"', js)
         self.assertIn('Lập phiếu xuất & In', js)
 

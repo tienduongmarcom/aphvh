@@ -1341,9 +1341,9 @@
 "{0} qty of Item {1} is being received into Warehouse {2} with capacity {3}.","Đang nhận số lượng {0} của mặt hàng {1} vào Kho {2} có sức chứa {3}."
 "{0} Retain Sample is based on batch, please check Has Batch No to retain sample of item","{0}: Giữ mẫu chỉ áp dụng cho hàng quản lý theo lô, vui lòng tích chọn Quản lý theo lô để giữ mẫu mặt hàng"
 "{0} units are reserved for Item {1} in Warehouse {2}, please un-reserve the same to {3} the Stock Reconciliation.","{0} đơn vị của Mặt hàng {1} tại Kho {2} đang được giữ chỗ, vui lòng bỏ giữ chỗ trước khi {3} phiếu Điều chỉnh theo kiểm kê."
-"{0} units of {1} needed in {2} on {3} {4} for {5} to complete this transaction.","Thiếu {0} đơn vị {1} tại {2} vào lúc {3} {4} (chứng từ {5}) để hoàn tất giao dịch này."
-"{0} units of {1} needed in {2} on {3} {4} to complete this transaction.","Thiếu {0} đơn vị {1} tại {2} vào lúc {3} {4} để hoàn tất giao dịch này."
-"{0} units of {1} needed in {2} to complete this transaction.","Thiếu {0} đơn vị {1} tại {2} để hoàn tất giao dịch này."
+"{0} units of {1} needed in {2} on {3} {4} for {5} to complete this transaction.","Không đủ hàng: thiếu {0} đơn vị {1} tại {2} vào lúc {3} {4} (chứng từ {5}). Kiểm tra ngày chứng từ và lượng đang có, giảm số lượng hoặc chọn kho nguồn khác."
+"{0} units of {1} needed in {2} on {3} {4} to complete this transaction.","Không đủ hàng: thiếu {0} đơn vị {1} tại {2} vào lúc {3} {4}. Kiểm tra ngày chứng từ và lượng đang có, giảm số lượng hoặc chọn kho nguồn khác."
+"{0} units of {1} needed in {2} to complete this transaction.","Không đủ hàng: thiếu {0} đơn vị {1} tại {2}. Giảm số lượng hoặc chọn kho nguồn khác mà anh/chị được phép dùng."
 "{0} valid serial nos for Item {1}","{0} số serial hợp lệ cho mặt hàng {1}"
 "{0} variants created.","Đã tạo {0} biến thể."
 "{0} {1} Manually","{0} {1} thủ công"
@@ -2425,3 +2425,4 @@ Bỏ tích để bỏ qua tỷ giá cũ hơn số ngày cho phép và lấy tỷ
 "Account Details","Chi tiết tài khoản","Bank Account"
 "Is Default Account","Tài khoản mặc định","Bank Account"
 Chot ngay va can xu ly,Chốt ngày và cần xử lý
+"Credit limit has been crossed for customer {0} ({1}/{2})","Khách {0} đã vượt hạn mức công nợ ({1}/{2}). Thu tiền trước hoặc xin người có quyền duyệt; không tự đổi hạn mức."

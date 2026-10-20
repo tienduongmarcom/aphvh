@@ -315,3 +315,6 @@ def chay(admin, phien, f, emit, factory_feature):
 
     from b014_ux import chay as ux_cases
     ux_cases(rpc, get, lst, denied, f, phien, emit)
+    from b014_ux import do_ux0, do_ux3
+    do_ux3(rpc, get, insert, lst, denied, f, phien, emit)
+    do_ux0(get, insert, submit, lst, f, emit)
