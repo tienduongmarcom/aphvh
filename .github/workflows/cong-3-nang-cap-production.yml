@@ -16,7 +16,7 @@ env:
   ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
   PROD_TAG: "0.16.2"
-  # Digest image 0.16.0 đang chạy trên erpnext-prod từ 20/10/2026 theo log người vận hành.
+  # Digest image 0.16.2 đang chạy trên erpnext-prod từ 20/10/2026 21:35 theo log người vận hành.
   # Trước: 0.16.0 sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3.
   # Trước: 0.15.3 sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496.
   # Trước: 0.15.2 sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333.
