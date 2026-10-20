@@ -23,7 +23,7 @@ Luồng chờ định giá này chỉ hỗ trợ đơn mua VND/tỷ giá1. Cửa
 ## Kế toán trưởng chốt giá
 
 1. Đối chiếu chứng từ mua, lượng nhận, phiếu cân và ghi chú chất lượng.
-2. Cập nhật giá hợp lệ trên đơn mua bằng thao tác chuẩn theo quyền được cấp.
+2. Người phụ trách mua có quyền chỉnh đơn cập nhật giá hợp lệ trên đơn mua bằng thao tác chuẩn; vai trò chốt giá không tự cấp thêm quyền sửa đơn mua.
 3. Mở phiếu chờ đã xác nhận, bấm **Chốt giá nhập**, nhập giá từng dòng đúng giá hiện hành trên đơn mua và lý do chốt.
 4. Hệ thống lập một phiếu nhập chuẩn gắn đúng từng dòng đơn mua; giữ hồ sơ thực nhận và tham chiếu phiếu chờ. Phần giữ chỗ được chuyển thành lượng đã nhập, không tính hai lần.
 

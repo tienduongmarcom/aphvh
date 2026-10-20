@@ -3,7 +3,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 
 
-def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature):
+def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature,native_admin):
     dung=phien(f['dung']);ktt=phien(f['ktt'])
     def order(qty=10,rate=20000):
         return submit(insert({'doctype':'Purchase Order','company':f['aph'],'supplier':f['ncc'],
@@ -54,7 +54,7 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature):
         'fieldname':'kh_aph_receiving_purchase_order','value':''}))
     denied(lambda:rpc('frappe.client.cancel',{'doctype':'Purchase Order','name':po['name']}))
     def change_po(qty=10,rate=20000):
-        return ktt('/api/method/erpnext.controllers.accounts_controller.update_child_qty_rate',{
+        return native_admin('/api/method/erpnext.controllers.accounts_controller.update_child_qty_rate',{
             'parent_doctype':'Purchase Order','parent_doctype_name':po['name'],
             'trans_items':json.dumps([{'docname':source,'item_code':f['A'],'qty':qty,'rate':rate,
                 'uom':'Kg','conversion_factor':1,'schedule_date':f['date'],

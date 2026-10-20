@@ -305,4 +305,4 @@ def chay(admin, phien, f, emit, factory_feature):
     receiving_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)
 
     from b014_pending_order import chay as pending_order_cases
-    pending_order_cases(rpc, get, insert, submit, lst, denied, f, phien, emit, factory_feature)
+    pending_order_cases(rpc, get, insert, submit, lst, denied, f, phien, emit, factory_feature, admin)
