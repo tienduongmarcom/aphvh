@@ -72,7 +72,7 @@ try {
         await until('!!window.frappe?.query_report && frappe.query_report.report_name==="Ton kho so luong" && Array.from(document.querySelectorAll("button")).some(b=>b.textContent.trim()==="Nhận hàng nhà máy")');
         if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong receiving principal');
         await evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.trim()==="Nhận hàng nhà máy").click();true');
-        await until('!!window.cur_dialog?.fields_dict.purchase_order');
+        try{await until('!!window.cur_dialog?.fields_dict.purchase_order');}catch(e){throw Error(e.message+'; dialog='+JSON.stringify(await evaluate('({dialog:cur_dialog?.title,values:cur_dialog?.get_values?.(true),btn_disabled:cur_dialog?.get_primary_btn?.().prop("disabled"),msg:$(".msgprint:visible,.modal.show .modal-body").text().slice(0,600),ajax:frappe.request.ajax_count,route:frappe.get_route_str()})'))+' errors='+JSON.stringify(diagnostics.slice(-8)));}
         await evaluate(`cur_dialog.set_value('purchase_order',${JSON.stringify(payload.purchase_order)});true`);
         if(pendingMode)await evaluate('cur_dialog.set_value("mode","pending");true');
         await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
@@ -112,7 +112,7 @@ try {
         await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.personal_cash.prepare_shift',requestStage:'Response'}]});
         await evaluate('__factoryShift.get_primary_btn().trigger("click");true');
         for(let i=0;i<300&&!lostResponse;i++)await pause(100);
-        if(!lostResponse)throw Error('No committed preview response intercepted');
+        if(!lostResponse)throw Error('No committed preview response intercepted; state='+JSON.stringify(await evaluate('({dialog:cur_dialog?.title,values:cur_dialog?.get_values?.(true),btn_disabled:cur_dialog?.get_primary_btn?.().prop("disabled"),msg:$(".msgprint:visible,.modal.show .modal-body").text().slice(0,600),ajax:frappe.request.ajax_count,route:frappe.get_route_str()})'))+' errors='+JSON.stringify(diagnostics.slice(-8)));
         await until('!__factoryShift.get_primary_btn().prop("disabled") && frappe.request.ajax_count===0');
         await evaluate('frappe.msg_dialog?.hide();true');
         await command('Fetch.disable');
