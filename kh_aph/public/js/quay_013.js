@@ -3,6 +3,8 @@
 	const bat = () => (frappe.boot.kh_aph || {}).gia_san;
 
 	function thu_tien(company, customer, hoa_don) {
+        if (frappe.boot?.kh_aph?.ux_task_first && kh_aph.ux?.thu_tien)
+            return kh_aph.ux.thu_tien(customer, hoa_don || [], company);
 		const request_id = [...crypto.getRandomValues(new Uint8Array(16))].map(v => v.toString(16).padStart(2, "0")).join("");
 		let sending = false;
 		const d = new frappe.ui.Dialog({
@@ -74,7 +76,7 @@
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
 			if (!bat() || frm.is_new() || frm.doc.is_return) return;
-			frm.add_custom_button(__("In phiếu xuất kho 2 liên"), () => frappe.call({method: "kh_aph.ban_quay.in_hai_lien",
+			if (!frappe.boot?.kh_aph?.ux_task_first) frm.add_custom_button(__("In phiếu xuất kho 2 liên"), () => frappe.call({method: "kh_aph.ban_quay.in_hai_lien",
 				args: {delivery_note: frm.doc.name}}).then((r) => {
 				const w = window.open("", "_blank");
 				w.document.write(r.message);
@@ -96,7 +98,7 @@
 	frappe.ui.form.on("Customer", {
 		refresh(frm) {
 			if (!bat() || frm.is_new()) return;
-			frm.add_custom_button(__("Thu tiền"), () => thu_tien(frappe.defaults.get_user_default("Company"), frm.doc.name, []), __("Quầy bán hàng"));
+			if (!frappe.boot?.kh_aph?.ux_task_first) frm.add_custom_button(__("Thu tiền"), () => thu_tien(frappe.defaults.get_user_default("Company"), frm.doc.name, []), __("Quầy bán hàng"));
 			frm.add_custom_button(__("In đối soát công nợ"), () => in_doi_soat(frm.doc.name), __("Quầy bán hàng"));
 			frm.add_custom_button(__("Ghi cuộc gọi thu nợ"), () => frappe.prompt([
 				{fieldname: "ket_qua", label: __("Kết quả"), fieldtype: "Small Text", reqd: 1},

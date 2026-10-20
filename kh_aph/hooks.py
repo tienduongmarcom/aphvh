@@ -1,7 +1,7 @@
 app_name = "kh_aph"
-app_title = "APH - VH"
+app_title = "Vận hành doanh nghiệp"
 app_publisher = "9xLab"
-app_description = "App riêng của khách An Phú Hưng - Vĩnh Hưng, chạy trên lõi 9xLab (lab9x)"
+app_description = "Vận hành bán hàng, kho vận, nhà máy và kế toán trên lõi 9xLab"
 app_email = "tienduongmarcom@gmail.com"
 app_license = "Proprietary"
 
@@ -513,3 +513,7 @@ for _dt in ("Customer", "Sales Invoice"):
 _lists = doctype_list_js.get("Customer", [])
 _lists = [_lists] if isinstance(_lists, str) else list(_lists)
 doctype_list_js["Customer"] = _lists + ["public/js/ux_thu_tien.js", "public/js/ux_customer_list.js"]
+
+# Đầu đơn hiện nhận diện khách và công nợ gọn, chỉ đọc theo cờ giao diện.
+doctype_js["APH Shared Sales Order"].append("public/js/ux_order_context.js")
+doctype_js["Delivery Note"].append("public/js/ux_delivery_layout.js")

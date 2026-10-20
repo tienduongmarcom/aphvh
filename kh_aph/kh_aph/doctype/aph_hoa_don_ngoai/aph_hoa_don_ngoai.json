@@ -137,7 +137,7 @@
   },
   {
    "fieldname": "sec_tien",
-   "label": "Số tiền trên hóa đơn MISA (không bắt buộc bằng doanh thu quản trị — Q148)",
+   "label": "Số tiền trên hóa đơn MISA (không bắt buộc bằng doanh thu quản trị)",
    "fieldtype": "Section Break"
   },
   {

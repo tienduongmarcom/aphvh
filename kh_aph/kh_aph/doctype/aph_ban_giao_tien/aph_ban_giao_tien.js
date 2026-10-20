@@ -22,7 +22,7 @@ frappe.ui.form.on("APH Ban giao tien", {
     if (frm.doc.docstatus === 1 && ["Đã nhận", "Có chênh lệch"].includes(frm.doc.status) && !frm.doc.reversal_of && frm.doc.received_amount > 0 && frm.doc.to_holder === frappe.session.user && frm.doc.issue_state !== "Chờ xử lý") {
       frm.add_custom_button(__("Lập phiếu hoàn"), () => {
         const request_id = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, "0")).join("");
-        const dialog = new frappe.ui.Dialog({title: __("Hoàn toàn bộ số đã nhận"), fields: [
+        const dialog = new frappe.ui.Dialog({title: __("Trả lại toàn bộ tiền đã nhận"), fields: [
           {fieldname: "reason", label: __("Lý do hoàn"), fieldtype: "Small Text", reqd: 1},
           {fieldtype: "HTML", options: __("Phiếu ngược chiều giữ nguyên giao dịch gốc. Người giao ban đầu phải xác nhận nhận lại; tiền đã dùng tiếp không được hoàn vượt nguồn.")}
         ], primary_action_label: __("Gửi phiếu hoàn"), primary_action: async values => {
@@ -43,13 +43,13 @@ frappe.ui.form.on("APH Ban giao tien", {
       frm.add_custom_button(__("Hủy đề nghị"), () => frappe.confirm(__("Hủy đề nghị và giải phóng phần tiền giữ chỗ?"), () => invoke("cancel")));
     }
     if (frm.doc.docstatus === 1 && frm.doc.status === "Chờ nhận" && frm.doc.to_holder === frappe.session.user) {
-      frm.add_custom_button(__("Xác nhận thực nhận"), () => {
+      frm.add_custom_button(__("Xác nhận nhận tiền"), () => {
         const dialog = new frappe.ui.Dialog({title: __("Kiểm đếm tiền bàn giao"), fields: [
           {fieldname: "amount", label: __("Số tiền thực nhận"), fieldtype: "Currency", options: "VND", precision: 2, reqd: 1, default: frm.doc.requested_amount},
           {fieldname: "reason", label: __("Giải trình khi chênh lệch/vượt nguồn"), fieldtype: "Small Text"},
           {fieldname: "assignee", label: __("Người xử lý chênh lệch"), fieldtype: "Link", options: "User"},
           {fieldname: "due_date", label: __("Hạn xử lý"), fieldtype: "Date"}
-        ], primary_action_label: __("Xác nhận số thực nhận"), primary_action: async values => {
+        ], primary_action_label: __("Xác nhận số tiền thực nhận"), primary_action: async values => {
           dialog.get_primary_btn().prop("disabled", true);
           try { await invoke("receive", values); dialog.hide(); }
           finally { dialog.get_primary_btn().prop("disabled", false); }

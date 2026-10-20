@@ -82,7 +82,7 @@ def schema():
             "workspace": WORKSPACE}
 
 
-def _workspace():
+def workspace_links():
     loi_vao = [
         ("Tiền thực nhận", "DocType", "APH Funds Receipt", {"docstatus": 1}),
         ("Tiền chưa rõ khách", "DocType", "APH Funds Receipt", {"docstatus": 1, "customer": ["is", "not set"]}),
@@ -112,6 +112,12 @@ def _workspace():
                     ("Đối chiếu lệch tiền", "DocType", "APH Doi chieu lech tien", {})]
     if cint(frappe.conf.get("kh_aph_factory_handover")):
         loi_vao.append(("Chốt ngày và cần xử lý", "Report", "Chot ngay va can xu ly", None))
+    return loi_vao
+
+
+def _workspace():
+    import json
+    loi_vao = workspace_links()
     noi_dung = [{"id": "tv-tieu-de", "type": "header", "data": {"text": f"<span class=\"h4\"><b>{WORKSPACE}</b></span>", "col": 12}}]
     noi_dung += [{"id": f"tv-{i}", "type": "shortcut", "data": {"shortcut_name": x[0], "col": 4}} for i, x in enumerate(loi_vao)]
     ws = frappe.get_doc("Workspace", WORKSPACE) if frappe.db.exists("Workspace", WORKSPACE) else frappe.new_doc("Workspace")

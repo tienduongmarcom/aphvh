@@ -1,5 +1,53 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — Bản tối ưu0.16.3 đã kiểm kỹ thuật, chưa phát hành
+
+[PR #26](https://github.com/tienduongmarcom/aphvh/pull/26), nhánh `feat/toi-uu-giao-dien-20261020`; mã nghiệp vụ và kiểm cuối **`12d9d24a2ce613b354fc1e72ad815f984e4a217c`**. Commit hồ sơ theo sau chỉ đổi tài liệu, không phải mã nghiệp vụ được kiểm mới. Production vẫn **0.16.2**, digest `sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917`,28 cờ theo xác nhận bàn giao; không truy cập/sửa VM, không tag, gộp hoặc phát hành image trong lượt này.
+
+Đã làm: năm khu Bán hàng / Kho vận / Tiền và kế toán / Nhà máy / Dữ liệu và cấu hình; Nhà máy riêng, tái dùng đủ lối cũ trước khi ẩn các thế hệ Việc/Bàn/Trung tâm. Custom Sidebar chuẩn mang tên Vận hành, ẩn tham chiếu cũ cho cả Workspace Manager, giữ tùy chỉnh riêng và nguồn/route. Đầu đơn hiện nhận diện khách hiện tại, SĐT/địa chỉ hoặc thông báo thiếu; gợi ý theo quyền; công nợ hóa đơn gọn và xem chi tiết. Mã/tên hàng riêng; cửa thu nhanh dùng chung service/mã lượt cũ; giảm nút/in lặp; chỉ một bộ nhập giao nhận theo thế hệ phiếu. Tên hiển thị chung trung lập; số đơn MỚI dùng DBC, số cũ/ID/Link giữ nguyên. Không thêm cờ/quyền, không đổi GL/SLE/PLE hoặc thời điểm ghi kho/nợ/tiền. Mẫu ba liên vẫn là bản nháp.
+
+Bốn cổng **success cùng mã trên**:
+- [Cổng2 / cài mới](https://github.com/tienduongmarcom/aphvh/actions/runs/39461537062).
+- [Cổng2b / triển khai–quay lui](https://github.com/tienduongmarcom/aphvh/actions/runs/39461551570).
+- [UAT HTTP/Chrome](https://github.com/tienduongmarcom/aphvh/actions/runs/39461545287): đã tải/đọc13 tệp, **308 bản ghi PASS,0 FAIL**, gồm kỹ thuật/chuẩn bị/khôi phục; b014117 PASS. Core63.508 tệp không đổi. Đã kiểm ca mất phản hồi thu tiền/gửi lại: một PE, không thêm GL/PLE; metadata năm khu/Sidebar và nhận diện khách theo quyền.
+- [Cổng3 / nâng từ0.16.2, lượt2](https://github.com/tienduongmarcom/aphvh/actions/runs/39461556488/attempts/2): đã đọc đúng artifact12286420231 tại `work/ci-toi-uu-12d9d24/cong3-luot2-chinh-xac/`. Diễn tập tách biệt và triển khai0.16.3 ĐẠT; schema nâng/site mới1099/1099, lệch0, bỏ qua6/6 theo cấu hình; rollback1105/1105, đếm/tổng/cờ/phiên bản/cài đặt/giao diện khớp. Ca cố ý lỗi tự quay về0.16.2 và giữ bảo trì, đếm/tổng/chi tiết/phiên bản khớp. Nền CI sổ giao dịch0 không thay diễn tập bản sao production có dữ liệu lúc phát hành.
+
+Cục bộ **454 ca kh_aph (14 bỏ qua theo môi trường),108 ca lõi đạt**; Python/JS/diff đạt. So tĩnh27 JSON giữ trường/kiểu/Link/quyền và5 nhóm hook kiểm soát; chỉ autoname cấp số mới thay đổi. Đã xem ux-viec-ban-hang.png, ux-buoc-tiep.png, xuat-ngay-retry.png: thanh bên quản trị còn năm khu, tên Vận hành/DBC và cột mã–tên có trong ảnh. Ảnh Workspace chụp khi nội dung còn mờ lúc chuyển trang, ảnh bước tiếp có hộp thoại; không dùng chúng khẳng định đã nghiệm thu độ dễ đọc/toàn bộ nhãn tiếng Việt. Số đo máy T01/T03 không giảm số thao tác, T02 từ5 xuống4; không suy thành tiết kiệm thời gian của nhân viên.
+
+Giữ bằng chứng lỗi, không giảm assert: UAT39458034247/dba7604 FAIL vì ca Chrome tìm nút Thu tiền cũ trên Customer; đã cập nhật đúng tên Ghi nhận khách trả tiền, giữ kiểm mất phản hồi/retry/một PE. Xem ảnh lượt đó phát hiện quản trị vẫn thấy Workspace cũ; sửa tham chiếu hidden, có unit/HTTP và ảnh mới đối chiếu. Cổng3 [39461556488/lượt1](https://github.com/tienduongmarcom/aphvh/actions/runs/39461556488/attempts/1) FAIL vì MySQL1020 tại kho_chuan.dung cập nhật tabCompany trên IMAGE NỀN0.16.2, trước nâng ứng viên; giữ log/artifact lượt1 tại work/ci-toi-uu-12d9d24/cong3, chạy lại cùng SHA lượt2 đạt; không tuyên bố đã sửa gốc xung đột này. Các lượt hủy khi bổ sung mã không là PASS. Hai ca Chrome chập chờn từ hồ sơ Claude tiếp tục theo dõi, không kết luận đã chữa chỉ vì lượt này xanh.
+
+Còn lại: duyệt/gộp PR và phát hành theo runbook khi chủ dự án chọn; chủ dự án tự gắn tag. Trước production phải diễn tập bản sao thực còn hạn, đúng image/commit/khach.json/cờ. Nghiệm thu với nhân sự, hàng/tồn và máy in thật để cuối theo yêu cầu. Công nợ trên đơn chỉ tổng hóa đơn số dư dương trong quyền, không phải số dư công nợ ròng; đối chiếu/chốt bằng báo cáo chuẩn. Tắt cờ không tự xóa metadata hoặc khôi phục mọi cấu hình Sidebar. Hướng dẫn và ca nghiệm thu: `docs/huong-dan-giao-dien-0163.md`; phạm vi9 nhóm: `docs/dac-ta-toi-uu-giao-dien-0163.md`.
+
+### Nhật ký các mốc trước — không thay trạng thái mới nhất ở trên
+
+## 20/10/2026 — ĐANG KIỂM: ẩn tường minh màn cũ cho cả quản trị
+
+Đã xem ảnh xuat-ngay-retry.png của dba7604: nhãn Vận hành/DBC/thông tin khách/cột mã–tên đã có, nhưng Administrator vẫn thấy Trung tâm cũ. Nguồn Frappe16.52 cho Workspace Manager xem is_hidden, nên cấu hình Custom Sidebar bổ sung tham chiếu hidden cho đúng các Workspace cũ thuộc module; không sửa quyền/xóa trang hay ẩn trang riêng. Unit454 (14 skip) đạt, mở rộng HTTP giữ kiểm năm màn mới và tham chiếu cũ ẩn. Các lượt69131a7 hủy khi đang chuẩn bị image do bổ sung này; không là PASS. Cần bốn cổng/ảnh đúng mã mới trước kết luận; production0.16.2 giữ nguyên.
+
+## 20/10/2026 — ĐANG KIỂM: đồng bộ ca Chrome với cửa thu tiền đã gom
+
+UAT39458034247 tại dba7604 FAIL ở DESK_2B_CASHIER_LOST_RESPONSE: selector còn tìm nút Thu tiền cũ trên Customer, trong khi UX chỉ giữ Ghi nhận khách trả tiền. Sửa đúng hai điểm chọn nút, không đổi thao tác thu/gửi lại hoặc assert một PE/không thêm GL/PLE, không sửa mã nghiệp vụ để né lỗi. Log và artifact FAIL giữ tại work/ci-toi-uu-dba7604 và work/reports. Cổng2 39458030862 và2b39458019691 success dba7604; Cổng3 còn chạy, chưa kết luận toàn bộ. Thêm hướng dẫn docs/huong-dan-giao-dien-0163.md; production vẫn0.16.2, chưa tag/deploy. Bước tiếp: chạy lại bốn cổng đúng mã có selector mới, xem ảnh và đối chiếu bằng chứng.
+
+## 20/10/2026 — Chuẩn tiền tố đơn bán chung mới
+
+Ứng viên0.16.3 dùng `DBC-{YYYY}-{#####}` cho đơn mới theo quy tắc tên trung lập (Đơn bán chung). Chỉ đổi autoname của DocType nguồn; không rename/backfill đơn cũ, không sửa ID DocType/role hoặc liên kết. Các ghi chú trước "không đổi số đơn" chỉ còn đúng với số đã tồn tại; không coi tiền tố APH-SO là tên dùng chung cho đơn mới. Có kiểm metadata trong HTTP;4cổng đúng mã mới còn kiểm, chưa phát hành. Production vẫn0.16.2.
+
+## 20/10/2026 — Bổ sung thanh bên chuẩn cho ứng viên0.16.3
+
+PR #26: cấu hình `Custom Sidebar` chuẩn Frappe, nhãn chung Vận hành, giữ năm Workspace và ẩn lối DocType/Report tự sinh do app sở hữu. Dựa vào định nghĩa trong package + phiếu duyệt bán chịu tạo động; không ẩn chứng từ/báo cáo riêng người dùng, không xóa nguồn hoặc sửa lõi. Giữ lớp tùy chỉnh riêng của từng người. Bộ cài chạy lại chỉ ghi khi cần, dùng cờ UX hiện có. Có unit và mở rộng HTTP để kiểm cấu hình. Cục bộ **454 test (14 skip) +108 lõi đạt**. ĐANG DỞ:4cổng/ảnh trên mã có Sidebar; Cổng2 và2b đã success ở bản trước Sidebar `8a5e003`, không thay bằng chứng cho mã mới. Production vẫn0.16.2/28cờ, chưa tag/deploy.
+
+## 20/10/2026 — Ứng viên tối ưu giao diện đang kiểm, chưa phát hành
+
+PR #26, nhánh `feat/toi-uu-giao-dien-20261020`, mã nghiệp vụ đầu `cc616a3`: năm khu Bán hàng/Kho vận/Nhà máy/Tiền và kế toán/Dữ liệu và cấu hình; tái dùng đủ lối cũ, dựng xong mới ẩn tên cũ và map mặc định/profile. Đầu đơn nhận diện khách và công nợ hóa đơn chỉ đọc, không dùng số cũ khi đổi khách; mã/tên hàng riêng ở cửa chuẩn bị giao. Một cửa thu tiền dùng service cũ, giảm nút/in lặp, chọn bộ giao nhận theo thế hệ phiếu; nhãn chung trung lập, giữ ID kỹ thuật/role guard. Không đổi sổ, số đơn, giữ tồn lúc in hoặc mẫu3liên. Dùng cờ UX hiện có, không thêm quyền/cờ.
+
+Cục bộ **453 test kh_aph (14 skip) +108 lab9x đạt**, Python/JS/diff đạt. ĐANG DỞ: kiểm4cổng và ảnh trình duyệt đúng nguồn; chưa PASS CI, không version/tag/deploy. Production vẫn0.16.2/28cờ. Bộ thử HTTP/Chrome đã mở rộng kiểm5khu, scope gợi ý khách, nhận diện và cột hàng. Hai ca Chrome chập chờn từ bàn giao vẫn giữ giới hạn, không coi là đã sửa.
+
+## 20/10/2026 — Codex tiếp nhận PR #25 và ghi phạm vi tối ưu mới nhất
+
+Nguồn nhận `7dcff5a`; đã đối chiếu diff chỉ tài liệu, GitHub không có PR mở. Bốn cổng và phát hành0.16.2 đều success đúng95a8b1e, Cổng3 mốc0.16.2 success e062287. Đã tải artifact UAT39427294383:13 tệp http,308 bản ghi PASS/0FAIL (gồm kỹ thuật/chuẩn bị/khôi phục), b014117PASS; xem ảnh ux-viec-ban-hang.png. Chi tiết, giới hạn và yêu cầu hội thoại mới tại `docs/dac-ta-toi-uu-giao-dien-0163.md`. Yêu cầu mới thay các đề xuất chờ chốt cũ của Claude về bố trí: Nhà máy riêng; khách luôn hiện SĐT/địa chỉ; mã và tên hàng riêng; công nợ gọn; tên chung trung lập. Không tự đổi series/số đơn/roleID/giữ tồn lúc in hoặc duyệt mẫu3liên.
+
+**ĐANG DỞ:** mới hoàn tất tiếp nhận và ghi phạm vi; chưa sửa mã nghiệp vụ/schema/quyền. Nhánh tiếp nối `feat/toi-uu-giao-dien-20261020`; bước tiếp chuẩn tên/điều hướng, giữ đủ lối cũ trước ẩn. Không tăng version/tag/push/deploy. Production vẫn0.16.2 theo xác nhận hồ sơ; không kiểm VM trong lượt này. Hai ca Chrome mở theo hồ sơ vẫn giữ giới hạn, không tuyên bố đã sửa.
+
 ## 20/10/2026 ~22:45 — MỐC BÀN GIAO Claude → Codex (production 0.16.2 ĐẠT)
 
 Chủ dự án yêu cầu bàn giao tập trung. **Claude dừng mọi chỉnh sửa trong cùng phạm vi kể từ mốc này** (kể cả bản đổi tên 0.16.3);

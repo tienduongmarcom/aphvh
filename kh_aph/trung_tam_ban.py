@@ -54,7 +54,7 @@ def schema():
     return {"fields": sum(len(v) for v in f.values()), "workspace": WORKSPACE}
 
 
-def _workspace():
+def workspace_links():
     cho_duyet = {"docstatus": 0, "kh_aph_duoi_san": 1, "kh_aph_duyet_san_boi": ["is", "not set"]}
     loi_vao = [
         ("Đơn bán", "DocType", "Sales Order", {"docstatus": 0}),
@@ -82,6 +82,12 @@ def _workspace():
     ]
     loi_vao = [x for x in loi_vao if frappe.db.exists(x[1], x[2])
                and (not x[3] or x[1] != "DocType" or all(frappe.get_meta(x[2]).has_field(k) or k == "docstatus" for k in x[3]))]
+    return loi_vao
+
+
+def _workspace():
+    import json
+    loi_vao = workspace_links()
     noi_dung = [{"id": "tb-tieu-de", "type": "header", "data": {"text": f"<span class=\"h4\"><b>{WORKSPACE}</b></span>", "col": 12}}]
     noi_dung += [{"id": f"tb-{i}", "type": "shortcut", "data": {"shortcut_name": x[0], "col": 3}} for i, x in enumerate(loi_vao)]
     ws = frappe.get_doc("Workspace", WORKSPACE) if frappe.db.exists("Workspace", WORKSPACE) else frappe.new_doc("Workspace")

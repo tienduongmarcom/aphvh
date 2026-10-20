@@ -119,5 +119,5 @@
       "print": 1
     }
   ],
-  "autoname": "format:APH-SO-{YYYY}-{#####}"
+  "autoname": "format:DBC-{YYYY}-{#####}"
 }

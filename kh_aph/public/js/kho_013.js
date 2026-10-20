@@ -1,4 +1,4 @@
-// Lượt 0.13 (cờ kh_aph_kho_van_hanh): hàng không giao được → chuyển kho khác (R022); sửa số lượng nhập sai (R024).
+// Lượt 0.13 (cờ kh_aph_kho_van_hanh): hàng không giao được → chuyển kho khác; sửa số lượng nhập sai.
 frappe.ui.form.on("Delivery Note", {
 	refresh(frm) {
 		if (!(frappe.boot.kh_aph || {}).kho_van_hanh || frm.doc.docstatus !== 1 || frm.doc.is_return) return;

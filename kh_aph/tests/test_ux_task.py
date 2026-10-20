@@ -33,6 +33,8 @@ class UX(unittest.TestCase):
         f.new_doc = lambda dt: ws
         f.get_doc = Mock()
         utils = types.ModuleType('frappe.utils'); utils.cint = lambda v: int(v or 0)
+        for key in ('flt','add_days','get_first_day','get_last_day','getdate','nowdate','now_datetime'):
+            setattr(utils, key, Mock())
         self.patch = patch.dict(sys.modules, {'frappe': f, 'frappe.utils': utils})
         self.patch.start()
         self.f.db.exists.side_effect = lambda dt, name=None: dt != 'Workspace' and not (dt == 'User Permission')
@@ -45,7 +47,7 @@ class UX(unittest.TestCase):
 
     def test_workspace_three_blocks_unique_labels_and_new_name(self):
         name = self.m._workspace('ban_hang')
-        self.assertEqual(name, 'Bàn bán hàng')
+        self.assertEqual(name, 'Bán hàng')
         content = json.loads(self.ws['content'])
         headers = [c['data']['text'] for c in content if c['type'] == 'header']
         self.assertEqual(len(headers), 3)
@@ -72,7 +74,7 @@ class UX(unittest.TestCase):
         self.f.delete_doc = Mock()
         self.m._an_ten_cu()
         self.f.db.set_value.assert_any_call('Workspace', 'Việc kho', 'is_hidden', 1, update_modified=False)
-        self.f.db.set_value.assert_any_call('User', 'kho@x', 'default_workspace', 'Bàn kho', update_modified=False)
+        self.f.db.set_value.assert_any_call('User', 'kho@x', 'default_workspace', 'Kho vận', update_modified=False)
         self.f.delete_doc.assert_called_once_with('Module Profile', '9xLab - Việc kho', ignore_permissions=True, force=True)
         self.assertNotIn('Việc', ''.join(self.m.NHOM.values()))
 
@@ -84,9 +86,9 @@ class UX(unittest.TestCase):
         self.assertIn(('Customer', 'show_title_field_in_link', '1'), got)
         self.assertIn(('Item', 'show_title_field_in_link', '0'), got)   # cột Mã hàng phải hiện mã
         self.assertNotIn(('Item', 'title_field', 'item_name'), got)
-        self.assertIn(('Customer', 'search_fields', 'customer_name,mobile_no'), got)
+        self.assertIn(('Customer', 'search_fields', 'customer_name,mobile_no,primary_address'), got)
         self.f.make_property_setter.reset_mock()
-        da = {'Customer': {'title_field': 'customer_name', 'show_title_field_in_link': 1, 'search_fields': 'customer_name,mobile_no'},
+        da = {'Customer': {'title_field': 'customer_name', 'show_title_field_in_link': 1, 'search_fields': 'customer_name,mobile_no,primary_address'},
               'Item': {'show_title_field_in_link': 0}, 'Supplier': {'title_field': 'supplier_name', 'show_title_field_in_link': 1}}
         self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: da[dt].get(k))
         self.m._hien_ten_khi_chon()
@@ -150,6 +152,72 @@ class UX(unittest.TestCase):
         self.assertEqual(pay.count('method: "kh_aph.'), 3)
         self.assertNotIn('"Xuất và In"', js)
         self.assertIn('Lập phiếu xuất & In', js)
+
+    def test_all_old_destinations_are_preserved_and_new_menu_has_no_duplicates(self):
+        def key(x):
+            return (x[1], x[2], json.dumps(x[3] or {}, sort_keys=True))
+        from kh_aph import trung_tam_ban, kho_van_hanh, tien_vay, du_lieu
+        for group, module in [('ban_hang', trung_tam_ban), ('kho', kho_van_hanh), ('tien', tien_vay)]:
+            expected = {key(x) for x in module.workspace_links()}
+            self.m._workspace(group)
+            actual = {(x['type'], x['link_to'], json.dumps(json.loads(x.get('stats_filter', '{}')), sort_keys=True)) for x in self.ws['shortcuts']}
+            self.assertTrue(expected <= actual, (group, expected - actual))
+            exact = [(x['type'], x['link_to'], x.get('stats_filter', '{}'), x.get('doc_view')) for x in self.ws['shortcuts']]
+            self.assertEqual(len(exact), len(set(exact)))
+        self.m._workspace('du_lieu')
+        self.assertTrue(any(x['link_to'] == 'Data Import' for x in self.ws['shortcuts']))
+        self.assertNotIn('Assets', self.m.AN_THEO_NHOM['tien'])
+
+    def test_transfer_queue_does_not_include_purchase_requests(self):
+        values = [x for x in self.m._LAM['kho'] if x[2] == 'Material Request']
+        self.assertEqual(values[0][3]['material_request_type'], 'Material Transfer')
+
+    def test_native_sidebar_keeps_unrelated_customization_and_is_idempotent(self):
+        unrelated = Row(link_type='DocType', link_to='Customer', hidden=0, label='Khách riêng')
+        doc = Row(label=None, sidebar_items=[unrelated], insert=Mock(), save=Mock())
+        doc.append = lambda key, value: doc[key].append(Row(value))
+        self.f.db.get_value.return_value = None
+        self.f.get_doc = Mock(return_value=doc)
+        self.f.get_all = Mock(side_effect=lambda dt, **kw: {
+            'DocType': ['APH Shared Sales Order', 'Chung tu rieng cua nguoi dung'],
+            'Workspace': ['Trung tâm Bán hàng', 'Bàn kho', 'Trang rieng'],
+            'Report': ['Tong hop ban hang theo khach', 'Bao cao rieng']}[dt])
+        self.m._sidebar()
+        self.assertEqual(doc.label, 'Vận hành')
+        doc.insert.assert_called_once()
+        self.f.db.get_value.assert_called_with('Custom Sidebar', {'module': self.m.MODULE, 'user': ['is', 'not set']}, 'name')
+        rows = {(r.link_type, r.link_to): r for r in doc.sidebar_items}
+        self.assertEqual(rows[('DocType', 'APH Shared Sales Order')].hidden, 1)
+        self.assertEqual(rows[('Report', 'Tong hop ban hang theo khach')].hidden, 1)
+        self.assertNotIn(('DocType', 'Chung tu rieng cua nguoi dung'), rows)
+        self.assertNotIn(('Report', 'Bao cao rieng'), rows)
+        self.assertTrue(all(rows[('Workspace', n)].hidden == 0 for n in self.m.NHOM.values()))
+        self.assertEqual(rows[('Workspace', 'Trung tâm Bán hàng')].hidden, 1)
+        self.assertEqual(rows[('Workspace', 'Bàn kho')].hidden, 1)
+        self.assertNotIn(('Workspace', 'Trang rieng'), rows)
+        self.assertEqual((unrelated.hidden, unrelated.label), (0, 'Khách riêng'))
+        self.f.db.get_value.return_value = 'CS1'
+        self.m._sidebar()
+        doc.save.assert_not_called()
+        self.f.conf['kh_aph_ux_task_first'] = 0
+        self.f.get_doc.reset_mock()
+        self.m._sidebar()
+        self.f.get_doc.assert_not_called()
+
+    def test_customer_identity_and_query_are_scoped_read_only(self):
+        utils = sys.modules['frappe.utils']
+        utils.strip_html = lambda v: v.replace('<br>', ' ')
+        self.f.get_list = Mock(return_value=[Row(name='KH1', customer_name='Minh Anh', mobile_no='0912', primary_address='A<br>B')])
+        self.assertEqual(self.m.customer_identity('KH1')['primary_address'], 'A B')
+        self.f.get_list.assert_called_with('Customer', filters={'name': 'KH1'}, fields=['name', 'customer_name', 'mobile_no', 'primary_address'], limit_page_length=1)
+        self.assertEqual(self.m.customer_query('Customer', 'Minh', 'name', 0, 100)[0], ['KH1', 'Minh Anh', '0912', 'A B'])
+        self.assertEqual(self.f.get_list.call_args.kwargs['limit_page_length'], 30)
+        with self.assertRaises(ValueError): self.m.customer_query('User', '', 'password', 0, 20)
+        self.f.get_list.return_value = []
+        with self.assertRaises(PermissionError): self.m.customer_identity('KH-KHONG-CO-QUYEN')
+        self.f.db.set_value.assert_not_called()
+        self.f.conf['kh_aph_ux_task_first'] = 0
+        with self.assertRaises(ValueError): self.m.customer_identity('KH1')
 
 
 if __name__ == '__main__':

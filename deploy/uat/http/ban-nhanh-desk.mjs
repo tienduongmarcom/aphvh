@@ -200,10 +200,10 @@ try {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/customer/'+encodeURIComponent(payload.customer)});
-        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Thu tiền"]');
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Ghi nhận khách trả tiền"]');
         const counts = () => evaluate("Promise.all(['Payment Entry','GL Entry','Payment Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))");
         const before = await counts();
-        await evaluate('cur_frm.custom_buttons["Thu tiền"].trigger("click");true');
+        await evaluate('cur_frm.custom_buttons["Ghi nhận khách trả tiền"].trigger("click");true');
         await until('!!window.cur_dialog && !!cur_dialog.fields_dict.tien_mat');
         await evaluate('(async()=>{window.__cashDialog=cur_dialog;window.open=()=>null;await cur_dialog.set_value("company",'+JSON.stringify(payload.company)+');await cur_dialog.set_value("tien_mat",13);await cur_dialog.set_value("nguoi_giu_tien","Administrator");return true;})()');
         await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.ban_quay.thu_tien*',requestStage:'Response'}]});
@@ -252,10 +252,10 @@ try {
     } else if (mode === 'ban-giao-tien') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-ban-giao-tien/'+encodeURIComponent(source)});
-        await until('!!window.cur_frm && cur_frm.doctype === "APH Ban giao tien" && !!cur_frm.custom_buttons["Xác nhận thực nhận"]');
+        await until('!!window.cur_frm && cur_frm.doctype === "APH Ban giao tien" && !!cur_frm.custom_buttons["Xác nhận nhận tiền"]');
         const counts = () => evaluate("Promise.all(['Journal Entry','GL Entry','Payment Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))");
         const before=await counts();
-        await evaluate('cur_frm.custom_buttons["Xác nhận thực nhận"].trigger("click");true');
+        await evaluate('cur_frm.custom_buttons["Xác nhận nhận tiền"].trigger("click");true');
         await until('!!window.cur_dialog && !!cur_dialog.fields_dict.amount');
         await evaluate('window.__receiveDialog=cur_dialog;true');
         await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.cash_handover.receive*',requestStage:'Response'}]});
