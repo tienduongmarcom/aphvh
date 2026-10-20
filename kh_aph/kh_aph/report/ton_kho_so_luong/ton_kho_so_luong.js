@@ -1,4 +1,5 @@
 {% include "kh_aph/public/js/factory_receiving.js" %}
+{% include "kh_aph/public/js/factory_transfer.js" %}
 
 frappe.query_reports["Ton kho so luong"] = {
 	onload(report) {
@@ -8,6 +9,10 @@ frappe.query_reports["Ton kho so luong"] = {
         report.page.add_inner_button("Nhận hàng nhà máy", () => {
             frappe.require("form.bundle.js", () =>
                 kh_aph.receiving.pick(report.get_filter_value("company")));
+        });
+        report.page.add_inner_button("Nhận chuyến chuyển đến", () => {
+            frappe.require("form.bundle.js", () =>
+                kh_aph.transfer_in.pick(report.get_filter_value("company")));
         });
     },
 	filters: [

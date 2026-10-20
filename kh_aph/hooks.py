@@ -483,3 +483,13 @@ if isinstance(_old, str):
 doc_events["APH Pending Receipt"]["on_trash"] = _old + ["kh_aph.factory_receiving.prevent_delete"]
 extend_doctype_class["Purchase Receipt"].append("kh_aph.pending_order.PendingReceiptLinks")
 doc_events["Purchase Receipt"]["on_cancel"].append("kh_aph.pending_order.receipt_cancelled")
+
+# NM01c nhận chuyến chuyển đến: dấu nhận giữ cả khi tắt cờ; khóa phiếu chuyển đi trên mọi lối nhận.
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete"),
+                        ("before_submit", "lock_outgoing"), ("before_cancel", "lock_outgoing")):
+    _old = doc_events.setdefault("Stock Entry", {}).get(_event, [])
+    _old = [_old] if isinstance(_old, str) else list(_old)
+    doc_events["Stock Entry"][_event] = _old + ["kh_aph.factory_transfer." + _method]
+_scripts = doctype_js.get("Stock Entry", [])
+_scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+doctype_js["Stock Entry"] = _scripts + ["public/js/factory_transfer.js"]
