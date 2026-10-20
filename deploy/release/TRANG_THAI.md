@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Production 0.16.0 đã triển khai ĐẠT
+
+Anh Tiến chạy trên `erpnext-prod/frontend`: diễn tập bản sao rồi `=== XONG 0.16.0: ĐẠT ===`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.0`
+digest **`sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3`**, workflow phát hành 39375471396 (UAT/Cổng 2/2b/3
+đạt trong workflow), nguồn tag `v0.16.0` = `457be4af64157f40b5a71c8065c0d13b7914ce8b` (nhánh PR #19, chuỗi PR #9–#19 chưa gộp main).
+28 cờ bật: 21 cũ + cash_custody, cash_closing, cash_handover, factory_handover, factory_receiving, factory_production, ux_task_first.
+Quay lui có điều kiện: 0.15.3 `sha256:330607a2…` + bản sao lưu lúc nâng; không restore sau khi đã có giao dịch mới.
+Bước tiếp: gộp PR #9–#19 vào main; đổi baseline Cổng 3 sang 0.16.0/digest trên (chưa đổi); áp Workspace mới cho người dùng; nghiệm thu người thật.
+
 ## 20/10/2026 — Claude: PR #19 (NM01c/NM02–05, UX-01) đang kiểm, production vẫn 0.15.3
 
 Mã kiểm cuối `a3cfd6d` đủ 4 cổng (UAT 39368636121, b014 117 PASS/0 FAIL; Cổng 3 39368638182). Thêm cờ 27 `kh_aph_factory_production`, 28 `kh_aph_ux_task_first` (mặc định tắt, đồng bộ FLAGS/quay-lui/dấu vân/preflight/Cổng 3). Chưa tag/phát hành. Chi tiết `docs/ban-giao.md`.

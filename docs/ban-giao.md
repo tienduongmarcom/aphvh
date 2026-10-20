@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 ~13:20 — Production 0.16.0 ĐẠT (xem TRANG_THAI.md)
+
+Digest `sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3`, nguồn `457be4a`, 28 cờ. ĐANG DỞ: gộp PR #9–#19 vào main;
+baseline Cổng 3 vẫn 0.15.3 (đổi trong PR kế tiếp); Workspace mới chưa đặt mặc định cho ai; ca Chrome `quy-nha-may` chập chờn
+(UAT nhánh 39374984958 FAIL, UAT trong workflow phát hành PASS) cần điều tra.
+
 ## 20/10/2026 — Claude: rà PR #17/#18, NM01c/NM02–05, UX-01 (đang làm, CHƯA bàn giao Codex)
 
 PR [#19](https://github.com/tienduongmarcom/aphvh/pull/19) nháp, nhánh `claude/nm01c-nhan-chuyen-20261020`, base PR #18. Production vẫn
