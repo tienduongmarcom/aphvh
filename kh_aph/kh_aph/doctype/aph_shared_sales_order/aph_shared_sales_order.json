@@ -23,6 +23,7 @@
     },
     {
       "fieldname": "delivery_date",
+      "default": "Today",
       "label": "Ngày giao dự kiến",
       "fieldtype": "Date",
       "reqd": 1

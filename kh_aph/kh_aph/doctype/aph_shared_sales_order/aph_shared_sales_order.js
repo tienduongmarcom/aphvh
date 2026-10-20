@@ -19,7 +19,7 @@ async function kh_aph_lap_dot_xuat(frm) {
         fields: [
             {fieldtype: "HTML", options: '<div class="alert alert-info">Chọn lượng giao bằng kg; hàng theo bao phải đủ bao theo quy cách đã lưu. Phiếu được tạo ở trạng thái <b>Chờ xuất</b>. Kho xác nhận thực giao mới trừ tồn và ghi công nợ.</div>'},
             {fieldname: "delivery_method", label: "Cách giao đợt này", fieldtype: "Select",
-                options: ["Vận chuyển", "Khách đến lấy"], default: "Vận chuyển", reqd: 1},
+                options: ["Khách đến lấy", "Vận chuyển"], default: "Khách đến lấy", reqd: 1},
             {fieldname: "recipient", label: "Người thực nhận hàng tại kho", fieldtype: "Data", reqd: 1,
                 description: "Người nhận/lái xe ký nhận tại kho, không bắt buộc có tài khoản phần mềm."},
             {fieldname: "phone", label: "Điện thoại liên hệ", fieldtype: "Data"},
