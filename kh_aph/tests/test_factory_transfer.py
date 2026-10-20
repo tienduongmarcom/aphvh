@@ -38,6 +38,7 @@ class Transfer(unittest.TestCase):
         f.db = Mock(); f.db.get_value.return_value = 1; f.db.sql.return_value = []
         f.parse_json = lambda raw: json.loads(raw) if isinstance(raw, str) else raw
         f.get_doc = Mock(); f.get_list = Mock()
+        f._dict = Row
         utils = types.ModuleType('frappe.utils')
         utils.cint = lambda v: int(v or 0)
         utils.getdate = lambda v: str(v)
@@ -147,6 +148,22 @@ class Transfer(unittest.TestCase):
         with self.assertRaises(ValueError): self.m.lock_outgoing(doc, 'before_submit')
         self.f.conf['kh_aph_factory_receiving'] = 0
         self.m.lock_outgoing(doc, 'before_submit')
+
+    def test_send_requires_transit_valid_source_and_no_future(self):
+        rows = json.dumps([{'item_code': 'A', 'warehouse': 'HN - APH', 'qty': 5, 'bags': 0}])
+        self.f.get_doc.return_value = Row(check_permission=Mock())
+        transit = {'v': None}
+        self.f.db.get_value.side_effect = lambda dt, name, field: 1 if dt == 'User' else transit['v']
+        with self.assertRaises(ValueError): self.m.send('APH', 'r', rows, '2026-10-20', 'Xe 29C')
+        transit['v'] = 'Transit - APH'
+        with self.assertRaises(ValueError): self.m.send('APH', 'r', rows, '2026-10-21', 'Xe 29C')
+        with self.assertRaises(ValueError): self.m.send('APH', 'r', rows, '2026-10-20', '')
+        with self.assertRaises(ValueError):
+            self.m.send('APH', 'r', json.dumps([{'item_code': 'A', 'warehouse': 'HN', 'qty': 5, 'bags': 0, 'rate': 1}]), '2026-10-20', 'Xe')
+        self.m._item = Mock(return_value=Row(kh_aph_kg_per_bag=0))
+        self.f.get_doc.return_value = Row(name='Transit - APH', company='APH', is_group=0, disabled=0, check_permission=Mock())
+        with self.assertRaises(ValueError):
+            self.m.send('APH', 'r', json.dumps([{'item_code': 'A', 'warehouse': 'Transit - APH', 'qty': 5, 'bags': 0}]), '2026-10-20', 'Xe')
 
     def test_wired_in_hooks_and_installer(self):
         import pathlib

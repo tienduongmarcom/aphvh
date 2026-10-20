@@ -91,3 +91,18 @@ def chay(rpc, get, insert, submit, lst, denied, f, phien, emit):
     denied(lambda: rpc('frappe.client.delete', {'doctype': 'Stock Entry', 'name': result['name']}))
     assert get('Stock Entry', result['name'])['kh_aph_transfer_receiver'] == 'Thủ kho nhà máy ký giấy'
     emit('HTTP_NM01C_CANCEL_RESTORE', 'PASS', {'cancel_restores_in_transit': True, 'history_kept': True})
+
+    send = {'company': f['aph'], 'request_id': f['p'] + '-gui-1', 'sent_date': f['date'], 'carrier': 'Xe UAT 29C',
+            'rows': json.dumps([{'item_code': f['A'], 'warehouse': f['kho'], 'qty': 5, 'bags': 0}]), 'note': 'UAT chuyển về nhà máy'}
+    before = counts()
+    sent = rpc('kh_aph.factory_transfer.send', send, dung)
+    doc = get('Stock Entry', sent['name'])
+    assert doc['docstatus'] == 1 and doc['add_to_transit'] == 1 and doc['items'][0]['t_warehouse'] == TRANSIT
+    assert doc['kh_aph_transfer_actor'] == f['dung'] and doc['kh_aph_transfer_receiver'] == 'Xe UAT 29C'
+    assert rpc('kh_aph.factory_transfer.send', send, dung) == sent and counts()['Stock Entry'] == before['Stock Entry'] + 1
+    denied(lambda: rpc('kh_aph.factory_transfer.send', {**send, 'request_id': 'gui-transit',
+        'rows': json.dumps([{'item_code': f['A'], 'warehouse': TRANSIT, 'qty': 1, 'bags': 0}])}, dung))
+    denied(lambda: rpc('kh_aph.factory_transfer.send', {**send, 'request_id': 'gui-vh',
+        'rows': json.dumps([{'item_code': f['A'], 'warehouse': f['kho_vh'], 'qty': 1, 'bags': 0}])}, dung))
+    assert sent['name'] in [x['name'] for x in rpc('kh_aph.factory_transfer.incoming', {'company': f['aph']}, dung)]
+    emit('HTTP_NM05_SEND_TRANSIT', 'PASS', {'via_transit': True, 'retry_one_entry': True, 'other_company_source': 'denied'})

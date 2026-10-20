@@ -17,6 +17,10 @@ frappe.query_reports["Ton kho so luong"] = {
                 frappe.require("form.bundle.js", () =>
                     kh_aph.transfer_in.pick(report.get_filter_value("company")));
             });
+            report.page.add_inner_button("Chuyển hàng đi", () => {
+                frappe.require("form.bundle.js", () =>
+                    kh_aph.transfer_in.send(report.get_filter_value("company")));
+            });
         }
         if (k.factory_production) {
             report.page.add_inner_button("Ghi sản xuất / đóng gói", () => {

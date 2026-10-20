@@ -184,6 +184,78 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
     return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
 
 
+@frappe.whitelist(methods=['POST'])
+@retry_rpc
+def send(company, request_id, rows, sent_date, carrier, note=None):
+    """NM05: lập + xác nhận phiếu chuyển đi qua kho đang vận chuyển của chính đơn vị (cùng đơn vị, không đổi chủ sở hữu)."""
+    guard()
+    frappe.get_doc('Company', company).check_permission('read')
+    transit = frappe.db.get_value('Company', company, 'default_in_transit_warehouse')
+    if not transit:
+        frappe.throw('Đơn vị chưa có kho đang vận chuyển mặc định')
+    values = frappe.parse_json(rows)
+    if not isinstance(values, list) or not values or len(values) > 100:
+        frappe.throw('Chọn từ 1 đến 100 dòng chuyển')
+    clean = []
+    for row in values:
+        if not isinstance(row, dict) or set(row) != {'item_code', 'warehouse', 'qty', 'bags'}:
+            frappe.throw('Dữ liệu chuyển kho không hợp lệ')
+        qty, bags = _number(row['qty']), _number(row['bags'])
+        if qty <= 0 or bags != bags.to_integral_value():
+            frappe.throw('Kg chuyển phải dương, số bao phải nguyên')
+        clean.append({'item_code': str(row['item_code']), 'warehouse': str(row['warehouse']),
+                      'qty': str(qty.normalize()), 'bags': str(bags.normalize())})
+    carrier, note = str(carrier or '').strip(), str(note or '').strip()
+    if not carrier or len(carrier) > 140 or len(note) > 2000:
+        frappe.throw('Cần người/xe chở và ghi chú trong giới hạn cho phép')
+    if not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 100:
+        frappe.throw('Thiếu mã lượt chuyển; mở lại cửa sổ')
+    if not sent_date or getdate(sent_date) > getdate(today()):
+        frappe.throw('Ngày chuyển không được ở tương lai')
+    body = json.dumps(['send', company, clean, str(getdate(sent_date)), carrier, note], sort_keys=True, ensure_ascii=False)
+    payload = hashlib.sha256(body.encode()).hexdigest()
+    key = hashlib.sha256(json.dumps(['transfer-send', frappe.session.user, company, request_id]).encode()).hexdigest()
+    frappe.db.sql('SELECT name FROM `tabCompany` WHERE name=%s FOR UPDATE', company)
+    old = frappe.db.sql('SELECT name FROM `tabStock Entry` WHERE kh_aph_transfer_request=%s FOR UPDATE', key)
+    if old:
+        entry = frappe.get_doc('Stock Entry', old[0][0], for_update=True)
+        entry.check_permission('read')
+        if entry.get(PREFIX + 'payload') != payload or entry.docstatus != 1:
+            frappe.throw('Lượt chuyển đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
+        return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
+    items = []
+    for r in clean:
+        row = frappe._dict(item_code=r['item_code'], conversion_factor=1)
+        item = _item(row)
+        src = frappe.get_doc('Warehouse', r['warehouse'])
+        src.check_permission('read')
+        if src.company != company or src.is_group or src.disabled or src.name == transit:
+            frappe.throw('Kho chuyển đi phải là kho lá đang dùng của đơn vị')
+        weight = _number(item.get('kh_aph_kg_per_bag') or 0)
+        qty, bags = _number(r['qty']), _number(r['bags'])
+        if (weight and (not bags or qty != bags * weight)) or (not weight and bags):
+            frappe.throw('Kg/số bao không khớp quy cách; không tự sửa kg/bao để cân bằng')
+        line = {'item_code': r['item_code'], 'qty': float(qty), 'uom': 'Kg', 'conversion_factor': 1,
+                's_warehouse': r['warehouse'], 't_warehouse': transit}
+        if bags:
+            line['kh_aph_bags'] = float(bags)
+        items.append(line)
+    entry = frappe.get_doc({'doctype': 'Stock Entry', 'stock_entry_type': 'Material Transfer', 'purpose': 'Material Transfer',
+                            'company': company, 'add_to_transit': 1, 'posting_date': str(getdate(sent_date)),
+                            'set_posting_time': 1, 'items': items})
+    for field, value in {'request': key, 'payload': payload, 'actor': frappe.session.user, 'at': now_datetime(),
+                         'receiver': carrier, 'note': note}.items():
+        entry.set(PREFIX + field, value)
+    token = _INTERNAL.set((frappe.session.user, key, payload))
+    try:
+        entry.insert()
+        entry.submit()
+    finally:
+        _INTERNAL.reset(token)
+    entry.check_permission('read')
+    return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
+
+
 def _stamp(doc, field):
     return str(doc.get(PREFIX + field) or '')
 
@@ -234,7 +306,7 @@ def schema():
         return
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     labels = {'request': 'Mã lượt nhận chuyến', 'payload': 'Dấu nội dung nhận chuyến', 'actor': 'Người nhập nhận chuyến',
-              'at': 'Thời điểm ghi nhận chuyến', 'receiver': 'Người thực nhận chuyến', 'note': 'Ghi chú nhận chuyến'}
+              'at': 'Thời điểm ghi nhận chuyến', 'receiver': 'Người nhận / người chở chuyến', 'note': 'Ghi chú nhận chuyến'}
     fields = [{'fieldname': PREFIX + k, 'label': labels[k],
                'fieldtype': 'Datetime' if k == 'at' else 'Small Text' if k == 'note' else 'Data',
                'read_only': 1, 'no_copy': 1, 'hidden': int(k in ('request', 'payload')),

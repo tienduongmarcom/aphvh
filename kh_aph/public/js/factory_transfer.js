@@ -44,6 +44,35 @@ if (!kh_aph.transfer_in.open) {
             dialog.show();
         }});
     };
+    kh_aph.transfer_in.send = function(company) {
+        if (!company) return frappe.msgprint("Chọn đơn vị trước.");
+        const request_id = frappe.utils.get_random(32);
+        const dialog = new frappe.ui.Dialog({title: "Chuyển hàng đi (cùng đơn vị)", primary_action_label: "Xác nhận xuất lên xe",
+            fields: [
+                {fieldname: "sent_date", label: "Ngày chuyển", fieldtype: "Date", reqd: 1, default: frappe.datetime.get_today()},
+                {fieldname: "carrier", label: "Người / xe chở", fieldtype: "Data", reqd: 1},
+                {fieldname: "note", label: "Ghi chú (chuyển về kho nào…)", fieldtype: "Small Text"},
+                {fieldname: "items", label: "Hàng chuyển", fieldtype: "Table", fields: [
+                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Link", options: "Item", reqd: 1, in_list_view: 1},
+                    {fieldname: "warehouse", label: "Từ kho", fieldtype: "Link", options: "Warehouse", reqd: 1, in_list_view: 1,
+                        get_query: () => ({filters: {company, is_group: 0, disabled: 0, warehouse_type: ["!=", "Transit"]}})},
+                    {fieldname: "qty", label: "Kg", fieldtype: "Float", reqd: 1, in_list_view: 1},
+                    {fieldname: "bags", label: "Số bao", fieldtype: "Int", in_list_view: 1}]}
+            ],
+            primary_action(v) {
+                const rows = (v.items || []).filter(x => Number(x.qty) > 0).map(x => ({item_code: x.item_code, warehouse: x.warehouse, qty: x.qty, bags: x.bags || 0}));
+                if (!rows.length) return frappe.msgprint("Nhập ít nhất một dòng hàng chuyển.");
+                frappe.confirm("Xác nhận hàng đã lên xe? Hàng chuyển sang kho đang vận chuyển, chưa vào kho nhận.", () => {
+                    dialog.get_primary_btn().prop("disabled", true);
+                    frappe.call({method: "kh_aph.factory_transfer.send", freeze: true, args: {company, request_id, rows: JSON.stringify(rows),
+                        sent_date: v.sent_date, carrier: v.carrier, note: v.note || ""}, callback(res) {
+                            if (!res.message?.name) return;
+                            dialog.hide(); frappe.set_route("Form", "Stock Entry", res.message.name);
+                        }}).always(() => dialog.get_primary_btn().prop("disabled", false));
+                });
+            }});
+        dialog.show();
+    };
     kh_aph.transfer_in.pick = function(company) {
         if (!company) return frappe.msgprint("Chọn đơn vị nhận hàng trước.");
         frappe.call({method: "kh_aph.factory_transfer.incoming", args: {company}, callback(r) {
