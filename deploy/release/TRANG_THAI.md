@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Bàn giao tiếp nối cho Claude theo yêu cầu chủ dự án
+
+Chủ dự án chuyển phần việc tiếp theo và rà lỗi độc lập cho Claude; sau khi Claude hoàn thành sẽ bàn giao ngược cho Codex. Hồ sơ tập trung: `docs/BAN_GIAO_CHO_CLAUDE.md`, gồm baseline e929498/mã kiểm a75ced9, PR #18,4 cổng/293 HTTP và giới hạn, vùng cần rà độc lập, thứ tự phần còn lại và mẫu bằng chứng bàn giao ngược. Đây là commit hồ sơ, không thay code/quyền/schema/production. Production theo xác nhận vẫn0.15.3; nghiệm thu dữ liệu/nhân sự thật vẫn gom cuối. Codex dừng phát triển tại đây để Claude tiếp nối; không coi các vùng cần rà là lỗi đã xác nhận hoặc phần chưa làm là đã hoàn tất.
+
 ## 20/10/2026 — Nhận chờ định giá theo đơn mua 3B đã kiểm đủ bốn cổng
 
 [PR #18](https://github.com/tienduongmarcom/aphvh/pull/18), nhánh `feat/nhan-cho-gia-theo-don-mua-20261020`, base PR #17/4b638b0. Mã nghiệp vụ/kiểm cuối **`a75ced9b8b4613d71fe45117bc36b7215f85877d`**. Cùng cửa sổ nhà máy chọn nhận có giá hoặc chờ giá; pending lưu đúng PO/dòng nguồn, người thực nhận, actor/thời điểm, tệp cân private và phần có vấn đề trong tổng lượng. Giữ chỗ lượng chờ trên cả PR chuẩn/PI update_stock, kể cả tắt26. Người có quyền mua cập nhật PO; KTT chốt đúng giá PO qua một PR native, không ghi kho giá0. Hủy PR trả giữ chỗ, hủy pending sau đó giải phóng nhưng giữ hồ sơ. Chỉ miễn đúng backlink pending nguồn khi native hủy PR; mọi backlink khác vẫn kiểm.
