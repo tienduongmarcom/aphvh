@@ -312,3 +312,6 @@ def chay(admin, phien, f, emit, factory_feature):
 
     from b014_factory_production import chay as production_cases
     production_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)
+
+    from b014_ux import chay as ux_cases
+    ux_cases(rpc, get, lst, denied, f, phien, emit)

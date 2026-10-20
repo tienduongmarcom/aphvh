@@ -499,3 +499,9 @@ for _event, _method in (("validate", "protect"), ("before_update_after_submit", 
     _old = doc_events["Stock Entry"].get(_event, [])
     _old = [_old] if isinstance(_old, str) else list(_old)
     doc_events["Stock Entry"][_event] = _old + ["kh_aph.factory_production." + _method]
+
+# UX-01: "Việc tiếp theo" trên chứng từ (chỉ khi cờ kh_aph_ux_task_first bật, đọc qua boot).
+for _dt in ("APH Shared Sales Order", "Delivery Note", "Sales Invoice"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ux_buoc_tiep.js"]
