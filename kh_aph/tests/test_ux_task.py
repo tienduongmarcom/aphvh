@@ -76,6 +76,18 @@ class UX(unittest.TestCase):
         self.f.delete_doc.assert_called_once_with('Module Profile', '9xLab - Việc kho', ignore_permissions=True, force=True)
         self.assertNotIn('Việc', ''.join(self.m.NHOM.values()))
 
+    def test_link_fields_show_names(self):
+        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: None)
+        self.f.make_property_setter = Mock()
+        self.m._hien_ten_khi_chon()
+        got = {(c.args[0]['doctype'], c.args[0]['property'], c.args[0]['value']) for c in self.f.make_property_setter.call_args_list}
+        self.assertIn(('Customer', 'show_title_field_in_link', '1'), got)
+        self.assertIn(('Item', 'title_field', 'item_name'), got)
+        self.f.make_property_setter.reset_mock()
+        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: {'title_field': self.m.HIEN_TEN[dt], 'show_title_field_in_link': 1}[k])
+        self.m._hien_ten_khi_chon()
+        self.f.make_property_setter.assert_not_called()
+
     def test_disabled_no_schema(self):
         self.f.conf['kh_aph_ux_task_first'] = 0
         self.assertIsNone(self.m.schema())

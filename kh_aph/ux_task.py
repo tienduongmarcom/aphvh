@@ -149,7 +149,24 @@ def schema():
     if not enabled():
         return
     _an_ten_cu()
+    _hien_ten_khi_chon()
     return [_workspace(n) for n in NHOM] + [_module_profile(n) for n in NHOM]
+
+
+# Ô chọn khách/mặt hàng/nhà cung cấp chỉ hiện mã -> nhân viên sợ nhầm, phải mở lại (chủ dự án 20/10/2026).
+# Dùng thuộc tính chuẩn show_title_field_in_link: chọn xong ô hiện tên (customer_name/item_name/supplier_name), mã vẫn lưu.
+HIEN_TEN = {'Customer': 'customer_name', 'Item': 'item_name', 'Supplier': 'supplier_name'}
+
+
+def _hien_ten_khi_chon():
+    for dt, truong in HIEN_TEN.items():
+        meta = frappe.get_meta(dt)
+        if not meta.has_field(truong):
+            continue
+        for prop, val, kieu in (('title_field', truong, 'Data'), ('show_title_field_in_link', '1', 'Check')):
+            if str(meta.get(prop) or '') != val:
+                frappe.make_property_setter({'doctype': dt, 'doctype_or_field': 'DocType', 'property': prop,
+                                             'value': val, 'property_type': kieu}, validate_fields_for_doctype=False)
 
 
 # Tên cũ 0.16.0 ("Việc …" tạo cảm giác áp lực, chủ dự án đổi 20/10/2026). Chỉ ẩn Workspace cũ do bộ cài này tạo; xóa Module
