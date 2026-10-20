@@ -68,7 +68,7 @@ def schema():
     return {"doctype": DT, "workspace": WORKSPACE}
 
 
-def _workspace():
+def workspace_links():
     loi_vao = [
         ("Đề nghị cập nhật số liệu", "DocType", DT),
         ("Dữ liệu cần rà soát", "Report", "Du lieu can ra soat"),
@@ -81,6 +81,12 @@ def _workspace():
         ("Tiền đầu kỳ (Bút toán)", "DocType", "Journal Entry"),
     ]
     loi_vao = [x for x in loi_vao if frappe.db.exists(x[1], x[2])]
+    return loi_vao
+
+
+def _workspace():
+    import json
+    loi_vao = workspace_links()
     noi_dung = [{"id": "td-tieu-de", "type": "header",
                  "data": {"text": f"<span class=\"h4\"><b>{WORKSPACE}</b></span>", "col": 12}}]
     noi_dung += [{"id": f"td-{i}", "type": "shortcut", "data": {"shortcut_name": nhan, "col": 4}}

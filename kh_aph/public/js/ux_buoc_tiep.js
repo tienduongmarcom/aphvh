@@ -22,14 +22,15 @@ if (!kh_aph.ux.buoc_tiep) {
             }
             if (d.docstatus === 1 && d.kh_aph_delivery_state === "Đang giao" && co("Khách đã nhận"))
                 return {text: "Hàng đang trên đường giao.", nut: [["Xác nhận khách đã nhận", "Khách đã nhận"]]};
+            if (d.docstatus === 1 && ["Cần xử lý", "Đang xử lý"].includes(d.kh_aph_chenh_lech_state)) {
+                const nut = [["Giao người xử lý", "Giao người xử lý"], ["Chốt xử lý chênh lệch", "Chốt xử lý chênh lệch"]].filter(x => co(x[1]));
+                return {text: "Có chênh lệch giao nhận đang chờ xử lý.", nut};
+            }
             if (d.docstatus === 1 && d.kh_aph_delivery_state === "Khách đã nhận" && !d.kh_aph_ban_ky && frm.fields_dict.kh_aph_ban_ky)
                 return {text: "Khách đã nhận, còn thiếu bản phiếu có chữ ký.", nut: [["Bổ sung bản ký", () => frm.scroll_to_field("kh_aph_ban_ky")]]};
             if (d.docstatus === 1 && d.kh_aph_ban_ky && !d.kh_aph_doi_chieu_boi && co("Đối chiếu bản ký"))
                 return {text: "Đã có bản ký, cần đối chiếu nội dung.", nut: [["Đối chiếu bản ký", "Đối chiếu bản ký"]]};
-            if (d.docstatus === 1 && ["Cần xử lý", "Đang xử lý"].includes(d.kh_aph_chenh_lech_state)) {
-                const nut = [["Giao người xử lý", "Giao người xử lý"], ["Chốt xử lý chênh lệch", "Chốt xử lý chênh lệch"]].filter(x => co(x[1]));
-                if (nut.length) return {text: "Có chênh lệch giao nhận đang chờ xử lý.", nut};
-            }
+
         }
         if (dt === "Sales Invoice" && d.docstatus === 1 && !d.is_return && Number(d.outstanding_amount) > 0 && co("Thu tiền"))
             return {text: "Khách còn nợ hóa đơn này. Ghi đúng số tiền thực nhận; phần dư để chưa phân bổ, không tự cấn hóa đơn khác.",
@@ -42,6 +43,10 @@ if (!kh_aph.ux.buoc_tiep) {
         setTimeout(() => {
             const v = kh_aph.ux.viec(frm);
             if (!v) return;
+            // Giữ callback gốc, chỉ hiển thị một vị trí hành động để tránh hai nút cùng việc.
+            for (const pair of v.nut) {
+                if (typeof pair[1] === "string") kh_aph.ux.nut(frm, pair[1])?.hide();
+            }
             const id = "kh-aph-viec-" + frappe.utils.get_random(6);
             const nut = v.nut.map((x, i) => `<button class="btn btn-${i ? "default" : "primary"} btn-sm ml-2" data-i="${i}">${frappe.utils.escape_html(x[0])}</button>`).join("");
             frm.dashboard.set_headline_alert(`<div id="${id}" class="flex justify-between align-center" style="font-size:15px">

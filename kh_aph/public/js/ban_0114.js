@@ -15,7 +15,7 @@ frappe.ui.form.on("Customer", {
 					frappe.msgprint(__("Sổ: {0}. Khách xác nhận: {1}. Chênh: {2}.",
 						[format_currency(r.message.so_du_so), format_currency(r.message.so_du_xac_nhan), format_currency(r.message.chenh_lech)]));
 					frm.reload_doc();
-				}), __("Xác nhận công nợ (R039)")), __("Công nợ"));
+				}), __("Xác nhận công nợ")), __("Công nợ"));
 	},
 });
 
@@ -28,7 +28,7 @@ frappe.ui.form.on("Company", {
 			{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1},
 		], (v) => frappe.call({method, args: {company: frm.doc.name, ...v}, freeze: true})
 			.then((r) => frappe.show_alert({message: r.message.ky, indicator: "green"})), tieu_de);
-		frm.add_custom_button(__("Khóa kỳ"), () => hoi("kh_aph.quan_tri.khoa_ky", __("Khóa kỳ kế toán (R105)")), __("Kỳ kế toán"));
+		frm.add_custom_button(__("Khóa kỳ"), () => hoi("kh_aph.quan_tri.khoa_ky", __("Khóa kỳ kế toán")), __("Kỳ kế toán"));
 		frm.add_custom_button(__("Mở khóa kỳ"), () => hoi("kh_aph.quan_tri.mo_khoa_ky", __("Mở khóa kỳ kế toán")), __("Kỳ kế toán"));
 	},
 });

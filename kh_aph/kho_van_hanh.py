@@ -59,19 +59,25 @@ def schema():
     return {"fields": sum(len(v) for v in FIELDS.values()), "workspace": WORKSPACE}
 
 
-def _workspace():
+def workspace_links():
     import json
     loi_vao = [
         ("Phiếu giao đang giao", "DocType", "Delivery Note", {"docstatus": 1, "kh_aph_delivery_state": "Đang giao"}),
         ("Phiếu giao chờ xuất", "DocType", "Delivery Note", {"docstatus": 0}),
         ("Phiếu kho", "DocType", "Stock Entry", None),
         ("Kiểm kê", "DocType", "Stock Reconciliation", None),
-        ("Yêu cầu chuyển kho", "DocType", "Material Request", {"docstatus": 1, "status": ["not in", ["Transferred", "Stopped"]]}),
+        ("Yêu cầu chuyển kho", "DocType", "Material Request", {"docstatus": 1, "material_request_type": "Material Transfer", "status": ["not in", ["Transferred", "Stopped"]]}),
         ("Chênh lệch kiểm kê chờ xử lý", "Report", "Chenh lech kiem ke cho xu ly", None),
         ("Đề nghị bổ sung hàng", "Report", "De nghi bo sung hang", None),
         ("Tồn kho số lượng", "Report", "Ton kho so luong", None),
     ]
     loi_vao = [x for x in loi_vao if frappe.db.exists(x[1], x[2])]
+    return loi_vao
+
+
+def _workspace():
+    import json
+    loi_vao = workspace_links()
     noi_dung = [{"id": "tk-tieu-de", "type": "header", "data": {"text": f"<span class=\"h4\"><b>{WORKSPACE}</b></span>", "col": 12}}]
     noi_dung += [{"id": f"tk-{i}", "type": "shortcut", "data": {"shortcut_name": x[0], "col": 4}} for i, x in enumerate(loi_vao)]
     ws = frappe.get_doc("Workspace", WORKSPACE) if frappe.db.exists("Workspace", WORKSPACE) else frappe.new_doc("Workspace")

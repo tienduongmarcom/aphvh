@@ -64,14 +64,20 @@ try {
     const report=r=>route(['query-report',r],`frappe.get_route()[0]==='query-report' && !!frappe.query_report && frappe.request.ajax_count===0`);
     if(data.order){
         ket.T01={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),()=>nut('Lập phiếu xuất & In'),async()=>{await xong();return 0;}]),
-                 B:await do_('B',[()=>vao('Bàn bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),banner,async()=>{await xong();return 0;}])};
+                 B:await do_('B',[()=>vao('Bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),banner,async()=>{await xong();return 0;}])};
+    }
+    if(data.order) {
+        await form('APH Shared Sales Order', data.order);
+        await until('!!document.querySelector(".kh-customer-context") && document.querySelector(".kh-customer-context").textContent.includes("Điện thoại:") && document.querySelector(".kh-customer-context").textContent.includes("Địa chỉ:") && !document.querySelector(".kh-customer-context").textContent.includes("Đang kiểm tra")');
+        const fields = await evaluate('cur_frm.fields_dict.items.grid.docfields.filter(f=>["item_code","item_name"].includes(f.fieldname)).map(f=>({name:f.fieldname,list:f.in_list_view}))');
+        if(fields.length!==2 || fields.some(f=>!f.list)) throw Error('Thiếu cột mã hoặc tên hàng: '+JSON.stringify(fields));
     }
     ket.T02={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),()=>nut('Thu tiền'),async()=>{await xong();return 0;}]),
-             B:await do_('B',[()=>vao('Bàn tiền và công nợ'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),banner,async()=>{await xong();return 0;}])};
+             B:await do_('B',[()=>vao('Tiền và kế toán'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),banner,async()=>{await xong();return 0;}])};
     const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ux-buoc-tiep.png',Buffer.from(shot.data,'base64'));
     ket.T03={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>report('Tong hop ban hang theo khach')]),
-             B:await do_('B',[()=>vao('Bàn bán hàng'),()=>report('Tong hop ban hang theo khach')])};
-    await vao('Bàn bán hàng');
+             B:await do_('B',[()=>vao('Bán hàng'),()=>report('Tong hop ban hang theo khach')])};
+    await vao('Bán hàng');
     const shot2=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ux-viec-ban-hang.png',Buffer.from(shot2.data,'base64'));
     console.log(JSON.stringify({case:'DESK_UX0_BASELINE',status:'PASS',detail:{loai_so_do:'máy, không phải người thật',ket_qua:ket,
         don:data.order||'không có đơn còn hàng: T01 chưa đo'}}));

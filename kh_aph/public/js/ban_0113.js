@@ -13,7 +13,7 @@ frappe.ui.form.on("Sales Order", {
 				.then((r) => {
 					frappe.show_alert({message: __("Đã gia hạn; cập nhật {0} hóa đơn còn nợ", [(r.message.hoa_don_cap_nhat || []).length]), indicator: "green"});
 					frm.reload_doc();
-				}), __("Gia hạn thanh toán (Q166–Q168)")), __("Công nợ"));
+				}), __("Gia hạn thanh toán")), __("Công nợ"));
 	},
 });
 
@@ -28,7 +28,7 @@ frappe.ui.form.on("Delivery Note", {
 						filters: {link_doctype: "Customer", link_name: frm.doc.customer}})},
 				{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1},
 			], (v) => frappe.call({method: "kh_aph.sales_p1.doi_dia_chi_giao", args: {delivery_note: frm.doc.name, ...v}, freeze: true})
-				.then(() => frm.reload_doc()), __("Đổi địa chỉ khi đang giao (Q180)")), __("Điều chỉnh giao"));
+				.then(() => frm.reload_doc()), __("Đổi địa chỉ khi đang giao")), __("Điều chỉnh giao"));
 	},
 });
 
@@ -41,7 +41,7 @@ frappe.ui.form.on("Sales Invoice", {
 					{fieldname: "so_tien", label: __("Tổng tiền khách được giảm (gồm thuế nếu hóa đơn có thuế)"), fieldtype: "Currency", reqd: 1},
 					{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1},
 				], (v) => frappe.call({method: "kh_aph.sales_p1.giam_gia_sau_giao", args: {sales_invoice: frm.doc.name, ...v}, freeze: true})
-					.then((r) => frappe.set_route("Form", "Journal Entry", r.message.but_toan)), __("Giảm giá sau giao (R026)")), __("Điều chỉnh"));
+					.then((r) => frappe.set_route("Form", "Journal Entry", r.message.but_toan)), __("Giảm giá sau giao")), __("Điều chỉnh"));
 		}
 		if (frm.doc.kh_aph_xuat_hoa_don === "Có" && !frm.doc.kh_aph_hd_so) {
 			frm.add_custom_button(__("Nhận xử lý hóa đơn MISA"), () =>

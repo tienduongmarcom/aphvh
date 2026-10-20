@@ -1,5 +1,5 @@
 // kh_aph 0.11.2 — thao tác ngắn trên Warehouse bằng Dialog (docs/kien-truc-giao-dien.md).
-// Quyết toán dở dang về 0 (cờ factory_costing): kho loại "Dở dang dây chuyền" (hoặc ô Kho bồn của 0.11.1).
+// Xử lý tồn dư khi kết thúc chuyền (cờ factory_costing): kho loại "Dở dang dây chuyền" (hoặc ô Kho bồn của 0.11.1).
 // Kiểm kê có mốc (cờ kho_chuan): thiếu → phiếu xuất nháp Nợ 1381; thừa → nhập nháp kho Chờ xử lý, Có 3381.
 frappe.provide("kh_aph.b0112");
 kh_aph.b0112.on = (co) => !!(frappe.boot.kh_aph && frappe.boot.kh_aph[co]);
@@ -39,12 +39,12 @@ kh_aph.b0112.quyet_toan = (frm) => {
 		{fieldname: "ly_do", label: __("Lý do (dừng chuyền ngày…, ca…)"), fieldtype: "Small Text", reqd: 1},
 		{fieldname: "ngay", label: __("Ngày"), fieldtype: "Date", default: frappe.datetime.get_today()},
 		{fieldname: "gio", label: __("Giờ"), fieldtype: "Time", default: frappe.datetime.now_time()},
-	], goi, __("Quyết toán dở dang về 0 (R076)"));
+	], goi, __("Xử lý tồn dư khi kết thúc chuyền"));
 };
 
 kh_aph.b0112.kiem_ke = (frm) => {
 	const d = new frappe.ui.Dialog({
-		title: __("Kiểm kê có mốc thời gian (R054–R056)"),
+		title: __("Kiểm kê có mốc thời gian"),
 		size: "large",
 		fields: [
 			{fieldname: "ngay", label: __("Ngày kiểm"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
@@ -87,7 +87,7 @@ frappe.ui.form.on("Warehouse", {
 		if (frm.is_new() || frm.doc.is_group) return;
 		const do_dang = frm.doc.kh_aph_loai_kho === "Dở dang dây chuyền" || frm.doc.kh_aph_kho_bon;
 		if (do_dang && kh_aph.b0112.on("factory_costing")) {
-			frm.add_custom_button(__("Quyết toán dở dang về 0"), () => kh_aph.b0112.quyet_toan(frm), __("Kho"));
+			frm.add_custom_button(__("Xử lý tồn dư khi kết thúc chuyền"), () => kh_aph.b0112.quyet_toan(frm), __("Kho"));
 		}
 		if (kh_aph.b0112.on("kho_chuan")) {
 			frm.add_custom_button(__("Kiểm kê có mốc"), () => kh_aph.b0112.kiem_ke(frm), __("Kho"));

@@ -56,7 +56,7 @@
 				w.focus();
 				setTimeout(() => w.print(), 600);
 				frm.reload_doc();
-			}), __("Quầy bán hàng"));
+			}), "In");
 		},
 	});
 })();

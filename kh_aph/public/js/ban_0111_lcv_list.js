@@ -1,4 +1,4 @@
-// kh_aph 0.11.1 — Phân bổ chi phí sản xuất cuối tháng (R079): tạo chứng từ NHÁP, kế toán xem rồi tự ghi sổ.
+// kh_aph 0.11.1 — Phân bổ chi phí sản xuất cuối tháng: tạo chứng từ NHÁP, kế toán xem rồi tự ghi sổ.
 frappe.listview_settings["Landed Cost Voucher"] = Object.assign(frappe.listview_settings["Landed Cost Voucher"] || {}, {
 	onload(listview) {
 		if (!(frappe.boot.kh_aph && frappe.boot.kh_aph.factory_costing)) return;

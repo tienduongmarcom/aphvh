@@ -24,7 +24,7 @@ frappe.ui.form.on("APH Shared Sales Order", {
 		frm.add_custom_button(__("Đóng phần chưa giao"), () =>
 			frappe.prompt([{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1}],
 				(v) => frappe.call({method: "kh_aph.sales_adjust.dong_phan_chua_giao", args: {shared_order: frm.doc.name, ...v}, freeze: true})
-					.then(() => frm.reload_doc()), __("Đóng phần chưa giao (Q182)")));
+					.then(() => frm.reload_doc()), __("Đóng phần chưa giao")));
 	},
 });
 // Nút quyết toán dở dang trên Warehouse chuyển sang public/js/ban_0112.js (0.11.2: kho loại Dở dang dây chuyền).

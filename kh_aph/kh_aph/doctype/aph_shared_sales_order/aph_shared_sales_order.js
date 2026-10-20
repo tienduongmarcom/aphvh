@@ -41,8 +41,9 @@ async function kh_aph_lap_dot_xuat(frm) {
                 cannot_delete_rows: true, in_place_edit: true,
                 data: rows.map(r => ({...r, qty: 0})), fields: [
                     {fieldname: "source_row", fieldtype: "Data", hidden: 1},
-                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 2},
-                    {fieldname: "warehouse", label: "Kho nguồn", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 3},
+                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 1},
+                    {fieldname: "item_name", label: "Tên hàng", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 2},
+                    {fieldname: "warehouse", label: "Kho nguồn", fieldtype: "Data", in_list_view: 1, read_only: 1, columns: 2},
                     {fieldname: "remaining_qty", label: "Còn lập (kg)", fieldtype: "Float", in_list_view: 1, read_only: 1, columns: 2},
                     {fieldname: "kg_per_bag", label: "Kg/bao", fieldtype: "Float", in_list_view: 1, read_only: 1, columns: 1},
                     {fieldname: "qty", label: "Giao đợt này (kg)", fieldtype: "Float", in_list_view: 1, columns: 2},

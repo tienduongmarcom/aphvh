@@ -6,7 +6,7 @@ frappe.query_reports["Chenh lech kiem ke cho xu ly"] = {
 			const vu = (report.data || []).map((r) => r.bien_ban);
 			if (!vu.length) return frappe.msgprint(__("Không có vụ chờ xử lý"));
 			const d = new frappe.ui.Dialog({
-				title: __("Xử lý chênh lệch kiểm kê (bước 2)"),
+				title: __("Xử lý chênh lệch kiểm kê"),
 				size: "large",
 				fields: [
 					{fieldname: "bien_ban", label: __("Vụ"), fieldtype: "Select", options: vu, reqd: 1},

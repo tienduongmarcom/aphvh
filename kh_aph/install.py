@@ -55,7 +55,7 @@ CUSTOM_FIELDS = {
     "Stock Entry": [
         {
             "fieldname": "kh_aph_costing_rule",
-            "label": "Quy tắc tính giá (APH)",
+            "label": "Quy tắc tính giá",
             "fieldtype": "Data",
             "insert_after": "stock_entry_type",
             "read_only": 1,
@@ -336,7 +336,7 @@ SALES_CUSTOM_FIELDS = {
     "Selling Settings": [
         {
             "fieldname": "kh_aph_ban_hang_section",
-            "label": "An Phú Hưng – luồng bán hàng",
+            "label": "Cấu hình bán hàng",
             "fieldtype": "Section Break",
             "insert_after": "blanket_order_allowance",
         },

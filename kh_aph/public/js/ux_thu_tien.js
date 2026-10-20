@@ -15,7 +15,7 @@ if (!kh_aph.ux.tim_khach) {
                     if (rows.length > 1) box.append(`<p class="text-warning"><b>${rows.length} khách khớp — chọn đúng khách, không chọn đại.</b></p>`);
                     rows.forEach(x => $(`<button class="btn btn-default btn-block text-left mb-2" style="font-size:15px">
                         <b>${frappe.utils.escape_html(x.customer_name || x.name)}</b> · ${frappe.utils.escape_html(x.name)}
-                        ${x.tax_id ? " · MST " + frappe.utils.escape_html(x.tax_id) : ""}${x.mobile_no ? " · " + frappe.utils.escape_html(x.mobile_no) : ""}
+                        ${x.tax_id ? " · MST " + frappe.utils.escape_html(x.tax_id) : ""}${x.mobile_no ? " · " + frappe.utils.escape_html(x.mobile_no) : " · Chưa có số điện thoại"} · ${frappe.utils.escape_html(x.primary_address || "Chưa có địa chỉ")}
                         <span class="text-muted"> (khớp ${frappe.utils.escape_html(x.khop)})</span></button>`)
                         .appendTo(box).on("click", () => { d.hide(); on_pick(x.name); }));
                 }});
@@ -23,7 +23,7 @@ if (!kh_aph.ux.tim_khach) {
         d.show();
     };
 
-    kh_aph.ux.thu_tien = function(customer, chon_san = []) {
+    kh_aph.ux.thu_tien = function(customer, chon_san = [], company = null) {
         if (!customer) return kh_aph.ux.tim_khach(c => kh_aph.ux.thu_tien(c));
         frappe.call({method: "kh_aph.ux_task.cong_no_khach", args: {customer}, callback(r) {
             const cn = r.message;
@@ -31,7 +31,7 @@ if (!kh_aph.ux.tim_khach) {
             const request_id = [...crypto.getRandomValues(new Uint8Array(16))].map(v => v.toString(16).padStart(2, "0")).join("");
             const bang = don_vi.map(x => `<tr><td>${frappe.utils.escape_html(x.company)}</td><td class="text-right">${vnd(x.phai_thu)}</td>
                 <td class="text-right">${vnd(x.qua_han)}</td><td class="text-right">${vnd(x.chua_phan_bo)}</td></tr>`).join("");
-            const company0 = don_vi.length === 1 ? don_vi[0].company : (frappe.defaults.get_user_default("Company") || "");
+            const company0 = company || (don_vi.length === 1 ? don_vi[0].company : (frappe.defaults.get_user_default("Company") || ""));
             let sending = false;
             const d = new frappe.ui.Dialog({title: "Ghi nhận khách trả tiền", size: "large", fields: [
                 {fieldtype: "HTML", options: `<p style="font-size:15px"><b>1. Khách:</b> ${frappe.utils.escape_html(customer)}</p>
