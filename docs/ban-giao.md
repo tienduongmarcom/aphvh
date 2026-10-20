@@ -1,4 +1,25 @@
-# Bàn giao dự án APH-VH
+# Bàn giao — trạng thái mới nhất
+
+## 20/10/2026 — Claude: rà PR #17/#18, NM01c/NM02–05, UX-01 (đang làm, CHƯA bàn giao Codex)
+
+PR [#19](https://github.com/tienduongmarcom/aphvh/pull/19) nháp, nhánh `claude/nm01c-nhan-chuyen-20261020`, base PR #18. Production vẫn
+**0.15.3**; không tag/merge/phát hành. Chủ dự án dặn: làm hết UX, chỉ bàn giao Codex khi được bảo.
+
+- Rà độc lập PR #17/#18 (factory_receiving, pending_order, pending_valuation): không thấy lỗi có bằng chứng. Ghi chú: hủy PR đã
+  định giá thì pending về "Chờ định giá" nhưng không chốt lại được (đúng đặc tả 3B: phải hủy pending để nhận lại).
+- Mã đã kiểm đủ 4 cổng trên **`eba12d036e667a9b2d2f4a30df20f15c4d307846`**: UAT 39356838490 (b014 đúng 115 PASS, 0 FAIL — gồm 7
+  ca NM01c/NM05, 5 ca NM02–04, 1 ca UX-01), Cổng 2 39355987525, 2b 39355985890, Cổng 3 39355984116. Artifact không tải được qua
+  công cụ của Claude (chuyển hướng blob) — bằng chứng là bước đếm PASS chính xác + không FAIL của workflow; Codex nên tải và xem ảnh.
+- Lượt UAT 39354836759 (42f6796) FAIL ở ca Chrome `quy-nha-may` (PR #16, "No committed preview response intercepted"), không
+  liên quan mã mới; lượt sau cùng ca PASS → coi là chập chờn, giữ run làm bằng chứng.
+- Mới: `factory_transfer.py` (NM01c nhận chuyến + NM05 chuyển đi, cờ 26), `factory_production.py` (NM02–04, cờ 27),
+  `ux_task.py` + `ux_*.js` (UX-01/UX-0/UX-3, cờ 28). Đặc tả: `docs/dac-ta-nhan-chuyen-den-nm01c.md`,
+  `docs/dac-ta-ghi-san-xuat-nm02-04.md`, `docs/dac-ta-ux-01.md`, `docs/ux-0-phieu-do.md`, `docs/dot-4-5-ra-soat-tai-chinh-hoa-don.md`.
+- Cần chủ dự án chốt (không tự suy diễn): chuyển khác đơn vị; hao hụt vận chuyển; lệnh/mẻ sản xuất; TC03/TC05/TC07/TC08; 5 câu hóa đơn một phần.
+
+ĐANG DỞ: 4 cổng trên `22a87b6` (UX-0 số đo máy Chrome, UX-3 tìm khách/thu tiền 5 bước/Module Profile, kỳ vọng b014 117).
+Bước tiếp: đọc kết quả, sửa ca lỗi; UX-4 đo người thật để cuối; UX-5 chỉ khi có số đo.
+
 
 ## 20/10/2026 — Bàn giao tiếp nối cho Claude theo yêu cầu chủ dự án
 

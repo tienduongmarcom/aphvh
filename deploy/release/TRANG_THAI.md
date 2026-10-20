@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Claude: PR #19 (NM01c/NM02–05, UX-01) đang kiểm, production vẫn 0.15.3
+
+Mã `eba12d0` đủ 4 cổng (UAT b014 115 PASS/0 FAIL). Thêm cờ 27 `kh_aph_factory_production`, 28 `kh_aph_ux_task_first` (mặc định tắt, đồng bộ FLAGS/quay-lui/dấu vân/preflight/Cổng 3). Chưa tag/phát hành. Chi tiết `docs/ban-giao.md`.
+
 ## 20/10/2026 — Bàn giao tiếp nối cho Claude theo yêu cầu chủ dự án
 
 Chủ dự án chuyển phần việc tiếp theo và rà lỗi độc lập cho Claude; sau khi Claude hoàn thành sẽ bàn giao ngược cho Codex. Hồ sơ tập trung: `docs/BAN_GIAO_CHO_CLAUDE.md`, gồm baseline e929498/mã kiểm a75ced9, PR #18,4 cổng/293 HTTP và giới hạn, vùng cần rà độc lập, thứ tự phần còn lại và mẫu bằng chứng bàn giao ngược. Đây là commit hồ sơ, không thay code/quyền/schema/production. Production theo xác nhận vẫn0.15.3; nghiệm thu dữ liệu/nhân sự thật vẫn gom cuối. Codex dừng phát triển tại đây để Claude tiếp nối; không coi các vùng cần rà là lỗi đã xác nhận hoặc phần chưa làm là đã hoàn tất.
