@@ -122,7 +122,7 @@ def native_receipt(doc, method=None):
     if method == 'before_cancel':
         return
     own = FINALIZING.get() if is_pr else None
-    if doc.get('kh_aph_pending_receipt') and own != doc.get('kh_aph_pending_receipt'):
+    if own != doc.get('kh_aph_pending_receipt'):
         # Không được loại trừ giữ chỗ bằng dữ liệu client.
         own = None
     for name, source in orders.items():
@@ -162,7 +162,7 @@ def protect_order(doc, method=None):
         pending_items = frappe.db.sql('''SELECT i.item_code FROM `tabAPH Pending Receipt Item` i
             INNER JOIN `tabAPH Pending Receipt` p ON p.name=i.parent
             WHERE p.kh_aph_receiving_purchase_order=%s AND p.docstatus=1
-            AND i.kh_aph_receiving_source_row=%s''', (doc.name, name))
+            AND i.kh_aph_receiving_source_row=%s FOR UPDATE''', (doc.name, name))
         row = next((r for r in doc.items if r.name == name), None)
         original = next((r for r in source.items if r.name == name), None)
         if (not row or not original or row.item_code != original.item_code

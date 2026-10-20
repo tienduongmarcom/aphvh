@@ -4,7 +4,7 @@
 
 Nhánh `feat/nhan-cho-gia-theo-don-mua-20261020`, base PR #17/4b638b0. Đặc tả9 nhóm `docs/dac-ta-nhan-cho-gia-theo-don-mua-3b.md`. Đã viết nhánh pending trong cửa sổ nhận, PO/dòng nguồn và dấu/tệp/chất lượng; giữ chỗ theo đúng dòng, kiểm cả PR chuẩn/PI update_stock và bảo vệ khi tắt26. Finalize dùng mapper native, chỉ đúng giá PO hiện hành, chuyển giữ chỗ thành một PR; hủy PR trả giữ chỗ, hủy pending sau đó giải phóng và giữ hồ sơ. Chỉ miễn đúng backlink pending nguồn khi native hủy PR, mọi backlink khác vẫn kiểm. Không sửa core hoặc cấp ignore_permissions.
 
-Cục bộ416 kh_aph +108 lab9x đạt; đã viết7 ca HTTP/Desk mới, dự kiến292 tổng/b014101. Chưa có kết quả4 cổng của mã mới, không dùng PASS3A thay. Bước tiếp: push PR kế tiếp, chạy4 cổng cùng SHA, đọc artifact/ảnh và sửa lỗi tích hợp thực tế. Production vẫn0.15.3/21 cờ theo xác nhận; không tăng version/tag/merge/deploy. Nghiệm thu người dùng/dữ liệu/máy in thật vẫn gom cuối; toàn đợt3 chưa hoàn tất.
+Cục bộ418 kh_aph +108 lab9x đạt; đã viết8 ca HTTP/Desk mới, dự kiến293 tổng/b014102. Bổ sung đơn giá0 chỉ nhận pending, capability chốt giá phải khớp Link trên PR và current read cho nguồn khi PO chỉnh đồng thời. Các run0c8d884 ban đầu được thay bằng lượt kiểm mã mới, không dùng làm bằng chứng cuối. Chưa có kết quả4 cổng của mã mới, không dùng PASS3A thay. Bước tiếp: push PR kế tiếp, chạy4 cổng cùng SHA, đọc artifact/ảnh và sửa lỗi tích hợp thực tế. Production vẫn0.15.3/21 cờ theo xác nhận; không tăng version/tag/merge/deploy. Nghiệm thu người dùng/dữ liệu/máy in thật vẫn gom cuối; toàn đợt3 chưa hoàn tất.
 
 ## 20/10/2026 — Nhận nhanh nhà máy 3A đã kiểm đủ bốn cổng
 

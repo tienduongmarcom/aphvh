@@ -99,6 +99,21 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature):
     assert get('APH Pending Receipt',pending['name'])['kh_aph_receiving_ticket']==file['file_url']
     emit('HTTP_3B_PENDING_CANCEL_HISTORY','PASS',{'cancel_pr_restores_reservation':True,'cancel_pending_releases':True,'history_kept':True})
 
+    zero_po=order(3,rate=0)
+    assert get('Purchase Order',zero_po['name'])['items'][0]['rate']==0
+    denied(lambda:rpc('kh_aph.factory_receiving.preview',{'purchase_order':zero_po['name']},dung))
+    zero_view=rpc('kh_aph.factory_receiving.preview',{'purchase_order':zero_po['name'],'mode':'pending'},dung)
+    zero_args={**args,'purchase_order':zero_po['name'],'request_id':'zero-price','ticket':'',
+        'rows':json.dumps([{**row,'source_row':zero_view['items'][0]['source_row'],'qty':1,'quality_qty':0}])}
+    zero_before=ledgers()
+    zero_result=rpc('kh_aph.factory_receiving.receive',zero_args,dung)
+    assert zero_result['doctype']=='APH Pending Receipt' and ledgers()==zero_before
+    assert remaining(zero_po['name'])==2
+    zero_pending=get('APH Pending Receipt',zero_result['name'])
+    denied(lambda:rpc('kh_aph.pending_valuation.finalize',{'name':zero_result['name'],
+        'rates':json.dumps({zero_pending['items'][0]['name']:0}),'reason':'Chưa có giá'},ktt))
+    emit('HTTP_3B_UNPRICED_ORDER_PENDING_ONLY','PASS',{'zero_price_only_pending':True,'no_zero_stock':True})
+
     import os,subprocess
     from pathlib import Path
     assert os.environ.get('GITHUB_ACTIONS')=='true'

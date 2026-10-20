@@ -32,8 +32,11 @@ Pending không tăng tồn/SLE/GL/PLE/sổ bao khả dụng. Finalize một PR n
 
 ## 8. Tiêu chí kiểm
 
-PO10kg: pending4 gồm1kg vấn đề giữ chỗ4, nhận có giá còn6; retry pending không tăng chứng từ/sổ, đổi mode/nội dung cùng nonce bị chặn. Nháp không giữ chỗ; submit native giả nguồn bị chặn. Hai phiên pending/nhập có giá tranh phần còn: không vượt10. PR chuẩn và PI update_stock không lấy lượng đang chờ, kể cả tắt26. Chốt giá bằng vai trò sai/giá0/giá lệch PO/sai dòng bị chặn; cập nhật PO rồi finalize một PR4kg đúng source, pending không bị tính thêm lần nữa. Retry một PR; hủy PR trả giữ chỗ, hủy pending sau đó giải phóng; hồ sơ giữ lịch sử. PO giảm/xóa dòng/hủy khi còn pending bị chặn. File private và NoCost không lộ giá; Chrome cùng Dialog mất phản hồi/bấm lại một pending. Kiểm cục bộ, HTTP/Desk,4 cổng cùng SHA và artifact/ảnh. Chưa tuyên bố PASS khi chưa có bằng chứng.
+PO giá0 chỉ được nhận pending, không finalize giá0 hoặc nhập kho có giá0. PO10kg: pending4 gồm1kg vấn đề giữ chỗ4, nhận có giá còn6; retry pending không tăng chứng từ/sổ, đổi mode/nội dung cùng nonce bị chặn. Nháp không giữ chỗ; submit native giả nguồn bị chặn. Hai phiên pending/nhập có giá tranh phần còn: không vượt10. PR chuẩn và PI update_stock không lấy lượng đang chờ, kể cả tắt26. Chốt giá bằng vai trò sai/giá0/giá lệch PO/sai dòng bị chặn; cập nhật PO rồi finalize một PR4kg đúng source, pending không bị tính thêm lần nữa. Retry một PR; hủy PR trả giữ chỗ, hủy pending sau đó giải phóng; hồ sơ giữ lịch sử. PO giảm/xóa dòng/hủy khi còn pending bị chặn. File private và NoCost không lộ giá; Chrome cùng Dialog mất phản hồi/bấm lại một pending. Kiểm cục bộ, HTTP/Desk,4 cổng cùng SHA và artifact/ảnh. Chưa tuyên bố PASS khi chưa có bằng chứng.
 
 ## 9. Triển khai và khôi phục
 
 Schema qua factory_receiving.schema/bộ cài rõ ràng, không after_migrate tự bật. Tái dùng26, không đổi version/tag/production. Hồ sơ cũ không nguồn vẫn hoạt động như trước. Lúc nâng production cần diễn tập bản sao có dữ liệu; quay lui image+DB/files/cờ đồng bộ, không chỉ tắt cờ để bỏ giữ chỗ. Nghiệm thu nhân sự/dữ liệu thật gom cuối. Đang triển khai, chưa đạt nghiệm thu kỹ thuật.
+
+
+Bộ ca tích hợp mới (8 ca): HTTP_3B_PENDING_RESERVE_REPLAY; HTTP_3B_NATIVE_RESERVATION_FLAG_OFF; HTTP_3B_PENDING_SOURCE_TAMPER; HTTP_3B_PENDING_VALUED_RACE; HTTP_3B_PENDING_FINALIZE_ONCE; HTTP_3B_PENDING_CANCEL_HISTORY; HTTP_3B_UNPRICED_ORDER_PENDING_ONLY; DESK_3B_PENDING_RETRY. Dự kiến b014102/toàn HTTP293; không tính unit thay HTTP/Desk.

@@ -128,3 +128,27 @@ class PendingOrder(unittest.TestCase):
         pending.check_permission.assert_any_call('write')
         pending.kh_aph_receiving_payload='forged'
         with self.assertRaises(ValueError):self.m.cancelled_source(doc)
+
+    def test_finalizing_capability_does_not_exempt_unlinked_native_receipt(self):
+        self.m.lock_orders=Mock(return_value={'PO':self.source()})
+        self.m.reserved=Mock(return_value={'R':Decimal(4)})
+        row=Row(purchase_order='PO',purchase_order_item='R',qty=5,received_qty=5,conversion_factor=1)
+        doc=Row(doctype='Purchase Receipt',items=[row])
+        token=self.m.FINALIZING.set('P1')
+        try:
+            with self.assertRaises(ValueError):self.m.native_receipt(doc)
+            self.m.reserved.assert_called_with('PO',exclude=None,lock=True)
+        finally:self.m.FINALIZING.reset(token)
+
+    def test_pending_mode_preview_accepts_unpriced_source_and_deducts_hold(self):
+        self.receiving.guard=Mock()
+        source=self.source();source.items[0].rate=0
+        source.items[0].warehouse='WH'
+        self.receiving._source=Mock(return_value=source)
+        self.receiving._item=Mock(return_value=Row(kh_aph_kg_per_bag=0))
+        self.receiving._warehouse=Mock()
+        self.m.reserved=Mock(return_value={'R':Decimal(4)})
+        result=self.receiving.preview('PO',mode='pending')
+        self.assertEqual(result['items'][0]['remaining'],4)
+        self.receiving._item.assert_called_once_with(source.items[0],require_price=False)
+        self.assertNotIn('"rate"',__import__('json').dumps(result))
