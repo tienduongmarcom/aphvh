@@ -106,7 +106,7 @@ def _workspace(nhom):
             shortcuts.append(sc)
         content.append({'id': f'{nhom}-s{i}', 'type': 'spacer', 'data': {'col': 12}})
     ws = frappe.get_doc('Workspace', ten) if frappe.db.exists('Workspace', ten) else frappe.new_doc('Workspace')
-    ws.update({'label': ten, 'title': ten, 'public': 1, 'module': MODULE, 'icon': 'list',
+    ws.update({'label': ten, 'title': ten, 'public': 1, 'module': MODULE, 'icon': {'ban_hang': 'sell', 'kho': 'stock', 'tien': 'money-coins-1', 'nha_may': 'stock'}[nhom],
                'content': json.dumps(content, ensure_ascii=False)})
     ws.set('shortcuts', shortcuts)
     ws.set('roles', [{'role': r} for r in VAI_TRO[nhom] if frappe.db.exists('Role', r)])

@@ -151,7 +151,7 @@ def record(kind, company, request_id, posting_date, inputs, outputs, workshop=No
         entry.check_permission('read')
         if entry.get(PREFIX + 'payload') != payload or entry.docstatus != 1:
             frappe.throw('Lượt ghi đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
-        return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
+        return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus, 'type': entry.stock_entry_type}
     for r in ins + outs:
         item = _item(r['item_code'])
         if kind == 'san_xuat' and item.stock_uom != 'Kg':

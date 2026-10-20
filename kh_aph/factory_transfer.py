@@ -167,8 +167,8 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
         row.qty = float(_number(values['qty']))
         row.transfer_qty = row.qty
         row.t_warehouse = values['warehouse']
-        if _number(values['bags']):
-            row.kh_aph_bags = float(_number(values['bags']))
+        # Ghi đúng số bao thực nhận (không để mapper chép số bao của cả chuyến khi nhận một phần).
+        row.kh_aph_bags = float(_number(values['bags']))
     entry.posting_date = str(getdate(received_date))
     entry.set_posting_time = 1
     for field, value in {'request': key, 'payload': payload, 'actor': frappe.session.user, 'at': now_datetime(),
