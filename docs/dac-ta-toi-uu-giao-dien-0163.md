@@ -37,8 +37,24 @@ Không đổi số đã cấp, hash/series chứng từ cũ hoặc định danh 
 
 Theo quy tắc không dùng tên một công ty cho đơn chung, đơn tạo mới dùng tiền tố DBC (Đơn bán chung), giữ năm và dãy số. Đây là lựa chọn triển khai trung lập, không đổi tên DocType, không rename/backfill số đơn đã tồn tại hoặc sửa liên kết lịch sử. Nội dung "chưa đổi số đơn" ở mốc tiếp nhận là lịch sử; cập nhật này chỉ đổi cách cấp số MỚI, không đổi số cũ.
 
-Thanh bên dùng cấu hình `Custom Sidebar` chính thức trên nền16.52: nhãn chung Vận hành, năm Workspace, ẩn shortcut DocType/Report thuộc package thay vì xóa nguồn. Giữ các mục riêng và lớp người dùng, bộ cài idempotent. Nền không có DocType này giữ Workspace chuẩn; HTTP trên nền ghim phải chứng minh có cấu hình, chưa kiểm thì không tuyên bố Sidebar đã đạt.
+Thanh bên dùng cấu hình `Custom Sidebar` chính thức trên nền16.52: nhãn chung Vận hành, năm Workspace, ẩn shortcut DocType/Report thuộc package thay vì xóa nguồn. Giữ các mục riêng và lớp người dùng, bộ cài idempotent. Nền không có DocType này giữ Workspace chuẩn; HTTP và ảnh trên nền ghim đã xác nhận cấu hình và ẩn màn cũ cho quản trị; xem mã kiểm12d9d24 trong hồ sơ bàn giao.
 
-Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ454 test (14 skip) +108 lõi đạt; bốn cổng/ảnh đang kiểm trên dba7604, chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đã cấp/roleID và các chính sách chưa chốt vẫn ngoài lượt này.
+Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ454 test (14 skip) +108 lõi đạt; bốn cổng đạt trên12d9d24, đã tải/đọc ảnh và log; chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đã cấp/roleID và các chính sách chưa chốt vẫn ngoài lượt này.
 
 Ứng viên mang phiên bản0.16.3 trên nhánh feat/toi-uu-giao-dien-20261020, PR #26. Đã sửa giao diện và cấu hình điều hướng; không thay quyền hay sổ tài chính. Chỉ thử trên môi trường cô lập, không tác động dữ liệu thật. Kết quả cuối và giới hạn nghiệm thu được ghi tại đầu docs/ban-giao.md và deploy/release/TRANG_THAI.md.
+
+## Đối chiếu phạm vi triển khai
+
+| Nhóm | Kết quả và ranh giới |
+|---|---|
+| Mục tiêu và phạm vi | Năm khu điều hướng, Nhà máy riêng; giảm nhập/trang/nút lặp. Không xây lại sổ hoặc quy trình giao hàng. |
+| Hiện trạng | Nguồn nhận main7dcff5a, ứng viên0.16.3 tại PR #26; production0.16.2. Mã kiểm và bằng chứng cuối ghi tại đầu hồ sơ bàn giao. |
+| Quy trình | Bán hàng lập đơn/chuẩn bị giao; Kho vận xác nhận và lưu hồ sơ; Nhà máy nhận/sản xuất; Tiền và kế toán thu–chi/đối chiếu; dữ liệu/cấu hình theo quyền. Các thao tác gọi service hiện có. |
+| Quy tắc và ngoại lệ | In chưa ghi xuất/nợ; mất phản hồi thu tiền gửi lại cùng mã lượt; không cấn chéo công ty hoặc FIFO. Phiếu cũ/trả giữ bộ giao nhận cũ; thông tin khách thiếu hoặc không tải được phải báo rõ. |
+| Dữ liệu và trạng thái | Giữ trường, Link, ID DocType/role và số đã cấp; đơn mới dùng DBC. Nhận diện khách là hồ sơ hiện tại chỉ đọc, không sửa snapshot giao. Mã/tên hàng riêng. Custom Sidebar là cấu hình native, không tạo bảng nghiệp vụ mới. |
+| Phân quyền và kiểm soát | Giữ các hook/guard và quyền chứng từ gốc. API đọc theo quyền native; công nợ theo Company được xem. Menu không cấp quyền; người dùng có tùy chỉnh riêng vẫn giữ lớp cá nhân. |
+| Tác động hệ thống | Không đổi thời điểm ghi kho/nợ/tiền, công thức giá vốn/sản xuất hay luồng MISA. Tái dùng bộ thu tiền chống trùng; mẫu ba liên chưa tích hợp. |
+| Tiêu chí nghiệm thu | Cổng1/2/2b/UAT/3 trên đúng nguồn, kiểm metadata/API/Chrome và đọc ảnh. Nhân sự, hàng/tồn và máy in thật nghiệm thu cuối theo hướng dẫn. Không suy số đo máy thành tiết kiệm thời gian thực tế. |
+| Triển khai và khôi phục | Chủ dự án gắn tag sau khi duyệt; phát hành kiểm lại các cổng. Diễn tập bản sao production và nâng theo runbook; rollback dùng đúng image và snapshot tương ứng. Tắt cờ không tự xóa metadata/khôi phục mọi cấu hình thanh bên. |
+
+Dòng công nợ trên đơn cộng các hóa đơn có số còn phải thu dương trong quyền, không phải số dư công nợ ròng của sổ kế toán. Tiền chưa phân bổ giữ riêng; trả hàng/ghi giảm và việc chốt số đối chiếu ở báo cáo công nợ chuẩn. Không suy tổng này thành số khách phải nộp ngay hoặc tự phân bổ tiền.

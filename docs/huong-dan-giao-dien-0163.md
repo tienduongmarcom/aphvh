@@ -51,3 +51,5 @@ Chưa mở rộng UOM hoặc quy trình sản xuất khác Kg; chưa thêm giữ
 5. Mở lại đơn/phiếu cũ và bản ký, kiểm dữ liệu lịch sử, đường in lại và lối tra cứu. Đối chiếu sổ trước/sau cùng kế toán phụ trách.
 
 Các bước này cần người, hàng, tồn và máy in thật; kết quả kiểm tự động trên dữ liệu giả không thay cho biên bản nghiệm thu thực tế.
+
+Dòng công nợ tại đơn là tổng các hóa đơn có số còn phải thu dương trong phạm vi được xem; không phải công nợ ròng sau mọi khoản ghi giảm/trả hàng và tiền chưa phân bổ. Khi chốt số hoặc yêu cầu khách thanh toán, mở báo cáo công nợ chuẩn để đối chiếu. Việc đổi bố trí không tự cấn các khoản này.
