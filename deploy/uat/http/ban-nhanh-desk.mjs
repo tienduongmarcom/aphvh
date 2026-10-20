@@ -109,6 +109,7 @@ try {
         await evaluate(`window.__factoryShift=cur_dialog; __factoryShift.set_value('company',${JSON.stringify(payload.company)});true`);
         await until(`__factoryShift.get_value('account')===${JSON.stringify(payload.account)}`);
         await evaluate(`__factoryShift.set_value('counted_amount',${payload.amount});true`);
+        await until(`frappe.request.ajax_count===0 && __factoryShift.get_values(true).account===${JSON.stringify(payload.account)} && !!__factoryShift.get_values(true).counted_amount`);
         await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.personal_cash.prepare_shift',requestStage:'Response'}]});
         await evaluate('__factoryShift.get_primary_btn().trigger("click");true');
         for(let i=0;i<300&&!lostResponse;i++)await pause(100);
