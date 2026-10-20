@@ -58,20 +58,20 @@ try {
         await evaluate('cur_dialog?.hide();$(".modal.show").modal("hide");true');await pause(400);};
     const do_=async (ten,buoc)=>{await evaluate('window.__ux.screens=0;true');const t0=Date.now();let thao_tac=0;
         for(const b of buoc)thao_tac+=await b();return {thao_tac,man_hinh:await evaluate('window.__ux.screens'),ms:Date.now()-t0};};
-    const ws=t=>route(['Workspaces',t],`frappe.get_route()[0]==='Workspaces' && !!document.querySelector('.shortcut-widget-box')`);
+    const vao=t=>route(['Workspaces',t],`frappe.get_route()[0]==='Workspaces' && !!document.querySelector('.shortcut-widget-box')`);
     const form=(dt,n)=>route(['Form',dt,n],`!!window.cur_frm && cur_frm.doc.name===${JSON.stringify(n)} && frappe.request.ajax_count===0`);
     const list=dt=>route(['List',dt],`frappe.get_route()[0]==='List' && frappe.get_route()[1]===${JSON.stringify(dt)}`);
     const report=r=>route(['query-report',r],`frappe.get_route()[0]==='query-report' && !!frappe.query_report && frappe.request.ajax_count===0`);
     if(data.order){
-        ket.T01={A:await do_('A',[()=>ws('Trung tâm Bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),()=>nut('Lập phiếu xuất & In'),async()=>{await xong();return 0;}]),
-                 B:await do_('B',[()=>ws('Việc bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),banner,async()=>{await xong();return 0;}])};
+        ket.T01={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),()=>nut('Lập phiếu xuất & In'),async()=>{await xong();return 0;}]),
+                 B:await do_('B',[()=>vao('Việc bán hàng'),()=>list('APH Shared Sales Order'),()=>form('APH Shared Sales Order',data.order),banner,async()=>{await xong();return 0;}])};
     }
-    ket.T02={A:await do_('A',[()=>ws('Trung tâm Bán hàng'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),()=>nut('Thu tiền'),async()=>{await xong();return 0;}]),
-             B:await do_('B',[()=>ws('Việc tiền và công nợ'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),banner,async()=>{await xong();return 0;}])};
+    ket.T02={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),()=>nut('Thu tiền'),async()=>{await xong();return 0;}]),
+             B:await do_('B',[()=>vao('Việc tiền và công nợ'),()=>list('Sales Invoice'),()=>form('Sales Invoice',data.invoice),banner,async()=>{await xong();return 0;}])};
     const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ux-buoc-tiep.png',Buffer.from(shot.data,'base64'));
-    ket.T03={A:await do_('A',[()=>ws('Trung tâm Bán hàng'),()=>report('Tong hop ban hang theo khach')]),
-             B:await do_('B',[()=>ws('Việc bán hàng'),()=>report('Tong hop ban hang theo khach')])};
-    await ws('Việc bán hàng');
+    ket.T03={A:await do_('A',[()=>vao('Trung tâm Bán hàng'),()=>report('Tong hop ban hang theo khach')]),
+             B:await do_('B',[()=>vao('Việc bán hàng'),()=>report('Tong hop ban hang theo khach')])};
+    await vao('Việc bán hàng');
     const shot2=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ux-viec-ban-hang.png',Buffer.from(shot2.data,'base64'));
     console.log(JSON.stringify({case:'DESK_UX0_BASELINE',status:'PASS',detail:{loai_so_do:'máy, không phải người thật',ket_qua:ket,
         don:data.order||'không có đơn còn hàng: T01 chưa đo'}}));
