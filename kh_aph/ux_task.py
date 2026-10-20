@@ -1,6 +1,6 @@
 """UX-01 — giao diện theo công việc (docs/dac-ta-ux-01.md). Cờ `kh_aph_ux_task_first`, mặc định tắt.
 
-PR-A: bốn Workspace mới SONG SONG ("Việc bán hàng", "Việc kho", "Việc tiền và công nợ", "Việc nhà máy"), không sửa
+PR-A: bốn Workspace mới SONG SONG ("Bàn bán hàng", "Bàn kho", "Bàn tiền và công nợ", "Bàn nhà máy"), không sửa
 Workspace cũ; quay lui = đổi Workspace mặc định về cũ / tắt cờ. Ba khối: Việc cần làm (có số đếm theo quyền native của
 danh sách), Thao tác nhanh, Tra cứu. Áp cấu hình người dùng bằng bảng ánh xạ, mặc định CHẠY THỬ (chỉ in thay đổi).
 PR-B: nút "Việc tiếp theo" trên chứng từ (public/js/ux_buoc_tiep.js) chỉ bấm hộ các nút nghiệp vụ đã có; không hàm ghi mới.
@@ -14,10 +14,10 @@ FLAG = 'kh_aph_ux_task_first'
 MODULE = 'Kh Aph'
 
 NHOM = {
-    'ban_hang': 'Việc bán hàng',
-    'kho': 'Việc kho',
-    'tien': 'Việc tiền và công nợ',
-    'nha_may': 'Việc nhà máy',
+    'ban_hang': 'Bàn bán hàng',
+    'kho': 'Bàn kho',
+    'tien': 'Bàn tiền và công nợ',
+    'nha_may': 'Bàn nhà máy',
 }
 
 # (nhãn, loại, đích, bộ lọc số đếm hoặc None, doc_view)
@@ -101,7 +101,7 @@ def _hop_le(x):
 
 def _workspace(nhom):
     ten = NHOM[nhom]
-    khoi = [('Việc cần làm hôm nay', _LAM[nhom], 6), ('Thao tác nhanh', _NHANH[nhom], 4), ('Tra cứu', _TRA[nhom], 3)]
+    khoi = [('Hôm nay cần xử lý', _LAM[nhom], 6), ('Thao tác nhanh', _NHANH[nhom], 4), ('Tra cứu', _TRA[nhom], 3)]
     content, shortcuts, dung = [], [], set()
     for i, (tieu_de, ds, col) in enumerate(khoi):
         ds = [x for x in ds if _hop_le(x)]
@@ -148,7 +148,41 @@ def schema():
     """Dựng/làm mới bốn Workspace mới và bốn Module Profile (idempotent). Không đụng Workspace cũ, không gán cho ai."""
     if not enabled():
         return
+    _an_ten_cu()
+    _hien_ten_khi_chon()
     return [_workspace(n) for n in NHOM] + [_module_profile(n) for n in NHOM]
+
+
+# Ô chọn khách/mặt hàng/nhà cung cấp chỉ hiện mã -> nhân viên sợ nhầm, phải mở lại (chủ dự án 20/10/2026).
+# Dùng thuộc tính chuẩn show_title_field_in_link: chọn xong ô hiện tên (customer_name/item_name/supplier_name), mã vẫn lưu.
+HIEN_TEN = {'Customer': 'customer_name', 'Item': 'item_name', 'Supplier': 'supplier_name'}
+
+
+def _hien_ten_khi_chon():
+    for dt, truong in HIEN_TEN.items():
+        meta = frappe.get_meta(dt)
+        if not meta.has_field(truong):
+            continue
+        for prop, val, kieu in (('title_field', truong, 'Data'), ('show_title_field_in_link', '1', 'Check')):
+            if str(meta.get(prop) or '') != val:
+                frappe.make_property_setter({'doctype': dt, 'doctype_or_field': 'DocType', 'property': prop,
+                                             'value': val, 'property_type': kieu}, validate_fields_for_doctype=False)
+
+
+# Tên cũ 0.16.0 ("Việc …" tạo cảm giác áp lực, chủ dự án đổi 20/10/2026). Chỉ ẩn Workspace cũ do bộ cài này tạo; xóa Module
+# Profile cũ chỉ khi chưa ai dùng. Người đã đặt mặc định Workspace cũ được chuyển sang tên mới.
+TEN_CU = {'ban_hang': 'Việc bán hàng', 'kho': 'Việc kho', 'tien': 'Việc tiền và công nợ', 'nha_may': 'Việc nhà máy'}
+
+
+def _an_ten_cu():
+    for nhom, cu in TEN_CU.items():
+        if frappe.db.exists('Workspace', cu) and frappe.db.get_value('Workspace', cu, 'module') == MODULE:
+            frappe.db.set_value('Workspace', cu, 'is_hidden', 1, update_modified=False)
+            for u in frappe.get_all('User', filters={'default_workspace': cu}, pluck='name'):
+                frappe.db.set_value('User', u, 'default_workspace', NHOM[nhom], update_modified=False)
+        mp = '9xLab - ' + cu
+        if frappe.db.exists('Module Profile', mp) and not frappe.db.exists('User', {'module_profile': mp}):
+            frappe.delete_doc('Module Profile', mp, ignore_permissions=True, force=True)
 
 
 def _ke_hoach(bang):

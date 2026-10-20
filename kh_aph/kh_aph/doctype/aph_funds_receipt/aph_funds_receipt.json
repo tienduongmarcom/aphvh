@@ -15,6 +15,7 @@
     },
     {
       "fieldname": "posting_date",
+      "default": "Today",
       "label": "Ngày thực nhận",
       "fieldtype": "Date",
       "reqd": 1

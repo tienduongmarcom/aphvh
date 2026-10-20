@@ -29,6 +29,7 @@
     },
     {
       "fieldname": "posting_date",
+      "default": "Today",
       "label": "Ngày xử lý",
       "fieldtype": "Date",
       "reqd": 1

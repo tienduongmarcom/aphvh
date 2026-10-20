@@ -21,6 +21,7 @@
     },
     {
       "fieldname": "received_date",
+      "default": "Today",
       "label": "Ngày nhận thực tế",
       "fieldtype": "Date",
       "reqd": 1
