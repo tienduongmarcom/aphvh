@@ -128,9 +128,17 @@ def _workspace(nhom):
 
 def _module_profile(nhom):
     ten = '9xLab - ' + NHOM[nhom]
-    doc = frappe.get_doc('Module Profile', ten) if frappe.db.exists('Module Profile', ten) else frappe.new_doc('Module Profile')
-    doc.module_profile_name = ten
-    doc.set('block_modules', [{'module': m} for m in AN_THEO_NHOM[nhom] if frappe.db.exists('Module Def', m)])
+    muon = [m for m in AN_THEO_NHOM[nhom] if frappe.db.exists('Module Def', m)]
+    if frappe.db.exists('Module Profile', ten):
+        doc = frappe.get_doc('Module Profile', ten)
+        # Module Profile.on_update khóa chứng từ và xếp hàng cập nhật người dùng: không lưu lại khi không đổi
+        # (chạy lại bộ cài liên tiếp từng gặp DocumentLockedError, UAT 39358739479 / Cổng 3 39358741700).
+        if sorted(d.module for d in doc.block_modules) == sorted(muon):
+            return ten
+    else:
+        doc = frappe.new_doc('Module Profile')
+        doc.module_profile_name = ten
+    doc.set('block_modules', [{'module': m} for m in muon])
     doc.flags.ignore_permissions = True
     doc.save() if not doc.is_new() else doc.insert()
     return ten

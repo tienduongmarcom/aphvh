@@ -56,6 +56,15 @@ class UX(unittest.TestCase):
         self.assertTrue(any(s.get('stats_filter') for s in self.ws['shortcuts']))
         self.assertNotIn('Trung tâm', name)
 
+    def test_module_profile_not_resaved_when_unchanged(self):
+        saved = Mock()
+        prof = Row(block_modules=[Row(module='Projects')], save=saved, flags=Row(), is_new=lambda: False)
+        prof.set = lambda k, v: dict.__setitem__(prof, k, v)
+        self.f.db.exists.side_effect = lambda dt, name=None: dt in ('Module Profile',) or (dt == 'Module Def' and name == 'Projects')
+        self.f.get_doc = Mock(return_value=prof)
+        self.m._module_profile('kho')
+        saved.assert_not_called()
+
     def test_disabled_no_schema(self):
         self.f.conf['kh_aph_ux_task_first'] = 0
         self.assertIsNone(self.m.schema())
