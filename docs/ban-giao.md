@@ -1,5 +1,9 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 — Chuẩn tiền tố đơn bán chung mới
+
+Ứng viên0.16.3 dùng `DBC-{YYYY}-{#####}` cho đơn mới theo quy tắc tên trung lập (Đơn bán chung). Chỉ đổi autoname của DocType nguồn; không rename/backfill đơn cũ, không sửa ID DocType/role hoặc liên kết. Các ghi chú trước "không đổi số đơn" chỉ còn đúng với số đã tồn tại; không coi tiền tố APH-SO là tên dùng chung cho đơn mới. Có kiểm metadata trong HTTP;4cổng đúng mã mới còn kiểm, chưa phát hành. Production vẫn0.16.2.
+
 ## 20/10/2026 — Bổ sung thanh bên chuẩn cho ứng viên0.16.3
 
 PR #26: cấu hình `Custom Sidebar` chuẩn Frappe, nhãn chung Vận hành, giữ năm Workspace và ẩn lối DocType/Report tự sinh do app sở hữu. Dựa vào định nghĩa trong package + phiếu duyệt bán chịu tạo động; không ẩn chứng từ/báo cáo riêng người dùng, không xóa nguồn hoặc sửa lõi. Giữ lớp tùy chỉnh riêng của từng người. Bộ cài chạy lại chỉ ghi khi cần, dùng cờ UX hiện có. Có unit và mở rộng HTTP để kiểm cấu hình. Cục bộ **454 test (14 skip) +108 lõi đạt**. ĐANG DỞ:4cổng/ảnh trên mã có Sidebar; Cổng2 và2b đã success ở bản trước Sidebar `8a5e003`, không thay bằng chứng cho mã mới. Production vẫn0.16.2/28cờ, chưa tag/deploy.

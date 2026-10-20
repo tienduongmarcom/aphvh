@@ -15,6 +15,7 @@ def chay(rpc, get, lst, denied, f, phien, emit):
     assert {r['link_to'] for r in configured if r['link_type'] == 'Workspace' and not r['hidden']} == {'Bán hàng', 'Kho vận', 'Tiền và kế toán', 'Nhà máy', 'Dữ liệu và cấu hình'}
     assert all(r['hidden'] for r in configured if r['link_type'] in ('DocType', 'Report'))
     assert get('Workspace', 'Trung tâm Bán hàng')['name']  # Workspace cũ giữ nguyên để quay lui
+    assert get('DocType', 'APH Shared Sales Order')['autoname'] == 'format:DBC-{YYYY}-{#####}'
     bang = [{'user': f['dung'], 'nhom': 'nha_may'}]
     thu = rpc('kh_aph.ux_task.ap_dung_nguoi_dung', {'bang': json.dumps(bang)})
     assert thu['chay_thu'] and get('User', f['dung'])['default_workspace'] != 'Nhà máy'

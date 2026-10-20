@@ -35,6 +35,8 @@ Không đổi số đơn, hash/series chứng từ cũ, định danh role/DocTyp
 
 ## Hiện trạng sau nhận
 
+Theo quy tắc không dùng tên một công ty cho đơn chung, đơn tạo mới dùng tiền tố DBC (Đơn bán chung), giữ năm và dãy số. Đây là lựa chọn triển khai trung lập, không đổi tên DocType, không rename/backfill số đơn đã tồn tại hoặc sửa liên kết lịch sử. Nội dung "chưa đổi số đơn" ở mốc tiếp nhận là lịch sử; cập nhật này chỉ đổi cách cấp số MỚI, không đổi số cũ.
+
 Thanh bên dùng cấu hình `Custom Sidebar` chính thức trên nền16.52: nhãn chung Vận hành, năm Workspace, ẩn shortcut DocType/Report thuộc package thay vì xóa nguồn. Giữ các mục riêng và lớp người dùng, bộ cài idempotent. Nền không có DocType này giữ Workspace chuẩn; HTTP trên nền ghim phải chứng minh có cấu hình, chưa kiểm thì không tuyên bố Sidebar đã đạt.
 
 Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ453 test (14 skip) +108 lõi đạt;4cổng/ảnh đang kiểm, chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đơn/roleID và các chính sách chưa chốt vẫn ngoài lượt này.

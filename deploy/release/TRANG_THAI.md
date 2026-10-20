@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Cấp số DBC cho đơn chung mới trong ứng viên0.16.3
+
+Theo quy tắc tên trung lập, đổi autoname cấp số mới sang DBC; số cũ/ID/Link giữ nguyên, không backfill. PR #26 vẫn đang kiểm, chưa phát hành/tag/VM; production0.16.2 giữ nguyên. Không lấy PASS của mã trước Sidebar/tiền tố mới làm PASS mã hiện tại.
+
 ## 20/10/2026 — Ứng viên0.16.3 bổ sung cấu hình thanh bên, đang kiểm
 
 PR #26 bổ sung `Custom Sidebar` chuẩn sau khi dựng đủ năm Workspace: nhãn Vận hành, chỉ ẩn lối tự sinh do package sở hữu, giữ nguồn/liên kết/tùy chỉnh riêng. Không Core patch, không thêm cờ hoặc quyền. Cục bộ454 test (14 skip) +108 lõi đạt;4cổng/ảnh cho mã này còn kiểm. Cổng2/2b ở mã trước Sidebar8a5e003 success, không coi là PASS bản mới. Chưa phát hành/tag/VM; production vẫn0.16.2/digest34a32f71…/28cờ.
