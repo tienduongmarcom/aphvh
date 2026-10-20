@@ -82,6 +82,8 @@ def schema(cho_phep_du_lieu=False):
     factory_receiving.schema()
     from kh_aph import factory_transfer
     factory_transfer.schema()
+    from kh_aph import factory_production
+    factory_production.schema()
     tien_vay.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)

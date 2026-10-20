@@ -493,3 +493,9 @@ for _event, _method in (("validate", "protect"), ("before_update_after_submit", 
 _scripts = doctype_js.get("Stock Entry", [])
 _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
 doctype_js["Stock Entry"] = _scripts + ["public/js/factory_transfer.js"]
+
+# NM02–04 ghi sản xuất / đóng gói một lần: dấu do cửa sổ tạo, bất biến, không xóa.
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete")):
+    _old = doc_events["Stock Entry"].get(_event, [])
+    _old = [_old] if isinstance(_old, str) else list(_old)
+    doc_events["Stock Entry"][_event] = _old + ["kh_aph.factory_production." + _method]
