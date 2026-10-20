@@ -20,7 +20,17 @@
       "fieldtype": "Link",
       "options": "Item",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "columns": 2
+    },
+    {
+      "fieldname": "item_name",
+      "label": "Tên hàng",
+      "fieldtype": "Data",
+      "fetch_from": "item_code.item_name",
+      "read_only": 1,
+      "in_list_view": 1,
+      "columns": 2
     },
     {
       "fieldname": "warehouse",
@@ -63,6 +73,7 @@
   "field_order": [
     "line_id",
     "item_code",
+    "item_name",
     "warehouse",
     "company",
     "qty",
