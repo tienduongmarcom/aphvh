@@ -45,7 +45,7 @@ if (!kh_aph.ux.buoc_tiep) {
             const id = "kh-aph-viec-" + frappe.utils.get_random(6);
             const nut = v.nut.map((x, i) => `<button class="btn btn-${i ? "default" : "primary"} btn-sm ml-2" data-i="${i}">${frappe.utils.escape_html(x[0])}</button>`).join("");
             frm.dashboard.set_headline_alert(`<div id="${id}" class="flex justify-between align-center" style="font-size:15px">
-                <span><b>Việc tiếp theo:</b> ${frappe.utils.escape_html(v.text)}</span><span>${nut}</span></div>`, "blue");
+                <span><b>Bước tiếp theo:</b> ${frappe.utils.escape_html(v.text)}</span><span>${nut}</span></div>`, "blue");
             $(`#${id} button`).on("click", function() {
                 const hanh_dong = v.nut[Number($(this).data("i"))][1];
                 if (typeof hanh_dong === "function") return hanh_dong();

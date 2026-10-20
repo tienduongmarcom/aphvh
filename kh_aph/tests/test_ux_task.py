@@ -45,7 +45,7 @@ class UX(unittest.TestCase):
 
     def test_workspace_three_blocks_unique_labels_and_new_name(self):
         name = self.m._workspace('ban_hang')
-        self.assertEqual(name, 'Việc bán hàng')
+        self.assertEqual(name, 'Bàn bán hàng')
         content = json.loads(self.ws['content'])
         headers = [c['data']['text'] for c in content if c['type'] == 'header']
         self.assertEqual(len(headers), 3)
@@ -64,6 +64,17 @@ class UX(unittest.TestCase):
         self.f.get_doc = Mock(return_value=prof)
         self.m._module_profile('kho')
         saved.assert_not_called()
+
+    def test_old_names_hidden_users_moved_unused_profile_removed(self):
+        self.f.db.exists.side_effect = lambda dt, name=None: (dt == 'Workspace' and name == 'Việc kho') or (dt == 'Module Profile' and name == '9xLab - Việc kho')
+        self.f.db.get_value.side_effect = lambda dt, name, field: self.m.MODULE
+        self.f.get_all = Mock(return_value=['kho@x'])
+        self.f.delete_doc = Mock()
+        self.m._an_ten_cu()
+        self.f.db.set_value.assert_any_call('Workspace', 'Việc kho', 'is_hidden', 1, update_modified=False)
+        self.f.db.set_value.assert_any_call('User', 'kho@x', 'default_workspace', 'Bàn kho', update_modified=False)
+        self.f.delete_doc.assert_called_once_with('Module Profile', '9xLab - Việc kho', ignore_permissions=True, force=True)
+        self.assertNotIn('Việc', ''.join(self.m.NHOM.values()))
 
     def test_disabled_no_schema(self):
         self.f.conf['kh_aph_ux_task_first'] = 0
