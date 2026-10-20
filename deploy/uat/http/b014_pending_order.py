@@ -54,9 +54,11 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature):
         'fieldname':'kh_aph_receiving_purchase_order','value':''}))
     denied(lambda:rpc('frappe.client.cancel',{'doctype':'Purchase Order','name':po['name']}))
     def change_po(qty=10,rate=20000):
-        return rpc('erpnext.controllers.accounts_controller.update_child_qty_rate',{
+        return ktt('/api/method/erpnext.controllers.accounts_controller.update_child_qty_rate',{
             'parent_doctype':'Purchase Order','parent_doctype_name':po['name'],
-            'trans_items':json.dumps([{'docname':source,'qty':qty,'rate':rate,'uom':'Kg','conversion_factor':1}])})
+            'trans_items':json.dumps([{'docname':source,'item_code':f['A'],'qty':qty,'rate':rate,
+                'uom':'Kg','conversion_factor':1,'schedule_date':f['date'],
+                'description':po['items'][0]['description']}])}).get('message')
     denied(lambda:change_po(qty=3))
     assert get('Purchase Order',po['name'])['items'][0]['qty']==10 and ledgers()==before
     emit('HTTP_3B_PENDING_SOURCE_TAMPER','PASS',{'mode_bound':True,'immutable_source':True,'po_cannot_discard_pending':True})
@@ -81,6 +83,7 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature):
     denied(lambda:rpc('kh_aph.pending_valuation.finalize',final_args,dung),('PermissionError',))
     denied(lambda:rpc('kh_aph.pending_valuation.finalize',final_args,ktt))
     change_po(rate=25000)
+    assert get('Purchase Order',po['name'])['items'][0]['rate']==25000
     name=rpc('kh_aph.pending_valuation.finalize',final_args,ktt)
     receipt=get('Purchase Receipt',name)
     assert receipt['docstatus']==1 and receipt['items'][0]['qty']==4 and receipt['items'][0]['rate']==25000

@@ -49,7 +49,7 @@ class PendingOrder(unittest.TestCase):
         with self.assertRaises(ValueError):self.m.lock_orders('APH',['A'])
 
     def source(self):
-        return Row(name='PO',company='APH',supplier='S',docstatus=1,status='To Receive',items=[
+        return Row(name='PO',company='APH',supplier='S',currency='VND',conversion_rate=1,docstatus=1,status='To Receive',items=[
             Row(name='R',item_code='A',qty=10,received_qty=2,conversion_factor=1,uom='Kg')])
 
     def test_native_pr_and_stock_pi_cannot_take_reserved_quantity_flag_off(self):
@@ -152,3 +152,11 @@ class PendingOrder(unittest.TestCase):
         self.assertEqual(result['items'][0]['remaining'],4)
         self.receiving._item.assert_called_once_with(source.items[0],require_price=False)
         self.assertNotIn('"rate"',__import__('json').dumps(result))
+
+    def test_pending_cannot_interpret_foreign_currency_rates_as_vnd(self):
+        source=self.source()
+        self.m.pending_source(source)
+        source.currency='USD';source.conversion_rate=25000
+        with self.assertRaises(ValueError):self.m.pending_source(source)
+        source.currency='VND'
+        with self.assertRaises(ValueError):self.m.pending_source(source)

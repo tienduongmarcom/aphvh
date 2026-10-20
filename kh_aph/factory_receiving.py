@@ -88,7 +88,9 @@ def preview(purchase_order, mode="valued"):
     doc = _source(purchase_order)
     if mode not in ('valued', 'pending'):
         frappe.throw('Chọn nhận có giá hoặc chờ định giá')
-    from kh_aph.pending_order import reserved
+    from kh_aph.pending_order import reserved, pending_source
+    if mode == 'pending':
+        pending_source(doc)
     held = reserved(doc.name)
     rows = []
     for row in doc.items:
@@ -188,7 +190,9 @@ def receive(purchase_order, request_id, rows, received_date, receiver, ticket=No
             frappe.throw('Lượt nhận đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
         return _result(pending)
     doc = _source(purchase_order, lock=True)
-    from kh_aph.pending_order import reserved
+    from kh_aph.pending_order import reserved, pending_source
+    if mode == 'pending':
+        pending_source(doc)
     held = reserved(doc.name, lock=True)
     for name, values in selected.items():
         row = next((r for r in doc.items if r.name == name), None)

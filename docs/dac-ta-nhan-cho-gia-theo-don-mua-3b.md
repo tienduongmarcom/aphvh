@@ -2,7 +2,7 @@
 
 ## 1. Mục tiêu và phạm vi
 
-Nối cửa sổ nhận nhà máy vào APH Pending Receipt đã có, không tạo chứng từ/sổ kho thứ hai. Lát này chỉ hàng tồn Kg/hệ số1 từ PO đã xác nhận, không lô/sê-ri/gia công/giao thẳng. Phiếu chờ chưa vào tồn khả dụng; không dùng giá0 để ghi kho. Nhận không PO theo màn chuẩn hiện có giữ nguyên, không tự gán nguồn cho hồ sơ cũ. Tái dùng cờ26 factory_receiving mặc định tắt.
+Nối cửa sổ nhận nhà máy vào APH Pending Receipt đã có, không tạo chứng từ/sổ kho thứ hai. Lát này chỉ đơn mua VND/tỷ giá1 và hàng tồn Kg/hệ số1 từ PO đã xác nhận, không lô/sê-ri/gia công/giao thẳng. Phiếu chờ chưa vào tồn khả dụng; không dùng giá0 để ghi kho. Nhận không PO theo màn chuẩn hiện có giữ nguyên, không tự gán nguồn cho hồ sơ cũ. Tái dùng cờ26 factory_receiving mặc định tắt.
 
 ## 2. Hiện trạng và phần thay đổi
 

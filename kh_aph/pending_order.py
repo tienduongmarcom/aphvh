@@ -15,6 +15,13 @@ def installed():
     return frappe.db.has_column('APH Pending Receipt', PO_FIELD)
 
 
+def pending_source(source):
+    # Phiếu chờ hiện hữu và cửa sổ chốt giá dùng VND; không suy giá ngoại tệ thành VND.
+    from kh_aph.factory_receiving import _number
+    if source.currency != 'VND' or _number(source.conversion_rate) != 1:
+        frappe.throw('Nhận chờ định giá hiện chỉ hỗ trợ đơn mua VND, tỷ giá 1')
+
+
 def lock_orders(company, names):
     frappe.db.sql('SELECT name FROM `tabCompany` WHERE name=%s FOR UPDATE', company)
     result = {}
@@ -90,6 +97,7 @@ def pending_transition(doc, method=None):
         frappe.throw('Đơn mua phải đang xác nhận và còn được nhận hàng')
     if source.get('is_subcontracted') or source.get('has_unit_price_items'):
         frappe.throw('Đơn gia công/giá đơn vị không nhận qua cửa sổ này')
+    pending_source(source)
     if source.supplier != doc.supplier:
         frappe.throw('Nhà cung cấp không khớp đơn mua')
     quantities = defaultdict(lambda: _number(0))
