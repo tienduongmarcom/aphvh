@@ -52,7 +52,8 @@ _NHANH = {
                  ('Tổng hợp bán theo khách', 'Report', 'Tong hop ban hang theo khach', None, '')],
     'kho': [('Tồn kho và nhận/chuyển hàng', 'Report', 'Ton kho so luong', None, ''),
             ('Kiểm kê', 'DocType', 'Stock Reconciliation', None, 'New')],
-    'tien': [('Tìm khách, xem nợ, thu tiền', 'DocType', 'Customer', None, 'List'),
+    'tien': [('Lập phiếu thu chi', 'DocType', 'Payment Entry', None, 'New'),
+             ('Tìm khách, xem nợ, thu tiền', 'DocType', 'Customer', None, 'List'),
              ('Khách cần gọi hôm nay', 'Report', 'Khach can goi hom nay', None, '')],
     'nha_may': [('Nhận hàng / chuyển / ghi sản xuất', 'Report', 'Ton kho so luong', None, ''),
                 ('Phiếu quỹ nhà máy', 'DocType', 'APH Phieu quy nha may', None, 'New')],
@@ -127,6 +128,8 @@ def _khoi(nhom):
                 ('Sổ kế toán hộ kinh doanh', 'Report', 'So ke toan HKD', None, ''),
                 ('Sổ doanh thu hộ kinh doanh', 'Report', 'So doanh thu HKD', None, ''),
                 ('Bán hàng và hóa đơn MISA', 'Report', 'Ban hang co hoa don', None, ''),
+                ('Hóa đơn chờ xử lý MISA', 'Report', 'Hoa don cho xuat', None, ''),
+                ('Hồ sơ hóa đơn MISA', 'DocType', 'APH Hoa don ngoai', None, 'List'),
                 ('Lãi gộp quản trị', 'Report', 'Lai gop quan tri', None, ''),
                 ('Dòng tiền 7/30 ngày', 'Report', 'Dong tien 7 30 ngay', None, ''),
                 ('Tồn kho theo tài khoản và địa điểm', 'Report', 'Ton kho theo tai khoan va dia diem', None, '')]

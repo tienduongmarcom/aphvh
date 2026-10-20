@@ -252,10 +252,10 @@ try {
     } else if (mode === 'ban-giao-tien') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-ban-giao-tien/'+encodeURIComponent(source)});
-        await until('!!window.cur_frm && cur_frm.doctype === "APH Ban giao tien" && !!cur_frm.custom_buttons["Xác nhận thực nhận"]');
+        await until('!!window.cur_frm && cur_frm.doctype === "APH Ban giao tien" && !!cur_frm.custom_buttons["Xác nhận nhận tiền"]');
         const counts = () => evaluate("Promise.all(['Journal Entry','GL Entry','Payment Ledger Entry'].map(doctype=>frappe.call({method:'frappe.client.get_list',args:{doctype,fields:['name'],limit_page_length:0}}).then(r=>r.message.length)))");
         const before=await counts();
-        await evaluate('cur_frm.custom_buttons["Xác nhận thực nhận"].trigger("click");true');
+        await evaluate('cur_frm.custom_buttons["Xác nhận nhận tiền"].trigger("click");true');
         await until('!!window.cur_dialog && !!cur_dialog.fields_dict.amount');
         await evaluate('window.__receiveDialog=cur_dialog;true');
         await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.cash_handover.receive*',requestStage:'Response'}]});
