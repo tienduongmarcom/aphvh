@@ -463,3 +463,23 @@ _scripts = doctype_js.get("Purchase Order", [])
 if isinstance(_scripts, str):
     _scripts = [_scripts]
 doctype_js["Purchase Order"] = _scripts + ["public/js/factory_receiving.js"]
+
+# Giữ chỗ hàng chờ giá trên mọi đường ghi nhận đơn mua, kể cả màn native.
+for _dt, _events in {
+    "APH Pending Receipt": {"validate": "validate_pending", "before_update_after_submit": "validate_pending",
+        "before_submit": "pending_transition", "before_cancel": "pending_transition"},
+    "Purchase Receipt": {"before_submit": "native_receipt", "before_cancel": "native_receipt"},
+    "Purchase Invoice": {"before_submit": "native_receipt", "before_cancel": "native_receipt"},
+    "Purchase Order": {"before_update_after_submit": "protect_order", "before_cancel": "protect_order", "on_trash": "protect_order"},
+}.items():
+    for _event, _method in _events.items():
+        _old = doc_events.setdefault(_dt, {}).get(_event, [])
+        if isinstance(_old, str):
+            _old = [_old]
+        doc_events[_dt][_event] = _old + ["kh_aph.pending_order." + _method]
+_old = doc_events["APH Pending Receipt"].get("on_trash", [])
+if isinstance(_old, str):
+    _old = [_old]
+doc_events["APH Pending Receipt"]["on_trash"] = _old + ["kh_aph.factory_receiving.prevent_delete"]
+extend_doctype_class["Purchase Receipt"].append("kh_aph.pending_order.PendingReceiptLinks")
+doc_events["Purchase Receipt"]["on_cancel"].append("kh_aph.pending_order.receipt_cancelled")

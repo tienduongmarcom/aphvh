@@ -23,6 +23,7 @@ class Receiving(unittest.TestCase):
         self.f.whitelist = lambda **kw: lambda fn: fn
         self.f.get_roles = lambda: ['Kế toán nhà máy', 'APH Không xem giá vốn']
         self.f.db = Mock(); self.f.db.get_value.return_value = 1
+        self.f.db.has_column.return_value = False
         self.f.parse_json = lambda raw: json.loads(raw) if isinstance(raw, str) else raw
         self.f.get_doc = Mock(); self.f.get_list = Mock()
         utils = types.ModuleType('frappe.utils')
@@ -38,6 +39,7 @@ class Receiving(unittest.TestCase):
     def tearDown(self):
         self.patch.stop()
         sys.modules.pop('kh_aph.factory_receiving', None)
+        sys.modules.pop('kh_aph.pending_order', None)
 
     def test_disabled_guest_roles_before_sources(self):
         self.f.conf['kh_aph_factory_receiving'] = 0

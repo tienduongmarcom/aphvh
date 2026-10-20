@@ -90,7 +90,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["Bank Transaction","APH Doi chieu lech tien","APH Can cu doi chieu quy","APH Ban giao tien","APH Xac minh quy","APH Chot ca tien","APH Phan bo quy","User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
+TRACKED=["APH Pending Receipt","APH Pending Receipt Item","Purchase Invoice","Bank Transaction","APH Doi chieu lech tien","APH Can cu doi chieu quy","APH Ban giao tien","APH Xac minh quy","APH Chot ca tien","APH Phan bo quy","User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)
@@ -167,10 +167,11 @@ try:
     import sys
     sys.path.insert(0,str(Path(__file__).resolve().parent))
     import b014_cases
-    def factory_feature(enabled):
+    def factory_feature(enabled, feature="kh_aph_factory_handover"):
+        assert feature in ("kh_aph_factory_handover", "kh_aph_factory_receiving")
         assert os.environ.get("GITHUB_ACTIONS") == "true" and SITE == "aphvh-web-uat"
-        run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"set-config","kh_aph_factory_handover",str(int(enabled))])
-        if enabled:
+        run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"set-config",feature,str(int(enabled))])
+        if enabled and feature == "kh_aph_factory_handover":
             run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"execute","kh_aph.factory_handover.schema"])
             run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"execute","kh_aph.tien_vay.schema"])
         run(["docker","restart",WEB])

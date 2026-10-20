@@ -3,9 +3,11 @@ import frappe
 from frappe.utils import flt, today, now_datetime
 from kh_aph.quantity_rules import number
 from kh_aph.bag_stock import enabled
+from kh_aph.cash_transaction import retry_rpc
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
+@retry_rpc
 def finalize(name, rates, reason):
     if not enabled():
         frappe.throw("Chưa bật nhập chờ định giá")
@@ -16,8 +18,14 @@ def finalize(name, rates, reason):
         frappe.throw("Hồ sơ không xem giá vốn không được chốt giá nhập", frappe.PermissionError)
     doc = frappe.get_doc("APH Pending Receipt", name)
     doc.check_permission("write")
-    frappe.db.sql("SELECT name FROM `tabAPH Pending Receipt` WHERE name=%s FOR UPDATE", name)
-    doc.reload()
+    order = doc.get('kh_aph_receiving_purchase_order')
+    if order:
+        from kh_aph import factory_receiving as receiving
+        from kh_aph.pending_order import lock_orders
+        receiving.guard()
+        lock_orders(doc.company, [order])
+    doc = frappe.get_doc("APH Pending Receipt", name, for_update=True)
+    doc.check_permission("write")
     if doc.docstatus != 1:
         frappe.throw("Cần xác nhận phiếu nhận hàng trước khi định giá")
     if doc.purchase_receipt:
@@ -45,12 +53,51 @@ def finalize(name, rates, reason):
     receipt = frappe.get_doc({"doctype": "Purchase Receipt", "company": doc.company,
         "supplier": doc.supplier, "posting_date": today(), "currency": "VND", "conversion_rate": 1,
         "kh_aph_pending_receipt": doc.name, "items": rows})
+    token = None
+    receiving_token = None
+    if order:
+        from kh_aph import factory_receiving as receiving
+        from kh_aph.pending_order import FINALIZING, pending_transition, ROW_FIELD
+        from erpnext.buying.doctype.purchase_order.purchase_order import make_purchase_receipt
+        source = receiving._source(order, lock=True)
+        pending_transition(doc)
+        selected = {r.get(ROW_FIELD): r for r in doc.items}
+        if len(selected) != len(doc.items):
+            frappe.throw('Mỗi dòng chờ giá phải giữ đúng một dòng đơn mua')
+        for source_row, row in selected.items():
+            original = next((r for r in source.items if r.name == source_row), None)
+            if not original or number(original.rate) != number(rates[row.name]):
+                frappe.throw('Cập nhật giá trên đơn mua bằng thao tác chuẩn trước, rồi chốt đúng giá hiện hành')
+            receiving._item(original)
+        receipt = make_purchase_receipt(order, args={'filtered_children': list(selected)})
+        if {r.purchase_order_item for r in receipt.items} != set(selected):
+            frappe.throw('Nguồn đơn mua đã đổi; đối chiếu phiếu chờ trước khi chốt giá')
+        for row in receipt.items:
+            pending_row = selected[row.purchase_order_item]
+            row.qty = row.received_qty = pending_row.qty
+            row.rejected_qty = 0
+            row.warehouse = pending_row.warehouse
+            row.kh_aph_bags = pending_row.kh_aph_bags
+            row.kh_aph_receiving_quality_qty = pending_row.get('kh_aph_receiving_quality_qty') or 0
+        receipt.posting_date = today()
+        receipt.set_posting_time = 1
+        receipt.kh_aph_pending_receipt = doc.name
+        receipt.kh_aph_gia_tam = source.get('kh_aph_gia_tam')
+        for field in receiving.STAMP:
+            receipt.set(receiving.PREFIX+field, doc.get(receiving.PREFIX+field))
+        token = FINALIZING.set(doc.name)
+        receiving_token = receiving._INTERNAL.set((frappe.session.user,
+            receipt.get(receiving.PREFIX+'request'), receipt.get(receiving.PREFIX+'payload')))
+    previous_internal = frappe.flags.pending_internal_process
     frappe.flags.pending_internal_process = True
     try:
         receipt.insert()
         receipt.submit()
     finally:
-        frappe.flags.pending_internal_process = False
+        frappe.flags.pending_internal_process = previous_internal
+        if order:
+            receiving._INTERNAL.reset(receiving_token)
+            FINALIZING.reset(token)
     doc.db_set({"purchase_receipt": receipt.name, "status": "Đã định giá",
         "valued_by": frappe.session.user, "valued_at": now_datetime(), "valuation_reason": reason},
         update_modified=True)

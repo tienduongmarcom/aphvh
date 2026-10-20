@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may'].includes(mode)) {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -64,7 +64,8 @@ try {
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('xuat-ngay-retry.png',Buffer.from(screenshot.data,'base64'));
         console.log(JSON.stringify({case:'NATIVE_DESK_XUAT_NGAY_LOST_RESPONSE',status:'PASS',detail:{response_dropped_after_200:true,committed_note:notes[0].name,same_dialog_retry:true,ledger_unchanged:true}}));
-    } else if (mode === 'nhan-hang-nha-may') {
+    } else if (['nhan-hang-nha-may','nhan-cho-gia-nha-may'].includes(mode)) {
+        const pendingMode=mode==='nhan-cho-gia-nha-may';
         const payload=JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/query-report/'+encodeURIComponent('Ton kho so luong')+'?'+new URLSearchParams({company:payload.company})});
@@ -73,6 +74,7 @@ try {
         await evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.trim()==="Nhận hàng nhà máy").click();true');
         await until('!!window.cur_dialog?.fields_dict.purchase_order');
         await evaluate(`cur_dialog.set_value('purchase_order',${JSON.stringify(payload.purchase_order)});true`);
+        if(pendingMode)await evaluate('cur_dialog.set_value("mode","pending");true');
         await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
         await until('!!window.cur_dialog?.fields_dict.items && !!cur_dialog.fields_dict.receiver');
         await evaluate('window.__receiving=cur_dialog;__receiving.set_value("receiver","Nhân viên kho ký giấy");__receiving.fields_dict.items.df.data[0].qty=1;__receiving.fields_dict.items.df.data[0].bags=0;__receiving.fields_dict.items.grid.refresh();true');
@@ -90,12 +92,12 @@ try {
         await evaluate('__receiving.get_primary_btn().trigger("click");true');
         await until('!!cur_dialog?.confirm_dialog && cur_dialog.$wrapper.is(":visible")');
         await evaluate('cur_dialog.get_primary_btn().trigger("click");true');
-        await until('!!window.cur_frm && cur_frm.doctype==="Purchase Receipt" && cur_frm.doc.docstatus===1 && frappe.request.ajax_count===0');
+        await until(`!!window.cur_frm && cur_frm.doctype===${JSON.stringify(pendingMode?'APH Pending Receipt':'Purchase Receipt')} && cur_frm.doc.docstatus===1 && frappe.request.ajax_count===0`);
         if(await evaluate('!!cur_frm.doc.items[0].rate || !!cur_frm.doc.grand_total'))throw Error('Restricted form received purchase prices');
         const name=await evaluate('cur_frm.doc.name');
         const screenshot=await command('Page.captureScreenshot',{format:'png'});
-        fs.writeFileSync('nha-may-nhan-hang.png',Buffer.from(screenshot.data,'base64'));
-        console.log(JSON.stringify({case:'DESK_3A_RECEIVING_RETRY',status:'PASS',detail:{name,restricted_principal:true,response_dropped_after_200:true,same_dialog_retry:true,no_cost_values:true}}));
+        fs.writeFileSync(pendingMode?'nha-may-nhan-cho-gia.png':'nha-may-nhan-hang.png',Buffer.from(screenshot.data,'base64'));
+        console.log(JSON.stringify({case:pendingMode?'DESK_3B_PENDING_RETRY':'DESK_3A_RECEIVING_RETRY',status:'PASS',detail:{name,restricted_principal:true,response_dropped_after_200:true,same_dialog_retry:true,no_cost_values:true}}));
     } else if (mode === 'quy-nha-may') {
         const payload=JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:1100,deviceScaleFactor:1,mobile:false});

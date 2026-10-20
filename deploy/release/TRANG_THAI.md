@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — ĐANG DỞ nhận chờ định giá theo đơn mua (3B)
+
+Nhánh `feat/nhan-cho-gia-theo-don-mua-20261020`, base PR #17/4b638b0. Đặc tả9 nhóm `docs/dac-ta-nhan-cho-gia-theo-don-mua-3b.md`. Đã viết nhánh pending trong cửa sổ nhận, PO/dòng nguồn và dấu/tệp/chất lượng; giữ chỗ theo đúng dòng, kiểm cả PR chuẩn/PI update_stock và bảo vệ khi tắt26. Finalize dùng mapper native, chỉ đúng giá PO hiện hành, chuyển giữ chỗ thành một PR; hủy PR trả giữ chỗ, hủy pending sau đó giải phóng và giữ hồ sơ. Chỉ miễn đúng backlink pending nguồn khi native hủy PR, mọi backlink khác vẫn kiểm. Không sửa core hoặc cấp ignore_permissions.
+
+Cục bộ416 kh_aph +108 lab9x đạt; đã viết7 ca HTTP/Desk mới, dự kiến292 tổng/b014101. Chưa có kết quả4 cổng của mã mới, không dùng PASS3A thay. Bước tiếp: push PR kế tiếp, chạy4 cổng cùng SHA, đọc artifact/ảnh và sửa lỗi tích hợp thực tế. Production vẫn0.15.3/21 cờ theo xác nhận; không tăng version/tag/merge/deploy. Nghiệm thu người dùng/dữ liệu/máy in thật vẫn gom cuối; toàn đợt3 chưa hoàn tất.
+
 ## 20/10/2026 — Nhận nhanh nhà máy 3A đã kiểm đủ bốn cổng
 
 [PR #17](https://github.com/tienduongmarcom/aphvh/pull/17), nhánh `feat/nhan-hang-nha-may-20261019`, base PR #16/565910a. Mã nghiệp vụ/kiểm cuối **`1fffcbaa9b40faf5b33fe246a6d4c7faf68c7b61`**. Nhận Kg từ đơn mua có giá qua Dialog trên PO hoặc Tồn kho số lượng; tạo một Purchase Receipt chuẩn, ghi người thực nhận, tệp cân riêng tư, ghi chú và phần hàng cần đàm phán trong tổng lượng nhận. Theo quyết định chủ dự án: hàng có vấn đề thường dùng ngay, giá điều chỉnh sau; không tự trả hàng/giảm giá. Cờ26 `kh_aph_factory_receiving` mặc định tắt; không bypass quyền hoặc mở giá vốn cho nhà máy.
