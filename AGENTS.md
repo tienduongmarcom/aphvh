@@ -188,3 +188,9 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   Tạo Accounting Dimension thì ERPNext đẩy việc dựng ô vào hàng đợi `long` (không chạy ngay khi không có worker).
 - Tài khoản 1388 / 3388 không có loại (account_type) nên nhận đối tượng Nhân viên; tài khoản có loại khác Receivable / Payable /
   Equity thì ERPNext chặn đối tượng (`validate_account_party_type`).
+- ERPNext16.51.1 `accounts_controller.update_child_qty_rate` bỏ qua dòng thiếu `item_code`, kể cả có `docname`;
+  thao tác thành công có thể trả phản hồi không có `message`. Fixture phải gửi đủ mã/dòng, lượng/giá, UOM/hệ số,
+  ngày và mô tả như màn chuẩn, rồi kiểm trạng thái đã lưu. Quyền sửa PO (Purchase User/Manager) độc lập quyền
+  Accounts Manager chốt giá; không cấp quyền mua ngầm hoặc coi phản hồi rỗng là lỗi nghiệp vụ.
+- PO mới cho mã đã mua có thể tự điền giá mua gần nhất khi payload gửi rate0. Ca “chưa có giá” phải dùng mã chưa
+  có lịch sử giá và kiểm lại `PO.items[].rate==0` sau lưu; không suy rate0 từ payload, không bỏ assert để cho PASS.

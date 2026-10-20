@@ -6,7 +6,7 @@ Nối cửa sổ nhận nhà máy vào APH Pending Receipt đã có, không tạ
 
 ## 2. Hiện trạng và phần thay đổi
 
-PR #17/1fffcba đã kiểm nhận có giá. pending_valuation.finalize hiện tạo PR độc lập, chưa lưu PO/dòng nguồn. Thêm Link PO trên pending, ID dòng PO trên child, dấu lượt/hồ sơ nhận giống lát3A; lượng chờ giữ chỗ cho đúng dòng. Mọi đường PR/PI cập nhật kho phải kiểm tổng đã nhận+chờ+nhận lần này không vượt PO. Phần giữ chỗ bảo vệ hồ sơ đã phát sinh kể cả khi tắt cờ; tắt cờ không giải phóng hàng đã nhận vật lý.
+PR #17/1fffcba đã kiểm nhận có giá. Baseline trước PR #18: pending_valuation.finalize tạo PR độc lập, chưa lưu PO/dòng nguồn. Thêm Link PO trên pending, ID dòng PO trên child, dấu lượt/hồ sơ nhận giống lát3A; lượng chờ giữ chỗ cho đúng dòng. Mọi đường PR/PI cập nhật kho phải kiểm tổng đã nhận+chờ+nhận lần này không vượt PO. Phần giữ chỗ bảo vệ hồ sơ đã phát sinh kể cả khi tắt cờ; tắt cờ không giải phóng hàng đã nhận vật lý.
 
 ## 3. Quy trình và trách nhiệm
 
@@ -36,7 +36,19 @@ PO giá0 chỉ được nhận pending, không finalize giá0 hoặc nhập kho 
 
 ## 9. Triển khai và khôi phục
 
-Schema qua factory_receiving.schema/bộ cài rõ ràng, không after_migrate tự bật. Tái dùng26, không đổi version/tag/production. Hồ sơ cũ không nguồn vẫn hoạt động như trước. Lúc nâng production cần diễn tập bản sao có dữ liệu; quay lui image+DB/files/cờ đồng bộ, không chỉ tắt cờ để bỏ giữ chỗ. Nghiệm thu nhân sự/dữ liệu thật gom cuối. Đang triển khai, chưa đạt nghiệm thu kỹ thuật.
+Schema qua factory_receiving.schema/bộ cài rõ ràng, không after_migrate tự bật. Tái dùng26, không đổi version/tag/production. Hồ sơ cũ không nguồn vẫn hoạt động như trước. Lúc nâng production cần diễn tập bản sao có dữ liệu; quay lui image+DB/files/cờ đồng bộ, không chỉ tắt cờ để bỏ giữ chỗ. Nghiệm thu nhân sự/dữ liệu thật gom cuối. Đã kiểm kỹ thuật đủ4 cổng đúnga75ced9b8b4613d71fe45117bc36b7215f85877d (20/10/2026); artifact/ảnh đã đọc/xem, liên kết trong docs/ban-giao.md. Nghiệm thu nhân sự/dữ liệu thật vẫn chờ đợt cuối.
 
 
-Bộ ca tích hợp mới (8 ca): HTTP_3B_PENDING_RESERVE_REPLAY; HTTP_3B_NATIVE_RESERVATION_FLAG_OFF; HTTP_3B_PENDING_SOURCE_TAMPER; HTTP_3B_PENDING_VALUED_RACE; HTTP_3B_PENDING_FINALIZE_ONCE; HTTP_3B_PENDING_CANCEL_HISTORY; HTTP_3B_UNPRICED_ORDER_PENDING_ONLY; DESK_3B_PENDING_RETRY. Dự kiến b014102/toàn HTTP293; không tính unit thay HTTP/Desk.
+Bộ ca tích hợp mới (8 ca): HTTP_3B_PENDING_RESERVE_REPLAY; HTTP_3B_NATIVE_RESERVATION_FLAG_OFF; HTTP_3B_PENDING_SOURCE_TAMPER; HTTP_3B_PENDING_VALUED_RACE; HTTP_3B_PENDING_FINALIZE_ONCE; HTTP_3B_PENDING_CANCEL_HISTORY; HTTP_3B_UNPRICED_ORDER_PENDING_ONLY; DESK_3B_PENDING_RETRY. Đã PASS b014102/toàn HTTP293,0 FAIL trên a75ced9; cục bộ419+108,4 cổng cùng mã đạt. Không tính unit thay HTTP/Desk.
+
+
+| Yêu cầu | Ca tự kiểm truy nguyên | Kết quả bắt buộc |
+|---|---|---|
+| 3B01 ghi lượng, tệp và bấm lặp | HTTP_3B_PENDING_RESERVE_REPLAY | pending4/PO10, còn6, không SLE/GL/PLE mới; tệp private đúng hồ sơ |
+| 3B02 tất cả lối nhập tôn trọng giữ chỗ | HTTP_3B_NATIVE_RESERVATION_FLAG_OFF | PR/PI cập nhật kho vượt phần còn bị chặn cả khi26=0 |
+| 3B03 dữ liệu/nguồn bất biến | HTTP_3B_PENDING_SOURCE_TAMPER | đổi mode/giả giá/gỡ PO/giảm PO/hủy PO còn chờ bị chặn |
+| 3B04 nhận đồng thời | HTTP_3B_PENDING_VALUED_RACE | hai phiên khác mode mỗi4 khi còn6, chỉ một thành công, còn2 |
+| 3B05 quyền và chốt giá | HTTP_3B_PENDING_FINALIZE_ONCE | NoCost bị chặn; giá sai PO bị chặn; đúng giá tạo PR4 đúng dòng, retry một PR |
+| 3B06 hủy và lịch sử | HTTP_3B_PENDING_CANCEL_HISTORY | hủy PR trả giữ chỗ; hủy pending giải phóng; không xóa hồ sơ/tệp |
+| 3B07 chưa có giá thật | HTTP_3B_UNPRICED_ORDER_PENDING_ONLY | mã mới/PO.rate=0 chỉ được pending, finalize0 bị chặn |
+| 3B08 cửa sổ thật và mất phản hồi | DESK_3B_PENDING_RETRY | NoCost, bỏ200 sau commit/bấm lại cùng Dialog một pending1kg, không thêm sổ |
