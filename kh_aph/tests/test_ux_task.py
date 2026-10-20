@@ -178,7 +178,10 @@ class UX(unittest.TestCase):
         doc.append = lambda key, value: doc[key].append(Row(value))
         self.f.db.get_value.return_value = None
         self.f.get_doc = Mock(return_value=doc)
-        self.f.get_all = Mock(side_effect=lambda dt, **kw: ['APH Shared Sales Order', 'Chung tu rieng cua nguoi dung'] if dt == 'DocType' else ['Tong hop ban hang theo khach', 'Bao cao rieng'])
+        self.f.get_all = Mock(side_effect=lambda dt, **kw: {
+            'DocType': ['APH Shared Sales Order', 'Chung tu rieng cua nguoi dung'],
+            'Workspace': ['Trung tâm Bán hàng', 'Bàn kho', 'Trang rieng'],
+            'Report': ['Tong hop ban hang theo khach', 'Bao cao rieng']}[dt])
         self.m._sidebar()
         self.assertEqual(doc.label, 'Vận hành')
         doc.insert.assert_called_once()
@@ -189,6 +192,9 @@ class UX(unittest.TestCase):
         self.assertNotIn(('DocType', 'Chung tu rieng cua nguoi dung'), rows)
         self.assertNotIn(('Report', 'Bao cao rieng'), rows)
         self.assertTrue(all(rows[('Workspace', n)].hidden == 0 for n in self.m.NHOM.values()))
+        self.assertEqual(rows[('Workspace', 'Trung tâm Bán hàng')].hidden, 1)
+        self.assertEqual(rows[('Workspace', 'Bàn kho')].hidden, 1)
+        self.assertNotIn(('Workspace', 'Trang rieng'), rows)
         self.assertEqual((unrelated.hidden, unrelated.label), (0, 'Khách riêng'))
         self.f.db.get_value.return_value = 'CS1'
         self.m._sidebar()

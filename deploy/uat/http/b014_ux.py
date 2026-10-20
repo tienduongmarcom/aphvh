@@ -14,6 +14,7 @@ def chay(rpc, get, lst, denied, f, phien, emit):
     configured = get('Custom Sidebar', sidebar[0]['name'])['sidebar_items']
     assert {r['link_to'] for r in configured if r['link_type'] == 'Workspace' and not r['hidden']} == {'Bán hàng', 'Kho vận', 'Tiền và kế toán', 'Nhà máy', 'Dữ liệu và cấu hình'}
     assert all(r['hidden'] for r in configured if r['link_type'] in ('DocType', 'Report'))
+    assert any(r['link_type'] == 'Workspace' and r['link_to'] == 'Trung tâm Bán hàng' and r['hidden'] for r in configured)
     assert get('Workspace', 'Trung tâm Bán hàng')['name']  # Workspace cũ giữ nguyên để quay lui
     assert get('DocType', 'APH Shared Sales Order')['autoname'] == 'format:DBC-{YYYY}-{#####}'
     bang = [{'user': f['dung'], 'nhom': 'nha_may'}]

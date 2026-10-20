@@ -221,6 +221,11 @@ def _sidebar():
         owned[kind] = {d['name'] for d in definitions if not d.get('istable')}
     owned['DocType'].add('APH Credit Release')  # Chứng từ tạo động, không có JSON riêng.
     wanted = [('Workspace', n, 0) for n in NHOM.values()]
+    # Workspace Manager vẫn được native liệt kê trang is_hidden. Ẩn tham chiếu
+    # thanh bên tường minh để tài khoản quản trị cũng chỉ thấy một bộ màn hình.
+    old_workspaces = {n for names in TEN_CU.values() for n in names}
+    wanted += [('Workspace', n, 1) for n in frappe.get_all('Workspace',
+        filters={'module': MODULE}, pluck='name') if n in old_workspaces]
     wanted += [('DocType', n, 1) for n in frappe.get_all('DocType',
         filters={'module': MODULE, 'istable': 0}, pluck='name') if n in owned['DocType']]
     wanted += [('Report', n, 1) for n in frappe.get_all('Report',
