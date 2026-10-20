@@ -5,10 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature,native_admin):
     dung=phien(f['dung']);ktt=phien(f['ktt'])
-    def order(qty=10,rate=20000):
+    def order(qty=10,rate=20000,item=None):
         return submit(insert({'doctype':'Purchase Order','company':f['aph'],'supplier':f['ncc'],
             'transaction_date':f['date'],'schedule_date':f['date'],'currency':'VND','conversion_rate':1,
-            'items':[{'item_code':f['A'],'qty':qty,'uom':'Kg','conversion_factor':1,'rate':rate,
+            'items':[{'item_code':item or f['A'],'qty':qty,'uom':'Kg','conversion_factor':1,'rate':rate,
                 'warehouse':f['kho'],'schedule_date':f['date']}] }))
     po=order();source=po['items'][0]['name']
     row={'source_row':source,'warehouse':f['kho'],'qty':4,'bags':0,'quality_qty':1}
@@ -102,7 +102,10 @@ def chay(rpc,get,insert,submit,lst,denied,f,phien,emit,feature,native_admin):
     assert get('APH Pending Receipt',pending['name'])['kh_aph_receiving_ticket']==file['file_url']
     emit('HTTP_3B_PENDING_CANCEL_HISTORY','PASS',{'cancel_pr_restores_reservation':True,'cancel_pending_releases':True,'history_kept':True})
 
-    zero_po=order(3,rate=0)
+    unpriced_item=insert({'doctype':'Item','item_code':f['p']+'-CHUA-GIA',
+        'item_name':f['p']+' hàng chưa có giá mua','item_group':get('Item',f['A'])['item_group'],
+        'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average'})
+    zero_po=order(3,rate=0,item=unpriced_item['name'])
     assert get('Purchase Order',zero_po['name'])['items'][0]['rate']==0
     denied(lambda:rpc('kh_aph.factory_receiving.preview',{'purchase_order':zero_po['name']},dung))
     zero_view=rpc('kh_aph.factory_receiving.preview',{'purchase_order':zero_po['name'],'mode':'pending'},dung)
