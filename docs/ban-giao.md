@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 — Codex tiếp nhận PR #25 và ghi phạm vi tối ưu mới nhất
+
+Nguồn nhận `7dcff5a`; đã đối chiếu diff chỉ tài liệu, GitHub không có PR mở. Bốn cổng và phát hành0.16.2 đều success đúng95a8b1e, Cổng3 mốc0.16.2 success e062287. Đã tải artifact UAT39427294383:13 tệp http,308 bản ghi PASS/0FAIL (gồm kỹ thuật/chuẩn bị/khôi phục), b014117PASS; xem ảnh ux-viec-ban-hang.png. Chi tiết, giới hạn và yêu cầu hội thoại mới tại `docs/dac-ta-toi-uu-giao-dien-0163.md`. Yêu cầu mới thay các đề xuất chờ chốt cũ của Claude về bố trí: Nhà máy riêng; khách luôn hiện SĐT/địa chỉ; mã và tên hàng riêng; công nợ gọn; tên chung trung lập. Không tự đổi series/số đơn/roleID/giữ tồn lúc in hoặc duyệt mẫu3liên.
+
+**ĐANG DỞ:** mới hoàn tất tiếp nhận và ghi phạm vi; chưa sửa mã nghiệp vụ/schema/quyền. Nhánh tiếp nối `feat/toi-uu-giao-dien-20261020`; bước tiếp chuẩn tên/điều hướng, giữ đủ lối cũ trước ẩn. Không tăng version/tag/push/deploy. Production vẫn0.16.2 theo xác nhận hồ sơ; không kiểm VM trong lượt này. Hai ca Chrome mở theo hồ sơ vẫn giữ giới hạn, không tuyên bố đã sửa.
+
 ## 20/10/2026 ~22:45 — MỐC BÀN GIAO Claude → Codex (production 0.16.2 ĐẠT)
 
 Chủ dự án yêu cầu bàn giao tập trung. **Claude dừng mọi chỉnh sửa trong cùng phạm vi kể từ mốc này** (kể cả bản đổi tên 0.16.3);

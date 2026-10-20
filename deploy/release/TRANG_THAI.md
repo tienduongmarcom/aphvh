@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Codex đã nhận hồ sơ, chưa có ứng viên phát hành mới
+
+Đối chiếu main `7dcff5a`/PR#25 chỉ tài liệu. Đã kiểm trạng thái4 cổng và phát hành0.16.2 đúng95a8b1e, Cổng3 mốc0.16.2 đúnge062287; đã tải/đọc artifact UAT39427294383. Nhánh tiếp nối `feat/toi-uu-giao-dien-20261020` hiện chỉ ghi phạm vi hội thoại tại `docs/dac-ta-toi-uu-giao-dien-0163.md`, chưa sửa code/schema/quyền, không version/tag/phát hành/VM. Production giữ0.16.2/digest34a32f71…/28cờ theo hồ sơ, không dùng bằng chứng cũ làm PASS cho mã mới. ĐANG DỞ: chuẩn tên và làm gọn theo yêu cầu mới; Nhà máy riêng, thông tin khách/hàng luôn rõ, công nợ gọn; mẫu3liên chưa duyệt.
+
 ## 20/10/2026 ~21:35 — Production 0.16.2 đã triển khai ĐẠT (mốc bàn giao Claude → Codex)
 
 Anh Tiến chạy trên `erpnext-prod/frontend`: diễn tập bản sao rồi `=== XONG 0.16.2: ĐẠT ===`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.2`
