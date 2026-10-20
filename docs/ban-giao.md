@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — Đã gộp bản tối ưu0.16.3 vào main, chờ chủ dự án gắn tag
+
+Theo yêu cầu tiếp tục, PR #26 đã gộp bằng merge commit **a1f95b062f2ff7334ed36c176dfb742bf828974a**, giữ lịch sử mã kiểm12d9d24 và commit hồ sơ54dfacc. Tree mã app giống mã đã đạt bốn cổng; không squash/đẩy đè main. Tag v0.16.3 chưa tồn tại khi kiểm trước gộp. Production vẫn0.16.2/digest34a32f71…/28cờ; chưa phát hành image, chưa chạy VM.
+
+Đã chuẩn bị hướng dẫn cụ thể `docs/phat-hanh-0163.md`, tách Mac (chủ dự án gắn tag đúng merge commit trên) và SSH erpnext-prod (chỉ sau workflow phát hành success: diễn tập bản sao rồi nâng theo runbook, không cờ mới). AGENTS quy định chủ dự án tự gắn tag; agent chưa tạo/push tag. PR ghi nhận bước này chỉ tài liệu, không cần coi là mã app kiểm mới. Các run bốn cổng và giới hạn giữ ở mốc dưới. Bước chờ: chủ dự án gắn tag, chờ image và diễn tập production thực; không coi CI ĐẠT là production ĐẠT.
+
 ## 21/10/2026 — Bản tối ưu0.16.3 đã kiểm kỹ thuật, chưa phát hành
 
 [PR #26](https://github.com/tienduongmarcom/aphvh/pull/26), nhánh `feat/toi-uu-giao-dien-20261020`; mã nghiệp vụ và kiểm cuối **`12d9d24a2ce613b354fc1e72ad815f984e4a217c`**. Commit hồ sơ theo sau chỉ đổi tài liệu, không phải mã nghiệp vụ được kiểm mới. Production vẫn **0.16.2**, digest `sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917`,28 cờ theo xác nhận bàn giao; không truy cập/sửa VM, không tag, gộp hoặc phát hành image trong lượt này.
