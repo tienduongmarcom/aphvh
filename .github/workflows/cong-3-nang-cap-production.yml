@@ -15,8 +15,9 @@ permissions:
 env:
   ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
-  PROD_TAG: "0.15.3"
-  # Digest image 0.15.3 đang chạy trên erpnext-prod từ 18/10/2026 theo log người vận hành.
+  PROD_TAG: "0.16.0"
+  # Digest image 0.16.0 đang chạy trên erpnext-prod từ 20/10/2026 theo log người vận hành.
+  # Trước: 0.15.3 sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496.
   # Trước: 0.15.2 sha256:fea385a9512d97fa4489e441873e6b6f88ea627f46c9d65f9d041c50e2427333.
   # Trước: 0.14.2 sha256:0f528c3c1f0e0021eb9d864ba03bd4581af51f9857b736f584d16b442c81a8a3,
   #        0.14.0 sha256:3a259c9b239dc00dacb0fcb79c421c93306a9e9a6813fcd329fd122cc3192a02,
@@ -26,8 +27,8 @@ env:
   #        0.11.3 sha256:716f1401b5e0143d08f1ee29044226a79173056766f7091e87cf354af44bd2d8,
   #        0.11.2 sha256:f2417393b5ea6c65a901502b342741614111356df13758dc873f5cd534a09ca3,
   #        0.11.1 sha256:9335dfa1f2d9199ecc2c49a14bba86ce331cecd62395b1a66e113d78d50f8424
-  PROD_DIGEST: sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496
-  # 21 cờ đã bật trên frontend
+  PROD_DIGEST: sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3
+  # 28 cờ đã bật trên frontend (0.16.0)
   FLAGS_CU: >-
     kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order
     kh_aph_global_credit_warning kh_aph_high_risk_credit_guard kh_aph_quantity_valuation_mvp
@@ -36,8 +37,10 @@ env:
     kh_aph_kho_chuan kh_aph_sales_p1 kh_aph_quan_tri kh_aph_du_lieu kh_aph_dau_ky
     kh_aph_kho_van_hanh kh_aph_gia_san
     kh_aph_trung_tam_ban kh_aph_tien_vay
+    kh_aph_cash_custody kh_aph_cash_closing kh_aph_cash_handover kh_aph_factory_handover
+    kh_aph_factory_receiving kh_aph_factory_production kh_aph_ux_task_first
   # cờ mới của lượt sau (để trống thì bước 3 chỉ kiểm gõ sai site)
-  FLAGS_MOI: "kh_aph_cash_custody kh_aph_cash_closing kh_aph_cash_handover kh_aph_factory_handover kh_aph_factory_receiving kh_aph_factory_production kh_aph_ux_task_first"
+  FLAGS_MOI: ""
 jobs:
   dien-tap:
     runs-on: ubuntu-24.04
