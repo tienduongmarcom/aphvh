@@ -7,72 +7,72 @@
   "fields": [
     {
       "fieldname": "company",
-      "label": "company",
+      "label": "Đơn vị",
       "fieldtype": "Link",
       "options": "Company",
       "read_only": 1
     },
     {
       "fieldname": "item_code",
-      "label": "item_code",
+      "label": "Mã hàng",
       "fieldtype": "Link",
       "options": "Item",
       "read_only": 1
     },
     {
       "fieldname": "warehouse",
-      "label": "warehouse",
+      "label": "Kho",
       "fieldtype": "Link",
       "options": "Warehouse",
       "read_only": 1
     },
     {
       "fieldname": "voucher_type",
-      "label": "voucher_type",
+      "label": "Loại chứng từ",
       "fieldtype": "Link",
       "options": "DocType",
       "read_only": 1
     },
     {
       "fieldname": "voucher_no",
-      "label": "voucher_no",
+      "label": "Số chứng từ",
       "fieldtype": "Dynamic Link",
       "options": "voucher_type",
       "read_only": 1
     },
     {
       "fieldname": "voucher_detail",
-      "label": "voucher_detail",
+      "label": "Dòng chứng từ",
       "fieldtype": "Data",
       "read_only": 1
     },
     {
       "fieldname": "posting_date",
-      "label": "posting_date",
+      "label": "Ngày",
       "fieldtype": "Date",
       "read_only": 1
     },
     {
       "fieldname": "bags",
-      "label": "bags",
+      "label": "Số bao",
       "fieldtype": "Float",
       "read_only": 1
     },
     {
       "fieldname": "kg",
-      "label": "kg",
+      "label": "Số kg",
       "fieldtype": "Float",
       "read_only": 1
     },
     {
       "fieldname": "kg_per_bag",
-      "label": "kg_per_bag",
+      "label": "Kg/bao",
       "fieldtype": "Float",
       "read_only": 1
     },
     {
       "fieldname": "inactive",
-      "label": "inactive",
+      "label": "Đã hủy",
       "fieldtype": "Check",
       "read_only": 1
     }
