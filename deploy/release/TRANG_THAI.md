@@ -1,5 +1,17 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 ~21:35 — Production 0.16.2 đã triển khai ĐẠT (mốc bàn giao Claude → Codex)
+
+Anh Tiến chạy trên `erpnext-prod/frontend`: diễn tập bản sao rồi `=== XONG 0.16.2: ĐẠT ===`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.2`
+digest **`sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917`**, workflow phát hành 39432250494, nguồn tag `v0.16.2` =
+`95a8b1e63358b190faccfa300010445ee799cac9` (main). 4 cổng trên 95a8b1e: UAT 39427294383, Cổng 2 39427281958, 2b 39427285899, Cổng 3 39427290220.
+28 cờ giữ nguyên, không cờ mới. Cổng 3 đã đổi mốc sang 0.16.2 (run 39441058175, PR #24, main 72e6a0b).
+
+Trước đó cùng ngày: **0.16.1** (tag cfdd5af, phát hành 39394763705) lần 1 tự quay lui oan về 0.16.0 do SIGPIPE trong `nang-cap.sh`
+(kiểm thực tế `KHÔNG ĐẠT: 0`); sửa PR #22 (62668ab), lần 2 ĐẠT, so sổ KHỚP. Digest 0.16.1 không được ghi lại.
+Quay lui có điều kiện: 0.16.0 `sha256:ce8db011…` hoặc bản sao lưu lúc nâng 0.16.2 trong `~/erp/aph-vh/sao-luu/`; không restore sau khi
+đã có giao dịch mới. Chi tiết, việc còn mở và lưu ý tiếp nối: mục đầu `docs/ban-giao.md`.
+
 ## 20/10/2026 — Production 0.16.0 đã triển khai ĐẠT
 
 Anh Tiến chạy trên `erpnext-prod/frontend`: diễn tập bản sao rồi `=== XONG 0.16.0: ĐẠT ===`. Image `ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.0`

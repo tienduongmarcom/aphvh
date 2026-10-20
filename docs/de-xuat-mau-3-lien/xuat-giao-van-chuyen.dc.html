@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phiếu xuất kho giao vận chuyển</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1f2937}a:hover{color:#000}
+</style>
+</helmet>
+<div style="width: 794px; height: 559px; box-sizing: border-box; padding: 28px 32px; background: #ffffff; color: #111111; font-family: 'Be Vietnam Pro', Arial, sans-serif; font-size: 12px; display: flex; flex-direction: column; gap: 10px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <div style="font-weight: 700; font-size: 12px">[TÊN ĐƠN VỊ BÁN]</div>
+      <div style="color: #4b5563">[Địa chỉ đơn vị] · MST [MST] · ĐT [số]</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+      <div style="border: 1.5px solid #111111; padding: 3px 10px; font-weight: 700; font-size: 13px">{{lien}}</div>
+      <div style="color: #4b5563">{{lienGiu}}</div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="font-size: 20px; font-weight: 700; letter-spacing: 0.3px">PHIẾU XUẤT KHO GIAO VẬN CHUYỂN</div>
+    <div style="text-align: right; display: flex; flex-direction: column; gap: 2px">
+      <div>Số: <b>[MAT-DN-2026-00000]</b> · Phiên bản <b>1</b></div>
+      <div>Theo đơn: [DBC-2026-00000] · Ngày: [20/10/2026]</div>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 24px; border-top: 1px solid #111111; border-bottom: 1px solid #111111; padding: 6px 0">
+    <div>Khách hàng: <b>[Tên khách]</b> · ĐT [số]</div>
+    <div>Kho xuất: <b>[Kho …]</b></div>
+    <div>Giao đến: [Địa chỉ giao hàng]</div>
+    <div>Bên vận chuyển: [Nhà xe / ship] · Lái xe [Họ tên] · Xe [29C-…]</div>
+  </div>
+  <table style="width: 100%; border-collapse: collapse; font-size: 12px">
+    <thead>
+      <tr style="background: #f3f4f6">
+        <th style="border: 1px solid #111111; padding: 4px; width: 28px">STT</th>
+        <th style="border: 1px solid #111111; padding: 4px; text-align: left; width: 90px">Mã hàng</th>
+        <th style="border: 1px solid #111111; padding: 4px; text-align: left">Tên hàng</th>
+        <th style="border: 1px solid #111111; padding: 4px; width: 52px">Số bao</th>
+        <th style="border: 1px solid #111111; padding: 4px; width: 70px">Kg giao</th>
+        <th style="border: 1px solid #111111; padding: 4px; width: 84px">Kg khách nhận</th>
+        <th style="border: 1px solid #111111; padding: 4px; width: 96px">Ghi chú</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #111111; padding: 4px; text-align: center">1</td>
+        <td style="border: 1px solid #111111; padding: 4px">[DX-VD-01]</td>
+        <td style="border: 1px solid #111111; padding: 4px">[Đỗ xanh vỡ đôi chỉ vàng]</td>
+        <td style="border: 1px solid #111111; padding: 4px; text-align: right">[4]</td>
+        <td style="border: 1px solid #111111; padding: 4px; text-align: right">[100]</td>
+        <td style="border: 1px solid #111111; padding: 4px"></td>
+        <td style="border: 1px solid #111111; padding: 4px"></td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #111111; padding: 4px; height: 16px"></td><td style="border: 1px solid #111111"></td><td style="border: 1px solid #111111"></td><td style="border: 1px solid #111111"></td><td style="border: 1px solid #111111"></td><td style="border: 1px solid #111111"></td><td style="border: 1px solid #111111"></td>
+      </tr>
+      <tr style="font-weight: 600">
+        <td colspan="3" style="border: 1px solid #111111; padding: 4px; text-align: right">Cộng</td>
+        <td style="border: 1px solid #111111; padding: 4px; text-align: right">[4]</td>
+        <td style="border: 1px solid #111111; padding: 4px; text-align: right">[100]</td>
+        <td style="border: 1px solid #111111; padding: 4px"></td>
+        <td style="border: 1px solid #111111; padding: 4px"></td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="color: #374151">Phiếu không in giá. Chữ ký nhận hàng chỉ xác nhận số lượng, KHÔNG xác nhận đã thanh toán.</div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; flex-grow: 1">
+    <div style="border: 1px solid #111111; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-weight: 700">PHẦN 1 — BÀN GIAO TẠI KHO · giờ: ……h……</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; flex-grow: 1; text-align: center">
+        <div style="display: flex; flex-direction: column; justify-content: space-between"><b>Người xuất kho</b><span style="color: #4b5563">(ký, ghi rõ họ tên)</span></div>
+        <div style="display: flex; flex-direction: column; justify-content: space-between"><b>Bên vận chuyển nhận</b><span style="color: #4b5563">(ký, ghi rõ họ tên)</span></div>
+      </div>
+    </div>
+    <div style="border: 1px solid #111111; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-weight: 700">PHẦN 2 — GIAO KHÁCH · ngày …/…, giờ ……h……</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; flex-grow: 1; text-align: center">
+        <div style="display: flex; flex-direction: column; justify-content: space-between"><b>Bên vận chuyển giao</b><span style="color: #4b5563">(ký, ghi rõ họ tên)</span></div>
+        <div style="display: flex; flex-direction: column; justify-content: space-between"><b>Khách / người nhận</b><span style="color: #4b5563">(ký, ghi rõ họ tên)</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; color: #4b5563">
+    <span>Liên 3 có chữ ký khách: bên vận chuyển gửi lại kho (hoặc chụp ảnh gửi ngay). In lại sau khi đã giao: “BẢN SAO”.</span>
+    <span>In lúc [20/10/2026 08:15]</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lienSo":{"editor":"enum","options":["1","2","3"],"default":"1"},"$preview":{"width":794,"height":559}}'>
+class Component extends DCLogic {
+renderVals() {
+const so = this.props.lienSo ?? '1';
+const giu = {'1': 'Kho giữ', '2': 'Bên vận chuyển giữ', '3': 'Khách ký nhận — gửi lại kho'};
+return { lien: 'LIÊN ' + so + '/3', lienGiu: giu[so] };
+}
+}
+</script>
+</body>
+</html>
