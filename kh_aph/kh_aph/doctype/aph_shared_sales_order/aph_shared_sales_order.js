@@ -100,15 +100,21 @@ async function kh_aph_lap_dot_xuat(frm) {
 frappe.ui.form.on("APH Shared Sales Order", {
     async refresh(frm) {
         if (!frappe.boot?.kh_aph?.funds_workflow || frappe.boot.kh_aph.price_restricted || frm.doc.docstatus !== 1) return;
-        const response = await frappe.call({method:"kh_aph.funds.shared_financials",args:{name:frm.doc.name}});
+        const name = frm.doc.name, customer = frm.doc.customer;
+        const response = await frappe.call({method:"kh_aph.funds.shared_financials",args:{name}});
+        if (frm.doc.name !== name || frm.doc.customer !== customer) return;
         frm.__kh_aph_financials = response.message;
         const f = response.message;
-        frm.__kh_aph_funds_section?.remove();
-        frm.__kh_aph_funds_section = frm.dashboard.add_section(
-            `<div data-kh-funds-summary="1"><p>Còn thanh toán toàn đơn: <strong>${format_currency(f.remaining_to_pay,"VND")}</strong></p>` +
+        const detail = `<div data-kh-funds-summary="1">` +
+            (Number(f.reserved_deposit) > 0 ? `<p>Cọc giữ cho đơn: <strong>${format_currency(f.reserved_deposit,"VND")}</strong></p>` : "") +
+            `<details><summary>Tiền của đơn — xem chi tiết</summary>` +
+            `<p>Còn thanh toán toàn đơn: <strong>${format_currency(f.remaining_to_pay,"VND")}</strong></p>` +
             `<p>Công nợ đã giao: <strong>${format_currency(f.dispatched_debt,"VND")}</strong></p>` +
             `<p>Giá trị chưa giao: <strong>${format_currency(f.undelivered_value,"VND")}</strong></p>` +
-            `<p>Cọc giữ lại: <strong>${format_currency(f.reserved_deposit,"VND")}</strong></p></div>`,"Thanh toán và cọc");
+            `<p>Cọc giữ lại: <strong>${format_currency(f.reserved_deposit,"VND")}</strong></p></details></div>`;
+        if (frm.__kh_aph_funds_section?.[0]?.isConnected) frm.__kh_aph_funds_section.html(detail);
+        else frm.__kh_aph_funds_section = frm.dashboard.add_section(detail);
+        frm.dashboard.show();
     }
 });
 frappe.ui.form.on("APH Shared Sales Order", {
@@ -119,7 +125,7 @@ frappe.ui.form.on("APH Shared Sales Order", {
 	},
 	refresh(frm) {
 		if (!frm.is_new() && frm.doc.docstatus === 1) {
-			frm.add_custom_button(__("Đơn bán theo đơn vị"), () => {
+			frm.add_custom_button(__("Đơn bán theo công ty"), () => {
 				frappe.set_route("List", "Sales Order", {kh_aph_shared_order: frm.doc.name});
 			});
 		}
