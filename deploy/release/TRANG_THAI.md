@@ -2,7 +2,7 @@
 
 ## 20/10/2026 — Claude: PR #19 (NM01c/NM02–05, UX-01) đang kiểm, production vẫn 0.15.3
 
-Mã `eba12d0` đủ 4 cổng (UAT b014 115 PASS/0 FAIL). Thêm cờ 27 `kh_aph_factory_production`, 28 `kh_aph_ux_task_first` (mặc định tắt, đồng bộ FLAGS/quay-lui/dấu vân/preflight/Cổng 3). Chưa tag/phát hành. Chi tiết `docs/ban-giao.md`.
+Mã kiểm cuối `a3cfd6d` đủ 4 cổng (UAT 39368636121, b014 117 PASS/0 FAIL; Cổng 3 39368638182). Thêm cờ 27 `kh_aph_factory_production`, 28 `kh_aph_ux_task_first` (mặc định tắt, đồng bộ FLAGS/quay-lui/dấu vân/preflight/Cổng 3). Chưa tag/phát hành. Chi tiết `docs/ban-giao.md`.
 
 ## 20/10/2026 — Bàn giao tiếp nối cho Claude theo yêu cầu chủ dự án
 

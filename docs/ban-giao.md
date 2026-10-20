@@ -17,8 +17,16 @@ PR [#19](https://github.com/tienduongmarcom/aphvh/pull/19) nháp, nhánh `claude
   `docs/dac-ta-ghi-san-xuat-nm02-04.md`, `docs/dac-ta-ux-01.md`, `docs/ux-0-phieu-do.md`, `docs/dot-4-5-ra-soat-tai-chinh-hoa-don.md`.
 - Cần chủ dự án chốt (không tự suy diễn): chuyển khác đơn vị; hao hụt vận chuyển; lệnh/mẻ sản xuất; TC03/TC05/TC07/TC08; 5 câu hóa đơn một phần.
 
-ĐANG DỞ: 4 cổng trên `22a87b6` (UX-0 số đo máy Chrome, UX-3 tìm khách/thu tiền 5 bước/Module Profile, kỳ vọng b014 117).
-Bước tiếp: đọc kết quả, sửa ca lỗi; UX-4 đo người thật để cuối; UX-5 chỉ khi có số đo.
+**Mã kiểm cuối `a3cfd6d5e3d07759321e4b2dd27243937bfbd5d7`: đủ 4 cổng** — UAT 39368636121 (b014 đúng 117 PASS, 0 FAIL, gồm
+UX-0 DESK_UX0_BASELINE và UX-3 HTTP_UX03_TIM_KHACH_CONG_NO), Cổng 2 39368642320, 2b 39368640197, Cổng 3 39368638182.
+Lỗi gặp và sửa (giữ run FAIL): Module Profile lưu lại khi đang khóa → DocumentLockedError (UAT 39358739479, Cổng 3 39358741700;
+sửa + regression unit); UX-0 trùng tên biến `ws` (UAT 39364565012); dọn hồ sơ Chrome ENOTEMPTY (UAT 39366184701). Ca Chrome
+cũ `quy-nha-may`/`nhan-hang-nha-may` FAIL chập chờn ở 39354836759, 39360250409, 39362652605; đã thêm in trạng thái hộp thoại khi
+lỗi (không đổi điều kiện) và ba lượt sau đều PASS — Codex nên theo dõi tần suất.
+Số đo máy UX-0 (A Desk cũ / B UX): T01 4/4 thao tác, 3/3 màn hình; T02 5/4, 3/3; T03 2/2, 2/2. Không thay số đo người thật.
+
+ĐANG DỞ (theo lệnh chủ dự án, chưa bàn giao Codex): UX-4 đo người thật (`docs/ux-0-phieu-do.md`) để cuối; UX-5 chỉ khi số đo
+người thật cho thấy Dialog không đạt. Phân bổ thu tiền theo số tự nhập từng hóa đơn chưa làm (cần sửa server, chờ xác nhận nhu cầu).
 
 
 ## 20/10/2026 — Bàn giao tiếp nối cho Claude theo yêu cầu chủ dự án

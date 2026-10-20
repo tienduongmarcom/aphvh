@@ -35,3 +35,13 @@ ghi kho/nợ).
 Phân bổ một phần theo số tiền tự nhập cho từng hóa đơn (hàm thu tiền hiện có trả theo thứ tự chọn, hóa đơn cuối nhận phần còn
 lại) — cần sửa server, để sau khi người dùng thật xác nhận cần. UX-4 đo người thật (phiếu đo ở `docs/ux-0-phieu-do.md`).
 UX-5 Native Page: chỉ xét khi số đo người thật cho thấy Dialog không đạt.
+
+## Số đo máy UX-0 (UAT 39368636121, mã a3cfd6d)
+
+| Việc | A Desk hiện tại | B UX-01 |
+|---|---|---|
+| T01 mở lập phiếu xuất | 4 thao tác, 3 màn hình | 4 thao tác, 3 màn hình |
+| T02 thu tiền một hóa đơn | 5 thao tác, 3 màn hình | 4 thao tác, 3 màn hình |
+| T03 xem công nợ khách | 2 thao tác, 2 màn hình | 2 thao tác, 2 màn hình |
+
+Máy chỉ đếm đường đi đã biết; lợi ích "biết việc cần làm" và dễ đọc phải đo với người thật (UX-4). Thời gian máy không dùng để kết luận.
