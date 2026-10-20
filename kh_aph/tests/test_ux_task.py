@@ -172,6 +172,32 @@ class UX(unittest.TestCase):
         values = [x for x in self.m._LAM['kho'] if x[2] == 'Material Request']
         self.assertEqual(values[0][3]['material_request_type'], 'Material Transfer')
 
+    def test_native_sidebar_keeps_unrelated_customization_and_is_idempotent(self):
+        unrelated = Row(link_type='DocType', link_to='Customer', hidden=0, label='Khách riêng')
+        doc = Row(label=None, sidebar_items=[unrelated], insert=Mock(), save=Mock())
+        doc.append = lambda key, value: doc[key].append(Row(value))
+        self.f.db.get_value.return_value = None
+        self.f.get_doc = Mock(return_value=doc)
+        self.f.get_all = Mock(side_effect=lambda dt, **kw: ['APH Shared Sales Order', 'Chung tu rieng cua nguoi dung'] if dt == 'DocType' else ['Tong hop ban hang theo khach', 'Bao cao rieng'])
+        self.m._sidebar()
+        self.assertEqual(doc.label, 'Vận hành')
+        doc.insert.assert_called_once()
+        self.f.db.get_value.assert_called_with('Custom Sidebar', {'module': self.m.MODULE, 'user': ['is', 'not set']}, 'name')
+        rows = {(r.link_type, r.link_to): r for r in doc.sidebar_items}
+        self.assertEqual(rows[('DocType', 'APH Shared Sales Order')].hidden, 1)
+        self.assertEqual(rows[('Report', 'Tong hop ban hang theo khach')].hidden, 1)
+        self.assertNotIn(('DocType', 'Chung tu rieng cua nguoi dung'), rows)
+        self.assertNotIn(('Report', 'Bao cao rieng'), rows)
+        self.assertTrue(all(rows[('Workspace', n)].hidden == 0 for n in self.m.NHOM.values()))
+        self.assertEqual((unrelated.hidden, unrelated.label), (0, 'Khách riêng'))
+        self.f.db.get_value.return_value = 'CS1'
+        self.m._sidebar()
+        doc.save.assert_not_called()
+        self.f.conf['kh_aph_ux_task_first'] = 0
+        self.f.get_doc.reset_mock()
+        self.m._sidebar()
+        self.f.get_doc.assert_not_called()
+
     def test_customer_identity_and_query_are_scoped_read_only(self):
         utils = sys.modules['frappe.utils']
         utils.strip_html = lambda v: v.replace('<br>', ' ')

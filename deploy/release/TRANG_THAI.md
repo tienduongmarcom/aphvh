@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — Ứng viên0.16.3 bổ sung cấu hình thanh bên, đang kiểm
+
+PR #26 bổ sung `Custom Sidebar` chuẩn sau khi dựng đủ năm Workspace: nhãn Vận hành, chỉ ẩn lối tự sinh do package sở hữu, giữ nguồn/liên kết/tùy chỉnh riêng. Không Core patch, không thêm cờ hoặc quyền. Cục bộ454 test (14 skip) +108 lõi đạt;4cổng/ảnh cho mã này còn kiểm. Cổng2/2b ở mã trước Sidebar8a5e003 success, không coi là PASS bản mới. Chưa phát hành/tag/VM; production vẫn0.16.2/digest34a32f71…/28cờ.
+
 ## 20/10/2026 — PR #26 tối ưu giao diện đang kiểm, chưa có bản phát hành mới
 
 Nhánh `feat/toi-uu-giao-dien-20261020`, mã nghiệp vụ đầu `cc616a3`: năm khu, Nhà máy riêng, nhận diện khách/hàng rõ, công nợ hóa đơn gọn, thu tiền cùng service, giảm điều hướng/nút trùng và chuẩn nhãn chung. Không sửa GL/SLE/PLE, cờ/quyền, số đơn hoặc mẫu3liên. Cục bộ453 test (14 skip) và108 lõi đạt; ĐANG DỞ kiểm4cổng/ảnh đúng SHA, chưa PASS CI. Production giữ0.16.2/digest34a32f71…/28cờ, không tag/deploy. Chi tiết tại đầu docs/ban-giao.md; không lấy bằng chứng0.16.2 thay cho ứng viên.

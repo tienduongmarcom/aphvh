@@ -1,5 +1,9 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 — Bổ sung thanh bên chuẩn cho ứng viên0.16.3
+
+PR #26: cấu hình `Custom Sidebar` chuẩn Frappe, nhãn chung Vận hành, giữ năm Workspace và ẩn lối DocType/Report tự sinh do app sở hữu. Dựa vào định nghĩa trong package + phiếu duyệt bán chịu tạo động; không ẩn chứng từ/báo cáo riêng người dùng, không xóa nguồn hoặc sửa lõi. Giữ lớp tùy chỉnh riêng của từng người. Bộ cài chạy lại chỉ ghi khi cần, dùng cờ UX hiện có. Có unit và mở rộng HTTP để kiểm cấu hình. Cục bộ **454 test (14 skip) +108 lõi đạt**. ĐANG DỞ:4cổng/ảnh trên mã có Sidebar; Cổng2 và2b đã success ở bản trước Sidebar `8a5e003`, không thay bằng chứng cho mã mới. Production vẫn0.16.2/28cờ, chưa tag/deploy.
+
 ## 20/10/2026 — Ứng viên tối ưu giao diện đang kiểm, chưa phát hành
 
 PR #26, nhánh `feat/toi-uu-giao-dien-20261020`, mã nghiệp vụ đầu `cc616a3`: năm khu Bán hàng/Kho vận/Nhà máy/Tiền và kế toán/Dữ liệu và cấu hình; tái dùng đủ lối cũ, dựng xong mới ẩn tên cũ và map mặc định/profile. Đầu đơn nhận diện khách và công nợ hóa đơn chỉ đọc, không dùng số cũ khi đổi khách; mã/tên hàng riêng ở cửa chuẩn bị giao. Một cửa thu tiền dùng service cũ, giảm nút/in lặp, chọn bộ giao nhận theo thế hệ phiếu; nhãn chung trung lập, giữ ID kỹ thuật/role guard. Không đổi sổ, số đơn, giữ tồn lúc in hoặc mẫu3liên. Dùng cờ UX hiện có, không thêm quyền/cờ.

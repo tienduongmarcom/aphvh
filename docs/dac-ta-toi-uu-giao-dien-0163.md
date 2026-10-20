@@ -35,6 +35,8 @@ Không đổi số đơn, hash/series chứng từ cũ, định danh role/DocTyp
 
 ## Hiện trạng sau nhận
 
+Thanh bên dùng cấu hình `Custom Sidebar` chính thức trên nền16.52: nhãn chung Vận hành, năm Workspace, ẩn shortcut DocType/Report thuộc package thay vì xóa nguồn. Giữ các mục riêng và lớp người dùng, bộ cài idempotent. Nền không có DocType này giữ Workspace chuẩn; HTTP trên nền ghim phải chứng minh có cấu hình, chưa kiểm thì không tuyên bố Sidebar đã đạt.
+
 Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ453 test (14 skip) +108 lõi đạt;4cổng/ảnh đang kiểm, chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đơn/roleID và các chính sách chưa chốt vẫn ngoài lượt này.
 
 Đã nhận và xác minh hồ sơ/nguồn/trạng tháiCI, đã ghi yêu cầu hội thoại vào nguồn. Chưa sửa code/schema/quyền, chưa tăng version hoặc phát hành. Bước tiếp theo là thực hiện lượt chuẩn tên/điều hướng và đối chiếu lối nghiệp vụ trên nhánh feat/toi-uu-giao-dien-20261020; kiểm trên site thử, không tác động dữ liệu thật.

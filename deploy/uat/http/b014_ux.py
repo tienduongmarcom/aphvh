@@ -9,6 +9,11 @@ def chay(rpc, get, lst, denied, f, phien, emit):
         assert len(heads) == 3 and ws['shortcuts'] and ws['roles'], ten
     assert get('Workspace', 'Trung tâm Bán hàng')['is_hidden'] == 1
     assert get('Workspace', 'Dữ liệu và cấu hình')['shortcuts']
+    sidebar = lst('Custom Sidebar', {'module': 'Kh Aph', 'user': ['is', 'not set']}, ['name', 'label'])
+    assert len(sidebar) == 1 and sidebar[0]['label'] == 'Vận hành', sidebar
+    configured = get('Custom Sidebar', sidebar[0]['name'])['sidebar_items']
+    assert {r['link_to'] for r in configured if r['link_type'] == 'Workspace' and not r['hidden']} == {'Bán hàng', 'Kho vận', 'Tiền và kế toán', 'Nhà máy', 'Dữ liệu và cấu hình'}
+    assert all(r['hidden'] for r in configured if r['link_type'] in ('DocType', 'Report'))
     assert get('Workspace', 'Trung tâm Bán hàng')['name']  # Workspace cũ giữ nguyên để quay lui
     bang = [{'user': f['dung'], 'nhom': 'nha_may'}]
     thu = rpc('kh_aph.ux_task.ap_dung_nguoi_dung', {'bang': json.dumps(bang)})

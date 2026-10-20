@@ -194,7 +194,49 @@ def schema():
     _hien_ten_khi_chon()
     result = [_workspace(n) for n in NHOM] + [_module_profile(n) for n in NHOM]
     _an_ten_cu()  # Chỉ ẩn sau khi mọi nơi thay thế dựng thành công.
+    _sidebar()
     return result
+
+
+def _sidebar():
+    """Cấu hình Sidebar chuẩn theo site; giữ lớp riêng của người dùng và dữ liệu nguồn.
+
+    Frappe 16.52 hỗ trợ Custom Sidebar. Không sửa Sidebar lõi hoặc đổi Module Def.
+    Chỉ bỏ các đường tắt tự sinh của module, vì đã có nơi vào qua năm Workspace.
+    """
+    if not enabled() or not frappe.db.exists('DocType', 'Custom Sidebar'):
+        return  # Nền cũ không có cấu hình này vẫn dùng Workspace/form chuẩn.
+    name = frappe.db.get_value('Custom Sidebar', {'module': MODULE, 'user': ['is', 'not set']}, 'name')
+    doc = frappe.get_doc('Custom Sidebar', name) if name else frappe.get_doc({
+        'doctype': 'Custom Sidebar', 'module': MODULE, 'user': '', 'sidebar_items': []})
+    changed = not name
+    if not doc.get('label') or doc.label in (MODULE, 'APH - VH'):
+        doc.label = 'Vận hành'
+        changed = True
+    from pathlib import Path
+    root = Path(__file__).parent / 'kh_aph'
+    owned = {}
+    for kind, folder in (('DocType', 'doctype'), ('Report', 'report')):
+        definitions = [json.loads(p.read_text(encoding='utf-8')) for p in (root / folder).glob('*/*.json')]
+        owned[kind] = {d['name'] for d in definitions if not d.get('istable')}
+    owned['DocType'].add('APH Credit Release')  # Chứng từ tạo động, không có JSON riêng.
+    wanted = [('Workspace', n, 0) for n in NHOM.values()]
+    wanted += [('DocType', n, 1) for n in frappe.get_all('DocType',
+        filters={'module': MODULE, 'istable': 0}, pluck='name') if n in owned['DocType']]
+    wanted += [('Report', n, 1) for n in frappe.get_all('Report',
+        filters={'module': MODULE}, pluck='name') if n in owned['Report']]
+    existing = {(r.link_type, r.link_to): r for r in doc.get('sidebar_items') or []}
+    for kind, target, hidden in wanted:
+        row = existing.get((kind, target))
+        if row is None:
+            doc.append('sidebar_items', {'type': 'Link', 'link_type': kind, 'link_to': target,
+                'added': 0, 'hidden': hidden})
+            changed = True
+        elif bool(row.hidden) != bool(hidden):
+            row.hidden = hidden
+            changed = True
+    if changed:
+        doc.save() if name else doc.insert()
 
 
 # Ô chọn khách/nhà cung cấp hiện TÊN sau khi chọn (chủ dự án 20/10/2026). Mặt hàng thì KHÔNG: cột "Mã hàng" phải hiện mã,
