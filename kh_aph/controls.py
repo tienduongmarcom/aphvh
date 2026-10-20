@@ -128,6 +128,9 @@ def sales_invoice_on_submit(doc, method=None):
 
     pe = get_payment_entry("Sales Invoice", doc.name, bank_account=acc)
     pe.posting_date = doc.posting_date
+    from kh_aph import cash_custody
+    if cash_custody.enabled() and _account_type(acc) == "Cash":
+        pe.set(cash_custody.HOLDER, doc.get(cash_custody.HOLDER))
     if _account_type(acc) == "Bank":
         pe.reference_no = doc.name
         pe.reference_date = doc.posting_date

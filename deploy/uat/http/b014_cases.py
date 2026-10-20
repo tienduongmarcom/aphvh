@@ -14,7 +14,7 @@ def lai(du_no, ls, ngay):
     return float(round(du_no * ls / 100 * ngay / 365)) if ngay > 0 else 0.0
 
 
-def chay(admin, phien, f, emit):
+def chay(admin, phien, f, emit, factory_feature):
     ktt, ktt2, ktbh, tp, nvbh, dung = (phien(f[k]) for k in ("ktt", "ktt2", "ktbh", "tp", "nvbh", "dung"))
     d = f["date"]
     hom_nay = datetime.date.fromisoformat(d)
@@ -66,17 +66,17 @@ def chay(admin, phien, f, emit):
     emit("HTTP_014_NGAN_HANG", "PASS", {"tao": nh1["tao_tai_khoan"], "chay_lai": "không trùng", "usd": usd[0]})
 
     # 2. Thu tiền (0.13) ghi vào tài khoản ngân hàng mới; chống trùng mã dùng chung; sổ tiền gửi tồn sau từng phiếu.
-    kq = rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 3_000_000,
+    kq = rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b014-cases-1", "company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 3_000_000,
                                           "tk_ngan_hang": acc["bank"], "ma_gd": ma[1]}, ktbh)
     pe = kq["phieu_thu"][0]
-    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh2"], "chuyen_khoan": 1_000_000,
+    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b014-cases-2", "company": f["aph"], "customer": f["kh2"], "chuyen_khoan": 1_000_000,
                                                     "tk_ngan_hang": acc["bank"], "ma_gd": ma[1]}, ktbh), text=pe)
     # bút toán có số tham chiếu cũng tính là đã ghi
     je_ck = insert({"doctype": "Journal Entry", "company": f["aph"], "posting_date": d, "cheque_no": ma[2], "cheque_date": d,
                     "accounts": [{"account": acc["bank"], "credit_in_account_currency": 500_000},
                                  {"account": acc["cp"], "debit_in_account_currency": 500_000}]}, ktt)
     submit(je_ck, ktt)
-    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh2"], "chuyen_khoan": 1_000_000,
+    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b014-cases-3", "company": f["aph"], "customer": f["kh2"], "chuyen_khoan": 1_000_000,
                                                     "tk_ngan_hang": acc["bank"], "ma_gd": ma[2]}, ktbh), text=je_ck["name"])
     for reference in (ma[1], ma[2]):
         denied(lambda: insert({"doctype": "Journal Entry", "company": f["aph"], "posting_date": d,
@@ -280,3 +280,41 @@ def chay(admin, phien, f, emit):
     tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)
     from b014_xuat_ngay_cases import chay as xuat_ngay_cases
     xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
+    from b014_cash_custody import chay as cash_cases
+    cash_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
+
+    from b014_cash_closing import chay as closing_cases
+    closing_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_cash_handover import chay as handover_cases
+    handover_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_cash_issue_reverse import chay as issue_reverse_cases
+    issue_reverse_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_cashier_request import chay as cashier_cases
+    cashier_cases(rpc, get, insert, lst, denied, ktt, ktbh, f, phien, emit)
+
+    from b014_personal_cash import chay as personal_cases
+    personal_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_factory_handover import chay as factory_cases
+    factory_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit, factory_feature)
+
+    from b014_factory_receiving import chay as receiving_cases
+    receiving_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)
+
+    from b014_pending_order import chay as pending_order_cases
+    pending_order_cases(rpc, get, insert, submit, lst, denied, f, phien, emit, factory_feature, admin)
+
+    from b014_factory_transfer import chay as transfer_cases
+    transfer_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)
+
+    from b014_factory_production import chay as production_cases
+    production_cases(rpc, get, insert, submit, lst, denied, f, phien, emit)
+
+    from b014_ux import chay as ux_cases
+    ux_cases(rpc, get, lst, denied, f, phien, emit)
+    from b014_ux import do_ux0, do_ux3
+    do_ux3(rpc, get, insert, lst, denied, f, phien, emit)
+    do_ux0(get, insert, submit, lst, f, emit)

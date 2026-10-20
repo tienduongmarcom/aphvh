@@ -51,6 +51,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     # Quyền Address vẫn kiểm ở server, kể cả tên địa chỉ đã có trên client.
     permitted = insert({"doctype": "User Permission", "user": f["ktbh"], "allow": "Address", "for_value": other["name"]}, ktt)
     denied(lambda: rpc("kh_aph.ban_nhanh.create_drafts", {**payload, "request_id": uuid.uuid4().hex}, ktbh), ("PermissionError",))
+    denied(lambda: rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": note["name"]}, ktbh), ("PermissionError",))
     ktt("/api/method/frappe.client.delete", {"doctype": "User Permission", "name": permitted["name"]})
     # Người bán không giả tên người thực giao; kho điền, chọn đúng cách giao rồi mới xuất.
     limited = phien(f["ktbh_no_submit"])
@@ -96,6 +97,37 @@ def chay(rpc, get, insert, submit, lst, denied, ktbh, dung, ktt, f, emit, phien)
     assert ledger_counts() == before, "In đã phát sinh sổ"
     emit("HTTP_014_BAN_NHANH_PRINT", "PASS", {"paper": "A5 landscape", "sales_price": True,
          "cost_hidden": True, "draft_label": True, "ledger_unchanged": True})
+
+    # Mở lại đúng DN, không cần token lập đợt hoặc tạo phiếu mới.
+    def frozen(doc):
+        keys = ("modified", "docstatus", "items", "company", "customer", "posting_date", "shipping_address",
+                "shipping_address_name", "driver_name", "vehicle_no", "kh_aph_lan_in_lai", "kh_aph_delivery_state",
+                "kh_aph_cach_giao", "kh_aph_nguoi_nhan_tai_kho", "kh_aph_dien_thoai_nhan",
+                "kh_aph_nguoi_thuc_giao", "kh_aph_ban_giao_luc", "kh_aph_ban_giao_boi")
+        return {key: doc.get(key) for key in keys}
+    saved = frozen(get("Delivery Note", note["name"], ktbh))
+    counts = len(lst("Delivery Note", {}, ["name"], ktt)), ledger_counts()
+    for _ in range(2):
+        assert rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": note["name"]}, ktbh)["html"] == html
+    denied(lambda: rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": note["name"]}, dung), ("PermissionError",))
+    assert frozen(get("Delivery Note", note["name"], ktbh)) == saved
+    assert (len(lst("Delivery Note", {}, ["name"], ktt)), ledger_counts()) == counts
+    manual = insert({"doctype": "Delivery Note", "company": note["company"], "customer": note["customer"],
+        "posting_date": f["date"], "currency": "VND", "kh_aph_nguoi_nhan": "Người nhận phiếu cũ UAT",
+        "items": [{"item_code": f["A"], "warehouse": f["kho"], "qty": 1, "rate": 35000}]}, ktt)
+    plain = rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": manual["name"]}, ktt)["html"]
+    assert "Người nhận phiếu cũ UAT" in plain and "Đơn bán chung:" not in plain
+    assert "CHỜ XUẤT" in plain and manual["name"] in plain
+    emit("HTTP_014_A5_EXISTING_NOTE", "PASS", {"repeat_same_html": True, "no_new_note": True,
+        "document_and_ledger_unchanged": True, "no_cost_denied": True, "manual_note_legacy_snapshot": True})
+
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
+            note["name"], "in-lai-a5"], check=True, text=True, capture_output=True, timeout=150)
+        evidence = json.loads(next(line for line in result.stdout.splitlines() if line.startswith('{"case":')))
+        assert evidence["status"] == "PASS", evidence
+        emit(evidence["case"], "PASS", evidence["detail"])
+        assert frozen(get("Delivery Note", note["name"], ktbh)) == saved and ledger_counts() == before
 
     if os.environ.get("GITHUB_ACTIONS") == "true":
         result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")), root["name"]],

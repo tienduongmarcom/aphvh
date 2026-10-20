@@ -90,7 +90,7 @@ BACKEND="erp-aph-vh-backend-1"
 DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
-TRACKED=["User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
+TRACKED=["APH Pending Receipt","APH Pending Receipt Item","Purchase Invoice","Bank Transaction","APH Doi chieu lech tien","APH Can cu doi chieu quy","APH Ban giao tien","APH Xac minh quy","APH Chot ca tien","APH Phan bo quy","User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)
@@ -117,7 +117,8 @@ def snapshot():
     raw=inner(snapshot_code)
     return json.loads(next(x[9:] for x in raw.splitlines() if x.startswith("SNAPSHOT:")))
 def session(user,password):
-    op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    jar=http.cookiejar.CookieJar()
+    op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     def call(method,args=None):
         data=urllib.parse.urlencode(args).encode() if args is not None else None
         req=urllib.request.Request("http://127.0.0.1:18091"+method,data=data,
@@ -125,6 +126,8 @@ def session(user,password):
         with op.open(req,timeout=30) as res:return json.load(res)
     call("/api/method/login",{"usr":user,"pwd":password})
     assert call("/api/method/frappe.auth.get_logged_user")["message"]==user
+    # Cookie UAT chỉ truyền qua stdin cho Chrome, không đưa mật khẩu vào argv/log.
+    call.browser_cookies=lambda:[{"name":c.name,"value":c.value,"url":"http://127.0.0.1:18091"} for c in jar]
     return call
 
 def emit(case,status,detail):
@@ -164,7 +167,22 @@ try:
     import sys
     sys.path.insert(0,str(Path(__file__).resolve().parent))
     import b014_cases
-    b014_cases.chay(admin,lambda user:session(user,factory_password),fixture,emit)
+    def factory_feature(enabled, feature="kh_aph_factory_handover"):
+        assert feature in ("kh_aph_factory_handover", "kh_aph_factory_receiving")
+        assert os.environ.get("GITHUB_ACTIONS") == "true" and SITE == "aphvh-web-uat"
+        run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"set-config",feature,str(int(enabled))])
+        if enabled and feature == "kh_aph_factory_handover":
+            run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"execute","kh_aph.factory_handover.schema"])
+            run(["docker","exec","-w",ROOT,WEB,"bench","--site",SITE,"execute","kh_aph.tien_vay.schema"])
+        run(["docker","restart",WEB])
+        for attempt in range(40):
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:18091/api/method/ping",timeout=2) as response:
+                    if json.load(response) == {"message":"pong"}: break
+            except (urllib.error.URLError,TimeoutError,ConnectionError): pass
+            time.sleep(0.25)
+        else: raise RuntimeError("UAT web không sẵn sàng sau đổi cờ")
+    b014_cases.chay(admin,lambda user:session(user,factory_password),fixture,emit,factory_feature)
 except Exception as exc:
     detail={"type":type(exc).__name__,"error":str(exc)[-2500:]}
     if isinstance(exc,urllib.error.HTTPError):
@@ -175,7 +193,7 @@ except Exception as exc:
             data=json.loads(body);detail['http_error']={k:data.get(k) for k in ('exc_type','exception','_server_messages')}
         except ValueError:detail['http_error']=body[:1000]
     import traceback
-    detail["trace"]="".join(traceback.format_exc().splitlines(True)[-12:])[-2000:]
+    detail["trace"]=traceback.format_exc()[-6000:]
     emit("HTTP_014_RUNNER","FAIL",detail)
 finally:
     # Stop only UAT web so no request can write during restoration.

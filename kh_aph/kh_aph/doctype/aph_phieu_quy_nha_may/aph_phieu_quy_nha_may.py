@@ -16,3 +16,6 @@ class APHPhieuquynhamay(Document):
 
     def before_update_after_submit(self):
         F.protect_submitted(self)
+
+    def on_trash(self):
+        F.prevent_delete(self)

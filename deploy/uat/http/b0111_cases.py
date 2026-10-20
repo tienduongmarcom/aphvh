@@ -166,12 +166,24 @@ def chay(admin, phien, f, emit):
     for invalid in ("NaN", "Infinity", "1.001"):
         denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": invalid,
                                                                  "tai_khoan_nhan": f["acc"]["1111"]}, ktt))
+    denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 950000,
+        "tai_khoan_nhan": f["acc"]["1111"]}, admin), text="không nhận thay")
+    self_receive = {"doctype": "APH Phieu quy nha may", "loai": "Bàn giao tiền", "company": co,
+        "posting_date": d, "nguoi_nhan": f["dung"], "dong": [{"dien_giai": "Tự nhận", "so_tien": 1}]}
+    denied(lambda: insert(self_receive, dung), text="không được tự nhận")
     near(gl(f["quy"]), before_guard)
     assert get("APH Phieu quy nha may", bg["name"], ktt)["trang_thai"] == "Chờ nhận"
     emit("HTTP_0111_QUY_GUARDS", "PASS", {"company_scope": True, "forged_result": "denied", "nonfinite": "denied"})
     nhan = rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 950000,
                                                        "tai_khoan_nhan": f["acc"]["1111"]}, ktt)
     assert nhan["trang_thai"] == "Chênh lệch chờ điều tra", nhan
+    after_receive = gl(f["quy"])
+    assert rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": "950000.00",
+        "tai_khoan_nhan": f["acc"]["1111"]}, ktt) == nhan
+    denied(lambda: rpc("kh_aph.factory_cash.xac_nhan_nhan", {"name": bg["name"], "so_thuc_nhan": 950001,
+        "tai_khoan_nhan": f["acc"]["1111"]}, ktt), text="kết quả khác")
+    near(gl(f["quy"]), after_receive)
+
     near(gl(f["quy"]), 2_000_000 - 750_000 - 950_000)
     near(gl(f["acc"]["15488"], f["cc_sc"]) - hh, 750_000)
     emit("HTTP_0111_QUY_NHA_MAY", "PASS", {"dung_thay": 3, "dung2_thay": 0, "je_dung": "chặn", "quy": 300000,

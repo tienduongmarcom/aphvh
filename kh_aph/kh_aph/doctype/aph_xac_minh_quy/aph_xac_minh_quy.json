@@ -1,0 +1,133 @@
+{
+ "doctype": "DocType",
+ "name": "APH Xac minh quy",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "track_changes": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "account",
+   "label": "Quỹ tiền mặt",
+   "fieldtype": "Link",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "label": "Căn cứ và lý do xác minh",
+   "fieldtype": "Small Text",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evidence",
+   "label": "Tệp kiểm đếm (nếu có)",
+   "fieldtype": "Attach"
+  },
+  {
+   "fieldname": "allocations",
+   "label": "Phân bổ đã xác minh",
+   "fieldtype": "Table",
+   "options": "APH Phan bo quy"
+  },
+  {
+   "fieldname": "unverified_amount",
+   "label": "Chưa xác minh",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "precision": "2"
+  },
+  {
+   "fieldname": "gl_balance",
+   "label": "Số dư sổ quỹ",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_verification",
+   "label": "Thay mốc xác minh",
+   "fieldtype": "Link",
+   "options": "APH Xac minh quy",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "source_hash",
+   "label": "Dấu sổ",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "source_rows",
+   "label": "Dấu từng dòng sổ",
+   "fieldtype": "Long Text",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "closed_by",
+   "label": "Người xác nhận",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "closed_at",
+   "label": "Thời điểm xác nhận",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "field_order": [
+  "company",
+  "account",
+  "reason",
+  "evidence",
+  "allocations",
+  "unverified_amount",
+  "gl_balance",
+  "previous_verification",
+  "source_hash",
+  "source_rows",
+  "closed_by",
+  "closed_at"
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "submit": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "submit": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "is_submittable": 1
+}

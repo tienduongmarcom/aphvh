@@ -1,0 +1,99 @@
+{
+ "doctype": "DocType",
+ "name": "APH Doi chieu lech tien",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_type",
+   "label": "Loại nguồn",
+   "fieldtype": "Select",
+   "options": "APH Chot ca tien\nAPH Ban giao tien",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_name",
+   "label": "Hồ sơ nguồn",
+   "fieldtype": "Dynamic Link",
+   "options": "source_type",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "result",
+   "label": "Kết quả điều tra và đối chiếu",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "evidence",
+   "label": "Tệp căn cứ đối chiếu",
+   "fieldtype": "Attach"
+  },
+  {
+   "fieldname": "proofs",
+   "label": "Căn cứ kiểm đếm lại từng phía",
+   "fieldtype": "Table",
+   "options": "APH Can cu doi chieu quy"
+  },
+  {
+   "fieldname": "closed_by",
+   "label": "Người chốt kết quả",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "closed_at",
+   "label": "Thời điểm chốt",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "field_order": [
+  "company",
+  "source_type",
+  "source_name",
+  "result",
+  "evidence",
+  "proofs",
+  "closed_by",
+  "closed_at"
+ ],
+ "autoname": "hash",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  }
+ ]
+}

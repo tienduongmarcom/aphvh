@@ -50,6 +50,7 @@ class MoneyBoundaries(unittest.TestCase):
     def test_nhan_tien_khong_chap_nhan_nan_inf_hoac_qua_le(self):
         m = self.load("factory_cash")
         m._tao_je = Mock()
+        m._nguoi_nhan = Mock()
         doc = types.SimpleNamespace(check_permission=Mock(), company="APH", nguoi_nhan="nguoi-nhan",
                                     docstatus=1, loai="Bàn giao tiền", trang_thai="Chờ nhận")
         company = types.SimpleNamespace(check_permission=Mock())
@@ -64,6 +65,29 @@ class MoneyBoundaries(unittest.TestCase):
             doc = types.SimpleNamespace(get_doc_before_save=lambda: None, get=lambda f: "gia" if f == field else None)
             with self.assertRaises(ValueError): m.validate_phieu(doc)
         with self.assertRaises(ValueError): m.protect_submitted(None)
+
+    def test_quan_ly_khong_nhan_thay_o_quy_nha_may(self):
+        m = self.load("factory_cash")
+        m._tao_je = Mock()
+        self.f.get_roles = lambda: ["Accounts Manager", "System Manager"]
+        self.f.get_doc = Mock(return_value=types.SimpleNamespace(check_permission=Mock(), company="APH", nguoi_nhan="khac"))
+        with self.assertRaisesRegex(ValueError, "không nhận thay"):
+            m.xac_nhan_nhan("P1", 10, "quy")
+        m._tao_je.assert_not_called()
+
+    def test_quy_nha_may_gui_lai_ket_qua_khong_tao_je(self):
+        m = self.load("factory_cash")
+        m._nguoi_nhan = Mock()
+        m._tao_je = Mock()
+        doc = types.SimpleNamespace(check_permission=Mock(), company="APH", nguoi_nhan="nguoi-nhan",
+            docstatus=1, loai="Bàn giao tiền", trang_thai="Đã nhận", journal_entry="JE", nhan_boi="nguoi-nhan", so_thuc_nhan=10, name="P1")
+        self.f.get_doc = Mock(return_value=doc)
+        self.f.db.get_value.side_effect = ["quy", 1]
+        self.assertEqual(m.xac_nhan_nhan("P1", "10.00", "quy")["so_thuc_nhan"], 10)
+        self.f.db.get_value.side_effect = ["khac"]
+        with self.assertRaisesRegex(ValueError, "kết quả khác"):
+            m.xac_nhan_nhan("P1", 10, "quy")
+        m._tao_je.assert_not_called()
 
     def test_file_khong_co_quyen_khong_doc_noi_dung(self):
         m = self.load("tien_vay")

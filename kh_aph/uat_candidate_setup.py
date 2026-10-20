@@ -72,6 +72,20 @@ def schema(cho_phep_du_lieu=False):
     # 0.14: Trung tâm Bán hàng, tiền và vay (mỗi hàm tự đòi cờ của mình).
     from kh_aph import tien_vay, trung_tam_ban
     trung_tam_ban.schema()
+    from kh_aph import cash_custody
+    cash_custody.schema()
+    from kh_aph import cash_closing
+    cash_closing.schema()
+    from kh_aph import cash_handover
+    cash_handover.schema()
+    from kh_aph import factory_receiving
+    factory_receiving.schema()
+    from kh_aph import factory_transfer
+    factory_transfer.schema()
+    from kh_aph import factory_production
+    factory_production.schema()
+    from kh_aph import ux_task
+    ux_task.schema()
     tien_vay.schema()
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields(FIELDS)

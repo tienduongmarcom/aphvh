@@ -1,0 +1,313 @@
+{
+ "doctype": "DocType",
+ "name": "APH Ban giao tien",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "track_changes": 1,
+ "is_submittable": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "company",
+   "label": "Đơn vị",
+   "fieldtype": "Link",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "from_account",
+   "label": "Quỹ giao",
+   "fieldtype": "Link",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_account",
+   "label": "Quỹ/ngân hàng nhận",
+   "fieldtype": "Link",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_holder",
+   "label": "Người thực giao",
+   "fieldtype": "Link",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_holder",
+   "label": "Người thực nhận",
+   "fieldtype": "Link",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "requested_amount",
+   "label": "Dự kiến bàn giao",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "label": "Căn cứ bàn giao",
+   "fieldtype": "Small Text",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Attach",
+   "label": "Tệp kiểm đếm/bàn giao",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "status",
+   "label": "Trạng thái",
+   "fieldtype": "Select",
+   "options": "Nháp\nChờ nhận\nĐã nhận\nCó chênh lệch\nVượt nguồn cần xử lý\nĐã hủy",
+   "in_list_view": 1,
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "from_verification",
+   "label": "Mốc xác minh nguồn",
+   "fieldtype": "Link",
+   "options": "APH Xac minh quy",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "to_verification",
+   "label": "Mốc xác minh nhận",
+   "fieldtype": "Link",
+   "options": "APH Xac minh quy",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sent_by",
+   "label": "Người gửi",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sent_at",
+   "label": "Thời điểm gửi",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "received_amount",
+   "label": "Thực nhận",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "precision": "2",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "difference",
+   "label": "Chênh lệch",
+   "fieldtype": "Currency",
+   "options": "VND",
+   "precision": "2",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "received_by",
+   "label": "Người xác nhận nhận",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "received_at",
+   "label": "Thời điểm nhận",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "receive_hash",
+   "label": "Dấu yêu cầu nhận",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "receive_reason",
+   "label": "Giải trình thực nhận",
+   "fieldtype": "Small Text",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "assignee",
+   "label": "Người xử lý lệch",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "due_date",
+   "label": "Hạn xử lý",
+   "fieldtype": "Date",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "label": "Bút toán chuyển tiền",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "issue_state",
+   "label": "Xử lý chênh lệch",
+   "fieldtype": "Select",
+   "options": "\nChờ xử lý\nĐã đối chiếu",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "issue_resolution",
+   "label": "Hồ sơ đối chiếu lệch",
+   "fieldtype": "Link",
+   "options": "APH Doi chieu lech tien",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "label": "Hoàn bàn giao gốc",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "options": "APH Ban giao tien"
+  },
+  {
+   "fieldname": "reversal_request",
+   "label": "Mã yêu cầu hoàn",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "reversal_doc",
+   "label": "Phiếu hoàn mới nhất",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "options": "APH Ban giao tien"
+  },
+  {
+   "fieldname": "factory_source",
+   "label": "Phiếu quỹ nhà máy gốc",
+   "fieldtype": "Link",
+   "options": "APH Phieu quy nha may",
+   "read_only": 1,
+   "no_copy": 1,
+   "unique": 1
+  }
+ ],
+ "field_order": [
+  "company",
+  "from_account",
+  "to_account",
+  "from_holder",
+  "to_holder",
+  "requested_amount",
+  "reason",
+  "evidence",
+  "status",
+  "from_verification",
+  "to_verification",
+  "sent_by",
+  "sent_at",
+  "received_amount",
+  "difference",
+  "received_by",
+  "received_at",
+  "receive_hash",
+  "receive_reason",
+  "assignee",
+  "due_date",
+  "journal_entry",
+  "issue_state",
+  "issue_resolution",
+  "reversal_of",
+  "reversal_request",
+  "reversal_doc",
+  "factory_source"
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "print": 1,
+   "report": 1
+  }
+ ]
+}

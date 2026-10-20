@@ -3,12 +3,17 @@
 	const bat = () => (frappe.boot.kh_aph || {}).gia_san;
 
 	function thu_tien(company, customer, hoa_don) {
+		const request_id = [...crypto.getRandomValues(new Uint8Array(16))].map(v => v.toString(16).padStart(2, "0")).join("");
+		let sending = false;
 		const d = new frappe.ui.Dialog({
 			title: __("Thu tiền"),
 			fields: [
 				{fieldname: "company", label: __("Đơn vị"), fieldtype: "Link", options: "Company", reqd: 1, default: company},
 				{fieldname: "customer", label: __("Khách"), fieldtype: "Link", options: "Customer", reqd: 1, default: customer},
 				{fieldname: "tien_mat", label: __("Tiền mặt"), fieldtype: "Currency"},
+				{fieldname: "nguoi_giu_tien", label: __("Người thực giữ tiền mặt"), fieldtype: "Link", options: "User",
+					hidden: !frappe.boot.kh_aph?.cash_custody, depends_on: "eval:doc.tien_mat>0",
+					description: __("Để trống là chưa xác minh; không mặc định người lập phiếu.")},
 				{fieldname: "chuyen_khoan", label: __("Chuyển khoản"), fieldtype: "Currency"},
 				{fieldname: "tk_ngan_hang", label: __("Tài khoản ngân hàng nhận"), fieldtype: "Link", options: "Account",
 					depends_on: "eval:doc.chuyen_khoan>0",
@@ -18,13 +23,19 @@
 			],
 			primary_action_label: __("Ghi phiếu thu"),
 			primary_action(v) {
-				frappe.call({method: "kh_aph.ban_quay.thu_tien", args: {...v, hoa_don: hoa_don || []}, freeze: true,
+				if (sending) return;
+				sending = true;
+				d.get_primary_btn().prop("disabled", true);
+				frappe.call({method: "kh_aph.ban_quay.thu_tien", args: {...v, request_id, hoa_don: hoa_don || []}, freeze: true,
 					callback: (r) => {
 						d.hide();
 						(r.message.phieu_thu || []).forEach((pe) => window.open(
 							`/printview?doctype=Payment%20Entry&name=${encodeURIComponent(pe)}&format=${encodeURIComponent("Phiếu thu chi")}&trigger_print=1`));
 						frappe.show_alert({message: __("Đã ghi {0}", [r.message.phieu_thu.join(", ")]), indicator: "green"});
-					}});
+					}}).always(() => {
+						sending = false;
+						d.get_primary_btn().prop("disabled", false);
+					});
 			},
 		});
 		d.show();

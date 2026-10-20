@@ -146,6 +146,12 @@ jinja = {
 }
 
 # APHVH UAT child query correction v1
+for _personal_dt in ("Customer", "APH Phieu quy nha may"):
+    _personal_scripts = doctype_js.get(_personal_dt, [])
+    if isinstance(_personal_scripts, str):
+        _personal_scripts = [_personal_scripts]
+    doctype_js[_personal_dt] = _personal_scripts + ["public/js/tien_ca_nhan.js"]
+
 override_whitelisted_methods.update({
     "frappe.client.get_list": "kh_aph.cost_query_api.get_list",
     "frappe.client.get_value": "kh_aph.cost_query_api.get_value",
@@ -409,3 +415,101 @@ for _event in ("before_validate", "before_update_after_submit"):
 for _dt in ("Delivery Note", "Sales Invoice"):
     doc_events.setdefault(_dt, {}).setdefault("before_cancel", []).append("kh_aph.delivery_issue.before_cancel")
 doctype_js["Delivery Note"].append("public/js/chenh_lech_giao_nhan.js")
+
+# Người giữ tiền là metadata trên nguồn; không tạo thêm GL/PLE.
+for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice", "POS Invoice",
+            "APH Funds Receipt", "APH Funds Action", "APH Phieu quy nha may"):
+    for _event in ("validate", "before_update_after_submit"):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        doc_events[_dt][_event] = _handlers + ["kh_aph.cash_custody.validate"]
+
+# Chốt ca chỉ lưu hồ sơ; khóa chung với các đường ghi/hủy GL chuẩn.
+for _dt in ("APH Xac minh quy", "APH Chot ca tien"):
+    has_permission[_dt] = "kh_aph.cash_closing.has_permission"
+permission_query_conditions["APH Chot ca tien"] = "kh_aph.cash_closing.query_conditions"
+permission_query_conditions["APH Xac minh quy"] = "kh_aph.cash_closing.opening_query_conditions"
+for _dt in ("Payment Entry", "Journal Entry", "Sales Invoice", "Purchase Invoice", "POS Invoice",
+            "Stock Entry", "Purchase Receipt", "Delivery Note", "Stock Reconciliation"):
+    for _event in ("before_submit", "before_cancel"):
+        _handlers = doc_events.setdefault(_dt, {}).get(_event, [])
+        _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+        doc_events[_dt][_event] = _handlers + ["kh_aph.cash_closing.lock_ledger"]
+doc_events.setdefault("GL Entry", {})["before_insert"] = "kh_aph.cash_closing.lock_ledger"
+extend_doctype_class.setdefault("File", []).append("kh_aph.cash_closing.CashClosingFileMixin")
+doc_events["File"]["before_validate"] = ["kh_aph.ho_so_giao_nhan.protect_file_update", "kh_aph.cash_closing.protect_file"]
+
+# Bàn giao tiền giữ nguồn riêng; JE native là một chuyển tiền, không thu khách.
+has_permission["APH Ban giao tien"] = "kh_aph.cash_handover.has_permission"
+permission_query_conditions["APH Ban giao tien"] = "kh_aph.cash_handover.query_conditions"
+has_permission["APH Doi chieu lech tien"] = "kh_aph.cash_issue.has_permission"
+permission_query_conditions["APH Doi chieu lech tien"] = "kh_aph.cash_issue.query_conditions"
+for _event in ("validate", "before_cancel", "before_update_after_submit"):
+    doc_events["Journal Entry"].setdefault(_event, []).append("kh_aph.cash_handover.protect_journal")
+
+# Mã lượt thu chỉ được sinh trong RPC quầy; giữ cả phiếu hủy để chống lặp.
+for _event in ("validate", "before_update_after_submit", "on_trash"):
+    _handlers = doc_events["Payment Entry"].get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    doc_events["Payment Entry"][_event] = _handlers + ["kh_aph.cashier_request.protect"]
+
+# Nhận nhanh nhà máy: dấu nguồn giữ cả khi tắt cờ; không cấp thêm quyền chứng từ.
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete")):
+    _old = doc_events["Purchase Receipt"].get(_event, [])
+    if isinstance(_old, str):
+        _old = [_old]
+    doc_events["Purchase Receipt"][_event] = _old + ["kh_aph.factory_receiving." + _method]
+_scripts = doctype_js.get("Purchase Order", [])
+if isinstance(_scripts, str):
+    _scripts = [_scripts]
+doctype_js["Purchase Order"] = _scripts + ["public/js/factory_receiving.js"]
+
+# Giữ chỗ hàng chờ giá trên mọi đường ghi nhận đơn mua, kể cả màn native.
+for _dt, _events in {
+    "APH Pending Receipt": {"validate": "validate_pending", "before_update_after_submit": "validate_pending",
+        "before_submit": "pending_transition", "before_cancel": "pending_transition"},
+    "Purchase Receipt": {"before_submit": "native_receipt", "before_cancel": "native_receipt"},
+    "Purchase Invoice": {"before_submit": "native_receipt", "before_cancel": "native_receipt"},
+    "Purchase Order": {"before_update_after_submit": "protect_order", "before_cancel": "protect_order", "on_trash": "protect_order"},
+}.items():
+    for _event, _method in _events.items():
+        _old = doc_events.setdefault(_dt, {}).get(_event, [])
+        if isinstance(_old, str):
+            _old = [_old]
+        doc_events[_dt][_event] = _old + ["kh_aph.pending_order." + _method]
+_old = doc_events["APH Pending Receipt"].get("on_trash", [])
+if isinstance(_old, str):
+    _old = [_old]
+doc_events["APH Pending Receipt"]["on_trash"] = _old + ["kh_aph.factory_receiving.prevent_delete"]
+extend_doctype_class["Purchase Receipt"].append("kh_aph.pending_order.PendingReceiptLinks")
+doc_events["Purchase Receipt"]["on_cancel"].append("kh_aph.pending_order.receipt_cancelled")
+
+# NM01c nhận chuyến chuyển đến: dấu nhận giữ cả khi tắt cờ; khóa phiếu chuyển đi trên mọi lối nhận.
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete"),
+                        ("before_submit", "lock_outgoing"), ("before_cancel", "lock_outgoing")):
+    _old = doc_events.setdefault("Stock Entry", {}).get(_event, [])
+    _old = [_old] if isinstance(_old, str) else list(_old)
+    doc_events["Stock Entry"][_event] = _old + ["kh_aph.factory_transfer." + _method]
+_scripts = doctype_js.get("Stock Entry", [])
+_scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+doctype_js["Stock Entry"] = _scripts + ["public/js/factory_transfer.js"]
+
+# NM02–04 ghi sản xuất / đóng gói một lần: dấu do cửa sổ tạo, bất biến, không xóa.
+for _event, _method in (("validate", "protect"), ("before_update_after_submit", "protect"), ("on_trash", "prevent_delete")):
+    _old = doc_events["Stock Entry"].get(_event, [])
+    _old = [_old] if isinstance(_old, str) else list(_old)
+    doc_events["Stock Entry"][_event] = _old + ["kh_aph.factory_production." + _method]
+
+# UX-01: "Việc tiếp theo" trên chứng từ (chỉ khi cờ kh_aph_ux_task_first bật, đọc qua boot).
+for _dt in ("APH Shared Sales Order", "Delivery Note", "Sales Invoice"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ux_buoc_tiep.js"]
+
+for _dt in ("Customer", "Sales Invoice"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/ux_thu_tien.js"]
+_lists = doctype_list_js.get("Customer", [])
+_lists = [_lists] if isinstance(_lists, str) else list(_lists)
+doctype_list_js["Customer"] = _lists + ["public/js/ux_thu_tien.js", "public/js/ux_customer_list.js"]

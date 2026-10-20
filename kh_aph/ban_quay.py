@@ -10,6 +10,7 @@
 Quy tắc thuần ở lab9x.van_hanh.
 """
 import frappe
+from kh_aph.cash_transaction import retry_rpc
 from frappe.utils import add_days, cint, flt, getdate, now_datetime, nowdate
 from lab9x import van_hanh as V
 
@@ -214,7 +215,8 @@ def _tk_ngan_hang_hop_le(company, tk):
 
 
 @frappe.whitelist(methods=["POST"])
-def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, ma_gd=None, hoa_don=None, ghi_chu=None):
+@retry_rpc
+def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, ma_gd=None, hoa_don=None, ghi_chu=None, nguoi_giu_tien=None, request_id=None):
     """Lập và ghi sổ phiếu thu (mỗi hình thức một phiếu). hoa_don: danh sách hóa đơn được chọn (JSON), phân bổ theo thứ tự
     chọn; phần dư để trả trước, kế toán phân bổ theo kế hoạch (không FIFO)."""
     _can_bat()
@@ -223,7 +225,22 @@ def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, m
         cac_phan = V.tach_thu(flt(tien_mat), flt(chuyen_khoan), ma_gd)
     except ValueError as e:
         frappe.throw(str(e))
+    from kh_aph import cashier_request
+    from kh_aph.funds_rules import money
+    try:
+        cash_amount, bank_amount = (money(v or 0) for v in (tien_mat, chuyen_khoan))
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    hd = frappe.parse_json(hoa_don) if isinstance(hoa_don, str) else (hoa_don or [])
+    if not isinstance(hd, list) or any(not isinstance(v, str) for v in hd) or len(set(hd)) != len(hd):
+        frappe.throw("Danh sách hóa đơn không hợp lệ hoặc bị lặp")
     ma_gd = (ma_gd or "").strip()
+    key, digest, previous = cashier_request.begin(request_id, {
+        "company": company, "customer": customer, "cash": format(cash_amount, ".2f"), "bank": format(bank_amount, ".2f"),
+        "account": tk_ngan_hang or "", "reference": ma_gd, "invoices": hd,
+        "note": ghi_chu or "", "holder": nguoi_giu_tien or ""})
+    if previous is not None:
+        return previous
     if flt(chuyen_khoan):
         if not tk_ngan_hang:
             frappe.throw("Chọn tài khoản ngân hàng nhận chuyển khoản")
@@ -236,7 +253,6 @@ def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, m
     from erpnext.accounts.party import get_party_account
     phai_thu = get_party_account("Customer", customer, company)
     quy = frappe.get_cached_value("Company", company, "default_cash_account")
-    hd = frappe.parse_json(hoa_don) if isinstance(hoa_don, str) else (hoa_don or [])
     no = []
     for ten in hd:
         si = frappe.db.get_value("Sales Invoice", ten, ["customer", "company", "docstatus", "outstanding_amount"], as_dict=True)
@@ -259,9 +275,20 @@ def thu_tien(company, customer, tien_mat=0, chuyen_khoan=0, tk_ngan_hang=None, m
             "reference_date": nowdate() if hinh_thuc == "Chuyển khoản" else None,
             "remarks": (ghi_chu or f"Thu {hinh_thuc.lower()} của khách {customer}"),
             "references": [{"reference_doctype": "Sales Invoice", "reference_name": t, "allocated_amount": a} for t, a in pb]})
+        from kh_aph import cash_custody
+        if cash_custody.enabled() and hinh_thuc == "Tiền mặt":
+            pe.set(cash_custody.HOLDER, nguoi_giu_tien)
         pe.flags.ignore_permissions = True  # quyền đã kiểm: kế toán bán hàng / kế toán
-        pe.insert()
-        pe.submit()
+        previous_request = getattr(frappe.flags, "kh_aph_cashier_request", None)
+        try:
+            if key:
+                pe.set(cashier_request.KEY, key)
+                pe.set(cashier_request.HASH, digest)
+                frappe.flags.kh_aph_cashier_request = (key, digest)
+            pe.insert()
+            pe.submit()
+        finally:
+            frappe.flags.kh_aph_cashier_request = previous_request
         phieu.append(pe.name)
     return {"phieu_thu": phieu}
 

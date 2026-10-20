@@ -24,7 +24,7 @@ loi() {
     BK="$(ls -td "$ERP_DIR"/sao-luu/*/ 2>/dev/null | head -1 | xargs -r basename)"
     echo "!!! SITE ĐANG Ở CHẾ ĐỘ BẢO TRÌ (người dùng chưa vào được). Bằng chứng: $L/log-$PB-*.txt, $L/dv-$PB-*.txt"
     echo "    Quay lui về bản trước (khôi phục bản sao lưu lúc bắt đầu bảo trì, không mất giao dịch): cd $ERP_DIR && ./quay-lui.sh $BK"
-    echo "    Hoặc, nếu đã kiểm thấy ổn, mở lại: cd $ERP_DIR && ./erpctl exec -T backend bench --site frontend set-maintenance-mode off && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d"
+    echo "    Hoặc, nếu đã kiểm thấy ổn, mở lại: cd $ERP_DIR && ./erpctl exec -T backend bench --site frontend set-maintenance-mode off && ./erpctl restart backend && ./erpctl exec -T backend bench --site frontend scheduler resume && ./erpctl up -d"
   fi
   exit 1
 }
@@ -63,6 +63,9 @@ cd "$ERP_DIR"
 ex() { ./erpctl exec -T backend bench --site frontend "$@" </dev/null; }
 BAO_TRI=1
 ex set-maintenance-mode on
+# Frappe16.52 giữ site_config trong RAM từng web worker 60 giây.
+# CLI đổi file không xóa cache của worker đang chạy; nạp lại trước bước tiếp.
+./erpctl restart backend
 ex scheduler pause
 ./erpctl stop queue-short queue-long scheduler
 cd "$TK"; dv > "$L/dv-$PB-truoc.txt"; cd "$ERP_DIR"
@@ -98,6 +101,9 @@ echo "== 8. MỞ LẠI: tắt bảo trì, chạy lại lịch + worker"
 cd "$ERP_DIR"
 ex clear-cache
 ex set-maintenance-mode off
+# Frappe16.52 giữ site_config trong RAM từng web worker 60 giây.
+# CLI đổi file không xóa cache của worker đang chạy; nạp lại trước bước tiếp.
+./erpctl restart backend
 ex scheduler resume
 ./erpctl up -d
 BAO_TRI=0

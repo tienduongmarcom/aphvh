@@ -93,17 +93,17 @@ def chay(admin, phien, f, emit):
     hd2 = hoa_don_cua(dn2)
     assert hd2, "Không có hóa đơn ghi nợ lúc giao"
     tong = float(get("Sales Invoice", hd2)["outstanding_amount"])
-    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 1000,
+    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b013-cases-1", "company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 1000,
                                                      "tk_ngan_hang": f["acc"]["bank"], "ma_gd": " "}, ktbh), text="mã giao dịch")
-    kq = rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh1"], "tien_mat": 50000, "chuyen_khoan": 30000,
+    kq = rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b013-cases-2", "company": f["aph"], "customer": f["kh1"], "tien_mat": 50000, "chuyen_khoan": 30000,
                                           "tk_ngan_hang": f["acc"]["bank"], "ma_gd": f["p"] + "-FT1",
                                           "hoa_don": json.dumps([hd2])}, ktbh)
     assert len(kq["phieu_thu"]) == 2, kq
     assert abs(float(get("Sales Invoice", hd2)["outstanding_amount"]) - (tong - 80000)) < 1
-    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 1000,
+    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b013-cases-3", "company": f["aph"], "customer": f["kh1"], "chuyen_khoan": 1000,
                                                      "tk_ngan_hang": f["acc"]["bank"], "ma_gd": f["p"] + "-FT1"}, ktbh),
            text="đã ghi")
-    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"company": f["aph"], "customer": f["kh1"], "tien_mat": 1}, dung),
+    denied(lambda: rpc("kh_aph.ban_quay.thu_tien", {"request_id": f["p"] + "-thu-quay-b013-cases-4", "company": f["aph"], "customer": f["kh1"], "tien_mat": 1}, dung),
            ("PermissionError",))
     emit("HTTP_013_THU_TIEN", "PASS", {"phieu_thu": kq["phieu_thu"], "con_no": tong - 80000})
 

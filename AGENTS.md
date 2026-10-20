@@ -124,6 +124,16 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   image chép tệp giao diện vào ổ, worker production nhận việc của site tạm). Diễn tập dùng tài nguyên riêng gắn nhãn
   `vn.9xlab.dien-tap=<mã lượt>`. Nâng cấp luôn trong chế độ bảo trì từ trước sao lưu tới khi kiểm xong; lỗi thì giữ bảo trì.
 
+- **Frappe16.52.0 cache site_config trong RAM từng web worker TTL60:** đổi maintenance bằng CLI không xóa cache đó. Sau bật/tắt phải restart backend trước sao lưu/mở site; không chỉ chờ một ping200 (worker khác có thể503). Cổng2b39192414323 đã bắt lỗi này, giữ20 probe nghiêm sau readiness.
+
+- **Frappe16.52.0 `frappe.call` trả jqXHR:** dùng `.always(...)` để mở lại nút cả thành công/lỗi; không gọi trực tiếp `.finally(...)`. Đã gặp ở Chrome mất phản hồi thu quầy (UAT39190026643), đối chiếu `frappe/public/js/frappe/request.js` đúng tag. Nếu cần Promise native phải chuyển rõ ràng; kiểm bằng trình duyệt thật, không chỉ kiểm cú pháp.
+
+- **Phiên UAT HTTP/Desk:** mở Desk khởi tạo CSRF trong session. Không truyền cookie của caller urllib không có CSRF header sang Chrome rồi dùng lại để POST; dùng phiên trình duyệt riêng cùng nhân sự giả, vẫn kiểm principal server. Không tắt CSRF để chữa bộ thử. Đã gặp ở UAT39224149992 sau khi ca Chrome PASS.
+
+- **Frappe16.52.0 Currency chỉ đọc:** `BaseControl.get_value()` dùng `value || undefined`, nên số0 trả undefined dù ô vẫn hiển thị0. Ca trình duyệt phải kiểm cả `control.value === 0` và vùng hiển thị; không đổi undefined thành0 để che lỗi. Native `frappe.client.delete` thành công có thể không có khóa `message`; cleanup quyền UAT dùng phản hồi raw, không suy xóa thất bại từ khóa thiếu.
+
+- **Frappe16.52.0 lỗi đã bắt trong report:** `frappe.throw` vẫn đưa thông báo vào `frappe.local.message_log`. Khi bắt ValidationError để hiển thị thành dòng cần xử lý, chỉ gỡ các thông báo mới của chính lần gọi đó; giữ thông báo trước và không nuốt PermissionError. Kiểm Chrome không còn popup che bảng. Native cancel còn kiểm backlink sau `on_cancel`: nếu nguồn gương cần giữ lịch sử, chỉ ngoại lệ đúng nguồn dưới capability và vẫn kiểm mọi liên kết tĩnh/động khác; không dùng `ignore_links`.
+
 - Frappe `BaseDocument.update` nhận mapping, không nhận kwargs. Update-after-submit không gọi `before_validate`: giá trị
   dẫn xuất (giá/bao) phải tính lại ở server.
 - Phiếu nhập lùi ngày phải `set_posting_time` và chờ repost hoàn tất trước khi đọc giá vốn MA.
@@ -178,3 +188,9 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   Tạo Accounting Dimension thì ERPNext đẩy việc dựng ô vào hàng đợi `long` (không chạy ngay khi không có worker).
 - Tài khoản 1388 / 3388 không có loại (account_type) nên nhận đối tượng Nhân viên; tài khoản có loại khác Receivable / Payable /
   Equity thì ERPNext chặn đối tượng (`validate_account_party_type`).
+- ERPNext16.51.1 `accounts_controller.update_child_qty_rate` bỏ qua dòng thiếu `item_code`, kể cả có `docname`;
+  thao tác thành công có thể trả phản hồi không có `message`. Fixture phải gửi đủ mã/dòng, lượng/giá, UOM/hệ số,
+  ngày và mô tả như màn chuẩn, rồi kiểm trạng thái đã lưu. Quyền sửa PO (Purchase User/Manager) độc lập quyền
+  Accounts Manager chốt giá; không cấp quyền mua ngầm hoặc coi phản hồi rỗng là lỗi nghiệp vụ.
+- PO mới cho mã đã mua có thể tự điền giá mua gần nhất khi payload gửi rate0. Ca “chưa có giá” phải dùng mã chưa
+  có lịch sử giá và kiểm lại `PO.items[].rate==0` sau lưu; không suy rate0 từ payload, không bỏ assert để cho PASS.

@@ -92,6 +92,22 @@ kh_aph.price.hn_storekeeper =
 		}
 	};
 
+	const print_a5 = async (frm) => {
+		if (frm.is_dirty()) return frappe.msgprint("Lưu phiếu trước khi in.");
+		const preview = window.open("", "_blank");
+		if (!preview) return frappe.msgprint("Cho phép mở cửa sổ in trong trình duyệt rồi bấm lại.");
+		preview.opener = null;
+		try {
+			const result = await frappe.call({method: "kh_aph.ban_nhanh.print_note",
+				args: {delivery_note: frm.doc.name}, freeze: true});
+			preview.document.open(); preview.document.write(result.message.html); preview.document.close();
+			preview.focus(); preview.print();
+		} catch (error) {
+			preview.close();
+			throw error;
+		}
+	};
+
 	frappe.ui.form.on("Delivery Note", {
 		refresh(frm) {
 			if (!frm.is_new() && frm.doc.docstatus < 2) {
@@ -100,6 +116,10 @@ kh_aph.price.hn_storekeeper =
 					() => print(frm, FORMAT_ISSUE), "In");
 				frm.add_custom_button(tra ? "Biên bản nhận lại hàng (2 liên)" : "Biên bản giao nhận (2 liên)",
 					() => print(frm, FORMAT_HANDOVER), "In");
+				if (!tra && frappe.boot?.kh_aph?.trung_tam_ban && !kh_aph.price.restricted() &&
+					frm.perm?.some(p => p.print)) {
+					frm.add_custom_button("Phiếu xuất kho A5 (2 liên)", () => print_a5(frm), "In");
+				}
 			}
 			if (kh_aph.price.cost_restricted()) {
 				kh_aph.price.toggle_grid(frm, "items", COST, false);
