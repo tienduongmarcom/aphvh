@@ -80,6 +80,7 @@ try {
     process.exitCode = 1;
 } finally {
     try { ws?.close(); } catch {}
-    chrome.kill('SIGKILL');
-    fs.rmSync(profile, {recursive:true, force:true});
+    chrome.kill('SIGTERM'); await pause(500);
+    // Chrome còn ghi hồ sơ tạm khi đóng: dọn không được thì bỏ qua (thư mục tạm của runner dùng một lần).
+    try { fs.rmSync(profile, {recursive:true, force:true}); } catch {}
 }
