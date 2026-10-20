@@ -64,7 +64,8 @@
     d=new frappe.ui.Dialog({title:__("Chốt ca tiền của tôi"),fields:[
       {fieldtype:"HTML",options:__("Nhập số thực đếm. Hệ thống tính số phải có; chốt ca không ghi thu hoặc bàn giao tiền.")},
       {fieldname:"company",label:__("Đơn vị"),fieldtype:"Link",options:"Company",reqd:1,onchange(){
-        if(!d)return;const selected=d.get_value("company"), id=++generation;
+        // Ô Link gọi onchange cả khi giá trị không đổi (rời ô, chọn lại): không xóa quỹ đã chọn (UAT 39420392256).
+        if(!d)return;const selected=d.get_value("company");if(selected===d.__company_da_nap)return;d.__company_da_nap=selected;const id=++generation;
         d.set_value("account","");d.set_df_property("account","options","");
         if(selected)frappe.call({method:"kh_aph.personal_cash.accounts",args:{company:selected}}).then(r=>{if(id!==generation)return;d.set_df_property("account","options",["",...r.message].join("\n"));if(r.message.length===1)d.set_value("account",r.message[0]);});
       }},

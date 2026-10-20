@@ -15,6 +15,22 @@
       "reqd": 1
     },
     {
+      "fieldname": "customer_phone",
+      "label": "Điện thoại khách",
+      "fieldtype": "Data",
+      "fetch_from": "customer.mobile_no",
+      "read_only": 1,
+      "depends_on": "customer"
+    },
+    {
+      "fieldname": "customer_address",
+      "label": "Địa chỉ khách",
+      "fieldtype": "Small Text",
+      "fetch_from": "customer.primary_address",
+      "read_only": 1,
+      "depends_on": "customer"
+    },
+    {
       "fieldname": "transaction_date",
       "label": "Ngày đặt",
       "fieldtype": "Date",
@@ -60,6 +76,8 @@
   ],
   "field_order": [
     "customer",
+    "customer_phone",
+    "customer_address",
     "transaction_date",
     "delivery_date",
     "selling_price_list",

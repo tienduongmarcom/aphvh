@@ -76,17 +76,32 @@ class UX(unittest.TestCase):
         self.f.delete_doc.assert_called_once_with('Module Profile', '9xLab - Việc kho', ignore_permissions=True, force=True)
         self.assertNotIn('Việc', ''.join(self.m.NHOM.values()))
 
-    def test_link_fields_show_names(self):
-        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: None)
+    def test_link_fields_show_names_but_item_shows_code(self):
+        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: {'show_title_field_in_link': 1}.get(k) if dt == 'Item' else None)
         self.f.make_property_setter = Mock()
         self.m._hien_ten_khi_chon()
         got = {(c.args[0]['doctype'], c.args[0]['property'], c.args[0]['value']) for c in self.f.make_property_setter.call_args_list}
         self.assertIn(('Customer', 'show_title_field_in_link', '1'), got)
-        self.assertIn(('Item', 'title_field', 'item_name'), got)
+        self.assertIn(('Item', 'show_title_field_in_link', '0'), got)   # cột Mã hàng phải hiện mã
+        self.assertNotIn(('Item', 'title_field', 'item_name'), got)
+        self.assertIn(('Customer', 'search_fields', 'customer_name,mobile_no'), got)
         self.f.make_property_setter.reset_mock()
-        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: {'title_field': self.m.HIEN_TEN[dt], 'show_title_field_in_link': 1}[k])
+        da = {'Customer': {'title_field': 'customer_name', 'show_title_field_in_link': 1, 'search_fields': 'customer_name,mobile_no'},
+              'Item': {'show_title_field_in_link': 0}, 'Supplier': {'title_field': 'supplier_name', 'show_title_field_in_link': 1}}
+        self.f.get_meta = lambda dt: Mock(has_field=lambda k: True, get=lambda k: da[dt].get(k))
         self.m._hien_ten_khi_chon()
         self.f.make_property_setter.assert_not_called()
+
+    def test_order_shows_item_name_and_customer_contact(self):
+        base = pathlib.Path(__file__).resolve().parents[1] / 'kh_aph/doctype'
+        it = json.loads((base / 'aph_shared_sales_order_item/aph_shared_sales_order_item.json').read_text(encoding='utf-8'))
+        f = {x['fieldname']: x for x in it['fields']}
+        self.assertEqual(f['item_name']['fetch_from'], 'item_code.item_name'); self.assertTrue(f['item_name']['in_list_view'])
+        so = json.loads((base / 'aph_shared_sales_order/aph_shared_sales_order.json').read_text(encoding='utf-8'))
+        g = {x['fieldname']: x for x in so['fields']}
+        self.assertEqual(g['customer_phone']['fetch_from'], 'customer.mobile_no')
+        self.assertEqual(g['customer_address']['fetch_from'], 'customer.primary_address')
+        self.assertTrue(g['customer_address']['read_only'] and g['customer_phone']['read_only'])
 
     def test_disabled_no_schema(self):
         self.f.conf['kh_aph_ux_task_first'] = 0

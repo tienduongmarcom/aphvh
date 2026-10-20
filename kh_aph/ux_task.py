@@ -153,20 +153,31 @@ def schema():
     return [_workspace(n) for n in NHOM] + [_module_profile(n) for n in NHOM]
 
 
-# Ô chọn khách/mặt hàng/nhà cung cấp chỉ hiện mã -> nhân viên sợ nhầm, phải mở lại (chủ dự án 20/10/2026).
-# Dùng thuộc tính chuẩn show_title_field_in_link: chọn xong ô hiện tên (customer_name/item_name/supplier_name), mã vẫn lưu.
-HIEN_TEN = {'Customer': 'customer_name', 'Item': 'item_name', 'Supplier': 'supplier_name'}
+# Ô chọn khách/nhà cung cấp hiện TÊN sau khi chọn (chủ dự án 20/10/2026). Mặt hàng thì KHÔNG: cột "Mã hàng" phải hiện mã,
+# tên hàng có cột riêng (chủ dự án 20/10/2026, sau 0.16.1). Bản 0.16.1 đã bật cho Item -> tắt lại tường minh.
+HIEN_TEN = {'Customer': ('customer_name', '1'), 'Item': ('item_name', '0'), 'Supplier': ('supplier_name', '1')}
+# Ô chọn khách: danh sách gợi ý hiện thêm số điện thoại để phân biệt khách trùng tên.
+TIM_KHACH = ['customer_name', 'mobile_no']
 
 
 def _hien_ten_khi_chon():
-    for dt, truong in HIEN_TEN.items():
+    for dt, (truong, hien) in HIEN_TEN.items():
         meta = frappe.get_meta(dt)
         if not meta.has_field(truong):
             continue
-        for prop, val, kieu in (('title_field', truong, 'Data'), ('show_title_field_in_link', '1', 'Check')):
-            if str(meta.get(prop) or '') != val:
+        muon = (('title_field', truong, 'Data'), ('show_title_field_in_link', hien, 'Check')) if hien == '1' \
+            else (('show_title_field_in_link', hien, 'Check'),)
+        for prop, val, kieu in muon:
+            hien_tai = str(meta.get(prop) or ('0' if prop == 'show_title_field_in_link' else ''))
+            if hien_tai != val:
                 frappe.make_property_setter({'doctype': dt, 'doctype_or_field': 'DocType', 'property': prop,
                                              'value': val, 'property_type': kieu}, validate_fields_for_doctype=False)
+    meta = frappe.get_meta('Customer')
+    co = [x.strip() for x in (meta.get('search_fields') or '').split(',') if x.strip()]
+    them = [f for f in TIM_KHACH if f not in co and meta.has_field(f)]
+    if them:
+        frappe.make_property_setter({'doctype': 'Customer', 'doctype_or_field': 'DocType', 'property': 'search_fields',
+                                     'value': ','.join(co + them), 'property_type': 'Data'}, validate_fields_for_doctype=False)
 
 
 # Tên cũ 0.16.0 ("Việc …" tạo cảm giác áp lực, chủ dự án đổi 20/10/2026). Chỉ ẩn Workspace cũ do bộ cài này tạo; xóa Module
