@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 — Ứng viên tối ưu giao diện đang kiểm, chưa phát hành
+
+PR #26, nhánh `feat/toi-uu-giao-dien-20261020`, mã nghiệp vụ đầu `cc616a3`: năm khu Bán hàng/Kho vận/Nhà máy/Tiền và kế toán/Dữ liệu và cấu hình; tái dùng đủ lối cũ, dựng xong mới ẩn tên cũ và map mặc định/profile. Đầu đơn nhận diện khách và công nợ hóa đơn chỉ đọc, không dùng số cũ khi đổi khách; mã/tên hàng riêng ở cửa chuẩn bị giao. Một cửa thu tiền dùng service cũ, giảm nút/in lặp, chọn bộ giao nhận theo thế hệ phiếu; nhãn chung trung lập, giữ ID kỹ thuật/role guard. Không đổi sổ, số đơn, giữ tồn lúc in hoặc mẫu3liên. Dùng cờ UX hiện có, không thêm quyền/cờ.
+
+Cục bộ **453 test kh_aph (14 skip) +108 lab9x đạt**, Python/JS/diff đạt. ĐANG DỞ: kiểm4cổng và ảnh trình duyệt đúng nguồn; chưa PASS CI, không version/tag/deploy. Production vẫn0.16.2/28cờ. Bộ thử HTTP/Chrome đã mở rộng kiểm5khu, scope gợi ý khách, nhận diện và cột hàng. Hai ca Chrome chập chờn từ bàn giao vẫn giữ giới hạn, không coi là đã sửa.
+
 ## 20/10/2026 — Codex tiếp nhận PR #25 và ghi phạm vi tối ưu mới nhất
 
 Nguồn nhận `7dcff5a`; đã đối chiếu diff chỉ tài liệu, GitHub không có PR mở. Bốn cổng và phát hành0.16.2 đều success đúng95a8b1e, Cổng3 mốc0.16.2 success e062287. Đã tải artifact UAT39427294383:13 tệp http,308 bản ghi PASS/0FAIL (gồm kỹ thuật/chuẩn bị/khôi phục), b014117PASS; xem ảnh ux-viec-ban-hang.png. Chi tiết, giới hạn và yêu cầu hội thoại mới tại `docs/dac-ta-toi-uu-giao-dien-0163.md`. Yêu cầu mới thay các đề xuất chờ chốt cũ của Claude về bố trí: Nhà máy riêng; khách luôn hiện SĐT/địa chỉ; mã và tên hàng riêng; công nợ gọn; tên chung trung lập. Không tự đổi series/số đơn/roleID/giữ tồn lúc in hoặc duyệt mẫu3liên.

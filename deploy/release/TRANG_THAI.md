@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — PR #26 tối ưu giao diện đang kiểm, chưa có bản phát hành mới
+
+Nhánh `feat/toi-uu-giao-dien-20261020`, mã nghiệp vụ đầu `cc616a3`: năm khu, Nhà máy riêng, nhận diện khách/hàng rõ, công nợ hóa đơn gọn, thu tiền cùng service, giảm điều hướng/nút trùng và chuẩn nhãn chung. Không sửa GL/SLE/PLE, cờ/quyền, số đơn hoặc mẫu3liên. Cục bộ453 test (14 skip) và108 lõi đạt; ĐANG DỞ kiểm4cổng/ảnh đúng SHA, chưa PASS CI. Production giữ0.16.2/digest34a32f71…/28cờ, không tag/deploy. Chi tiết tại đầu docs/ban-giao.md; không lấy bằng chứng0.16.2 thay cho ứng viên.
+
 ## 20/10/2026 — Codex đã nhận hồ sơ, chưa có ứng viên phát hành mới
 
 Đối chiếu main `7dcff5a`/PR#25 chỉ tài liệu. Đã kiểm trạng thái4 cổng và phát hành0.16.2 đúng95a8b1e, Cổng3 mốc0.16.2 đúnge062287; đã tải/đọc artifact UAT39427294383. Nhánh tiếp nối `feat/toi-uu-giao-dien-20261020` hiện chỉ ghi phạm vi hội thoại tại `docs/dac-ta-toi-uu-giao-dien-0163.md`, chưa sửa code/schema/quyền, không version/tag/phát hành/VM. Production giữ0.16.2/digest34a32f71…/28cờ theo hồ sơ, không dùng bằng chứng cũ làm PASS cho mã mới. ĐANG DỞ: chuẩn tên và làm gọn theo yêu cầu mới; Nhà máy riêng, thông tin khách/hàng luôn rõ, công nợ gọn; mẫu3liên chưa duyệt.
