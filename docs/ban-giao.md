@@ -1,5 +1,9 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 — ĐANG KIỂM: đồng bộ ca Chrome với cửa thu tiền đã gom
+
+UAT39458034247 tại dba7604 FAIL ở DESK_2B_CASHIER_LOST_RESPONSE: selector còn tìm nút Thu tiền cũ trên Customer, trong khi UX chỉ giữ Ghi nhận khách trả tiền. Sửa đúng hai điểm chọn nút, không đổi thao tác thu/gửi lại hoặc assert một PE/không thêm GL/PLE, không sửa mã nghiệp vụ để né lỗi. Log và artifact FAIL giữ tại work/ci-toi-uu-dba7604 và work/reports. Cổng2 39458030862 và2b39458019691 success dba7604; Cổng3 còn chạy, chưa kết luận toàn bộ. Thêm hướng dẫn docs/huong-dan-giao-dien-0163.md; production vẫn0.16.2, chưa tag/deploy. Bước tiếp: chạy lại bốn cổng đúng mã có selector mới, xem ảnh và đối chiếu bằng chứng.
+
 ## 20/10/2026 — Chuẩn tiền tố đơn bán chung mới
 
 Ứng viên0.16.3 dùng `DBC-{YYYY}-{#####}` cho đơn mới theo quy tắc tên trung lập (Đơn bán chung). Chỉ đổi autoname của DocType nguồn; không rename/backfill đơn cũ, không sửa ID DocType/role hoặc liên kết. Các ghi chú trước "không đổi số đơn" chỉ còn đúng với số đã tồn tại; không coi tiền tố APH-SO là tên dùng chung cho đơn mới. Có kiểm metadata trong HTTP;4cổng đúng mã mới còn kiểm, chưa phát hành. Production vẫn0.16.2.

@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 20/10/2026 — ĐANG KIỂM: đồng bộ ca Chrome với cửa thu tiền đã gom
+
+UAT39458034247 tại dba7604 FAIL ở DESK_2B_CASHIER_LOST_RESPONSE: selector còn tìm nút Thu tiền cũ trên Customer, trong khi UX chỉ giữ Ghi nhận khách trả tiền. Sửa đúng hai điểm chọn nút, không đổi thao tác thu/gửi lại hoặc assert một PE/không thêm GL/PLE, không sửa mã nghiệp vụ để né lỗi. Log và artifact FAIL giữ tại work/ci-toi-uu-dba7604 và work/reports. Cổng2 39458030862 và2b39458019691 success dba7604; Cổng3 còn chạy, chưa kết luận toàn bộ. Thêm hướng dẫn docs/huong-dan-giao-dien-0163.md; production vẫn0.16.2, chưa tag/deploy. Bước tiếp: chạy lại bốn cổng đúng mã có selector mới, xem ảnh và đối chiếu bằng chứng.
+
 ## 20/10/2026 — Cấp số DBC cho đơn chung mới trong ứng viên0.16.3
 
 Theo quy tắc tên trung lập, đổi autoname cấp số mới sang DBC; số cũ/ID/Link giữ nguyên, không backfill. PR #26 vẫn đang kiểm, chưa phát hành/tag/VM; production0.16.2 giữ nguyên. Không lấy PASS của mã trước Sidebar/tiền tố mới làm PASS mã hiện tại.

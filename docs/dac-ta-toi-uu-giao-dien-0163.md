@@ -31,7 +31,7 @@ Ca nhan-hang-nha-may chập chờn chưa rõ nguyên nhân vẫn mở. Ca quy-nh
 
 ## Những nội dung chưa tự quyết
 
-Không đổi số đơn, hash/series chứng từ cũ, định danh role/DocType, giữ tồn vật lý từ lúc in, chính sách vệ tinh offline/QR, chuyển hàng kháccompany, hao hụt vận chuyển hoặc hóa đơn một phần chỉ để làm gọn. Mẫu3liên tại docs/de-xuat-mau-3-lien là nháp chủ dự án đang sửa, chưa tích hợp/duyệt; không tự khôi phục phần ký/chân trang đã bỏ trong bản nháp. Thông tin vị trí giấy gốc và trạng thái nhận bản giấy là đề xuất chưa có, ghi thành phần triển khai riêng nếu chốt.
+Không đổi số đã cấp, hash/series chứng từ cũ hoặc định danh role/DocType; đơn chung mới dùng DBC theo mục dưới. Không tự thêm giữ tồn vật lý từ lúc in, chính sách vệ tinh offline/QR, chuyển hàng kháccompany, hao hụt vận chuyển hoặc hóa đơn một phần chỉ để làm gọn. Mẫu3liên tại docs/de-xuat-mau-3-lien là nháp chủ dự án đang sửa, chưa tích hợp/duyệt; không tự khôi phục phần ký/chân trang đã bỏ trong bản nháp. Thông tin vị trí giấy gốc và trạng thái nhận bản giấy là đề xuất chưa có, ghi thành phần triển khai riêng nếu chốt.
 
 ## Hiện trạng sau nhận
 
@@ -39,6 +39,6 @@ Theo quy tắc không dùng tên một công ty cho đơn chung, đơn tạo m�
 
 Thanh bên dùng cấu hình `Custom Sidebar` chính thức trên nền16.52: nhãn chung Vận hành, năm Workspace, ẩn shortcut DocType/Report thuộc package thay vì xóa nguồn. Giữ các mục riêng và lớp người dùng, bộ cài idempotent. Nền không có DocType này giữ Workspace chuẩn; HTTP trên nền ghim phải chứng minh có cấu hình, chưa kiểm thì không tuyên bố Sidebar đã đạt.
 
-Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ453 test (14 skip) +108 lõi đạt;4cổng/ảnh đang kiểm, chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đơn/roleID và các chính sách chưa chốt vẫn ngoài lượt này.
+Sau tiếp nhận đã thực hiện mã đầu `cc616a3`/PR #26: danh mục dùng chung và năm khu, API nhận diện/gợi ý khách theo quyền, công nợ hóa đơn không cấn chéo, cửa thu tiền chung, giảm nút/in lặp và một bộ giao nhận theo thế hệ phiếu. Kiểm cục bộ454 test (14 skip) +108 lõi đạt; bốn cổng/ảnh đang kiểm trên dba7604, chưa phát hành. Không sửa snapshot đơn hoặc dữ liệu giao nhận cũ; không coi lỗi tải/quyền là số0. Mẫu3liên, giữ tồn lúc in, đổi số đã cấp/roleID và các chính sách chưa chốt vẫn ngoài lượt này.
 
-Đã nhận và xác minh hồ sơ/nguồn/trạng tháiCI, đã ghi yêu cầu hội thoại vào nguồn. Chưa sửa code/schema/quyền, chưa tăng version hoặc phát hành. Bước tiếp theo là thực hiện lượt chuẩn tên/điều hướng và đối chiếu lối nghiệp vụ trên nhánh feat/toi-uu-giao-dien-20261020; kiểm trên site thử, không tác động dữ liệu thật.
+Ứng viên mang phiên bản0.16.3 trên nhánh feat/toi-uu-giao-dien-20261020, PR #26. Đã sửa giao diện và cấu hình điều hướng; không thay quyền hay sổ tài chính. Chỉ thử trên môi trường cô lập, không tác động dữ liệu thật. Kết quả cuối và giới hạn nghiệm thu được ghi tại đầu docs/ban-giao.md và deploy/release/TRANG_THAI.md.
