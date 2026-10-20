@@ -1,5 +1,137 @@
 # Bàn giao — trạng thái mới nhất
 
+## 20/10/2026 ~22:45 — MỐC BÀN GIAO Claude → Codex (production 0.16.2 ĐẠT)
+
+Chủ dự án yêu cầu bàn giao tập trung. **Claude dừng mọi chỉnh sửa trong cùng phạm vi kể từ mốc này** (kể cả bản đổi tên 0.16.3);
+Codex kiểm lại bằng nguồn và bằng chứng dưới đây rồi tiếp tục. Không có mật khẩu/token trong hồ sơ.
+
+### 1. Nguồn hiện tại
+- Repo `tienduongmarcom/aphvh`, nhánh `main` = **`72e6a0b4f9cc44465f92bd023231b253e63b1237`** (merge PR #24). Hồ sơ này là PR riêng
+  (`claude/ho-so-ban-giao-20261020`), chỉ đổi tài liệu + chép bản nháp mẫu in; không đổi code/schema.
+- PR đã gộp hôm nay: #19 (chuỗi #9–#19: tiền đợt 2, nhà máy đợt 3, UX-01), #20 (0.16.1), #21 (Cổng 3 mốc 0.16.0), #22 (sửa
+  `nang-cap.sh`), #23 (0.16.2), #24 (mốc 0.16.2). PR #9–#18 đã ĐÓNG KHÔNG GỘP vì nội dung đi qua chuỗi #19 (có bình luận trên từng PR).
+  **Không còn PR mở** ngoài PR hồ sơ này.
+- Tag do chủ dự án gắn: `v0.16.0`=457be4a, `v0.16.1`=cfdd5af, `v0.16.2`=95a8b1e.
+- Nhánh cũ `claude/*`, `feat/*`, `docs/*`… còn trên remote (đã gộp hoặc thay thế), chưa xóa — không xóa ngoài phạm vi.
+
+### 2. Thay đổi chưa lưu / việc đang dở
+- Trong repo: **không có thay đổi chưa commit** (`git status` sạch trước khi tạo PR hồ sơ).
+- **Bản đổi tên/làm sạch 0.16.3: CHƯA BẮT ĐẦU viết code**, chưa có nhánh. Mới có đề xuất trong hội thoại, chép ở mục 5. Chờ chủ dự án chốt.
+- Bản nháp **mẫu phiếu 3 liên** (không phải code, chưa duyệt): trang thiết kế riêng của chủ dự án; chủ dự án ĐANG SỬA DỞ (đã bỏ phần
+  ký và chân trang ở mẫu chuyển kho). Bản chụp lúc 22:40 lưu ở `docs/de-xuat-mau-3-lien/` (`chuyen-kho-noi-bo.dc.html`,
+  `xuat-giao-van-chuyen.dc.html`) chỉ để tham khảo — mẫu in thật chưa làm.
+
+### 3. Production
+- `erpnext-prod` / site `frontend`, Compose `~/erp/aph-vh`. Image **`ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.2`**, digest
+  **`sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917`** (theo `docker images --digests` người vận hành gửi;
+  Cổng 3 kéo theo digest này đạt — run 39441058175). Nền ERPNext 16.51.1 / Frappe 16.52.0 / lab9x 0.2.11 / kh_aph 0.16.2,
+  nền `frappe/erpnext@sha256:a856e7f6…`. Nguồn phát hành tag `v0.16.2` = `95a8b1e63358b190faccfa300010445ee799cac9`,
+  workflow phát hành **39432250494** success.
+- Bằng chứng: log người vận hành 20/10 ~21:35 `=== XONG 0.16.2: ĐẠT ===` (diễn tập bản sao rồi triển khai). Hồ sơ: `khach/aph-vh/phien-ban.yaml`.
+- **28 cờ bật** (danh sách sau quay lui 0.16.1 do người vận hành gửi, không cờ mới từ đó): server_cost_guard, post_receivable_on_delivery,
+  shared_sales_order, global_credit_warning, high_risk_credit_guard, quantity_valuation_mvp, funds_workflow, source_change,
+  factory_costing, factory_cash, sales_adjust, data_review, kho_chuan, sales_p1, quan_tri, du_lieu, dau_ky, kho_van_hanh, gia_san,
+  trung_tam_ban, tien_vay, cash_custody, cash_closing, cash_handover, factory_handover, factory_receiving, factory_production,
+  ux_task_first (tiền tố `kh_aph_`).
+- Lịch sử hôm nay: 0.15.3 → **0.16.0** (~13:20, digest ce8db011…) → **0.16.1** lần 1 TỰ QUAY LUI OAN (kiểm sau nâng cấp ghi
+  `KHÔNG ĐẠT: 0` nhưng `| tee | grep -q` dưới pipefail làm tee chết SIGPIPE; tệp kiểm bị cắt giữa JSON) → sửa PR #22 → 0.16.1 lần 2
+  ĐẠT (script 62668ab, image 0.16.1 không đổi; SSH rớt giữa chừng, script vẫn chạy xong, so sổ KHỚP; 3 container queue/scheduler phải
+  `./erpctl up -d` lại) → **0.16.2** ĐẠT. Quay lui có điều kiện: 0.16.1 (digest không ghi lại được) hoặc 0.16.0 ce8db011… + bản sao lưu
+  lúc nâng trong `sao-luu/`; không restore sau khi có giao dịch mới.
+- Bài học vận hành: chạy triển khai trong `tmux`; chờ workflow "Phát hành image" đạt rồi mới chạy VM (lần đầu 0.16.2 chạy sớm → image
+  not found, dừng ở bước 1, không đụng site).
+
+### 4. Phần đã làm hôm nay (sau 0.16.0)
+| Bản | Thay đổi | Code |
+|---|---|---|
+| 0.16.1 | Đơn bán chung: `delivery_date` mặc định Today; Dialog lập phiếu xuất mặc định "Khách đến lấy" | `aph_shared_sales_order.json`, `.js` (dòng ~22) |
+| 0.16.1 | Workspace "Việc …" → "Bàn bán hàng / Bàn kho / Bàn tiền và công nợ / Bàn nhà máy"; khối "Hôm nay cần xử lý"; banner "Bước tiếp theo" | `ux_task.py` (`NHOM`, `_LAM`, `_an_ten_cu`, `TEN_CU`), `public/js/ux_buoc_tiep.js` |
+| 0.16.1 | Workspace tên cũ do bộ cài tạo: `is_hidden=1`, người đặt mặc định chuyển sang tên mới; Module Profile "9xLab - Việc …" chưa ai dùng thì xóa | `ux_task._an_ten_cu` |
+| 0.16.1 | 24 tên DocType APH dịch không có chữ APH (vd. Đơn bán chung, Phiếu nhận chờ định giá); 23 tên báo cáo có dấu; nhãn Sổ xuất nhập bao | `translations/vi.csv`, `aph_bag_movement.json` |
+| 0.16.1 | Mặc định Today: received_date (Phiếu nhận chờ định giá), posting_date (Tiền thực nhận, Xử lý tiền) | 3 DocType JSON |
+| 0.16.1 | `nang-cap.sh`: ghi kiểm ra tệp rồi grep (sửa SIGPIPE); `list-apps` cũng vậy | `deploy/khach-hang/nang-cap.sh` (PR #22) |
+| 0.16.1 | Cổng 3 bỏ gắn cứng 0.15.3, kiểm theo `PROD_TAG` | `.github/workflows/cong-3-nang-cap-production.yml` |
+| 0.16.2 | Customer/Supplier hiện tên trong ô Link (`show_title_field_in_link=1`, title_field); **Item tắt lại** (`0`) — ô Mã hàng hiện mã | `ux_task.HIEN_TEN`, `_hien_ten_khi_chon` |
+| 0.16.2 | Dòng đơn chung thêm cột `item_name` "Tên hàng" (fetch_from item_code.item_name); đơn thêm `customer_phone` (customer.mobile_no), `customer_address` (customer.primary_address), chỉ đọc | `aph_shared_sales_order_item.json`, `aph_shared_sales_order.json` |
+| 0.16.2 | Customer `search_fields` thêm `mobile_no` (gợi ý khách hiện SĐT) | `ux_task.TIM_KHACH` |
+| 0.16.2 | Chốt ca tiền: ô Đơn vị không xóa quỹ khi onchange mà giá trị không đổi (gốc ca Chrome chập chờn) | `public/js/tien_ca_nhan.js` (~dòng 67) |
+
+Cách dùng: không đổi thao tác nghiệp vụ; thay đổi hiện khi cờ `kh_aph_ux_task_first` bật (đã bật). Hướng dẫn phát hành:
+`docs/phat-hanh-0.16.1.md`, `docs/phat-hanh-0.16.2.md`.
+
+### 5. Phần chưa làm / câu hỏi chưa chốt (KHÔNG tự suy diễn)
+**Đề xuất 0.16.3 đổi tên/làm sạch — chưa làm, chờ chốt:**
+1. Năm Workspace: "Bàn bán hàng" (chủ dự án thấy ổn), "Kho vận" (chủ dự án chỉ định thay "Bàn kho"), "Thu chi và công nợ", "Nhà máy",
+   "Dữ liệu"; có bỏ chữ "Bàn" cho đồng đều không — CHƯA CHỐT.
+2. Gộp/ẩn bộ Workspace cũ "Trung tâm Bán hàng" (`trung_tam_ban.py`), "Trung tâm Kho" (`kho_van_hanh.py`), "Tiền và vay"
+   (`tien_vay.py`), "Trung tâm dữ liệu" (`du_lieu.py`) — hiện 8 Workspace chồng nhau trên thanh bên — CHƯA CHỐT.
+3. Thống nhất nhãn: Chốt ca tiền; Lập phiếu xuất & In; Xác nhận nhận hàng (5 biến thể); Mở lại/Chốt xử lý chênh lệch; Đề nghị chuyển
+   kho; Phiếu xuất kho (thay "Phiếu giao hàng"); Đơn bán chung / Đơn bán từng đơn vị.
+4. Bỏ mã nội bộ khỏi nhãn: "(R054–R056)", "(bước 2)", "(3 đơn vị)", "về 0".
+5. Tên khó hiểu: Tuyến tài khoản tiền và thu hộ, Kế hoạch cọc và phân bổ, Số dư đầu kỳ nguồn, Đề nghị số liệu (chỉ định mức?),
+   Hóa đơn ngoài (luôn là MISA?), "Hoàn toàn bộ bàn giao", "Trả lại".
+6. **Quy tắc chủ dự án (20/10): chữ hiển thị KHÔNG dùng "APH" làm tên chung** (chỉ khi đúng là công ty An Phú Hưng). Còn: vai trò
+   "APH Không xem giá vốn" (đổi tên thật bằng rename_doc — 31 tệp tham chiếu, cần cẩn thận), DocType "APH Credit Release" chưa dịch,
+   nhãn "Quy tắc tính giá (APH)" (`install.py` ~58), số đơn `APH-SO-{YYYY}-{#####}`.
+7. Mẫu số đơn bán chung: DBC- / DB- / DH- — CHƯA CHỐT; chỉ áp đơn mới.
+8. Số chứng từ đang là hash (Chốt ca tiền, Bàn giao tiền, Phiếu nhận chờ định giá, Tiền thực nhận…) → số theo năm — CHƯA CHỐT.
+
+**Kho / giao nhận (từ phương án chủ dự án gửi 20/10):**
+- Hồ sơ bản ký có 3 trạng thái; thiếu "Đã nhận bản giấy gốc" + vị trí lưu (`ho_so_giao_nhan.py`) — đề xuất, chưa chốt.
+- Bàn kho thêm: Đã giao chưa có bản ký / Có bản ký chưa đối chiếu / Bản ký có chênh lệch — đề xuất, chưa chốt.
+- Mẫu 3 liên (chuyển kho nội bộ, xuất giao vận chuyển) — chủ dự án đang sửa nháp, kế toán chốt mẫu giấy + thời hạn lưu.
+- "Giữ lượng cho lượt giao": hiện chỉ giữ theo đơn (không lập vượt còn lại), tồn chỉ trừ khi xác nhận giao — giữ tồn từ lúc in là đổi nghiệp vụ.
+- Vệ tinh không có người dùng phần mềm: quy trình gọi đầu mối / QR — chưa chốt.
+
+**Còn mở từ trước:** chuyển khác đơn vị; hao hụt vận chuyển; lệnh/mẻ sản xuất; TC03/TC05/TC07/TC08 và 5 câu hóa đơn một phần
+(`docs/dot-4-5-ra-soat-tai-chinh-hoa-don.md`); phân bổ thu tiền theo số tự nhập từng hóa đơn (cần sửa server); áp Workspace cho từng
+người (`ux_task.ap_dung_nguoi_dung`, chạy thử trước — chờ danh sách nhân viên); UX-4 đo người thật; nghiệm thu dữ liệu thật để cuối.
+Ô "Kho nguồn" trên đơn thật của chủ dự án từng chọn "Hàng đang vận chuyển - APH" — đã nhắc, chưa chặn bằng code.
+
+### 6. Kiểm thử (4 cổng = UAT, Cổng 2, Cổng 2b, Cổng 3)
+| Mã | Phạm vi | Run | Kết quả |
+|---|---|---|---|
+| 1100619 / fe62ee5 | Cổng 3 mốc 0.16.0 | 39380485282 FAIL (gắn cứng 0.15.3) → 39382358810 | PASS |
+| 139ec5f | 0.16.1 nhánh | UAT 39385003775, C3 39385000889, C2 39385000382, 2b 39384998213 | PASS |
+| cfdd5af (v0.16.1) | main | UAT 39388098968, C3 39388096051, 2b 39388093768, C2 39388091434; phát hành 39394763705 | PASS |
+| 1d1b0a1 | sửa nang-cap.sh | C3 39411790962, 2b 39411788597, C2 39411785874, UAT 39411793609 (39411787335 PR-trigger bị hủy do trùng) | PASS |
+| e2ea993 | 0.16.2 nhánh | **UAT 39420392256 FAIL** (ca Chrome quy-nha-may: "missing values: Quỹ tiền mặt") | giữ làm bằng chứng |
+| b23ca5f | 0.16.2 + sửa chập chờn | UAT 39423804066, C3 39423800283, 2b 39423796740, C2 39423793170 | PASS |
+| 95a8b1e (v0.16.2) | main | UAT 39427294383, C3 39427290220, 2b 39427285899, C2 39427281958; phát hành 39432250494 | PASS |
+| e062287 | Cổng 3 mốc 0.16.2 | 39441058175 | PASS |
+
+Unit cục bộ: `test_ux_task` 11 OK, `test_ban_dich`, `test_shared_order_rules` OK. **Lưu ý:** `python3 -m unittest discover -s kh_aph/tests`
+chạy cục bộ (không Frappe) báo 52 lỗi ở cả mã trước thay đổi — do môi trường, CI là bằng chứng. Artifact CI không tải được qua công cụ
+của Claude (chuyển hướng blob); Codex nên tải ảnh UAT (ux-buoc-tiep.png, ux-viec-ban-hang.png) để xem nhãn mới.
+Ca chập chờn: `quy-nha-may` đã tìm ra gốc và sửa ở b23ca5f (theo dõi tần suất); `nhan-hang-nha-may` (dialog không hiện) từng FAIL ở
+39360250409/39362652605 — chưa có gốc. **Chưa kiểm bằng Chrome** các nhãn/cột mới 0.16.1–0.16.2 ngoài ảnh UAT; chủ dự án đã xác nhận trên
+production: ngày giao tự điền, cột Mã hàng (sau 0.16.2 cần xác nhận lại hiện mã + cột Tên hàng + SĐT/địa chỉ khách).
+
+### 7. Giao diện / quyền / tùy chỉnh trong DB
+- Workspace (DB, bộ cài `ux_task.schema()` khi cờ 28 bật): tạo "Bàn …" ×4, ẩn "Việc …" ×4. **Chưa đặt mặc định cho người dùng nào.**
+  Workspace cũ "Trung tâm …"/"Tiền và vay" vẫn hiện.
+- Module Profile "9xLab - Bàn …" ×4 (chưa gán ai); "9xLab - Việc …" bị xóa nếu không ai dùng.
+- Property Setter (DB): Customer & Supplier `title_field`, `show_title_field_in_link=1`; Item `show_title_field_in_link=0`
+  (0.16.1 từng đặt Item title_field=item_name — vẫn còn, vô hại); Customer `search_fields` += mobile_no.
+- Bản dịch: `translations/vi.csv` (+47 dòng hôm nay). Quyền: không đổi DocPerm/Role hôm nay.
+
+### 8. Dữ liệu / schema
+- Trường mới (DocType app, đồng bộ migrate theo hash JSON): `APH Shared Sales Order Item.item_name`; `APH Shared Sales Order.customer_phone`,
+  `customer_address`; default Today cho 4 trường ngày. Không patch dữ liệu, không đổi sổ (GL/SLE/PLE): so sổ trước/sau 0.16.1 KHỚP.
+- Đơn cũ: cột mới trống đến khi mở/lưu lại (fetch_from không tự điền ngược) — chỉ hiển thị.
+- Khôi phục: quay lui image + `quay-lui.sh <thư mục sao-luu>` theo `docs/phat-hanh-*.md`; Property Setter/Workspace là dữ liệu, đi theo bản sao lưu.
+
+### 9. Lưu ý tiếp nối
+- **Phụ thuộc tên nút:** `ux_buoc_tiep.js` bấm hộ qua `frm.custom_buttons["<nhãn>"]`; ca Chrome (`ban-nhanh-desk.mjs`, `ux0-desk.mjs`)
+  tìm nút/Workspace theo nhãn ("Chốt ca tiền của tôi", "Lập phiếu xuất & In", "Bàn bán hàng"…). Đổi nhãn ở 0.16.3 phải đổi đồng thời các chỗ này.
+- **Hai bộ dữ liệu cũ–mới:** Workspace "Việc …"(ẩn) / "Bàn …" / "Trung tâm …"; Module Profile cũ/mới; Property Setter Item title_field.
+  Đổi tên Workspace lần nữa phải thêm tên "Bàn …" vào `TEN_CU` để ẩn, không để 3 thế hệ cùng hiện.
+- **Nguy cơ sửa chồng:** `ux_task.py`, `translations/vi.csv`, `aph_shared_sales_order*.json`, Cổng 3 workflow (PROD_TAG/DIGEST/FLAGS_CU)
+  là điểm nóng. Claude không sửa thêm các tệp này sau mốc bàn giao.
+- Thứ tự bắt buộc khi phát hành: 4 cổng trên đúng SHA → tag (chủ dự án) → "Phát hành image" đạt → VM trong tmux → cập nhật
+  `phien-ban.yaml` + Cổng 3 mốc mới + hai hồ sơ này.
+
+
 ## 20/10/2026 ~13:20 — Production 0.16.0 ĐẠT (xem TRANG_THAI.md)
 
 Digest `sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3`, nguồn `457be4a`, 28 cờ. ĐANG DỞ: gộp PR #9–#19 vào main;

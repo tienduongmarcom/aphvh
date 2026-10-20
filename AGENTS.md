@@ -194,3 +194,9 @@ Không đẩy đè `main`, không ghi đè tag/image `0.9.1` (workflow phát hà
   Accounts Manager chốt giá; không cấp quyền mua ngầm hoặc coi phản hồi rỗng là lỗi nghiệp vụ.
 - PO mới cho mã đã mua có thể tự điền giá mua gần nhất khi payload gửi rate0. Ca “chưa có giá” phải dùng mã chưa
   có lịch sử giá và kiểm lại `PO.items[].rate==0` sau lưu; không suy rate0 từ payload, không bỏ assert để cho PASS.
+
+## Quy ước chữ hiển thị (chủ dự án, 20/10/2026)
+
+Chữ người dùng thấy **không dùng "APH" làm tên chung** cho hệ thống/đơn chung nhiều đơn vị (dễ hiểu nhầm là của riêng An Phú Hưng);
+chỉ dùng khi đúng là nói về công ty APH (vd. "Kho … - APH", "APH: TT133"). Tên kỹ thuật DocType giữ nguyên, hiển thị qua `translations/vi.csv`.
+Tên dễ hiểu, không gây áp lực ("Bàn …", không "Việc …"), không lộ mã nội bộ (R0xx, bước n) trên nhãn.
