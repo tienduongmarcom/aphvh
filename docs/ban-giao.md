@@ -1,5 +1,15 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — UAT kho/giao nhận đạt trên b574457; toàn phạm vi vẫn đang phát triển
+
+Đúng mã `b57445753daf9513a8448d24e92d926d1a9a4d9c`: [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS. Đã tải và đọc artifact `candidate-image-evidence` id12360337173, đủ127PASS bộ014 và HTTP_UAT_RESTORE (khôi phục số bản ghi/series); các bộ kho/quỹ/giá vốn/giao hàng/hồi quy cũ của cùng lượt cũng đạt. Đã xem ảnh Chrome `kho-nha-xe-moi.png` và `kho-nhan-tra-kg.png`.
+
+Bằng chứng mới gồm: nhận5kg từ bao25kg vào cách ly, bao vật lý0; chưa thu thì không hoàn; thu một phần hoàn96.250 và thu đủ hoàn192.500, đối trừ/thực chi đúng khoản; đổi mã bằng đơn native; xe khách chỉ định; nhà xe nhập mới, báo nhận chỉ ghi dấu; nhận giấy gốc độc lập ảnh và cập nhật danh sách/Chốt ngày. Trả sau giảm chất lượng đã đạt trường hợp khoản một dòng, nhận đủ25kg theo giá trị còn lại đã đối chiếu, chặn giá gốc và đề nghị giảm nháp quá hạn số dư. Trả một phần sau giảm hoặc phân bổ nhiều dòng chưa hỗ trợ tự động, vẫn chặn để kế toán đối chiếu; không tuyên bố đã bao phủ.
+
+Lỗi Chrome nhận hàng nhà máy ở lượt0cf đã hết trong lượt mới: yêu cầu tìm biến thể báo cáo số lượng trảrỗng, giữ các lối Report/query/giá vốn bị chặn. Cổng2 [39631068245](https://github.com/tienduongmarcom/aphvh/actions/runs/39631068245) cùng mã SUCCESS. Cổng2b39632778370 và Cổng339632783717 đang chạy cùng mã, chưa có kết luận. Cục bộ516ca (14 bỏ qua),108ca lõi đã đạt. Các lượt FAIL trước giữ nguyên làm bằng chứng.
+
+**ĐANG DỞ:** nhập giấy dự phòng khi mất mạng, snapshot đối soát nợ/bộ giấy theo lượt, chuẩn bị và gom kho vệ tinh, giảm theo dòng/lượng và trả một phần sau giảm, thao tác hoàn/chênh lệch gọn, bằng chứng khách cuối riêng khi yêu cầu và lịch sử phiên bản đầy đủ. Xem bảng9nhóm `docs/doi-chieu-kho-giao-nhan-20261021.md`. PR38 vẫn nháp; version/tag/production0.16.4 và28cờ không đổi. Nghiệm thu dữ liệu/nhân sự/máy in thật tiếp tục để cuối theo quyết định đã chốt.
+
 ## 21/10/2026 — Sửa yêu cầu phụ của báo cáo số lượng cho hồ sơ ẩn vốn
 
 UAT39625443467 đúng0cfbcdb FAIL trong ca Chrome nhận hàng nhà máy cũ, trước khi chạy các ca mới ở cuối. Đã đọc log đầy đủ: Query Report của Frappe16.52 tự gọi reportview.get_list với Report/reference_report=Ton kho so luong, report_type=Custom Report để tìm biến thể. Chính sách ẩn vốn chặn yêu cầu này và bật Message che thao tác. Không coi là ca mới đạt hoặc bỏ kiểm Chrome.

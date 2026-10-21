@@ -10,7 +10,8 @@
 
 - Production: 0.16.4, tag `1dffa623dc28d239321b7c9cd249968def402123`, digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`; người vận hành đã xác nhận nâng cấp đạt. Không ghi dữ liệu production trong lượt phát triển này.
 - PR38: `feat/kho-giao-nhan-don-gian-20261021`, vẫn nháp. Nền main đã gồm PR37 chuyển Cổng3 sang đúng production0.16.4.
-- Mã kiểm nghiệp vụ trước bổ sung chặn giảm trùng: `3b0219ff63c321419dc8efcff6eb6fecf9487e11`, UAT39581676952 FAIL ở helper Chrome; đã xem ảnh nhập nhà xe và giữ bằng chứng, chưa kết luận phần nhận cuối/giấy gốc đã đạt.
+- Mã kiểm nghiệp vụ mới nhất: `b57445753daf9513a8448d24e92d926d1a9a4d9c`. [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS: đã tải artifact `candidate-image-evidence` (id12360337173), đọc đủ127PASS của bộ014, mốc khôi phục và xem hai ảnh Chrome nhập nhà xe/nhận trảkg. Các bộ hồi quy còn lại của cùng lượt cũng đạt. Cổng2 cùng mã: [39631068245](https://github.com/tienduongmarcom/aphvh/actions/runs/39631068245) SUCCESS.
+- Các lượt FAIL trước đó vẫn giữ: UAT39581676952 ở helper Chrome, UAT39625443467 ở yêu cầu phụ tìm biến thể báo cáo số lượng của hồ sơ ẩn vốn. Đã sửa và kiểm lại trong lượt mới; không bỏ ca Chrome hoặc mở quyền giá vốn để vượt lỗi.
 - Bằng chứng trước đó: UAT39578838909 trên `320558a` có các ca mới đạt nhưng toàn lượt FAIL ở tên nhà xe chứa HTML. Cổng2 và2b cùng mã đạt; Cổng3 cùng mã đã đạt: schema1115/1115, rollback1105/1105 lệch0; đã đọc artifact.
 - Mã nghiệp vụ chính: `sales_return.py`, `return_quantity.py`, `sales_exchange.py`, `sales_p1.py`, `delivery_info.py`, `delivery_status.py`, `ho_so_giao_nhan.py`, `ban_nhanh.py`, `bag_stock.py`, `kho_chuan.py`.
 
@@ -71,20 +72,21 @@ API mới kiểm quyền native trên nguồn và Company/Customer/Warehouse li�
 
 ## 8. Truy nguyên kiểm thử
 
-| Ca | Bằng chứng đã đọc trước lượt mới | Kết luận giới hạn |
+| Ca | Bằng chứng đã đọc | Kết luận giới hạn |
 | --- | --- | --- |
-| HTTP_014_TRA_LE_5KG | PASS UAT39578838909 |5kg cách ly,0bao, không ghi sổ lúc nháp, reserve/retry, giảm một lần |
+| HTTP_014_TRA_LE_5KG | PASS UAT39631103596, đúng b574457 |5kg cách ly,0bao, không ghi sổ lúc nháp, reserve/retry, giảm một lần |
 | HTTP_014_TRA_LE_CHUA_THU_KHONG_HOAN | PASS cùng lượt | Chưa thu không chuẩn bị chi |
 | HTTP_014_TRA_LE_THU_MOT_PHAN_HOAN_DUNG | PASS cùng lượt | Thu một phần/đủ, đối trừ và thực chi đúng nguồn, không tạo SI giảm lần nữa |
 | HTTP_014_DOI_MA_MOI | PASS cùng lượt | Mã khác, một đơn thay, giữ nguồn, hủy/lập lại và giao mới |
 | HTTP_014_XE_KHACH_CHI_DINH | PASS cùng lượt | Căn cứ chỉ định và nhận tại kho |
-| HTTP_014_TRA_SAU_GIAM_CHAT_LUONG | Mới viết, chưa chạy native | Chặn trả cả giá gốc sau đã giảm chất lượng, kiểm giá trị còn lại và đề nghị giảm cũ chưa ghi |
-| HTTP_014_NHA_XE_MOI_BAO_NHAN | Chưa PASS toàn ca ở lượt trên | Đã sửa lỗi lưu tên; cần kiểm lại đúng mã3b0219f |
-| NATIVE_DESK_KHO_GIAO_NHAN_GON | Chưa tới ở lượt trên | Chưa coi thêm nhập nhà xe/nhận cuối/trảkg đã kiểm Chrome trên mã cuối |
-| HTTP_014_NHAN_GIAY_GOC | Chưa tới ở lượt trên | API, danh sách thiếu gốc và Chốt ngày cần bằng chứng native |
+| HTTP_014_TRA_SAU_GIAM_CHAT_LUONG | PASS UAT39631103596 | Khoản một dòng đã giảm100.000, trả đủ25kg: chặn giá gốc, nhận đúng giá trị còn lại sau đối chiếu, không hoàn khống; chặn đề nghị giảm nháp cũ. Chưa chứng minh phân bổ giảm theo dòng/lượng hoặc trả một phần sau giảm |
+| HTTP_014_NHA_XE_MOI_BAO_NHAN | PASS cùng lượt | Tên mới chứa `&` lưu/escape đúng; báo khách nhận không cần chữ ký cuối khi chọnKhông, retry không ghi sổ lần hai |
+| NATIVE_DESK_KHO_GIAO_NHAN_GON | PASS cùng lượt; đã xem ảnh | Chrome thật nhập nhà xe mới, hộp báo nhận chỉ hai ô, kg/bao trả riêng; không ghi sổ khi kiểm màn hình |
+| HTTP_014_NHAN_GIAY_GOC | PASS cùng lượt | Nhận gốc độc lập ảnh, user/time/vị trí, danh sách thiếu gốc và Chốt ngày cập nhật; sửa trực tiếp/bấm lặp không thay dấu hoặc sổ |
+| HTTP_014_AN_VON_TIM_BIEN_THE_BAO_CAO | PASS cùng lượt | Yêu cầu phụ của báo cáo số lượng nhận danh sách rỗng; không mở Report/query/Stock Balance/Bin hoặc tùy chọn bỏ quyền; ca Chrome nhận hàng nhà máy cũ chạy tiếp đạt |
 | PDF A5 dữ liệu giả | Đã xem PDF tạo bằng Chrome |2trang khi không cần ký cuối,3trang khi có; chưa kiểm máy in thật |
 
-Cục bộ516ca kh_aph,14 ca bỏ qua;108ca lõi đạt. Đây không phải số ca nghiệm thu nhân sự thật. Bộ014 kỳ vọng127PASS, phải đọc artifact và kiểm đúng SHA; giữ mọi lượt FAIL làm bằng chứng. Các ca chi tiết của toàn phạm vi trong các đặc tả không được tự đổi thành PASS chỉ vì bảng này có một phần đạt.
+Cục bộ: 516 ca kh_aph, 14 ca bỏ qua; 108 ca lõi đạt. Bộ014 đã đọc đủ 127 PASS trên đúng `b574457`, gồm khôi phục dữ liệu/series. Đây là dữ liệu giả, không phải nghiệm thu nhân sự/hàng tồn/máy in thật. Bốn ca trả lẻ/chưa thu/thu một phần/đổi mã và xe khách chỉ định trong bảng trên cũng được kiểm lại đạt ở lượt mới, không chỉ dựa lượt cũ. Giữ mọi lượt FAIL làm bằng chứng. Các yêu cầu còn thiếu không được tự đổi thành PASS từ kết quả phần đã triển khai.
 
 Bảng Chốt ngày hiện phụ thuộc cờ `kh_aph_factory_handover`; ca CI giấy gốc bật đúng schema rồi khôi phục cờ. Cần tách phụ thuộc này khi chuẩn hóa cấu hình Nhà máy độc lập.
 
