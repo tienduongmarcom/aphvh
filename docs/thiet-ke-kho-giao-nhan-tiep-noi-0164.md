@@ -1,5 +1,8 @@
 # Kho–giao nhận: quy trình ít bước trên nền0.16.4
 
+> Bổ sung21/10/2026: xem [đối chiếu pháp lý và bộ chứng từ đề xuất](de-xuat-chung-tu-kho-theo-phap-ly-20261021.md). NĐ254/2026 và TT91/2026 có hiệu lực01/07/2026 đã thay căn cứ hóa đơn cũ; không dùng NĐ123/2020,NĐ70/2025,TT32/2025 như căn cứ hiện hành cho giao dịch mới. Mẫu ghép/nhân sự/luồngMISA cần đối chiếu như tài liệu bổ sung; chưa thay mẫu production hoặc coi quy chế này đã ban hành.
+
+
 **Cập nhật sau phản hồi chủ dự án21/10/2026:** đọc ưu tiên `bo-sung-kho-mat-mang-thu-tien-doi-soat-20261021.md`. Cho phép người phụ trách được giao quyền lập giấy tay mới và giao khi mất mạng, không giữ khách chờ ERP; bắt buộc phiếu thu khi thực thu và biên bản ký khi tăng/giảm nợ. Một bản nợ chi tiết từng đơn vị/cọc/tiền chưa phân bổ; lái xe chỉ ký nợ khi có quyền riêng. Các sơ đồ dưới là khung ban đầu, phải bổ sung nhánh giấy dự phòng và bộ giấy theo tài liệu cập nhật, không dùng để bắt xe chờ xác nhận online.
 
 Ngày21/10/2026. **Thiết kế và đối chiếu nguồn; chưa triển khai thay đổi này vào ERPNext.** Production0.16.4 đã ĐẠT theo log người vận hành; người dùng xác nhận địa chỉ đầu đơn đã hiển thị đúng. Chưa suy xác nhận đó thành đã thử thêm/sửa SĐT thật hoặc nghiệm thu toàn bộ kho.
