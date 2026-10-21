@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Image0.16.3 đã phát hành, CHƯA xác nhận triển khai production
+
+Chủ dự án đã push tag **v0.16.3**, đã kiểm GitHub trỏ đúng merge commit **a1f95b062f2ff7334ed36c176dfb742bf828974a**. [Phát hành39518896902](https://github.com/tienduongmarcom/aphvh/actions/runs/39518896902) **success**: UAT, Cổng2,2b,3 và bước build/push đều success cùng nguồn tag. Image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.3**, digest **sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**; đã đối chiếu log pushing manifest/containerimage.digest với đọc registry bằng docker buildx imagetools inspect, khớp. Không tag lại hoặc ghi đè image.
+
+Production vẫn theo xác nhận0.16.2/digest34a32f71…/28cờ; chưa nhận log diễn tập hoặc `XONG0.16.3:ĐẠT` trên erpnext-prod/frontend. Không đổi `khach/aph-vh/phien-ban.yaml` trước bằng chứng triển khai. Bước tiếp ở SSH máy chủ: đúng checkoutv0.16.3 → `bash deploy/release/dien_tap_ban_sao.sh 0.16.3`; chỉ sau ĐẠT/so sổ khớp/dấu hợp lệ mới `bash deploy/release/trien_khai_frontend.sh 0.16.3` trong cửa sổ bảo trì. Không thêm cờ. Hướng dẫn tách Mac/VM: `docs/phat-hanh-0163.md`. Không chạy các lệnh này trong thư mục Mac. Nghiệm thu nhân sự/hàng/tồn/máy in thật vẫn để cuối.
+
 ## 21/10/2026 — Đã gộp bản tối ưu0.16.3 vào main, chờ chủ dự án gắn tag
 
 Theo yêu cầu tiếp tục, PR #26 đã gộp bằng merge commit **a1f95b062f2ff7334ed36c176dfb742bf828974a**, giữ lịch sử mã kiểm12d9d24 và commit hồ sơ54dfacc. Tree mã app giống mã đã đạt bốn cổng; không squash/đẩy đè main. Tag v0.16.3 chưa tồn tại khi kiểm trước gộp. Production vẫn0.16.2/digest34a32f71…/28cờ; chưa phát hành image, chưa chạy VM.
