@@ -172,6 +172,9 @@ def validate(doc, method=None):
     """Khóa nguồn khi mọi đường native lưu/ghi phiếu trả, không chỉ cửa sổ mới."""
     if not enabled():
         return
+    old = doc.get_doc_before_save()
+    if old and old.get(REQUEST) and any(doc.get(f) != old.get(f) for f in (REQUEST, SIGNATURE)):
+        frappe.throw("Không đổi hoặc xóa mã yêu cầu và dấu nội dung của phiếu nhận trả đã lưu")
     if not doc.get(REQUEST) and not any(cint(r.get(LOOSE)) for r in doc.get("items") or []):
         return
     if doc.doctype != "Delivery Note" or not cint(doc.is_return) or not doc.get("return_against"):
@@ -190,7 +193,41 @@ def validate(doc, method=None):
         source, used = original[key], reserved.get(key) or {}
         if r.item_code != source.item_code or r.uom != source.uom or flt(r.conversion_factor) != flt(source.conversion_factor):
             frappe.throw("Mã hàng và đơn vị trả phải khớp dòng giao gốc")
+        if flt(r.net_rate) < 0 or flt(r.net_rate) > flt(source.net_rate) + 0.000001:
+            frappe.throw("Giá trả thuần không được vượt giá trên đúng dòng giao gốc")
         if flt(r.qty) >= 0 or abs(flt(r.qty)) + flt(used.get("qty")) > flt(source.qty) + 0.000001:
             frappe.throw("Lượng trả và chờ nhận trả vượt lượng đã giao")
         if abs(flt(r.get("kh_aph_bags"))) + flt(used.get("bags")) > flt(source.get("kh_aph_bags")) + 0.000001:
             frappe.throw("Số bao nhận trả vượt số bao đã giao")
+
+
+def validate_credit_limit(doc, original_invoice):
+    """Gọi trước tạo SI giảm; cùng transaction với DN, không để giảm trùng sau chất lượng."""
+    if not enabled() or not (doc.get(REQUEST) or any(cint(r.get(LOOSE)) for r in doc.items)):
+        return
+    from kh_aph.cash_closing import lock_ledger
+    from kh_aph.return_quantity import credit_budget
+    from kh_aph.sales_p1 import F_JE_HD
+    # Cùng thứ tự khóa quỹ → khoản gốc như bút toán tài chính native.
+    lock_ledger(doc)
+    frappe.db.sql('SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE', original_invoice)
+    original = frappe.get_doc('Sales Invoice', original_invoice, for_update=True)
+    if original.company != doc.company or original.customer != doc.customer or original.docstatus != 1:
+        frappe.throw('Khoản giảm phải cùng khách và đơn vị với phiếu gốc còn hiệu lực')
+    if original.currency != 'VND' or original.party_account_currency != 'VND':
+        frappe.throw('Trả khoản ngoại tệ cần kế toán xử lý chứng từ chuẩn và tỷ giá riêng')
+    returned = frappe.db.sql('''SELECT name, grand_total FROM `tabSales Invoice`
+        WHERE return_against=%s AND is_return=1 AND docstatus=1 ORDER BY name FOR UPDATE''', original.name, as_dict=True)
+    reductions = frappe.db.sql(f'''SELECT a.credit_in_account_currency, a.debit_in_account_currency
+        FROM `tabJournal Entry` j JOIN `tabJournal Entry Account` a ON a.parent=j.name
+        WHERE j.{F_JE_HD}=%s AND j.docstatus=1 AND j.company=%s AND a.account=%s
+        AND a.party_type='Customer' AND a.party=%s AND a.reference_type='Sales Invoice'
+        AND a.reference_name=%s ORDER BY j.name, a.idx FOR UPDATE''',
+        (original.name, original.company, original.debit_to, original.customer, original.name), as_dict=True)
+    reduced = sum(flt(r.credit_in_account_currency) - flt(r.debit_in_account_currency) for r in reductions)
+    if reduced and len(original.items) != 1:
+        frappe.throw('Khoản giảm cũ có nhiều dòng; cần kế toán đối chiếu phân bổ theo dòng và xử lý chứng từ chuẩn trước khi nhận trả')
+    try:
+        credit_budget(original.grand_total, sum(abs(flt(r.grand_total)) for r in returned), reduced, abs(flt(doc.grand_total)))
+    except ValueError as exc:
+        frappe.throw(str(exc))

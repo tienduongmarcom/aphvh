@@ -280,10 +280,6 @@ def chay(admin, phien, f, emit, factory_feature):
     tien_chain(rpc, get, insert, submit, lst, ktt, f, chain, emit)
     from b014_xuat_ngay_cases import chay as xuat_ngay_cases
     xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
-    from b014_return_loose import chay as loose_return_cases
-    loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
-    from b014_simple_shipping import chay as simple_shipping_cases
-    simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
     from b014_cash_custody import chay as cash_cases
     cash_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
 
@@ -322,3 +318,9 @@ def chay(admin, phien, f, emit, factory_feature):
     from b014_ux import do_ux0, do_ux3
     do_ux3(rpc, get, insert, lst, denied, f, phien, emit)
     do_ux0(get, insert, submit, lst, f, emit)
+
+    # Giữ các ca cũ độc lập với dữ liệu kho/đổi trả mới; mọi ca vẫn bắt buộc PASS.
+    from b014_return_loose import chay as loose_return_cases
+    loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    from b014_simple_shipping import chay as simple_shipping_cases
+    simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)

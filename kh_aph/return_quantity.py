@@ -27,3 +27,14 @@ def refund_after_credit(credit, outstanding_after):
     if credit <= 0:
         raise ValueError("Giá trị hàng trả phải dương")
     return min(credit, max(number(0), -outstanding_after))
+
+
+def credit_budget(original_total, returned, reductions, proposed):
+    """Giới hạn toàn khoản gốc; chưa thay thế phân bổ thỏa thuận theo từng dòng."""
+    original_total, returned, reductions, proposed = map(number, (original_total, returned, reductions, proposed))
+    if original_total <= 0 or returned < 0 or reductions < 0 or proposed <= 0:
+        raise ValueError("Giá trị đối chiếu trả/giảm không hợp lệ")
+    remaining = max(number(0), original_total - returned - reductions)
+    if proposed > remaining + number('0.5'):
+        raise ValueError("Giá trị trả vượt phần còn được xử lý sau các khoản đã trả/giảm; kế toán đối chiếu thỏa thuận và giá trên phiếu trả")
+    return remaining

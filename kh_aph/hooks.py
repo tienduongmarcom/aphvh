@@ -531,3 +531,8 @@ for _event, _handler in (("validate", "validate"), ("before_submit", "validate")
     doc_events.setdefault("APH Shared Sales Order", {}).setdefault(_event, []).append("kh_aph.sales_exchange." + _handler)
 for _event in ("validate", "before_submit"):
     doc_events.setdefault("APH Source Change", {}).setdefault(_event, []).append("kh_aph.sales_exchange.validate_source_change")
+
+doc_events.setdefault("Journal Entry", {}).setdefault("before_submit", []).append("kh_aph.sales_p1.guard_quality_credit")
+
+for _event in ("validate", "before_cancel", "before_update_after_submit"):
+    doc_events.setdefault("Journal Entry", {}).setdefault(_event, []).append("kh_aph.sales_p1.protect_quality_source")

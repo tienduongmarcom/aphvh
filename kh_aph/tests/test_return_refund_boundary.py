@@ -78,3 +78,16 @@ class ReturnRefundBoundary(unittest.TestCase):
         self.api.sau_ghi_hoa_don_giam(self.doc)
         self.assertEqual(self.built,[])
         self.f.msgprint.assert_called_once()
+
+    def test_quality_source_cannot_be_cleared_or_switched_on_existing_draft(self):
+        for value in (None,'SI-KHAC'):
+            with self.subTest(source=value),self.assertRaises(ValueError):
+                self.api.protect_quality_source(Row(**{self.api.F_JE_HD:value,
+                    'get_doc_before_save':lambda:Row(**{self.api.F_JE_HD:'SI-GOC'})}))
+
+    def test_amendment_keeps_quality_source_for_final_debt_validation(self):
+        self.f.db.get_value=Mock(return_value='SI-GOC')
+        doc=Row(amended_from='JE-DA-HUY',get_doc_before_save=lambda:None)
+        doc.set=lambda key,value:doc.__setitem__(key,value)
+        self.api.protect_quality_source(doc)
+        self.assertEqual(doc.get(self.api.F_JE_HD),'SI-GOC')

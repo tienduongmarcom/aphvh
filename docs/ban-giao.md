@@ -1,5 +1,16 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — Đang kiểm chặn giảm trùng và giữ nguồn điều chỉnh
+
+Đã thêm kiểm giá trị trả mới so với khoản gốc trừ các SI giảm và JE giảm chất lượng đã ghi. Giá thuần trả không vượt đúng dòng giao gốc, kể cả một mã có nhiều mức giá. Giữ mã/hash nhận trả bất biến; JE đề nghị giảm giữ khoản gốc qua sửa/amend và kiểm lại số còn nợ lúc xác nhận. Cùng thứ tự khóa quỹ → khoản gốc. Không tự tăng tiền hoàn vì nợ đã giảm do chất lượng. Với khoản đã giảm có nhiều dòng, hiện dừng để kế toán đối chiếu phân bổ; chưa giả đã hỗ trợ giảm/trả theo dòng đầy đủ.
+
+Đã thêm ca HTTP đơn cũ giảm100.000, khách chưa trả tiền rồi trả cả25kg: yêu cầu chặn giá trị trả ban đầu, giữ nguyên kho/nợ khi lỗi; sau kế toán đối chiếu giá còn lại mới nhận đủ25kg, không hoàn khống; đề nghị giảm thêm còn nháp phải bị chặn nếu nguồn đã hết nợ. **Chưa có kết quả native của ca mới.** Cục bộ509ca (14 ca bỏ qua) đạt; kiểm cú pháp JS/Python đạt. Bộ014 kỳ vọng126PASS, giữ toàn bộ117ca cũ và chuyển các ca mới về cuối để dữ liệu mới không ảnh hưởng chuẩn so sánh cũ.
+
+UAT39581676952 đúng3b0219f FAIL ở helper Chrome sau khi nhập nhà xe. Đã xem ảnh: nhập tên/SĐT nhà xe mới thành công. Chưa có stderr chi tiết do check=True của subprocess che mất. Đã thêm stderr/ảnh lỗi; bộ đếm chỉ kiểm ô dữ liệu, bỏ Section/Column/Tab/HTML do Frappe16.52 tự thêm (đã đọc nguồn). Chưa khẳng định đây là lỗi duy nhất của lượt đó, cần chạy lại. Chuyển kiểm Chrome sau các ca nhận cuối/giấy gốc độc lập; vẫn bắt buộc đạt và không bỏ assertion nghiệp vụ.
+
+Cổng3 [39578848510](https://github.com/tienduongmarcom/aphvh/actions/runs/39578848510) mã320558a success, đã đọc artifact: schema1115/1115, rollback1105/1105 lệch0, so sổ và nhánh hỏng chủ động KHỚP. Đây chưa phải chứng minh code chặn giảm trùng mới. Bảng9nhóm và phần còn thiếu: `docs/doi-chieu-kho-giao-nhan-20261021.md`. PR38 vẫn nháp, chưa tăng version/tag/triển khai; production0.16.4/28cờ không đổi.
+
+
 ## 21/10/2026 — Trả lẻ, hoàn tiền và đổi mã đã có bằng chứng native; đang sửa tên nhà xe
 
 UAT [39578838909](https://github.com/tienduongmarcom/aphvh/actions/runs/39578838909), đúng mã `320558a42f1a4b8a9dd9297fb440d6a1e7ef04fc`, vẫn FAIL và được giữ nguyên. Đã đọc artifact: các ca trả 5kg/bao vật lý0, chưa thu không hoàn, thu một phần hoàn96.250 và thu đủ hoàn192.500, đối trừ đúng nguồn, đổi mã mới, chặn đơn thay trùng, hủy/lập lại và xe khách chỉ định đều PASS. Đây là dữ liệu giả của CI, không phải nghiệm thu nhân sự/hàng thật.

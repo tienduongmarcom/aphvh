@@ -486,3 +486,36 @@ def nhan_xu_ly(sales_invoices):
                           "dong": [{"sales_invoice": n} for n in ds]})
     doc.insert()
     return {"ho_so": doc.name}
+
+
+def guard_quality_credit(doc, method=None):
+    """Kiểm lại khi xác nhận đề nghị cũ; số còn nợ có thể đã giảm bởi trả hàng/thu tiền."""
+    if not enabled():
+        return
+    protect_quality_source(doc)
+    if not doc.get(F_JE_HD):
+        return
+    frappe.db.sql('SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE', doc.get(F_JE_HD))
+    source = frappe.get_doc('Sales Invoice', doc.get(F_JE_HD), for_update=True)
+    source.check_permission('read')
+    if source.docstatus != 1 or cint(source.is_return) or source.company != doc.company:
+        frappe.throw('Bút toán giảm phải gắn hóa đơn bán gốc còn hiệu lực cùng đơn vị')
+    references = [r for r in doc.accounts if r.get('reference_type') == 'Sales Invoice']
+    if any(r.reference_name != source.name or r.party_type != 'Customer' or r.party != source.customer
+           or r.account != source.debit_to for r in references):
+        frappe.throw('Đề nghị giảm chỉ phân bổ vào đúng khoản gốc và khách đã chọn')
+    amount = sum(flt(r.credit_in_account_currency) - flt(r.debit_in_account_currency) for r in references)
+    if amount <= 0 or amount > flt(source.outstanding_amount) + 0.5:
+        frappe.throw('Khoản còn nợ đã thay đổi; đối chiếu và sửa đề nghị giảm trước khi xác nhận')
+
+
+def protect_quality_source(doc, method=None):
+    if not enabled():
+        return
+    old = doc.get_doc_before_save()
+    if old and old.get(F_JE_HD) and old.get(F_JE_HD) != doc.get(F_JE_HD):
+        frappe.throw('Không đổi hoặc xóa khoản gốc của đề nghị giảm đã lưu')
+    if not doc.get(F_JE_HD) and doc.get('amended_from'):
+        source = frappe.db.get_value('Journal Entry', doc.amended_from, F_JE_HD)
+        if source:
+            doc.set(F_JE_HD, source)

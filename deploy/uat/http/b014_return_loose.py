@@ -32,6 +32,8 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     created = rpc("kh_aph.sales_return.create_draft", payload, ktt)
     draft = get("Delivery Note", created["name"], ktt)
     assert draft["docstatus"] == 0 and draft["items"][0]["qty"] == -5 and draft["items"][0]["kh_aph_bags"] == 0, draft["name"]
+    denied(lambda: rpc("frappe.client.set_value", {"doctype": "Delivery Note", "name": draft["name"],
+        "fieldname": "kh_aph_ma_nhan_tra", "value": ""}, ktt))
     after_draft = counts()
     assert after_draft["Delivery Note"] == before["Delivery Note"] + 1
     assert all(after_draft[dt] == before[dt] for dt in before if dt != "Delivery Note"), (before, after_draft)
@@ -145,3 +147,42 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert issued["company"] == f["aph"] and counts()["Sales Invoice"] == exchange_before["Sales Invoice"] + 1
     emit("HTTP_014_DOI_MA_MOI", "PASS", {"return_note": exchange["name"], "new_order": replacement["name"],
          "new_item": f["A"], "native_sales_flow": True, "draft_no_posting": True, "one_active_order": True})
+
+    # Đơn cũ đã giảm chất lượng100.000: trả cả bao không được hoàn cả giá gốc cho khách chưa trả tiền.
+    quality_root = submit(insert({"doctype": "APH Shared Sales Order", "customer": f["kh2"], "transaction_date": f["date"],
+        "delivery_date": f["date"], "selling_price_list": f["pl"], "currency": "VND",
+        "items": [{"item_code": item, "warehouse": f["kho"], "qty": 25, "rate": 35000, "kh_aph_bags": 1, "kh_aph_kg_per_bag": 25}]}, ktt), ktt)
+    qrow = rpc("kh_aph.ban_nhanh.preview", {"shared_order": quality_root["name"]}, ktt)["rows"][0]
+    qmade = rpc("kh_aph.ban_nhanh.create_and_dispatch", {"shared_order": quality_root["name"], "request_id": uuid.uuid4().hex,
+        "selections": json.dumps([{"source_row": qrow["source_row"], "qty": 25}]),
+        "delivery": json.dumps({"delivery_method": "Khách đến lấy", "recipient": "Khách UAT chất lượng"}), "dispatcher": "Kho UAT"}, ktt)
+    qdn = get("Delivery Note", qmade["delivery_notes"][0]["name"], ktt)
+    qinvoices = lst("Sales Invoice", [["Sales Invoice Item", "delivery_note", "=", qdn["name"]], ["docstatus", "=", 1]], ["name"], ktt)
+    qinvoice = get("Sales Invoice", qinvoices[0]["name"], ktt)
+    reduced = rpc("kh_aph.sales_p1.giam_gia_sau_giao", {"sales_invoice": qinvoice["name"], "so_tien": 100000,
+        "ly_do": "Thỏa thuận giảm chất lượng đơn cũ"}, ktt)
+    submit(get("Journal Entry", reduced["but_toan"], ktt), ktt)
+    pending_quality = rpc("kh_aph.sales_p1.giam_gia_sau_giao", {"sales_invoice": qinvoice["name"], "so_tien": 20000,
+        "ly_do": "Đang đề nghị thêm, chưa thống nhất"}, ktt)
+    denied(lambda: rpc("frappe.client.set_value", {"doctype": "Journal Entry", "name": pending_quality["but_toan"],
+        "fieldname": "kh_aph_giam_gia_hd", "value": ""}, ktt))
+    qr = rpc("kh_aph.sales_return.preview", {"delivery_note": qdn["name"]}, ktt)["rows"][0]
+    qr_payload = {**payload, "delivery_note": qdn["name"], "request_id": uuid.uuid4().hex, "settlement": "Hoàn tiền",
+        "reason": "Khách trả cả25kg sau giảm chất lượng, đối chiếu giá trị còn lại",
+        "selections": json.dumps([{"source_row": qr["source_row"], "qty": 25, "bags": 1}])}
+    qdraft = get("Delivery Note", rpc("kh_aph.sales_return.create_draft", qr_payload, ktt)["name"], ktt)
+    state = counts()
+    denied(lambda: submit(qdraft, ktt))
+    assert counts() == state and get("Delivery Note", qdraft["name"], ktt)["docstatus"] == 0
+    assert abs(get("Sales Invoice", qinvoice["name"], ktt)["outstanding_amount"] - (qinvoice["grand_total"] - 100000)) < 1
+    # Kế toán đối chiếu thỏa thuận và hạ giá trị nhận trả còn lại trên phiếu chuẩn; giữ đủ25kg thực nhận.
+    qdraft = get("Delivery Note", qdraft["name"], ktt)
+    qdraft["items"][0]["rate"] *= (qinvoice["grand_total"] - 100000) / qinvoice["grand_total"]
+    qposted = submit(qdraft, ktt)
+    assert qposted["items"][0]["qty"] == -25
+    assert abs(get("Sales Invoice", qinvoice["name"], ktt)["outstanding_amount"]) < 1
+    assert counts()["Payment Entry"] == state["Payment Entry"], "Khách chưa trả tiền nhưng nhận hoàn khoản giảm chất lượng"
+    denied(lambda: submit(get("Journal Entry", pending_quality["but_toan"], ktt), ktt))
+    assert abs(get("Sales Invoice", qinvoice["name"], ktt)["outstanding_amount"]) < 1
+    emit("HTTP_014_TRA_SAU_GIAM_CHAT_LUONG", "PASS", {"old_quality_discount": 100000, "unpaid_no_refund": True,
+         "full_physical_quantity": 25, "remaining_value_reviewed": True, "stale_discount_denied": True})

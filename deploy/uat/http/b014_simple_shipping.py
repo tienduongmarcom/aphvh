@@ -40,19 +40,6 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     def counts():
         return {dt: len(lst(dt, {}, ["name"], ktt)) for dt in ("Delivery Note", "Sales Invoice", "Stock Ledger Entry", "GL Entry", "Payment Entry")}
     before = counts()
-    import os
-    if os.environ.get("GITHUB_ACTIONS") == "true":
-        import subprocess
-        from pathlib import Path
-        fresh = order()
-        # Chuẩn bị đơn riêng trước khi đo lại: trình duyệt chỉ mở/nhập/hủy các cửa sổ.
-        before = counts()
-        result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
-            json.dumps({"order": fresh["shared_order"], "delivery": dn["name"]}), "kho-giao-nhan"],
-            check=True, text=True, capture_output=True, timeout=180)
-        evidence = json.loads(next(x for x in result.stdout.splitlines() if x.startswith('{"case":')))
-        assert evidence["status"] == "PASS" and counts() == before, evidence
-        emit(evidence["case"], "PASS", evidence["detail"])
     denied(lambda: rpc("kh_aph.delivery_status.confirm", {"name": dn["name"], "action": "receive"}, ktt))
     event = {"name": dn["name"], "action": "receive", "reported_by": "Nhà xe báo", "received_on": dn["posting_date"]}
     rpc("kh_aph.delivery_status.confirm", event, ktt)
@@ -88,3 +75,21 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert not get("Delivery Note", latest["name"], ktt).get("kh_aph_ban_ky")
     emit("HTTP_014_NHAN_GIAY_GOC", "PASS", {"paper_independent_of_photo": True, "actor_time_location": True,
          "retry_unchanged": True, "direct_edit_denied": True, "no_ledger_change": True})
+
+    # Kiểm UI sau các ca HTTP độc lập: lỗi trình duyệt vẫn làm cả lượt FAIL,
+    # nhưng không che bằng chứng nhận cuối/giấy gốc đã kiểm ở trên.
+    import os
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        import subprocess
+        from pathlib import Path
+        fresh = order()
+        browser_order = order()
+        browser_made = rpc("kh_aph.ban_nhanh.create_and_dispatch", {**browser_order, "delivery": json.dumps(info)}, ktt)
+        browser_before = counts()
+        result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
+            json.dumps({"order": fresh["shared_order"], "delivery": browser_made["delivery_notes"][0]["name"]}), "kho-giao-nhan"],
+            text=True, capture_output=True, timeout=180)
+        assert result.returncode == 0, (result.stdout[-2000:], result.stderr[-2500:])
+        evidence = json.loads(next(x for x in result.stdout.splitlines() if x.startswith('{"case":')))
+        assert evidence["status"] == "PASS" and counts() == browser_before, evidence
+        emit(evidence["case"], "PASS", evidence["detail"])

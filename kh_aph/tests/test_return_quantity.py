@@ -1,7 +1,7 @@
 """Các ca trả lẻ bao: số hàng và bao vật lý độc lập, không dùng bao thập phân."""
 import unittest
 from decimal import Decimal
-from kh_aph.return_quantity import loose_return, refund_after_credit
+from kh_aph.return_quantity import loose_return, refund_after_credit, credit_budget
 
 
 class ReturnQuantity(unittest.TestCase):
@@ -40,3 +40,17 @@ class RefundAfterCredit(unittest.TestCase):
         for credit, outstanding in [(0, -1), (-1, -1), ('NaN', -1), (1, 'Infinity')]:
             with self.subTest(credit=credit, outstanding=outstanding), self.assertRaises(ValueError):
                 refund_after_credit(credit, outstanding)
+
+
+class CreditBudget(unittest.TestCase):
+    def test_return_after_quality_discount_cannot_refund_the_original_full_price(self):
+        with self.assertRaises(ValueError): credit_budget(962500, 0, 100000, 962500)
+        self.assertEqual(credit_budget(962500, 0, 100000, 862500), 862500)
+
+    def test_prior_returns_and_quality_credit_are_counted_once(self):
+        with self.assertRaises(ValueError): credit_budget(962500, 192500, 100000, 700000)
+        self.assertEqual(credit_budget(962500, 192500, 100000, 670000), 670000)
+
+    def test_zero_and_non_finite_values_are_not_financial_authority(self):
+        for values in [(100,0,0,0),(100,-1,0,1),(100,0,-1,1),('NaN',0,0,1),(100,0,0,'Infinity')]:
+            with self.subTest(values=values), self.assertRaises(ValueError): credit_budget(*values)

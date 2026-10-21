@@ -38,6 +38,7 @@ try {
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
     if (mode === 'kho-giao-nhan') {
+      try {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride', {width:1440,height:1050,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate', {url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(payload.order)});
@@ -58,7 +59,7 @@ try {
         await until('!!window.cur_frm && cur_frm.doc.name==='+JSON.stringify(payload.delivery)+' && !!cur_frm.custom_buttons["Khách đã nhận"]');
         await evaluate('cur_frm.custom_buttons["Khách đã nhận"].trigger("click");true');
         await until('!!window.cur_dialog?.fields_dict.reported_by');
-        const receipt = await evaluate('({date:!!cur_dialog.get_value("received_on"),fields:cur_dialog.fields.filter(f=>f.fieldname).map(f=>f.fieldname)})');
+        const receipt = await evaluate('({date:!!cur_dialog.get_value("received_on"),fields:cur_dialog.fields.filter(f=>f.fieldname&&!["Section Break","Column Break","Tab Break","HTML"].includes(f.fieldtype)).map(f=>f.fieldname)})');
         if(!receipt.date||JSON.stringify(receipt.fields)!==JSON.stringify(['reported_by','received_on']))throw Error('Nhận hàng không gọn: '+JSON.stringify(receipt));
         await evaluate('cur_dialog.hide();true');
         await evaluate('cur_frm.custom_buttons["Nhận hàng trả lại"].trigger("click");true');
@@ -69,6 +70,11 @@ try {
         fs.writeFileSync('kho-nhan-tra-kg.png',Buffer.from(shot.data,'base64'));
         await evaluate('cur_dialog.hide();true');
         console.log(JSON.stringify({case:'NATIVE_DESK_KHO_GIAO_NHAN_GON',status:'PASS',detail:{new_carrier_typed:true,receipt_two_fields:true,return_kg_bags_separate:true,no_posting:true}}));
+      } catch (error) {
+        try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('kho-giao-nhan-loi.png',Buffer.from(shot.data,'base64'));} catch {}
+        console.error('KHO_DESK_FAILURE:'+error.message+'; errors='+JSON.stringify(diagnostics.slice(-8)));
+        throw error;
+      }
     } else if (mode === 'xuat-ngay') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(source)});
