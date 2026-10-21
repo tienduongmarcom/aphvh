@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — Image0.16.4 đã phát hành, chờ diễn tập và nâng production
+
+Chủ dự án đã push tag **v0.16.4**, kiểm tag đúng **1dffa623dc28d239321b7c9cd249968def402123**. [Phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648) **success**: Cổng2/2b/3/UAT và build/push đều success đúng nguồn tag. Image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.4**, digest **sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38**; đã đối chiếu log pushing manifest/containerimage.digest với registry docker buildx imagetools inspect, khớp. Không ghi đè tag/image.
+
+Production vẫn0.16.3/digesta252…/28cờ, chưa có log diễn tập hoặc XONG0.16.4:ĐẠT trên erpnext-prod/frontend; phien-ban.yaml giữ0.16.3. Bước tiếp trên SSH máy chủ: vào tmux nang-cap-0164, checkout tag0.16.4, chạy dien_tap_ban_sao.sh0.16.4. Chỉ sau ĐẠT/so sổ khớp/dấu đúng còn hạn mới trien_khai_frontend.sh0.16.4 trong bảo trì. Không cờ mới; không setup_uat trên production. Hướng dẫn chính xác: docs/phat-hanh-0164.md. Nếu SSH ngắt chỉ nối lại phiên, không chạy lượt song song. Nghiệm thu nhân sự/hàng tồn/máy in thật vẫn để cuối.
+
 ## 21/10/2026 — Đã gộp bản vá0.16.4 vào main, chờ chủ dự án gắn tag
 
 [PR #30](https://github.com/tienduongmarcom/aphvh/pull/30) đã gộp giữ lịch sử bằng **1dffa623dc28d239321b7c9cd249968def402123**. Đã đối chiếu tree: mã app/kiểm giống hệt c9433f3 đã đạt bốn cổng dưới đây; chỉ hai tệp hồ sơ thay sau mã kiểm. Tagv0.16.4 chưa tồn tại khi kiểm, agent không tạo tag/image hoặc sửa VM. Production vẫn0.16.3/digesta252…; phien-ban.yaml giữ đúng mốc này.
