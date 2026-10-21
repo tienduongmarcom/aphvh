@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — ĐANG DỞ PR38: sửa phân trang A5 và lỗi tương thích mẫu cũ
+
+Ứng viên `fc8e721cbeddfe5e1011be1f4dff87c912572ed2`: Cổng2 run39571104062 và Cổng2b run39571323837 success. UAT39571298855 FAIL tại ca in cũ vì mất chú thích “Người thực nhận hàng”; giữ bằng chứng trong artifact candidate-image-evidence/http-b014-evidence.txt, chưa chạy tới ca trả lẻ mới. Đã sửa giữ chú thích cũ cho phiếu thế hệ cũ; không bỏ assertion. Cổng3 run39571303257 đang chạy, chưa kết luận.
+
+Kiểm PDF bằng Chrome với dữ liệu giả: mẫu A5 mới có hai dòng hàng tên dài và yêu cầu khách ký tại nơi giao, hai liên ra đúng2trang A5 ngang; đã xem cả hai trang, phần ký không bị tách riêng. Giữ chữ chính9pt, thu gọn khoảng cách/thông tin cuối phiếu cho thế hệ mới; phiếu cũ giữ bố cục cũ. Đây là kiểm bố cục trên máy, chưa phải nghiệm thu máy in/người dùng thật. Bổ sung5ca kiểm ranh giới trả lẻ: nguồn khác/phiếu xuất thường bị chặn, giữ quy cách gốc dù Item đổi,5kg không bao không thành25kg hoặc0.2bao.
+
+Cục bộ480ca kh_aph (14skip) và108ca lõi đạt; kiểm cú pháp helper Chrome đạt. PR38 vẫn draft, chưa tăng version/tag, production vẫn0.16.4. Chưa hoàn thiện đổi mã hàng, giảm giá theo dòng/chống giảm trùng sau giảm trước đó, hoàn tiền gọn, nhập giấy tay khi mất mạng, snapshot đối soát và gom kho. Bước tiếp chạy lạiUAT đúng mã đã sửa, đọc bằng chứng ca mới; tiếp tục phần còn thiếu, không coi phần đã kiểm này là hoàn tất toàn phạm vi.
+
+
 ## 21/10/2026 — NềnCổng3 ĐẠT; ứng viên kho tiếp tục sửa/kiểm, chưa phát hành
 
 PR37 đã gộp main7a588c9. Cổng3 run39567580998 success đúngd5a9491ffb27e68c93f708fc831f9fbdb79917f7, đã đọc log/artifactcong-3-bang-chứng12331362860: nền0.16.4 đúngdigest, diễn tập/nâng/sochi tiết/quay lui/nhánh hỏng chủ độngKHỚP; schemafresh1099/1099,rollback1105/1105, lệch0. Đây là nền trước sửa nghiệp vụ, không chứng minh ứng viên mới đãPASS.
