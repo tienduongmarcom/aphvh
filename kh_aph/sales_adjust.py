@@ -64,6 +64,8 @@ def schema():
     # 0.14 (đổi Q176 theo anh Tiến 15/10): mã khách / mã nhà cung cấp đưa vào giữ NGUYÊN (ô "Mã"); không có thì app cấp
     # mã tiếp theo cùng kiểu (KH0000001, NCC0000001). Hook autoname chạy sau Customer/Supplier.autoname của ERPNext.
     create_custom_fields(FIELDS_MA)
+    from kh_aph.sales_return import fields as return_fields
+    create_custom_fields(return_fields())
     return {"cust_master_name": "Naming Series", "ma": "giữ nguyên mã đưa vào"}
 
 

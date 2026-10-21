@@ -517,3 +517,11 @@ doctype_list_js["Customer"] = _lists + ["public/js/ux_thu_tien.js", "public/js/u
 # Đầu đơn hiện nhận diện khách và công nợ gọn, chỉ đọc theo cờ giao diện.
 doctype_js["APH Shared Sales Order"].append("public/js/ux_order_context.js")
 doctype_js["Delivery Note"].append("public/js/ux_delivery_layout.js")
+
+# Nhận trả một phần bao: kiểm nguồn và tổng lượng ở mọi lối lưu/ghi native.
+doc_events["Delivery Note"].setdefault("validate", []).append("kh_aph.sales_return.validate")
+doc_events["Delivery Note"].setdefault("before_submit", []).append("kh_aph.sales_return.validate")
+for _dt in ("Delivery Note", "Customer"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/sales_return.js"]

@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — ĐANG DỞ triển khai tối ưu kho: lát nhận trả lẻ kg
+
+Nhánhfeat/kho-giao-nhan-don-gian-20261021 bắt đầu từ nềnCổng3 PR37. Đã thêm đường lậpDNtrả nháp theo phiếu gốc dùKhách đã nhận, khóa nguồn/reserve lượng mọiuser, requestid/hash retry; cho5kg và bao vật lý độc lập, nhậpCáchly qua luồng có sẵn. Bổ sung ôTrả lẻ theo kg, sổbao ghi đúngkg vàbao0 khi không nhận vỏ; JS không nhân ngược thành bao nguyên. UI nhận trả trênphiếu/Khách, chưa thống nhất xong mọi lốiĐổi/Trả/Giảmgiá. Cờsales_adjust/sales_p1 hiện có (mặc địnhtắt) sở hữu bổ sung; schema gọi bộ cài rõ ràng.
+
+Cục bộ472ca (14skip) đạt trước thay đổi caseHTTP; thêmHTTP_014_TRA_LE_5KG vào b014, dự kiến118PASS thay117 do thêm1ca, CHƯA có kết quảCI. Không coi unit là đã kiểm native. Cần kiểm thực tế mapping/permissions/giá trị giảm/receiptCáchly vàrollback. Chưa hoàn thiện các látship,phiếuA5,giấy gốc,offline,đốisoát snapshot,giảm nợ cũ theo dòng,đổi mã/hoàn tiền. Chưa nângversion/tag/deploy, production0.16.4 giữ nguyên. Bước tiếp: chạyUATnative ca mới, sửa lỗi nếu có; tiếp tục látship và các phần còn thiếu, không tuyên bố cả phạm vi đã xong.
+
+
 ## 21/10/2026 — ĐANG KIỂM nền Cổng3 từ production0.16.4
 
 PR36 thiết kế đã gộp main e9a2755 sau chủ dự án chốt tiếp tục. Chuẩn bị phát triển luồng kho/ship/đổi trả/giảm nợ cũ và trảhỏng lẻkg; chưa sửa nghiệp vụ/site. Đổi nền Cổng3 sang0.16.4/digest1a8f0063… đúng log production. Chờ run thực trên mã mới, chưa tuyên bốĐẠT hoặc phát hành. Production vẫn0.16.4,28cờ; nghiệm thu thật gom cuối.
