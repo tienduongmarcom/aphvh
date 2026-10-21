@@ -282,6 +282,8 @@ def chay(admin, phien, f, emit, factory_feature):
     xuat_ngay_cases(rpc, get, insert, submit, lst, denied, ktt, dung, f, phien, emit)
     from b014_return_loose import chay as loose_return_cases
     loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    from b014_simple_shipping import chay as simple_shipping_cases
+    simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
     from b014_cash_custody import chay as cash_cases
     cash_cases(rpc, get, insert, submit, lst, denied, ktt, ktbh, dung, f, phien, emit)
 

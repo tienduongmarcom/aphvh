@@ -47,3 +47,16 @@ frappe.ui.form.on("Customer", {refresh(frm) {
         options: "Delivery Note", reqd: 1, get_query: () => ({filters: {customer: frm.doc.name, docstatus: 1, is_return: 0}})},
         values => kh_aph.returns.open(values.delivery_note), "Chọn phiếu xuất cũ"), "Đổi / Trả / Giảm giá");
 }});
+frappe.ui.form.on("Customer", {refresh(frm) {
+    if (!frappe.boot?.kh_aph?.sales_p1 || frm.is_new() || !frappe.model.can_create("Journal Entry")) return;
+    frm.add_custom_button("Giảm giá đơn cũ", () => frappe.prompt([
+        {fieldname: "sales_invoice", label: "Khoản phải thu của đơn cũ", fieldtype: "Link", options: "Sales Invoice", reqd: 1,
+            get_query: () => ({filters: {customer: frm.doc.name, docstatus: 1, is_return: 0, outstanding_amount: [">", 0]}})},
+        {fieldname: "so_tien", label: "Tổng tiền đề nghị giảm (gồm thuế nếu có)", fieldtype: "Currency", reqd: 1},
+        {fieldname: "ly_do", label: "Lý do / thỏa thuận chất lượng", fieldtype: "Small Text", reqd: 1},
+    ], async values => {
+        const result = await frappe.call({method: "kh_aph.sales_p1.giam_gia_sau_giao", args: values, freeze: true});
+        frappe.show_alert({message: "Đã mở đề nghị giảm nháp. Chưa ghi giảm công nợ; kiểm thông tin rồi xác nhận theo quyền.", indicator: "blue"});
+        frappe.set_route("Form", "Journal Entry", result.message.but_toan);
+    }, "Giảm giá khoản nợ cũ", "Lập đề nghị"), "Đổi / Trả / Giảm giá");
+}});

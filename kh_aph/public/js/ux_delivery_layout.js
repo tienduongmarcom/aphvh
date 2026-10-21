@@ -8,6 +8,10 @@ frappe.ui.form.on("Delivery Note", {
         frm.toggle_display(legacy, !current);
         // Phiếu cũ/phiếu trả tiếp tục đúng bộ thông tin cũ; không buộc nhập bộ mới.
         frm.toggle_display(modern, current);
+        const ship = current && frm.doc.kh_aph_cach_giao === "Vận chuyển";
+        frm.toggle_display(["kh_aph_nha_xe_dot", "kh_aph_sdt_nha_xe_dot", "kh_aph_can_ky_khach"], ship);
+        frm.toggle_display("kh_aph_chi_dinh_nhan", current && frm.doc.kh_aph_cach_giao === "Xe khách đến lấy");
+        frm.toggle_display(["kh_aph_nguon_bao_nhan", "kh_aph_ngay_khach_nhan"], ship && frm.doc.docstatus === 1);
         frm.toggle_display(["kh_aph_dot_xuat"], false);
     }
 });

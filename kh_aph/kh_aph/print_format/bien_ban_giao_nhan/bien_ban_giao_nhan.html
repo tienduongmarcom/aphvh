@@ -62,7 +62,9 @@
   <div>- Lái xe: {{ (gn.driver or cham) | e }} &nbsp; Điện thoại: {{ doc.kh_aph_sdt_lai_xe or "............" }} &nbsp; Biển số xe: {{ (gn.vehicle or "............") | e }}</div>
   {%- endif %}
   {{ ben_khach(true) }}
-  {% if gn.current %}<div>- Cách giao: {{ gn.method | e }}; Điện thoại người nhận: {{ (gn.phone or cham) | e }}; Thời điểm xuất: {{ (gn.time or cham) | e }}</div>{% endif %}
+  {% if gn.current and gn.carrier %}<div>- Nhà xe: {{ gn.carrier | e }}; Điện thoại nhà xe: {{ gn.carrier_phone | e }}</div>{% endif %}
+{% if gn.current and gn.authorization %}<div>- Khách chỉ định người nhận: {{ gn.authorization | e }}</div>{% endif %}
+{% if gn.current %}<div>- Cách giao: {{ gn.method | e }}; Điện thoại người nhận: {{ (gn.phone or cham) | e }}; Thời điểm xuất: {{ (gn.time or cham) | e }}</div>{% endif %}
   {%- endif %}
 </div>
 

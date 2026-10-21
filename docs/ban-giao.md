@@ -1,5 +1,12 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — ĐANG DỞ: thêm thông tin nhà xe/xe khách và dấu nhận cuối
+
+Working branchfeat/kho-giao-nhan-don-gian-20261021 đã bổ sung thế hệ thông tin giao nhận1: xe khách phải có căn cứ chỉ định, tínhpickup; nhà xeData/Autocomplete chọn đã dùng hoặc nhập mới+tên/SĐT, snapshot từngphiếu, nguồn báo/ngày nhận cuối readonly theoAPI. Chuẩn bị/inA5 ghi nhàxe, bên nhận vận chuyển khác khách cuối; mẫu chuẩn/reprint đồng bộ carrier/căn cứ. Hashpayload cũ không thêm khóa mới để giữretry. CửaKhách thêm lốiGiảmgiáđơn cũ gọi đề nghịJEnháp sẵn có; khóaSI và kiểm quyền đọc khi mở lạiJEnháp, chưa thay cơ chế giảm theo dòng.
+
+Cục bộ475ca (14skip) và kiểm cú phápJS đã chạy trong quá trình sửa; cần lưu kết quả cuối sau đồng bộmẫu. Cổng3nền0.16.4 run39567580998 mãd5a9491 còn đang chạy; UATtrảlẻ mã164962b run39568824330/Cổng239568824265 đang chạy; lượtmanual39568812563 bịhủy do lượtPRthay thế, không làPASS. HTTPmới dự kiến120PASS=117cũ+trảlẻ+2ship, chưa chạy trên mãship. PR38 vẫndraft. Chưa hoàn thiện đổi mã,giảmgiátheodòng/giảmtrùngsauđãgiảm,hoàn tiền gọn,giấygốc,offline,snapshotđốisoát; chưa phát hành/site/tag.
+
+
 ## 21/10/2026 — ĐANG DỞ triển khai tối ưu kho: lát nhận trả lẻ kg
 
 Nhánhfeat/kho-giao-nhan-don-gian-20261021 bắt đầu từ nềnCổng3 PR37. Đã thêm đường lậpDNtrả nháp theo phiếu gốc dùKhách đã nhận, khóa nguồn/reserve lượng mọiuser, requestid/hash retry; cho5kg và bao vật lý độc lập, nhậpCáchly qua luồng có sẵn. Bổ sung ôTrả lẻ theo kg, sổbao ghi đúngkg vàbao0 khi không nhận vỏ; JS không nhân ngược thành bao nguyên. UI nhận trả trênphiếu/Khách, chưa thống nhất xong mọi lốiĐổi/Trả/Giảmgiá. Cờsales_adjust/sales_p1 hiện có (mặc địnhtắt) sở hữu bổ sung; schema gọi bộ cài rõ ràng.

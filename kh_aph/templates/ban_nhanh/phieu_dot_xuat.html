@@ -29,6 +29,7 @@ thead { display: table-header-group; } tr { break-inside: avoid; page-break-insi
 Địa chỉ: {{ (note.company_address or '........................................................') | e }}<br>
 Bộ phận: {{ note.warehouses | e }}</td><td class="form"><b>{{ pf.nhan | e }}</b><br>{{ pf.can_cu | e }}<br><i>Giá bán - phiếu vận hành</i></td></tr></table>
 <h1>PHIẾU XUẤT KHO</h1>
+{% if note.delivery_version %}<p class="center"><b>KIÊM BIÊN BẢN GIAO NHẬN HÀNG HÓA</b></p>{% endif %}
 <table class="docmeta"><tr><td>Liên: {{ copy | e }}</td><td class="date"><i>{{ note.posting_date | e }}</i><br><b>Số: {{ note.name | e }}</b></td><td class="number">Nợ: {{ note.accounts.no | e }}<br>Có: {{ note.accounts.co | e }}</td></tr></table>
 <p class="state">{% if note.docstatus == 0 %}CHỜ XUẤT - CHƯA GHI SỔ KHO/CÔNG NỢ{% else %}ĐÃ XÁC NHẬN XUẤT - BẢN SAO, KHÔNG DÙNG ĐỂ NHẬN HÀNG LẦN NỮA{% endif %}</p>
 <div class="info">
@@ -47,6 +48,8 @@ Bộ phận: {{ note.warehouses | e }}</td><td class="form"><b>{{ pf.nhan | e }}
 <div class="end">
 <p><b><i>- Tổng số tiền hàng{% if note.total_words %} (viết bằng chữ): {{ note.total_words | e }}{% else %}: {{ note.total | e }} {{ note.currency | e }}{% endif %}</i></b></p>
 <div class="delivery">
+{% if note.delivery_version and note.carrier %}<div>- Nhà xe: {{ note.carrier | e }}; SĐT nhà xe: {{ note.carrier_phone | e }}</div>{% endif %}
+{% if note.delivery_version and note.authorization %}<div>- Khách chỉ định người nhận: {{ note.authorization | e }}</div>{% endif %}
 <div>- Cách giao: {{ (note.delivery_method or '........................') | e }}; Lái xe: {{ (note.driver_name or '........................') | e }}; Biển số: {{ (note.vehicle_no or '........................') | e }}</div>
 <div>- Người thực giao hàng: {{ (note.dispatcher or '........................') | e }}; Thời điểm xuất: {{ (note.handoff_time or '........................') | e }}</div>
 <div>- Ghi chú / chênh lệch thực giao: ........................................................................................................................</div>
@@ -54,10 +57,12 @@ Bộ phận: {{ note.warehouses | e }}</td><td class="form"><b>{{ pf.nhan | e }}
 </div>
 <table class="signatures"><tr>
 <td><b>Người lập phiếu</b><br><i>(Ký, họ tên)</i></td>
-<td><b>Người nhận hàng</b><br><i>(Ký, họ tên)</i><br><small>Người thực nhận hàng</small></td>
+<td><b>{{ 'Người nhận vận chuyển' if note.delivery_version and note.delivery_method == 'Vận chuyển' else 'Người nhận hàng' }}</b><br><i>(Ký, họ tên)</i><br><small>Người thực nhận tại kho</small></td>
 <td><b>Thủ kho</b><br><i>(Ký, họ tên)</i><br><small>Người thực giao hàng</small></td>
 <td><b>{{ pf.ke_toan_truong | e }}</b><br><i>(Ký, họ tên)</i></td>
 <td><b>{{ pf.nguoi_duyet | e }}</b><br><i>(Ký, họ tên)</i></td>
 </tr></table>
+{% if note.delivery_version and note.delivery_method == 'Vận chuyển' %}<p><small>Chữ ký nhận vận chuyển xác nhận nhận hàng từ kho; chưa xác nhận khách đã nhận tại nơi giao.</small></p>
+{% if note.customer_signature == 'Có' %}<p>Khách nhận tại nơi giao: ............................. Ngày nhận: ................ Chữ ký: .............................</p>{% endif %}{% endif %}
 <p class="footer">{% if shared_order %}Đơn bán chung: {{ shared_order | e }}. {% endif %}Người lập: {{ (note.created_by or '') | e }}.<br>In phiếu không xác nhận xuất hàng. Giá bán thuần theo phiếu, chưa thuế; không thay thế hóa đơn.</p>
 </div></section>{% endfor %}{% endfor %}</body></html>

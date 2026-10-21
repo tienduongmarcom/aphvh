@@ -215,12 +215,22 @@ frappe.ui.form.on("Delivery Note", {
         if (frm.doc.docstatus === 0 && frm.perm.some(p => p.submit)) {
             if (!frm.doc.kh_aph_cach_giao || frm.doc.kh_aph_cach_giao === "Vận chuyển")
                 frm.add_custom_button("Bàn giao cho người vận chuyển", () => confirm("handoff"), "Giao hàng");
-            if (!frm.doc.kh_aph_cach_giao || frm.doc.kh_aph_cach_giao === "Khách đến lấy")
+            if (!frm.doc.kh_aph_cach_giao || ["Khách đến lấy", "Xe khách đến lấy"].includes(frm.doc.kh_aph_cach_giao))
                 frm.add_custom_button("Khách đến lấy", () => confirm("pickup"), "Giao hàng");
         } else if (frm.doc.docstatus === 1 && frm.doc.kh_aph_delivery_state === "Đang giao"
             && (frm.perm.some(p => p.write) || (frappe.user_roles || []).some(r =>
                 ["Nhân viên bán hàng", "Thủ kho bán hàng"].includes(r)))) {
-            frm.add_custom_button("Khách đã nhận", () => confirm("receive"), "Giao hàng");
+            frm.add_custom_button("Khách đã nhận", () => {
+                if (!frm.doc.kh_aph_mau_giao_nhan) return confirm("receive");
+                if (frm.is_dirty()) return frappe.msgprint("Lưu phiếu trước khi xác nhận nhận hàng.");
+                frappe.prompt([
+                    {fieldname: "reported_by", label: "Ai báo đã nhận?", fieldtype: "Select", options: ["Khách báo", "Nhà xe báo"], reqd: 1},
+                    {fieldname: "received_on", label: "Ngày khách nhận", fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
+                ], async values => {
+                    await frappe.call({method: "kh_aph.delivery_status.confirm", args: {name: frm.doc.name, action: "receive", ...values}, freeze: true});
+                    await frm.reload_doc();
+                }, "Khách đã nhận hàng", "Xác nhận");
+            }, "Giao hàng");
         }
     },
 });

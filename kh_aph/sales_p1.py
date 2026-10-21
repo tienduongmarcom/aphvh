@@ -176,15 +176,23 @@ def _thue_suat(si, d):
 def giam_gia_sau_giao(sales_invoice, so_tien, ly_do):
     """Bút toán NHÁP giảm giá sau giao cho một hóa đơn đã ghi sổ. Chạy lại khi còn nháp trả bút toán cũ."""
     _can_ke_toan()
-    si = frappe.get_doc("Sales Invoice", sales_invoice)
+    # Cùng khóa hóa đơn để hai người không lập hai đề nghị giảm nháp đồng thời.
+    frappe.db.sql("SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE", sales_invoice)
+    si = frappe.get_doc("Sales Invoice", sales_invoice, for_update=True)
     si.check_permission("read")
     if si.docstatus != 1 or cint(si.is_return):
         frappe.throw("Chỉ dùng cho hóa đơn bán đã ghi sổ (không phải hóa đơn trả lại)")
     if not (ly_do or "").strip():
         frappe.throw("Ghi lý do giảm giá")
-    da = frappe.db.get_value("Journal Entry", {F_JE_HD: si.name, "docstatus": 0}, "name")
-    if da:
-        return {"but_toan": da, "da_co": True}
+    pending = frappe.db.sql(f"SELECT name FROM `tabJournal Entry` WHERE {F_JE_HD}=%s AND docstatus=0 ORDER BY name FOR UPDATE",
+                            si.name, as_dict=True)
+    if len(pending) > 1:
+        frappe.throw("Có nhiều đề nghị giảm nháp cho khoản này; kế toán đối soát trước khi lập thêm")
+    if pending:
+        # Mở lại để đối chiếu nội dung cũ, không hứa đã đổi sang số tiền mới của người gọi.
+        existing = frappe.get_doc("Journal Entry", pending[0].name)
+        existing.check_permission("read")
+        return {"but_toan": existing.name, "da_co": True}
     so_tien = flt(so_tien)
     if so_tien > flt(si.outstanding_amount) + 0.5:
         frappe.throw(f"Số tiền giảm lớn hơn phần khách còn nợ của hóa đơn ({flt(si.outstanding_amount):,.0f})")

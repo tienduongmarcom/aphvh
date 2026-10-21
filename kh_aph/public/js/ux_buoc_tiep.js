@@ -18,7 +18,7 @@ if (!kh_aph.ux.buoc_tiep) {
         if (dt === "Delivery Note" && !d.is_return) {
             if (d.docstatus === 0) {
                 const nut = [["Xác nhận bàn giao vận chuyển", "Bàn giao cho người vận chuyển"], ["Xác nhận khách đến lấy", "Khách đến lấy"]].filter(x => co(x[1]));
-                if (nut.length) return {text: "Phiếu chờ xuất: hàng CHƯA ra khỏi kho. Xác nhận khi hàng thực sự giao đi (ghi trừ kho và công nợ).", nut};
+                if (nut.length) return {text: "Phiếu chưa ghi xuất trên phần mềm. Kiểm lượng thực giao rồi xác nhận để ghi kho và công nợ.", nut};
             }
             if (d.docstatus === 1 && d.kh_aph_delivery_state === "Đang giao" && co("Khách đã nhận"))
                 return {text: "Hàng đang trên đường giao.", nut: [["Xác nhận khách đã nhận", "Khách đã nhận"]]};
