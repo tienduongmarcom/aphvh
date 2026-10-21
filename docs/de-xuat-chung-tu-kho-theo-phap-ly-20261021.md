@@ -1,5 +1,8 @@
 # Đề xuất chứng từ kho, giao nhận, tiền và công nợ — rà soát 21/10/2026
 
+> Phạm vi bổ sung sau trao đổi: [đổi tại xe, đổi/trả sau giao và giảm giá hàng xấu](bo-sung-doi-tra-giam-gia-20261021.md). Bao gồm đơn giản hóa xác nhận khách nhận ship và nhập nhà xe mới; ưu tiên phần cập nhật này khi khác thiết kế ship ban đầu.
+
+
 > Thiết kế để chủ dự án xem xét; chưa ban hành biểu mẫu, chưa đổi code, quyền, site hoặc bản in production0.16.4. Tài liệu này bổ sung hai thiết kế kho ngày21/10 và ưu tiên khi có khác biệt về căn cứ pháp lý. Không tự coi mọi chứng từ hiện tại đã tuân thủ chỉ vì nâng cấp ĐẠT.
 
 ## 1. Mục tiêu và phạm vi
