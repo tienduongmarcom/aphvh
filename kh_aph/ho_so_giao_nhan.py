@@ -6,6 +6,10 @@ FILE = "kh_aph_ban_ky"
 NOTE = "kh_aph_ghi_chu_ban_ky"
 ACTOR = "kh_aph_doi_chieu_boi"
 TIME = "kh_aph_doi_chieu_luc"
+ORIGINAL_BY = "kh_aph_nhan_goc_boi"
+ORIGINAL_AT = "kh_aph_nhan_goc_luc"
+ORIGINAL_LOCATION = "kh_aph_vi_tri_goc"
+ORIGINAL_FIELDS = (ORIGINAL_BY, ORIGINAL_AT, ORIGINAL_LOCATION)
 
 
 def enabled():
@@ -26,6 +30,13 @@ def fields():
          "insert_after": NOTE, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
         {"fieldname": TIME, "label": "Thời điểm đối chiếu bản ký", "fieldtype": "Datetime",
          "insert_after": ACTOR, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
+    ] + [
+        {"fieldname": ORIGINAL_BY, "label": "Người nhận giấy gốc", "fieldtype": "Link", "options": "User",
+         "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
+        {"fieldname": ORIGINAL_AT, "label": "Thời điểm nhận giấy gốc", "fieldtype": "Datetime",
+         "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
+        {"fieldname": ORIGINAL_LOCATION, "label": "Vị trí lưu giấy gốc", "fieldtype": "Data",
+         "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
     ]
 
 
@@ -44,6 +55,9 @@ def validate(doc, method=None):
     if not enabled() or not doc.meta.has_field(FILE):
         return
     old = doc.get_doc_before_save()
+    original_update = frappe.flags.get("kh_aph_nhan_goc") == doc.name
+    if not original_update and any(str(doc.get(f) or "") != str((old.get(f) if old else None) or "") for f in ORIGINAL_FIELDS):
+        frappe.throw("Dùng thao tác Nhận giấy gốc để ghi người, thời điểm và vị trí lưu")
     reviewed = frappe.flags.get("kh_aph_doi_chieu_ban_ky") == doc.name
     if not reviewed and any(str(doc.get(f) or "") != str((old.get(f) if old else None) or "") for f in (ACTOR, TIME)):
         frappe.throw("Dùng thao tác Đối chiếu bản ký để ghi người và thời điểm xác nhận")
@@ -68,8 +82,10 @@ def doi_chieu(name, modified):
     doc.check_permission("write")
     if str(doc.modified) != str(modified):
         frappe.throw("Phiếu đã thay đổi. Tải lại và kiểm tra bản ký trước khi xác nhận", frappe.TimestampMismatchError)
-    if cint(doc.docstatus) != 1 or cint(doc.is_return) or doc.get("kh_aph_delivery_state") != "Khách đã nhận":
-        frappe.throw("Chỉ đối chiếu bản ký khi khách đã nhận hàng")
+    warehouse_handoff = (cint(doc.get("kh_aph_mau_giao_nhan")) and doc.get("kh_aph_cach_giao") == "Vận chuyển"
+                         and doc.get("kh_aph_delivery_state") == "Đang giao")
+    if cint(doc.docstatus) != 1 or cint(doc.is_return) or (doc.get("kh_aph_delivery_state") != "Khách đã nhận" and not warehouse_handoff):
+        frappe.throw("Chỉ đối chiếu bản ký sau khi xuất hàng; phiếu cũ cần khách đã nhận")
     _file(doc)
     if doc.get(ACTOR):
         return {"name": doc.name, "doi_chieu_boi": doc.get(ACTOR), "doi_chieu_luc": doc.get(TIME)}
@@ -112,3 +128,36 @@ class HoSoFileMixin:
         # vì rollback CSDL không khôi phục được nội dung đã xóa trên đĩa.
         protect_file(self)
         return super().on_trash()
+
+
+@frappe.whitelist(methods=["POST"])
+def nhan_giay_goc(name, modified, location):
+    """Giấy và ảnh độc lập: đã nhận giấy không đòi tải ảnh trước hoặc ghi thêm sổ."""
+    if not enabled():
+        frappe.throw("Hồ sơ giao nhận chưa được bật")
+    if not isinstance(location, str) or not location.strip() or len(location.strip()) > 140 or any(ord(c) < 32 for c in location):
+        frappe.throw("Ghi vị trí lưu giấy gốc, tối đa140ký tự")
+    frappe.db.sql("SELECT name FROM `tabDelivery Note` WHERE name=%s FOR UPDATE", name)
+    doc = frappe.get_doc("Delivery Note", name, for_update=True)
+    doc.check_permission("read")
+    doc.check_permission("write")
+    if cint(doc.docstatus) != 1 or cint(doc.is_return):
+        frappe.throw("Nhận giấy gốc trên phiếu xuất đã ghi sổ")
+    if doc.get(ORIGINAL_BY):
+        if doc.get(ORIGINAL_LOCATION) != location.strip():
+            frappe.throw("Phiếu đã nhận giấy gốc ở vị trí khác; đối soát trước khi chuyển tập")
+        return {"name": doc.name, "location": doc.get(ORIGINAL_LOCATION), "received_by": doc.get(ORIGINAL_BY), "received_at": doc.get(ORIGINAL_AT)}
+    if str(doc.modified) != str(modified):
+        frappe.throw("Phiếu đã thay đổi; tải lại trước khi nhận giấy gốc", frappe.TimestampMismatchError)
+    previous = frappe.flags.get("kh_aph_nhan_goc")
+    frappe.flags.kh_aph_nhan_goc = doc.name
+    try:
+        doc.set(ORIGINAL_BY, frappe.session.user)
+        doc.set(ORIGINAL_AT, now_datetime())
+        doc.set(ORIGINAL_LOCATION, location.strip())
+        doc.save()
+        from frappe.utils import escape_html
+        doc.add_comment("Comment", "Đã nhận giấy gốc, vị trí lưu: " + escape_html(location.strip()))
+    finally:
+        frappe.flags.kh_aph_nhan_goc = previous
+    return {"name": doc.name, "location": doc.get(ORIGINAL_LOCATION), "received_by": doc.get(ORIGINAL_BY), "received_at": doc.get(ORIGINAL_AT)}

@@ -27,6 +27,15 @@
 				frm.toggle_display(field, !!bat() && frm.doc.docstatus === 1 && !frm.doc.is_return);
 			}
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
+            if (!frm.doc.kh_aph_nhan_goc_boi && frm.perm.some(p => p.write)) {
+                frm.add_custom_button("Nhận giấy gốc", () => {
+                    if (frm.is_dirty()) return frappe.msgprint("Lưu phiếu trước khi nhận giấy gốc.");
+                    frappe.prompt({fieldname: "location", label: "Vị trí tập lưu tại kế toán cửa hàng", fieldtype: "Data", reqd: 1},
+                        values => frappe.call({method: "kh_aph.ho_so_giao_nhan.nhan_giay_goc",
+                            args: {name: frm.doc.name, modified: frm.doc.modified, ...values}, freeze: true}).then(() => frm.reload_doc()),
+                        "Nhận giấy gốc", "Xác nhận đã nhận");
+                }, "Hồ sơ giao nhận");
+            }
 			if (frm.doc.kh_aph_ban_ky && frm.perm[0] && frm.perm[0].write) {
 				frm.add_custom_button(__("Gỡ bản ký khỏi phiếu"), () => {
 					frappe.confirm(__("Gỡ bản ký sẽ bỏ dấu đối chiếu. Tệp vẫn giữ trong hồ sơ đính kèm."), () => {
@@ -38,7 +47,7 @@
 				frm.dashboard.set_headline_alert(__("Đã nhận hàng, còn thiếu bản phiếu có chữ ký"), "orange");
 			} else if (frm.doc.kh_aph_ban_ky && !frm.doc.kh_aph_doi_chieu_boi) {
 				frm.dashboard.set_headline_alert(__("Đã có bản ký, cần đối chiếu nội dung và ghi chú chênh lệch"), "orange");
-				if (frm.perm[0] && frm.perm[0].write && frm.doc.kh_aph_delivery_state === "Khách đã nhận") {
+				if (frm.perm[0] && frm.perm[0].write && (frm.doc.kh_aph_delivery_state === "Khách đã nhận" || (frm.doc.kh_aph_mau_giao_nhan && frm.doc.kh_aph_delivery_state === "Đang giao"))) {
 					frm.add_custom_button(__("Đối chiếu bản ký"), () => {
 						if (frm.is_dirty()) return frappe.msgprint(__("Lưu phiếu trước khi đối chiếu bản ký"));
 						frappe.confirm(__("Bạn đã mở bản ký, kiểm tra lượng thực nhận và ghi chú các chênh lệch?"), () =>

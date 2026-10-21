@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — NềnCổng3 ĐẠT; ứng viên kho tiếp tục sửa/kiểm, chưa phát hành
+
+PR37 đã gộp main7a588c9. Cổng3 run39567580998 success đúngd5a9491ffb27e68c93f708fc831f9fbdb79917f7, đã đọc log/artifactcong-3-bang-chứng12331362860: nền0.16.4 đúngdigest, diễn tập/nâng/sochi tiết/quay lui/nhánh hỏng chủ độngKHỚP; schemafresh1099/1099,rollback1105/1105, lệch0. Đây là nền trước sửa nghiệp vụ, không chứng minh ứng viên mới đãPASS.
+
+PR38 trảlẻ mã164962b: Cổng239568824265 success; UAT39568824330 FAIL ởfixtureItemmới thiếuItemTaxTemplate trước khi vào ca trảlẻ, đã giữrun và sửafixturegánthuếtheomãmẫugiả; không nới kiểmthuế. Manual39568812563 bịhủy do lượtPRthay thế. Chưa cóPASSnative của ca mới.
+
+Working branch có thêm kho/ảnh–giấygốc độc lập: API nhận giấy gốc kiểmwrite/modified, lưuuser/time/vị trí, retry giữdấu, không đổi sổ; đối chiếu bản kýnhàxe cho phiếu thếhệmới đanggiao. Đã đối chiếuAutocomplete đúngFrappe16.52: phảiignore_validation mới nhậpnhàxemới ngoài gợiý, label gợiýescape; đổi tênxe mới xóaSĐTxe cũ. UI/caseChrome mới kiểm nhậpnhàxe và2ô báo nhận, kg/bao nhận trả; HTTPmới dự kiến122PASS (117cũ+5mới), chưa chạy đúngheadmới. Cục bộ475ca(14skip) đạt trước lần sửafixturecuối; kiểmcúphápJSđạt. Chưa hoànthiệnđổi mã/giảmtheodòng/hoàn gọn/offline/snapshotđốisoát, chưa nângversion/tag/site. Bước tiếp chạy lạiUAT/Cổng2 trênheadmới, sửa lỗi thật, tiếp tục phầncònthiếu.
+
+
 ## 21/10/2026 — ĐANG DỞ: thêm thông tin nhà xe/xe khách và dấu nhận cuối
 
 Working branchfeat/kho-giao-nhan-don-gian-20261021 đã bổ sung thế hệ thông tin giao nhận1: xe khách phải có căn cứ chỉ định, tínhpickup; nhà xeData/Autocomplete chọn đã dùng hoặc nhập mới+tên/SĐT, snapshot từngphiếu, nguồn báo/ngày nhận cuối readonly theoAPI. Chuẩn bị/inA5 ghi nhàxe, bên nhận vận chuyển khác khách cuối; mẫu chuẩn/reprint đồng bộ carrier/căn cứ. Hashpayload cũ không thêm khóa mới để giữretry. CửaKhách thêm lốiGiảmgiáđơn cũ gọi đề nghịJEnháp sẵn có; khóaSI và kiểm quyền đọc khi mở lạiJEnháp, chưa thay cơ chế giảm theo dòng.

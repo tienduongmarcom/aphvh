@@ -37,7 +37,39 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'xuat-ngay') {
+    if (mode === 'kho-giao-nhan') {
+        const payload = JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride', {width:1440,height:1050,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate', {url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(payload.order)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Lập phiếu xuất & In"]');
+        await evaluate('cur_frm.custom_buttons["Lập phiếu xuất & In"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.carrier && !!cur_dialog.__carriers');
+        const entered = await evaluate(`(async()=>{await cur_dialog.set_value('delivery_method','Vận chuyển');
+            await cur_dialog.set_value('carrier','Nhà xe mới nhập trên Chrome');
+            await cur_dialog.set_value('carrier_phone','0901999000');
+            return {name:cur_dialog.get_value('carrier'),phone:cur_dialog.get_value('carrier_phone'),
+                free:cur_dialog.fields_dict.carrier.df.ignore_validation,visible:cur_dialog.fields_dict.carrier.$wrapper.is(':visible')};})()`);
+        if(entered.name!=='Nhà xe mới nhập trên Chrome'||entered.phone!=='0901999000'||!entered.free||!entered.visible)
+            throw Error('Không nhập được nhà xe mới: '+JSON.stringify(entered));
+        let shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-nha-xe-moi.png',Buffer.from(shot.data,'base64'));
+        await evaluate('cur_dialog.hide();true');
+        await command('Page.navigate', {url:base+'/desk/delivery-note/'+encodeURIComponent(payload.delivery)});
+        await until('!!window.cur_frm && cur_frm.doc.name==='+JSON.stringify(payload.delivery)+' && !!cur_frm.custom_buttons["Khách đã nhận"]');
+        await evaluate('cur_frm.custom_buttons["Khách đã nhận"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.reported_by');
+        const receipt = await evaluate('({date:!!cur_dialog.get_value("received_on"),fields:cur_dialog.fields.filter(f=>f.fieldname).map(f=>f.fieldname)})');
+        if(!receipt.date||JSON.stringify(receipt.fields)!==JSON.stringify(['reported_by','received_on']))throw Error('Nhận hàng không gọn: '+JSON.stringify(receipt));
+        await evaluate('cur_dialog.hide();true');
+        await evaluate('cur_frm.custom_buttons["Nhận hàng trả lại"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.condition && !!cur_dialog.fields_dict.rows');
+        const columns = await evaluate('cur_dialog.fields_dict.rows.df.fields.map(f=>f.fieldname)');
+        if(!columns.includes('qty')||!columns.includes('bags'))throw Error('Thiếu kg/bao nhận trả riêng');
+        shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-nhan-tra-kg.png',Buffer.from(shot.data,'base64'));
+        await evaluate('cur_dialog.hide();true');
+        console.log(JSON.stringify({case:'NATIVE_DESK_KHO_GIAO_NHAN_GON',status:'PASS',detail:{new_carrier_typed:true,receipt_two_fields:true,return_kg_bags_separate:true,no_posting:true}}));
+    } else if (mode === 'xuat-ngay') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && !!cur_frm.custom_buttons["Lập phiếu xuất & In"]');

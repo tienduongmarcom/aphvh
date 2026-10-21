@@ -133,9 +133,16 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
             q, b = number(choice["qty"]), number(choice["bags"])
             if q <= 0 or b < 0:
                 raise ValueError("Nhập lượng nhận trả dương và số bao không âm")
-            result = loose_return(-q, -b, source.get("kh_aph_kg_per_bag"),
-                flt(source.qty) - flt(used.get("qty")),
-                flt(source.get("kh_aph_bags")) - flt(used.get("bags")))
+            weight = flt(source.get("kh_aph_kg_per_bag"))
+            remaining = flt(flt(source.qty) - flt(used.get("qty")), 6)
+            if weight:
+                result = loose_return(-q, -b, weight, remaining,
+                    flt(source.get("kh_aph_bags")) - flt(used.get("bags")))
+                result["loose"] = 1
+            else:
+                if b or q > number(remaining):
+                    raise ValueError("Hàng không quản lý bao: số bao bằng0 và kg không vượt lượng còn được trả")
+                result = {"qty": -q, "bags": 0, "kg_per_bag": 0, "loose": 0}
         except ValueError as exc:
             frappe.throw(str(exc))
         frappe.get_doc("Warehouse", source.warehouse).check_permission("read")
@@ -148,7 +155,7 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
     for r in ret.items:
         p = planned[r.dn_detail]
         r.qty, r.kh_aph_bags, r.kh_aph_kg_per_bag = map(float, (p["qty"], p["bags"], p["kg_per_bag"]))
-        r.set(LOOSE, 1)
+        r.set(LOOSE, p["loose"])
     ret.set("kh_aph_loai_dieu_chinh", DC_TRA_HANG)
     ret.set(F_HANG, condition)
     ret.set(F_TIEN, settlement)
@@ -163,7 +170,7 @@ def validate(doc, method=None):
     """Khóa nguồn khi mọi đường native lưu/ghi phiếu trả, không chỉ cửa sổ mới."""
     if not enabled():
         return
-    if not any(cint(r.get(LOOSE)) for r in doc.get("items") or []):
+    if not doc.get(REQUEST) and not any(cint(r.get(LOOSE)) for r in doc.get("items") or []):
         return
     if doc.doctype != "Delivery Note" or not cint(doc.is_return) or not doc.get("return_against"):
         frappe.throw("Trả lẻ kg chỉ dùng trên phiếu nhận trả theo phiếu xuất gốc")

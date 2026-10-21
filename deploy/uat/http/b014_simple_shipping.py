@@ -38,6 +38,19 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     def counts():
         return {dt: len(lst(dt, {}, ["name"], ktt)) for dt in ("Delivery Note", "Sales Invoice", "Stock Ledger Entry", "GL Entry", "Payment Entry")}
     before = counts()
+    import os
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        import subprocess
+        from pathlib import Path
+        fresh = order()
+        # Chuẩn bị đơn riêng trước khi đo lại: trình duyệt chỉ mở/nhập/hủy các cửa sổ.
+        before = counts()
+        result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
+            json.dumps({"order": fresh["shared_order"], "delivery": dn["name"]}), "kho-giao-nhan"],
+            check=True, text=True, capture_output=True, timeout=180)
+        evidence = json.loads(next(x for x in result.stdout.splitlines() if x.startswith('{"case":')))
+        assert evidence["status"] == "PASS" and counts() == before, evidence
+        emit(evidence["case"], "PASS", evidence["detail"])
     denied(lambda: rpc("kh_aph.delivery_status.confirm", {"name": dn["name"], "action": "receive"}, ktt))
     event = {"name": dn["name"], "action": "receive", "reported_by": "Nhà xe báo", "received_on": dn["posting_date"]}
     rpc("kh_aph.delivery_status.confirm", event, ktt)
@@ -53,3 +66,15 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(bad)}, ktt))
     emit("HTTP_014_NHA_XE_MOI_BAO_NHAN", "PASS", {"carrier_snapshot": True, "receipt_without_customer_signature": True,
          "no_ledger_change": True, "receipt_protected": True, "retry_no_duplicate": True})
+    state = counts()
+    payload = {"name": latest["name"], "modified": get("Delivery Note", latest["name"], ktt)["modified"], "location": "Tập kho cửa hàng / UAT / 10"}
+    original = rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", payload, ktt)
+    assert original["received_by"] == f["ktt"] and original["received_at"] and original["location"] == payload["location"]
+    assert counts() == state
+    assert rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", payload, ktt) == original
+    denied(lambda: rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", {**payload, "location": "Tập khác"}, ktt))
+    bad = get("Delivery Note", latest["name"], ktt); bad["kh_aph_vi_tri_goc"] = "Tự đổi gốc"
+    denied(lambda: rpc("frappe.client.save", {"doc": json.dumps(bad)}, ktt))
+    assert not get("Delivery Note", latest["name"], ktt).get("kh_aph_ban_ky")
+    emit("HTTP_014_NHAN_GIAY_GOC", "PASS", {"paper_independent_of_photo": True, "actor_time_location": True,
+         "retry_unchanged": True, "direct_edit_denied": True, "no_ledger_change": True})

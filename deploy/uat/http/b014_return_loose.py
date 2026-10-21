@@ -7,7 +7,8 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     old = get("Item", f["A"], ktt)
     item = f["p"] + "-TRA-LE-25"
     insert({"doctype": "Item", "item_code": item, "item_name": "Hàng thử trả lẻ 25kg", "item_group": old["item_group"],
-            "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average", "kh_aph_kg_per_bag": 25}, ktt)
+            "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average", "kh_aph_kg_per_bag": 25,
+            "taxes": [{"item_tax_template": t["item_tax_template"]} for t in old["taxes"]]}, ktt)
     submit(insert({"doctype": "Stock Entry", "stock_entry_type": "Material Receipt", "company": f["aph"],
         "posting_date": f["date"], "items": [{"item_code": item, "t_warehouse": f["kho"], "qty": 50,
         "basic_rate": 20000, "kh_aph_bags": 2, "kh_aph_kg_per_bag": 25, "expense_account": f["acc"]["cp"]}]}, ktt), ktt)

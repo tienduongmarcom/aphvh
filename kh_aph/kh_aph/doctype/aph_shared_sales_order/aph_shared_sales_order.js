@@ -26,10 +26,10 @@ async function kh_aph_lap_dot_xuat(frm) {
             {fieldname: "authorization", label: "Khách chỉ định người nhận", fieldtype: "Data",
                 depends_on: "eval:doc.delivery_method==='Xe khách đến lấy'", mandatory_depends_on: "eval:doc.delivery_method==='Xe khách đến lấy'",
                 description: "Ví dụ: khách gọi xác nhận hoặc tin nhắn chỉ định lái xe. Quyền nhận hàng không phải quyền ký công nợ."},
-            {fieldname: "carrier", label: "Nhà xe (chọn hoặc nhập mới)", fieldtype: "Autocomplete",
+            {fieldname: "carrier", label: "Nhà xe (chọn hoặc nhập mới)", fieldtype: "Autocomplete", ignore_validation: true, translate_values: false,
                 depends_on: "eval:doc.delivery_method==='Vận chuyển'", mandatory_depends_on: "eval:doc.delivery_method==='Vận chuyển'",
                 onchange() {if (!dialog) return; const match = (dialog.__carriers || []).find(r => r.carrier === dialog.get_value("carrier"));
-                    if (match) dialog.set_value("carrier_phone", match.carrier_phone);}},
+                    dialog.set_value("carrier_phone", match ? match.carrier_phone : "");}},
             {fieldname: "carrier_phone", label: "Điện thoại nhà xe", fieldtype: "Data",
                 depends_on: "eval:doc.delivery_method==='Vận chuyển'", mandatory_depends_on: "eval:doc.delivery_method==='Vận chuyển'"},
             {fieldname: "customer_signature", label: "Khách cần ký biên bản giao nhận", fieldtype: "Select", options: ["Không", "Có"], default: "Không",
@@ -109,7 +109,7 @@ async function kh_aph_lap_dot_xuat(frm) {
     dialog.show();
     frappe.call({method: "kh_aph.delivery_info.recent_carriers"}).then(r => {
         dialog.__carriers = r.message || [];
-        dialog.fields_dict.carrier.set_data(dialog.__carriers.map(x => x.carrier));
+        dialog.fields_dict.carrier.set_data(dialog.__carriers.map(x => ({value: x.carrier, label: frappe.utils.escape_html(x.carrier)})));
     });
 }
 frappe.ui.form.on("APH Shared Sales Order", {
