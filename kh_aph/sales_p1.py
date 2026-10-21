@@ -101,6 +101,10 @@ def sau_ghi_tra_hang(doc, method=None):
     """Delivery Note on_submit (sau khi app sinh hóa đơn giảm): Đổi hàng → phiếu giao NHÁP mới từ đơn gốc."""
     if not enabled() or not cint(doc.is_return) or doc.get(F_TIEN) != B.TIEN_DOI_HANG:
         return
+    from kh_aph.sales_return import REQUEST
+    if doc.get(REQUEST):
+        frappe.msgprint("Đã nhận trả. Dùng Lập đơn hàng thay để chọn mã và lượng hàng mới.", indicator="blue")
+        return
     from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
     so = next((d.against_sales_order for d in doc.items if d.get("against_sales_order")), None)
     if not so:

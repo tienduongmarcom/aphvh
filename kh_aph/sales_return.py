@@ -17,7 +17,9 @@ def enabled():
 
 
 def fields():
+    from kh_aph.sales_exchange import fields as exchange_fields
     return {
+        "APH Shared Sales Order": exchange_fields(),
         "Delivery Note": [
             {"fieldname": REQUEST, "label": "Mã yêu cầu nhận trả", "fieldtype": "Data", "unique": 1,
              "read_only": 1, "no_copy": 1, "hidden": 1},

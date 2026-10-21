@@ -102,3 +102,41 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
     emit("HTTP_014_TRA_LE_THU_MOT_PHAN_HOAN_DUNG", "PASS", {"partial_refund": per_return - remaining_debt,
          "full_refund": per_return, "source_invoice_cleared": True, "no_second_credit_invoice": True})
+
+    # Đổi mã khác: nhận lại lượng thực, rồi chọn mã mới trên đơn chuẩn, không sinh lại mã cũ.
+    exchange = receive_return("Đổi hàng")
+    assert not get("Delivery Note", exchange["name"], ktt).get("kh_aph_chung_tu_xu_ly"), "Tự sinh lại phiếu cùng mã cũ"
+    exchange_before = counts()
+    prepared = rpc("kh_aph.sales_exchange.prepare", {"return_note": exchange["name"]}, ktt)
+    assert prepared["company"] == f["aph"] and prepared["defaults"]["customer"] == f["kh2"]
+    assert counts() == exchange_before
+    defaults = prepared["defaults"]
+    replacement_values = {"doctype": "APH Shared Sales Order", **defaults, "items": [
+        {"item_code": f["A"], "qty": 2, "rate": 40000, "warehouse": f["kho"]}]}
+    replacement = insert(replacement_values, ktt)
+    assert replacement["docstatus"] == 0 and replacement["items"][0]["item_code"] != item
+    assert counts() == exchange_before, "Lưu đơn thay nháp làm phát sinh kho/nợ/tiền"
+    assert rpc("kh_aph.sales_exchange.prepare", {"return_note": exchange["name"]}, ktt) == {"existing": replacement["name"]}
+    denied(lambda: insert(replacement_values, ktt))
+    denied(lambda: rpc("frappe.client.set_value", {"doctype": "APH Shared Sales Order", "name": replacement["name"],
+        "fieldname": "kh_aph_phieu_tra_doi", "value": ""}, ktt))
+    replacement = submit(get("APH Shared Sales Order", replacement["name"], ktt), ktt)
+    children = lst("Sales Order", {"kh_aph_shared_order": replacement["name"], "docstatus": 1}, ["name"], ktt)
+    child = get("Sales Order", children[0]["name"], ktt)
+    denied(lambda: insert({"doctype": "APH Source Change", "shared_order": replacement["name"], "source_order": child["name"],
+        "source_row": child["items"][0]["name"], "target_warehouse": f["kho_vh"], "qty": 1, "reason": "Thử cấn chéo đơn vị"}, ktt))
+    # Hủy đơn chưa xuất: giữ nguồn lịch sử và cho lập lại, không kẹt khóa duy nhất.
+    rpc("frappe.client.cancel", {"doctype": "APH Shared Sales Order", "name": replacement["name"]}, ktt)
+    cancelled = get("APH Shared Sales Order", replacement["name"], ktt)
+    assert cancelled["kh_aph_phieu_tra_doi"] == exchange["name"] and not cancelled.get("kh_aph_luot_doi_dang_mo")
+    assert "defaults" in rpc("kh_aph.sales_exchange.prepare", {"return_note": exchange["name"]}, ktt)
+    replacement = submit(insert(replacement_values, ktt), ktt)
+    selected = rpc("kh_aph.ban_nhanh.preview", {"shared_order": replacement["name"]}, ktt)["rows"][0]
+    replaced = rpc("kh_aph.ban_nhanh.create_and_dispatch", {"shared_order": replacement["name"], "request_id": uuid.uuid4().hex,
+        "selections": json.dumps([{"source_row": selected["source_row"], "qty": 2}]),
+        "delivery": json.dumps({"delivery_method": "Khách đến lấy", "recipient": "Khách UAT đổi mã"}), "dispatcher": "Kho UAT"}, ktt)
+    issued = get("Delivery Note", replaced["delivery_notes"][0]["name"], ktt)
+    assert issued["docstatus"] == 1 and issued["items"][0]["item_code"] == f["A"] and issued["items"][0]["qty"] == 2
+    assert issued["company"] == f["aph"] and counts()["Sales Invoice"] == exchange_before["Sales Invoice"] + 1
+    emit("HTTP_014_DOI_MA_MOI", "PASS", {"return_note": exchange["name"], "new_order": replacement["name"],
+         "new_item": f["A"], "native_sales_flow": True, "draft_no_posting": True, "one_active_order": True})

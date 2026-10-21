@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — ĐANG DỞ: đổi sang mã mới bằng đơn bán chuẩn
+
+Đường nhận trả mới chọn Đổi hàng không còn tự chuẩn bị lại mã cũ. Thêm nút Lập đơn hàng thay: API chỉ đọc mở lại đơn đã lưu hoặc điền khách/nguồn vào form đơn chuẩn chưa lưu; người bán chọn mã, lượng, kho, giá mới. Link phiếu nhận trả bất biến, khóa duy nhất cho một đơn thay còn hiệu lực; hủy giữ link lịch sử và nhả khóa cho lập lại. Kiểm cùng khách/Company, cả đường đổi nguồn không được chuyển Company của đơn thay. Native lưu/xác nhận/giao tiếp tục sở hữu giá, hạn mức, tồn và nợ; đơn nháp không ghi sổ. Không tự cấn tiền giữa đơn vị hoặc tự coi trao đổi đã tất toán tiền.
+
+Cục bộ494ca kh_aph (14skip) đạt; kiểm cú pháp JS đạt. Thêm ca HTTP đổi mã, mở lại/chống trùng, chặn xóa nguồn/chuyển Company, hủy rồi lập lại và xuất mã mới; kỳ vọng bộ014125PASS. CHƯA có bằng chứng native cho thay đổi này. Lượt UAT39575256295 và Cổng2b39575261403/Cổng339575265840 đang chạy trên771b365 trước phần đổi mã; Cổng2 cùng mã39575248458 success. Chưa coi các cổng này xác nhận code mới chưa nằm trong run.
+
+PR38 vẫn draft, không tag/phát hành/site. Production0.16.4 giữ nguyên. Cần hoàn thiện offline, snapshot ký đối soát, chuẩn bị/gom kho, giảm theo dòng/chống giảm trùng sau giảm cũ, bộ giấy cùng lượt, danh sách giấy gốc còn thiếu. Bước tiếp chờ đọc bằng chứng nghiệp vụ của lượt hiện tại rồi chạy UAT125ca đúng mã đổi hàng, sửa lỗi thật nếu có.
+
+
 ## 21/10/2026 — ĐANG DỞ PR38: chặn bán từ kho vận chuyển, chờ kiểm nghiệp vụ toàn lát
 
 Đã sửa guard kho chuẩn (cờ hiện có kh_aph_kho_chuan): đơn chung/đơn con/DN/hóa đơn có xuất kho không lấy kho Vận chuyển làm nguồn bán; trả hàng và hóa đơn không xuất kho giữ đường xử lý riêng. Thêm ca HTTP vào bộ0112, không đổi sốPASS kỳ vọng bộ đó. FormDN cập nhật ô giao nhận ngay khi đổi cách giao, không cần tải lại form.

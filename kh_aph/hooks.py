@@ -525,3 +525,9 @@ for _dt in ("Delivery Note", "Customer"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/sales_return.js"]
+
+# Đổi mã mới dùng đơn chuẩn; khóa một đơn thay còn hiệu lực trên mỗi phiếu nhận trả.
+for _event, _handler in (("validate", "validate"), ("before_submit", "validate"), ("before_cancel", "before_cancel")):
+    doc_events.setdefault("APH Shared Sales Order", {}).setdefault(_event, []).append("kh_aph.sales_exchange." + _handler)
+for _event in ("validate", "before_submit"):
+    doc_events.setdefault("APH Source Change", {}).setdefault(_event, []).append("kh_aph.sales_exchange.validate_source_change")

@@ -60,3 +60,14 @@ frappe.ui.form.on("Customer", {refresh(frm) {
         frappe.set_route("Form", "Journal Entry", result.message.but_toan);
     }, "Giảm giá khoản nợ cũ", "Lập đề nghị"), "Đổi / Trả / Giảm giá");
 }});
+
+frappe.ui.form.on("Delivery Note", {refresh(frm) {
+    if (!frappe.boot?.kh_aph?.sales_adjust || !frappe.boot?.kh_aph?.sales_p1 || frm.doc.docstatus !== 1 ||
+        !frm.doc.is_return || !frm.doc.kh_aph_ma_nhan_tra || frm.doc.kh_aph_xu_ly_tien !== "Đổi hàng") return;
+    frm.add_custom_button("Lập đơn hàng thay", async () => {
+        const result = await frappe.call({method: "kh_aph.sales_exchange.prepare", args: {return_note: frm.doc.name}, freeze: true});
+        if (result.message.existing) return frappe.set_route("Form", "APH Shared Sales Order", result.message.existing);
+        frappe.show_alert({message: "Chọn mã, lượng và giá hàng thay. Đơn nháp chưa xuất kho hoặc tăng nợ.", indicator: "blue"});
+        frappe.new_doc("APH Shared Sales Order", result.message.defaults);
+    }, "Đổi / Trả");
+}});
