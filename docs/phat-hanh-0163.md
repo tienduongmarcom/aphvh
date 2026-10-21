@@ -1,5 +1,7 @@
 # Phát hành bản tối ưu giao diện0.16.3
 
+**Mốc21/10/2026:** chủ dự án đã gắn tag, workflow39518896902 success; image0.16.3 đã có, digest `sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95` (log phát hành và registry khớp). Bước1 dưới đây đã xong, không gắn lại tag. Tiếp tục bước2 trên SSH máy chủ. Production chưa được xác nhận nâng0.16.3.
+
 PR #26 đã gộp vào main, commit `a1f95b062f2ff7334ed36c176dfb742bf828974a`. Mã app giữ nguyên so với12d9d24 đã đạt bốn cổng; phần sau chỉ hồ sơ. Bản đang chạy theo xác nhận vẫn0.16.2, digest34a32f71…,28cờ. Không có cờ mới; không chạy setup_uat trên production. Nền ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11 giữ nguyên.
 
 ## 1. Trên Mac — chủ dự án gắn tag
