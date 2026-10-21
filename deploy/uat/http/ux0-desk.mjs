@@ -79,7 +79,19 @@ try {
              B:await do_('B',[()=>vao('Bán hàng'),()=>report('Tong hop ban hang theo khach')])};
     await vao('Bán hàng');
     const shot2=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ux-viec-ban-hang.png',Buffer.from(shot2.data,'base64'));
-    console.log(JSON.stringify({case:'DESK_UX0_BASELINE',status:'PASS',detail:{loai_so_do:'máy, không phải người thật',ket_qua:ket,
+    // Import địa chỉ và cập nhật liên hệ qua HTTP trước đó; chỉ mở form mới chưa lưu.
+    await evaluate('cur_dialog?.hide();$(".modal.show").modal("hide");true');
+    await until('!document.querySelector(".modal.show") && frappe.request.ajax_count===0');
+    await evaluate(`frappe.new_doc("APH Shared Sales Order",{customer:${JSON.stringify(data.ux_identity_customer)}});true`);
+    const contextText = 'document.querySelector(".kh-customer-context")?.textContent';
+    await until(`!!window.cur_frm && cur_frm.is_new() && cur_frm.doc.customer===${JSON.stringify(data.ux_identity_customer)} && (${contextText}||"").includes(${JSON.stringify(data.ux_identity_address)}) && (${contextText}||"").includes(${JSON.stringify(data.ux_identity_phone)}) && frappe.request.ajax_count===0`);
+    await evaluate(`cur_frm.set_value("customer",${JSON.stringify(data.ux_empty_customer)});true`);
+    await until(`cur_frm.doc.customer===${JSON.stringify(data.ux_empty_customer)} && (${contextText}||"").includes("Chưa có địa chỉ") && (${contextText}||"").includes("Chưa có số điện thoại") && !(${contextText}||"").includes(${JSON.stringify(data.ux_identity_address)}) && !(${contextText}||"").includes(${JSON.stringify(data.ux_identity_phone)})`);
+    await evaluate(`cur_frm.set_value("customer",${JSON.stringify(data.ux_identity_customer)});true`);
+    await until(`(${contextText}||"").includes(${JSON.stringify(data.ux_identity_address)}) && (${contextText}||"").includes(${JSON.stringify(data.ux_identity_phone)}) && frappe.request.ajax_count===0 && !document.querySelector(".modal.show")`);
+    const identityShot=await command('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync('khach-dia-chi-lien-ket.png',Buffer.from(identityShot.data,'base64'));
+    console.log(JSON.stringify({case:'DESK_UX0_BASELINE',status:'PASS',detail:{loai_so_do:'máy, không phải người thật',linked_identity:true,customer_switch:true,ket_qua:ket,
         don:data.order||'không có đơn còn hàng: T01 chưa đo'}}));
 } catch (exc) {
     console.error(String(exc && exc.stack || exc)); console.error(JSON.stringify(diagnostics.slice(-10)));

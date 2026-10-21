@@ -1,5 +1,15 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — ĐANG KIỂM ứng viên0.16.4: nhận diện khách từ địa chỉ/liên hệ nhập riêng
+
+Production vẫn0.16.3/digesta252478b… đã ĐẠT. Lỗi người dùng báo và kiểm chỉ đọc trên Customer/Address: Address đã liên kết Customer nhưng ô tóm tắt primary_address còn trống, đầu đơn0.16.3 đọc ô này nên báo thiếu. Không lưu mã/tên/địa chỉ thật vào ca thử, không sửa dữ liệu production.
+
+Sửa customer_identity/customer_query/tim_khach dùng chung bộ đọc Address/Contact liên kết đúng Customer, theo get_list/quyền native; loại Address ngừng dùng, ưu tiên Link chính hợp lệ rồi hồ sơ được đánh dấu chính/thứ tự tạo. Đọc thông tin hiện tại mỗi lần tải, kể cả khi cache Customer còn giá trị cũ. SĐT ưu tiên Contact mobile/phone; khi không có Contact dùng SĐT trực tiếp Customer, rồi Address. Thêm/sửa/xóa số Contact không làm sống lại cache cũ. Giữ dữ liệu Customer-only cũ nếu chưa có hồ sơ/Link thay thế; từ chối quyền có thông báo riêng. Không tự điền cache Customer, đổi địa chỉ giao hoặc snapshot chứng từ cũ. Không đổi schema, quyền,28cờ hoặc logic ghi sổ.
+
+Cục bộ465ca (14skip) đạt. Đã mở rộng HTTP trên dữ liệu giả: import địa chỉ không chọn chính, loại địa chỉ ngừng dùng/khách khác, thêm–sửa–xóa–thêm SĐT, đối chiếu ba API và Customer không bị ghi lại. Chrome mở đơn chưa lưu, đổi sang khách rỗng rồi chọn lại, kiểm đúng địa chỉ/SĐT và ảnh khach-dia-chi-lien-ket.png; kiểm không tạo thêm đơn. Còn chờ bốn cổng trên đúng mã và xem ảnh thực tế CI, chưa tuyên bố PASS/tạo tag/phát hành.
+
+Housekeeping trước đó đã xong: [PR #29](https://github.com/tienduongmarcom/aphvh/pull/29) gộp6bd06a0; [Cổng3 39529511187](https://github.com/tienduongmarcom/aphvh/actions/runs/39529511187) success mãeb22911, artifact cong-3-bang-chung đã đọc: diễn tập/nâng/quay lui/so chi tiết KHỚP; UAT39529591303 vàCổng239529591299 success commit15c6c08 chỉ sửa tài liệu saueb22911. Cổng3 nay lấy production0.16.3 đúngdigest. Không phát hành/tag cho housekeeping.
+
 ## 21/10/2026 — Production0.16.3 đã được người vận hành xác nhận ĐẠT
 
 Anh Tiến gửi log tại `tienduongmarcom@erpnext-prod:~/trien-khai`: image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.3**, digest **sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**, dòng cuối **=== XONG 0.16.3: ĐẠT ===**. Digest khớp image phát hành39518896902 và registry đã kiểm; nguồn tag **v0.16.3 = a1f95b062f2ff7334ed36c176dfb742bf828974a** (PR #26 đã gộp main). Trước đó diễn tập thực **10210126238079**, dấu `/home/tienduongmarcom/dien-tap-0.16.3.ok`, tổng/đếm/chi tiết khớp, ĐẠT. Mốc khách đã cập nhật `khach/aph-vh/phien-ban.yaml`. Không cờ mới; bộ28cờ giữ nguyên theo thủ tục nâng. Đây là bằng chứng người vận hành gửi, không phải agent tự SSH kiểm lại VM.
