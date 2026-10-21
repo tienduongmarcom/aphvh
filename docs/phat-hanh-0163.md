@@ -2,9 +2,9 @@
 
 **Đã triển khai21/10/2026 theo log người vận hành:** diễn tập10210126238079 so sổ KHỚP, sau đó `=== XONG 0.16.3: ĐẠT ===`; digest khớp image nêu dưới. Các bước phát hành/nâng cấp trong tài liệu này đã hoàn tất, giữ làm hồ sơ, không chạy lại chỉ để kiểm. Nghiệm thu nghiệp vụ thực tế vẫn để cuối.
 
-**Mốc21/10/2026:** chủ dự án đã gắn tag, workflow39518896902 success; image0.16.3 đã có, digest `sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95` (log phát hành và registry khớp). Bước1 dưới đây đã xong, không gắn lại tag. Tiếp tục bước2 trên SSH máy chủ. Production chưa được xác nhận nâng0.16.3.
+**Mốc21/10/2026:** chủ dự án đã gắn tag, workflow39518896902 success; image0.16.3 đã có, digest `sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95` (log phát hành và registry khớp). Bước1 dưới đây đã xong, không gắn lại tag. Tại mốc phát hành này chưa xác nhận nâng production; mốc triển khai hoàn tất ở trên thay trạng thái đó.
 
-PR #26 đã gộp vào main, commit `a1f95b062f2ff7334ed36c176dfb742bf828974a`. Mã app giữ nguyên so với12d9d24 đã đạt bốn cổng; phần sau chỉ hồ sơ. Bản đang chạy theo xác nhận vẫn0.16.2, digest34a32f71…,28cờ. Không có cờ mới; không chạy setup_uat trên production. Nền ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11 giữ nguyên.
+PR #26 đã gộp vào main, commit `a1f95b062f2ff7334ed36c176dfb742bf828974a`. Mã app giữ nguyên so với12d9d24 đã đạt bốn cổng; phần sau chỉ hồ sơ. Mốc trước nâng là0.16.2, digest34a32f71…,28cờ; đã nâng0.16.3 theo xác nhận ở đầu tài liệu. Không có cờ mới; không chạy setup_uat trên production. Nền ERPNext16.51.1/Frappe16.52.0/lab9x0.2.11 giữ nguyên.
 
 ## 1. Trên Mac — chủ dự án gắn tag
 
