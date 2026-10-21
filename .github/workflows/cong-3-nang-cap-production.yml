@@ -1,5 +1,5 @@
 # Cổng 3: diễn tập ĐÚNG đường đi của site production `frontend`:
-# image production 0.16.3 (production từ 21/10/2026, 28 cờ bật, bộ cài, cây kho, có khách + nhà cung cấp) -> diễn tập bản sao
+# image production 0.16.4 (production từ 21/10/2026, 28 cờ bật, bộ cài, cây kho, có khách + nhà cung cấp) -> diễn tập bản sao
 # tách biệt -> dấu sai bị từ chối -> trien_khai_frontend.sh (bảo trì xuyên suốt, so sổ chi tiết) -> chạy lại bộ cài -> so schema
 # với site dựng mới -> quay-lui.sh về bản production -> cố ý làm hỏng nâng cấp: tự quay lui, giữ bảo trì, dữ liệu như trước.
 # Toàn bộ chạy trên dữ liệu giả của máy CI; không chạm máy chủ hay dữ liệu thật.
@@ -15,8 +15,8 @@ permissions:
 env:
   ERPNEXT_IMAGE: frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268  # ERPNext 16.51.1; phiên bản Frappe ghi bởi bench version trong CI
   PROD_IMAGE: ghcr.io/tienduongmarcom/kh-aph-erpnext
-  PROD_TAG: "0.16.3"
-  # Digest image 0.16.3 đã được người vận hành xác nhận trên erpnext-prod ngày21/10/2026.
+  PROD_TAG: "0.16.4"
+  # Digest image 0.16.4 đã được người vận hành xác nhận trên erpnext-prod ngày21/10/2026.
   # Trước: 0.16.2 sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917.
   # Trước: 0.16.0 sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3.
   # Trước: 0.15.3 sha256:330607a23533814481df2973c8f7d3b323d7782892407cef04a4086e8fa30496.
@@ -29,7 +29,7 @@ env:
   #        0.11.3 sha256:716f1401b5e0143d08f1ee29044226a79173056766f7091e87cf354af44bd2d8,
   #        0.11.2 sha256:f2417393b5ea6c65a901502b342741614111356df13758dc873f5cd534a09ca3,
   #        0.11.1 sha256:9335dfa1f2d9199ecc2c49a14bba86ce331cecd62395b1a66e113d78d50f8424
-  PROD_DIGEST: sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95
+  PROD_DIGEST: sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38
   # 28 cờ đã bật trên frontend (0.16.0)
   FLAGS_CU: >-
     kh_aph_server_cost_guard kh_aph_post_receivable_on_delivery kh_aph_shared_sales_order
