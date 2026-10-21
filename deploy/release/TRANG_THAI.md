@@ -1,5 +1,21 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Ứng viên0.16.4 đã đạt bốn cổng: sửa địa chỉ/SĐT khách nhập riêng
+
+[PR #30](https://github.com/tienduongmarcom/aphvh/pull/30), nhánh fix/dia-chi-khach-lien-ket-20261021, mã app/kiểm cuối **c9433f332230f7704e9ccd87476ddb9154386da1**. Commit hồ sơ theo sau chỉ tài liệu. Production vẫn **0.16.3/digesta252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**, chưa tag/phát hành image0.16.4 hoặc sửa VM/dữ liệu thật.
+
+Nguyên nhân xác nhận qua đọc Customer/Address: địa chỉ đã liên kết đúng khách nhưng cache primary_address trống khi import riêng/chưa đánh dấu chính; đầu đơn0.16.3 chỉ đọc cache nên báo thiếu. Đã dùng chung bộ đọc nhận diện cho customer_identity/customer_query/tim_khach. Đọc Address/Contact theo quyền get_list, liên kết Customer đúng loại/đúng người; loại địa chỉ ngừng dùng, ưu tiên Link chính hợp lệ rồi hồ sơ đánh dấu chính/thứ tự tạo. SĐT ưu tiên Contact mobile/phone, rồi bảng Contact Phone (kể cả chưa đánh dấu số chính); Contact rỗng không che số trên liên hệ khác cùng khách. Không có Contact thì dùng số khai trực tiếp Customer, rồi số Address. Đọc lại mỗi lần tải để thấy số mới, không phục hồi cache cũ khi đã xóa số Contact. Customer-only cũ chưa có hồ sơ/Link thay thế vẫn dùng được; từ chối quyền có thông báo riêng. Không tự sửa Customer, chọn địa chỉ giao, snapshot chứng từ cũ hoặc logic kho–nợ–tiền; không đổi schema/quyền/28cờ.
+
+Bốn cổng **success cùng c9433f3**:
+- [Cổng2 39534100779](https://github.com/tienduongmarcom/aphvh/actions/runs/39534100779): cài mới.
+- [Cổng2b 39534123205](https://github.com/tienduongmarcom/aphvh/actions/runs/39534123205): dựng/nâng/lỗi kéo image không gây gián đoạn/quay lui.
+- [UAT 39534119807](https://github.com/tienduongmarcom/aphvh/actions/runs/39534119807): đã tải/đọc artifact candidate-image-evidence, **310 JSON PASS,0FAIL** gồm core/chuẩn bị/khôi phục, không gọi là310ca nghiệp vụ. Riêng b014117PASS. HTTP_UX03 xác nhận import Address không chọn chính, loại địa chỉ ngừng dùng/khách khác, thêm–sửa–xóa–thêm SĐT, Contact chưa chọn số chính/có Contact rỗng, cả ba API đúng, Customer không bị ghi lại. DESK_UX0 xác nhận đầu đơn mới hiện đúng, đổi sang khách rỗng không giữ địa chỉ/số người trước rồi chọn lại; không tạo thêm đơn. Đã xem ảnh khach-dia-chi-lien-ket.png: tên/mã, địa chỉ giả và SĐT0900000143 hiện đúng trên đơn chưa lưu, không hộp thoại che. Chrome phiên quản trị tiếng Anh, không dùng ảnh này kết luận toàn bộ nhãn tiếng Việt. Core63.508tệp không đổi; dữ liệu giả được khôi phục, gồm Contact/Contact Phone/Dynamic Link.
+- [Cổng3 39534126136](https://github.com/tienduongmarcom/aphvh/actions/runs/39534126136): đã đọc artifact cong-3-bang-chung. Nền đúng production0.16.3/digesta252…, diễn tập bản sao tách biệt/nâng0.16.4/so sổ KHỚP; schema site nâng/site mới1099/1099, lệch0, bỏ qua6/6; rollback1105/1105. Cố ý lỗi kiểm nâng: tự quay về0.16.3, giữ bảo trì, đếm/tổng/chi tiết/phiên bản KHỚP. Sổ CI không thay diễn tập bản sao production thực.
+
+Cục bộ **467ca kh_aph (14skip theo môi trường),108ca lõi đạt**. Giữ bằng chứng: Cổng239532525494/lượt1 mã568ab90 FAIL tải moby/buildkit unauthorized trước chạy app; lượt2 cùng mã đạt, không tuyên bố chữa gốc registry. Các run mã19799c5/568ab90 bị hủy khi bổ sung ca Liên hệ không là PASS của mã cuối.
+
+Bước tiếp: gộp PR giữ lịch sử/đúng tree mã đã kiểm; **chủ dự án tự gắn tagv0.16.4** theo AGENTS, chờ workflow phát hành toàn bộ success và digest. Sau đó SSH đúng erpnext-prod/frontend, vào tmux nang-cap-0164, diễn tập bản sao thực0.16.4 ĐẠT/dấu hợp lệ rồi mới trien_khai_frontend.sh0.16.4 trong bảo trì; không cờ mới/không setup_uat. SSH rớt thì nối lại phiên, không chạy thêm lượt song song. Mốc phien-ban.yaml giữ0.16.3 cho đến log triển khai thực. Quay lui về image0.16.3 với snapshot trước nâng, xử lý giao dịch phát sinh trước restore cũ. Nghiệm thu nhân sự/hàng/tồn/máy in thật vẫn để cuối.
+
 ## 21/10/2026 — ĐANG KIỂM ứng viên0.16.4: nhận diện khách từ địa chỉ/liên hệ nhập riêng
 
 Production vẫn0.16.3/digesta252478b… đã ĐẠT. Lỗi người dùng báo và kiểm chỉ đọc trên Customer/Address: Address đã liên kết Customer nhưng ô tóm tắt primary_address còn trống, đầu đơn0.16.3 đọc ô này nên báo thiếu. Không lưu mã/tên/địa chỉ thật vào ca thử, không sửa dữ liệu production.
