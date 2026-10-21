@@ -1,5 +1,26 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Chốt bổ sung: giảm nợ đơn cũ, trả hỏng một phần bao và hoàn tiền
+
+Chủ dự án xác nhận có giảm giá chất lượng cho khoản nợ đơn trước và trả lẻ hàng hỏng (bao25kg trả5kg để hoàn tiền). Đã bổ sung vào `docs/bo-sung-doi-tra-giam-gia-20261021.md`: chọn khoản/phiếu cũ không cần đơn mới;5kg thực nhận khác cảbao/vỏ thực nhận,20kg khách giữ; quy đổi theo dònggốc, hànghỏng không tự thành tồn bán. Tiền trả/giảm truy giá-thuế/thỏa thuận hợp lệ, tách giảm phải thu với thực hoàn, không dùng cùng giá trị hai lần. Thêm4ca đề xuất, tổng16ca chưa chạy; chưacode/site/mẫu, production0.16.4 giữ nguyên.
+
+
+## 21/10/2026 — Bổ sung phạm vi đổi tại xe, đổi/trả sau giao và giảm giá hàng xấu
+
+Chủ dự án bổ sung ba tình huống vào lần tối ưu này. Đã ghi `docs/bo-sung-doi-tra-giam-gia-20261021.md`: từ phiếu gốc một lốiĐổi/Trả/Giảm giá; phân biệt đã/chưa ghi xuất và giao thực tế; trả ghi kho theo lượng thực nhận, giao thay xuất riêng; giảm giá giữ hàng chỉ tài chính, đề nghị đang thương lượng chưa tự giảm nợ. Truy đúng dòng/đơn vị/giá-quy cách-thuế gốc, không vượt trả lũy kế hoặc giảm trùng, không cấn chéoCompany; tiền thừa cho xử lýhoàn/giữ/phân bổ rõ, không tự coi là cọc. Có12ca đề xuất chưa chạy.
+
+Đã đọc nền sales_adjust/delivery_receivable và bản kýTT91 Điều10 khoản5c.1 về trả/đổi; không coi đã kiểm toàn luồng mới. Đồng thời lưu quyết định ship: luôn inPhiếu xuất, khách cuối không phải ký khi không có yêu cầu/thỏa thuận riêng, nguồn báo nhận và user/time lưu dấu; nhà xe cho chọn/nhập mới ngay (chi tiết bắt buộc là đề xuất). Chỉ tài liệu, chưacode/schema/quyền/mẫu/site; production0.16.4 giữ nguyên.
+
+
+## 21/10/2026 — Rà soát pháp lý bộ chứng từ kho–giao nhận: đề xuất, chưa đổi mẫu
+
+Đã thêm `docs/de-xuat-chung-tu-kho-theo-phap-ly-20261021.md`: phân biệt02-VT, giao nhận hàng hóa tự thiết kế, phiếu thu tiền mặt/bank, đối chiếu nợ và chứng từ lưu thông. Đề xuấtA5 “Phiếu xuất kho kiêm biên bản giao nhận hàng hóa” cho tự lấy, chưa phải tên mẫu bắt buộc/đã được duyệt. Ít user không đồng nghĩa miễn chữ ký/kiêm nhiệm; TT99 Điều10 khoản4 giới hạn kế toán trưởng ký thay quản lý. Không lấy giá bán thay giá trị xuất kho, không thay nội dung liên đã ký.
+
+**Cập nhật căn cứ:** đã kiểm bản kýNĐ254/2026 Điều43: từ01/07/2026 NĐ123/2020,NĐ70/2025 hết hiệu lực; TT91/2026 Điều25 thayTT32/2025, giữ quy định chuyển tiếp. Hồ sơ cũ dẫn các văn bản này là lịch sử, không đủ căn cứ giao dịch mới. NĐ254 Điều9 khoản1,3: hóa đơn theo thời điểm chuyển giao/từng lần giao, không chờ đối chiếu nợ. Tự động hóa hóa đơn một phần có thể phát triển sau nhưng phải kiểm quy trìnhMISA hiện hành đáp ứng nghĩa vụ; chưa kiểmMISA thật/chưa kết luận tuân thủ. Phân loại pháp lý kho vệ tinh/nhân sự trước khi chọnPXK điện tử lưu thông hoặc kiêm nhiệm; không suy giấy tay thay hóa đơn điện tử.
+
+Chỉ tài liệu, chưacode/schema/quyền/cờ/mẫu/site/tag. Production0.16.4 giữ nguyên. Các ca kiểm trong đề xuất chưa chạy; cần chốt mẫu vận dụng/quy chế và dữ kiện đăng ký đơn vị–vệ tinh, luồngMISA/sự cố trước cấu hình cuối. Nghiệm thu thực tế vẫn gom cuối.
+
+
 ## 21/10/2026 — Điều chỉnh thiết kế: giao khi mất mạng, ký phiếu thu và đối soát nợ
 
 Chủ dự án bác bỏ điều kiện phải chờ ERP xác nhận xuất thành công mới cho xe rời. Đã chốt: người phụ trách được giao quyền được lập giấy tay mới và quyết định giao khi mất mạng, kể cả chưa chuẩn bị phiếu trước; ảnh/gốc xử lý sau. Khi thực thu phải lập phiếu thu cho người nộp ký; có tăng hoặc giảm nợ phải in biên bản ký, kể cả cuối lượt về0. Một bản theo khách, chi tiết từng đơn vị, cọc/tiền chưa phân bổ riêng. Lái xe chỉ ký nợ khi khách giao thêm quyền ký nợ riêng. Các quyết định này đã ghi vào quyết định nghiệp vụ, không hỏi lại.

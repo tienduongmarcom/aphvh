@@ -1,5 +1,8 @@
 # Dự thảo quy chế biểu mẫu chứng từ APH–VH
 
+> Bổ sung21/10/2026: xem [đối chiếu pháp lý và bộ chứng từ đề xuất](de-xuat-chung-tu-kho-theo-phap-ly-20261021.md). NĐ254/2026 và TT91/2026 có hiệu lực01/07/2026 đã thay căn cứ hóa đơn cũ; không dùng NĐ123/2020,NĐ70/2025,TT32/2025 như căn cứ hiện hành cho giao dịch mới. Mẫu ghép/nhân sự/luồngMISA cần đối chiếu như tài liệu bổ sung; chưa thay mẫu production hoặc coi quy chế này đã ban hành.
+
+
 > Trạng thái: **dự thảo để doanh nghiệp ban hành**. Tài liệu này là căn cứ quản trị cho các mẫu in trong ERP; không thay thế chứng từ gốc, sổ kế toán hoặc hóa đơn điện tử trên MISA.
 
 ## 1. Phạm vi áp dụng

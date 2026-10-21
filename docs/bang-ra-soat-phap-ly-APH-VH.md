@@ -1,5 +1,8 @@
 # Bảng rà soát: nghiệp vụ – quy định – app xử lý thế nào (cho chị Dung duyệt)
 
+> Bổ sung21/10/2026: xem [đối chiếu pháp lý và bộ chứng từ đề xuất](de-xuat-chung-tu-kho-theo-phap-ly-20261021.md). NĐ254/2026 và TT91/2026 có hiệu lực01/07/2026 đã thay căn cứ hóa đơn cũ; không dùng NĐ123/2020,NĐ70/2025,TT32/2025 như căn cứ hiện hành cho giao dịch mới. Mẫu ghép/nhân sự/luồngMISA cần đối chiếu như tài liệu bổ sung; chưa thay mẫu production hoặc coi quy chế này đã ban hành.
+
+
 ## 18/10/2026 — Đối chiếu bộ mẫu in theo văn bản chính thức
 
 Đã đối chiếu các mẫu phiếu nhập/xuất kho và phiếu thu/chi với phụ lục chứng từ của Thông tư 133/2016/TT-BTC (APH) và Thông tư 99/2025/TT-BTC (VH). Bộ mẫu trong mã đã bổ sung bộ phận, Nợ/Có, yêu cầu–thực nhập/xuất, quyển số, số tiền bằng chữ, số chứng từ kèm theo và chữ ký theo từng chế độ; mẫu đã điều chỉnh được ghi “vận dụng”.

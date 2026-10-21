@@ -1,5 +1,8 @@
 # Bổ sung quy trình kho: mất mạng, phiếu thu và ký đối soát nợ
 
+> Bổ sung21/10/2026: xem [đối chiếu pháp lý và bộ chứng từ đề xuất](de-xuat-chung-tu-kho-theo-phap-ly-20261021.md). NĐ254/2026 và TT91/2026 có hiệu lực01/07/2026 đã thay căn cứ hóa đơn cũ; không dùng NĐ123/2020,NĐ70/2025,TT32/2025 như căn cứ hiện hành cho giao dịch mới. Mẫu ghép/nhân sự/luồngMISA cần đối chiếu như tài liệu bổ sung; chưa thay mẫu production hoặc coi quy chế này đã ban hành.
+
+
 Ngày21/10/2026. **Quyết định nghiệp vụ và thiết kế cập nhật; chưa triển khai mã/schema/site.** Áp dụng ưu tiên so với nội dung cũ xung đột trong `thiet-ke-kho-giao-nhan-tiep-noi-0164.md` và sơ đồ đã trao đổi.
 
 ## 1. Quyết định chủ dự án trực tiếp chốt
