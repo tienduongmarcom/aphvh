@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — ĐANG KIỂM: giới hạn phiếu hoàn theo số dư sau trả hàng
+
+Bổ sung cho phiếu nhận trả tạo bằng đường mới: sau khi hóa đơn giảm đã trừ đúng khoản gốc, chỉ chuẩn bị phiếu chi bằng phần số dư có còn lại, tối đa giá trị lần trả. Chưa thu/còn nợ sau giảm thì không tạo phiếu hoàn nháp. Phiếu hoàn mới tham chiếu khoản gốc bằng phân bổ âm, để native kiểm số dư và tất toán khi thực chi; không tạo hóa đơn giảm lần nữa. Đường trả lịch sử chưa đổi cách chuẩn bị nháp; giao dịch khác VND yêu cầu kế toán đối chiếu tỷ giá riêng. Chưa coi thay đổi này đã PASS native.
+
+Cục bộ483ca kh_aph (14skip) đạt; lõi108ca đã đạt ở mốc trước (không đổi lõi). Thêm2ca HTTP kiểm chưa thu và thu một phần/đủ, dự kiến b014124PASS; cần chạy đúng mã mới. Mãf7f284c đang có UAT39573964111 chạy cho bản sửa A5, chưa gồm giới hạn hoàn này. Cổng2 của f7f284c run39573956188 success. Cổng3 run39571303257 của fc8e721 success; phải đọc artifact và kiểm lại mã cuối, không suy sang thay đổi hoàn chưa chạy. PR38 vẫn draft, chưa tag/phát hành; production0.16.4 giữ nguyên, phần offline/đối soát/gom kho/đổi mã và giảm theo dòng vẫn còn mở.
+
+
 ## 21/10/2026 — ĐANG DỞ PR38: sửa phân trang A5 và lỗi tương thích mẫu cũ
 
 Ứng viên `fc8e721cbeddfe5e1011be1f4dff87c912572ed2`: Cổng2 run39571104062 và Cổng2b run39571323837 success. UAT39571298855 FAIL tại ca in cũ vì mất chú thích “Người thực nhận hàng”; giữ bằng chứng trong artifact candidate-image-evidence/http-b014-evidence.txt, chưa chạy tới ca trả lẻ mới. Đã sửa giữ chú thích cũ cho phiếu thế hệ cũ; không bỏ assertion. Cổng3 run39571303257 đang chạy, chưa kết luận.

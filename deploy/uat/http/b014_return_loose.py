@@ -57,3 +57,48 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     emit("HTTP_014_TRA_LE_5KG", "PASS", {"delivered": 25, "returned": 5, "customer_keeps": 20,
          "physical_bags": 0, "quarantine": True, "draft_no_posting": True, "retry_no_duplicate": True,
          "reserved_limits": True, "credit_once": credit[0]["name"]})
+
+    def receive_return(settlement):
+        args = {**payload, "request_id": uuid.uuid4().hex, "settlement": settlement}
+        return submit(get("Delivery Note", rpc("kh_aph.sales_return.create_draft", args, ktt)["name"], ktt), ktt)
+
+    # Chưa thu tiền: chọn hoàn cũng chỉ giảm khoản nợ đúng lượng, không chuẩn bị chi khống.
+    no_cash_before = counts()["Payment Entry"]
+    unpaid = receive_return("Hoàn tiền")
+    assert not get("Delivery Note", unpaid["name"], ktt).get("kh_aph_chung_tu_xu_ly")
+    assert counts()["Payment Entry"] == no_cash_before
+    original_invoice = get("Sales Invoice", credit[0]["return_against"], ktt)
+    per_return = abs(float(credit[0]["grand_total"]))
+    assert original_invoice["outstanding_amount"] > per_return
+    emit("HTTP_014_TRA_LE_CHUA_THU_KHONG_HOAN", "PASS", {"reduce_debt_only": True, "no_cash_draft": True})
+
+    # Thu một phần còn nợ nửa giá trị5kg. Trả tiếp5kg: chỉ hoàn phần vượt nợ.
+    remaining_debt = per_return / 2
+    payment = rpc("erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry",
+                  {"dt": "Sales Invoice", "dn": original_invoice["name"], "bank_account": f["acc"]["tien"]}, ktt)
+    payment["paid_amount"] = payment["received_amount"] = float(original_invoice["outstanding_amount"]) - remaining_debt
+    payment["references"][0]["allocated_amount"] = payment["paid_amount"]
+    payment["kh_aph_nguoi_giu_tien"] = f["ktbh"]
+    submit(insert(payment, ktt), ktt)
+    assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"] - remaining_debt) < 1
+    partly_paid = receive_return("Hoàn tiền")
+    refund = get("Payment Entry", get("Delivery Note", partly_paid["name"], ktt)["kh_aph_chung_tu_xu_ly"], ktt)
+    assert refund["docstatus"] == 0 and abs(refund["paid_amount"] - (per_return - remaining_debt)) < 1, refund["name"]
+    assert len(refund["references"]) == 1 and refund["references"][0]["reference_name"] == original_invoice["name"]
+    assert refund["references"][0]["allocated_amount"] < 0
+    invoices_before_refund = counts()["Sales Invoice"]
+    refund["kh_aph_nguoi_giao_tien"] = f["ktbh"]
+    refund = submit(refund, ktt)
+    assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
+    assert counts()["Sales Invoice"] == invoices_before_refund, "Chi hoàn sinh thêm hóa đơn giảm"
+    assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
+
+    # Đã thanh toán đủ phần còn giữ:5kg trả lần sau được hoàn đủ giá trị5kg.
+    paid = receive_return("Hoàn tiền")
+    paid_refund = get("Payment Entry", get("Delivery Note", paid["name"], ktt)["kh_aph_chung_tu_xu_ly"], ktt)
+    assert paid_refund["docstatus"] == 0 and abs(paid_refund["paid_amount"] - per_return) < 1
+    paid_refund["kh_aph_nguoi_giao_tien"] = f["ktbh"]
+    submit(paid_refund, ktt)
+    assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
+    emit("HTTP_014_TRA_LE_THU_MOT_PHAN_HOAN_DUNG", "PASS", {"partial_refund": per_return - remaining_debt,
+         "full_refund": per_return, "source_invoice_cleared": True, "no_second_credit_invoice": True})

@@ -133,6 +133,30 @@ def sau_ghi_hoa_don_giam(doc, method=None):
     # Hóa đơn giảm trừ thẳng vào hóa đơn gốc (update_outstanding_for_self = 0) nên tự nó không còn "nợ" để lập phiếu
     # theo hóa đơn: lập phiếu chi trả khách theo đúng số tiền hàng trả, không phân bổ; kế toán chọn quỹ / ngân hàng.
     so_tien = abs(flt(doc.base_rounded_total or doc.base_grand_total))
+    references = []
+    from kh_aph.sales_return import REQUEST
+    modern = (frappe.get_meta("Delivery Note").has_field(REQUEST)
+              and frappe.db.get_value("Delivery Note", dn, REQUEST))
+    if modern:
+        # Phiếu trả mới đã ghi giảm vào đúng hóa đơn gốc. Chỉ phần số dư có
+        # còn lại mới được chuẩn bị chi; hoàn tiền tất toán số dư này một lần.
+        from kh_aph.return_quantity import refund_after_credit
+        if not doc.return_against or cint(doc.get("update_outstanding_for_self")):
+            frappe.throw("Cần đối chiếu hóa đơn giảm với khoản phải thu gốc trước khi chuẩn bị hoàn tiền")
+        frappe.db.sql("SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE", doc.return_against)
+        original = frappe.get_doc("Sales Invoice", doc.return_against, for_update=True)
+        if original.company != doc.company or original.customer != doc.customer or original.docstatus != 1:
+            frappe.throw("Khoản hoàn phải cùng khách và đơn vị với hóa đơn gốc còn hiệu lực")
+        if original.currency != "VND" or original.party_account_currency != "VND":
+            frappe.msgprint("Khoản hoàn khác VND: kế toán đối chiếu tỷ giá và lập phiếu chi riêng.", indicator="orange")
+            return
+        so_tien = float(refund_after_credit(so_tien, original.outstanding_amount))
+        if not so_tien:
+            frappe.msgprint("Giá trị hàng trả đã giảm khoản còn nợ; không phát sinh tiền phải hoàn ở lượt này.", indicator="blue")
+            return
+        references = [{"reference_doctype": "Sales Invoice", "reference_name": original.name,
+                       "total_amount": original.grand_total, "outstanding_amount": original.outstanding_amount,
+                       "allocated_amount": -so_tien}]
     quy = frappe.get_cached_value("Company", doc.company, "default_cash_account")
     try:
         if not quy:
@@ -141,6 +165,7 @@ def sau_ghi_hoa_don_giam(doc, method=None):
             "doctype": "Payment Entry", "payment_type": "Pay", "party_type": "Customer", "party": doc.customer,
             "company": doc.company, "posting_date": doc.posting_date, "paid_from": quy, "paid_to": doc.debit_to,
             "paid_amount": so_tien, "received_amount": so_tien, "source_exchange_rate": 1, "target_exchange_rate": 1,
+            "references": references,
             "remarks": f"Hoàn tiền hàng trả lại theo {dn} / {doc.name} (R025). Kế toán chọn quỹ / ngân hàng rồi ghi sổ."})
         pe.flags.ignore_permissions = True  # người ghi sổ phiếu trả có thể là thủ kho; phiếu NHÁP
         pe.insert()

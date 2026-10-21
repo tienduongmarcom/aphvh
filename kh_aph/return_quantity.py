@@ -15,3 +15,15 @@ def loose_return(qty, bags, weight, original_qty, original_bags):
         raise ValueError("Số bao nhận lại phải nguyên, không âm và không vượt số bao đã giao")
     # Số bao mang dấu như chứng từ trả, nhưng kg không được suy từ số bao/vỏ đã mở.
     return {"qty": qty, "bags": bags, "kg_per_bag": weight}
+
+
+def refund_after_credit(credit, outstanding_after):
+    """Khoản thực hoàn tối đa sau khi hóa đơn giảm đã đối chiếu vào hóa đơn gốc.
+
+    Nợ dương còn phải thu, nợ âm là còn phải trả khách. Không hoàn lại số
+    đã dùng giảm nợ, cũng không lấy số dư có cũ để tăng tiền hoàn lượt này.
+    """
+    credit, outstanding_after = map(number, (credit, outstanding_after))
+    if credit <= 0:
+        raise ValueError("Giá trị hàng trả phải dương")
+    return min(credit, max(number(0), -outstanding_after))
