@@ -1,5 +1,15 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Production0.16.4 đã được người vận hành xác nhận ĐẠT
+
+Anh Tiến gửi log từ `tienduongmarcom@erpnext-prod:~/trien-khai`: image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.4**, digest **sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38**, dòng cuối **=== XONG 0.16.4: ĐẠT ===**. Digest khớp log push và registry đã đối chiếu ở [phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648), nguồn tag **v0.16.4 = 1dffa623dc28d239321b7c9cd249968def402123** (PR #30 đã gộp main).
+
+Trước nâng, người vận hành gửi diễn tập thực **10210410cb2c5d**, dấu `/home/tienduongmarcom/dien-tap-0.16.4.ok`: tổng/đếm/chi tiết KHỚP, DIỄN TẬP0.16.4:ĐẠT. Đây là bằng chứng người vận hành gửi; agent không tự SSH kiểm lại VM. Mốc khach/aph-vh/phien-ban.yaml đã cập nhật0.16.4. Không cờ mới, bộ28cờ theo thủ tục nâng giữ nguyên; không suy thêm kết quả kiểm quyền/nhân sự thật từ log này.
+
+Bản sửa địa chỉ/SĐT đã triển khai. Bước kiểm sau nâng còn mở: tải lại giao diện, chọn khách đã có địa chỉ liên kết và kiểm đầu Đơn bán chung; khách chưa có SĐT vẫn báo thiếu đúng thực tế. Thêm/sửa SĐT trong nghiệp vụ thật rồi tải lại đơn sẽ đọc thông tin hiện tại; không cần nhập lại địa chỉ/khách để chữa lỗi. Chưa có xác nhận của người dùng về kết quả hiển thị trên production; kiểm Chrome dữ liệu giả đã đạt trong hồ sơ dưới. Nghiệm thu toàn bộ với nhân sự/hàng tồn/máy in thật vẫn để cuối theo yêu cầu.
+
+Quay lui có điều kiện về **image0.16.3/digesta252478b…** và snapshot tương ứng ngay trước nâng0.16.4; không restore snapshot cũ sau giao dịch mới khi chưa xử lý phần phát sinh. Mục phát hành đã hoàn tất, không chạy lại chỉ để kiểm. Việc chuẩn bị lần phát triển sau: Cổng3 hiện còn mốc0.16.3 đã kiểm; cần chuyển nền sang0.16.4/digest trên và chạy riêng trước lần phát hành kế tiếp. Chưa thay workflow hoặc coi chuyển mốc đó đã PASS trong PR hồ sơ này.
+
 ## 21/10/2026 — Image0.16.4 đã phát hành, chờ diễn tập và nâng production
 
 Chủ dự án đã push tag **v0.16.4**, kiểm tag đúng **1dffa623dc28d239321b7c9cd249968def402123**. [Phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648) **success**: Cổng2/2b/3/UAT và build/push đều success đúng nguồn tag. Image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.4**, digest **sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38**; đã đối chiếu log pushing manifest/containerimage.digest với registry docker buildx imagetools inspect, khớp. Không ghi đè tag/image.

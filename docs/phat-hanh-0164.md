@@ -1,8 +1,10 @@
 # Phát hành bản sửa địa chỉ và số điện thoại0.16.4
 
-**Mốc21/10/2026:** tag đã push, [phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648) success toàn bộ. Image0.16.4 digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`, log push/registry khớp. Bước1 đã xong, không gắn lại tag. Chưa có bằng chứng nâng production; bước tiếp là diễn tập trong tmux ở mục2.
+**Đã triển khai21/10/2026 theo log người vận hành:** diễn tập10210410cb2c5d so sổ KHỚP, sau đó `=== XONG 0.16.4: ĐẠT ===`, digest khớp image dưới. Các bước phát hành/diễn tập/nâng trong tài liệu đã hoàn tất, giữ làm hồ sơ, không chạy lại chỉ để kiểm. Còn xác nhận hiển thị địa chỉ/SĐT trên production và nghiệm thu nghiệp vụ thực tế cuối kỳ.
 
-Production vẫn0.16.3, digest `sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95`. PR #30 đã gộp **1dffa623dc28d239321b7c9cd249968def402123**, mã app giữ nguyên c9433f3 đã đạt bốn cổng (xem đầu docs/ban-giao.md). Chưa có tag/image0.16.4 khi lập hồ sơ. Không đổi schema, quyền,28cờ, core hoặc logic ghi sổ.
+**Mốc21/10/2026:** tag đã push, [phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648) success toàn bộ. Image0.16.4 digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`, log push/registry khớp. Bước1 đã xong, không gắn lại tag. Tại mốc phát hành này chưa có bằng chứng nâng; xác nhận triển khai ở đầu tài liệu thay trạng thái đó.
+
+Mốc trước nâng là0.16.3, digest `sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95`. PR #30 đã gộp **1dffa623dc28d239321b7c9cd249968def402123**, mã app giữ nguyên c9433f3 đã đạt bốn cổng (xem đầu docs/ban-giao.md). Khi lập hồ sơ ban đầu chưa có tag/image; nay đã phát hành và nâng theo xác nhận ở đầu tài liệu. Không đổi schema, quyền,28cờ, core hoặc logic ghi sổ.
 
 ## 1. Mac: chủ dự án gắn tag
 
