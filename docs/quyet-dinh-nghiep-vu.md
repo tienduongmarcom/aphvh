@@ -21,3 +21,9 @@ Nếu cần đối chiếu từng câu1–202 phải lấy bản quyết định
 ## Bổ sung19/10/2026 — chất lượng hàng nhận nhà máy
 
 Anh Tiến xác nhận khi triển khai đợt3: hàng có vấn đề thường không trả lại mà đàm phán giảm giá; thường vẫn đưa vào dùng ngay, giá điều chỉnh sau. Ghi đủ lượng thực nhận dùng vào kho, tách lượng có vấn đề như phần trong tổng lượng và lưu ghi chú đàm phán; không tự tạo trả hàng/trừ lượng hoặc tự giảm giá. Kế toán mua xử lý giá điều chỉnh theo chứng từ và đối chiếu hiện có. Đây là trường hợp thông thường, không suy mọi chuyến đều cấm trả hàng hoặc không cần kiểm chất lượng.
+
+## Bổ sung21/10/2026 — nhận tại kho và giấy gốc giao nhận
+
+Chủ dự án trực tiếp xác nhận: lái xe do khách chỉ định/xác nhận đến nhận đủ và ký tại kho được tính là khách đã nhận hàng; không mặc nhiên áp cho ship/nhà xe do bên bán bố trí hoặc người chưa được khách xác nhận. Ghi căn cứ chỉ định/người thực nhận, không bắt thêm một lần xác nhận nhận tại nhà khách cho nhánh này.
+
+Giấy gốc có chữ ký được gom và lưu tập trung tại kế toán cửa hàng; kho vệ tinh chuyển giấy về. Ảnh/tệp và giấy gốc là hai mốc khác nhau. Chưa chốt số liên/bố cục mẫu mới hoặc thời hạn chuyển giấy/lưu; không suy quyết định này là duyệt bản nháp3liên. Thiết kế tiếp nối tại `thiet-ke-kho-giao-nhan-tiep-noi-0164.md`, chưa áp schema/quy trình mới vào production.
