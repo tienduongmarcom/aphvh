@@ -34,6 +34,13 @@ class DeliveryInfoRules(unittest.TestCase):
         got = normalize({**old, "carrier": "Xe mới", "carrier_phone": "0901"})
         self.assertEqual(got["carrier"], "Xe mới")
 
+    def test_new_snapshot_rejects_html_before_frappe_can_silently_change_text(self):
+        values = {"delivery_method": "Vận chuyển", "recipient": "Người nhận", "carrier": "Nhà xe A & B", "carrier_phone": "0901"}
+        self.assertEqual(normalize(values)["carrier"], "Nhà xe A & B")
+        for key in ("carrier", "recipient", "authorization"):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                normalize({**values, key: "Tên <UAT>"})
+
     def test_customer_driver_needs_separate_pickup_authorization(self):
         values = {"delivery_method": "Xe khách đến lấy", "recipient": "Lái xe"}
         with self.assertRaises(ValueError): normalize(values)

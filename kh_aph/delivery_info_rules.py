@@ -31,6 +31,11 @@ def normalize(values):
             if not isinstance(value, str) or len(value.strip()) > (60 if key == "carrier_phone" else 140) or any(ord(c) < 32 for c in value):
                 raise ValueError(label + " không hợp lệ")
             result[key] = value.strip()
+        # Frappe lọc HTML khi lưu Data. Chặn trước để không âm thầm đổi tên
+        # hoặc làm nội dung snapshot khác hash gửi lại của cùng một yêu cầu.
+        for key, label in (LABELS | EXTRA_LABELS).items():
+            if '<' in result[key] or '>' in result[key]:
+                raise ValueError(label + " chỉ nhập chữ thông thường; bỏ các dấu ngoặc nhọn")
         if result["customer_signature"] not in ("", "Có", "Không"):
             raise ValueError("Chọn Có hoặc Không cho yêu cầu khách ký giao nhận")
         if result["delivery_method"] == "Vận chuyển" and (not result["carrier"] or not result["carrier_phone"]):

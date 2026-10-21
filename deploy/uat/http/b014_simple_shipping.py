@@ -23,16 +23,18 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     emit("HTTP_014_XE_KHACH_CHI_DINH", "PASS", {"customer_received_at_warehouse": True, "authorization_saved": True})
 
     p = order()
-    carrier = f["p"] + "-Nhà xe mới <UAT>"
+    carrier = f["p"] + "-Nhà xe mới & UAT"
     info = {"delivery_method": "Vận chuyển", "recipient": "Người nhà xe nhận tại kho", "carrier": carrier,
             "carrier_phone": "0901000000", "customer_signature": "Không", "vehicle_no": "29-UAT"}
     denied(lambda: rpc("kh_aph.ban_nhanh.create_and_dispatch", {**p, "delivery": json.dumps({**info, "carrier_phone": ""})}, ktt))
+    denied(lambda: rpc("kh_aph.ban_nhanh.create_and_dispatch", {**p, "delivery": json.dumps({**info, "carrier": "Nhà xe <UAT>"})}, ktt))
     p["delivery"] = json.dumps(info)
     made = rpc("kh_aph.ban_nhanh.create_and_dispatch", p, ktt)
     dn = get("Delivery Note", made["delivery_notes"][0]["name"], ktt)
-    assert dn["kh_aph_delivery_state"] == "Đang giao" and dn["kh_aph_nha_xe_dot"] == carrier
+    assert dn["kh_aph_delivery_state"] == "Đang giao", dn["kh_aph_delivery_state"]
+    assert dn["kh_aph_nha_xe_dot"] == carrier, (dn["kh_aph_nha_xe_dot"], carrier)
     html = rpc("kh_aph.ban_nhanh.print_note", {"delivery_note": dn["name"]}, ktt)["html"]
-    assert "Người nhận vận chuyển" in html and "&lt;UAT&gt;" in html and "Khách nhận tại nơi giao:" not in html
+    assert "Người nhận vận chuyển" in html and "&amp; UAT" in html and "Khách nhận tại nơi giao:" not in html
     options = rpc("kh_aph.delivery_info.recent_carriers", {}, ktt)
     assert {"carrier": carrier, "carrier_phone": "0901000000"} in options
     def counts():

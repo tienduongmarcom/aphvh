@@ -1,5 +1,16 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Trả lẻ, hoàn tiền và đổi mã đã có bằng chứng native; đang sửa tên nhà xe
+
+UAT [39578838909](https://github.com/tienduongmarcom/aphvh/actions/runs/39578838909), đúng mã `320558a42f1a4b8a9dd9297fb440d6a1e7ef04fc`, vẫn FAIL và được giữ nguyên. Đã đọc artifact: các ca trả 5kg/bao vật lý0, chưa thu không hoàn, thu một phần hoàn96.250 và thu đủ hoàn192.500, đối trừ đúng nguồn, đổi mã mới, chặn đơn thay trùng, hủy/lập lại và xe khách chỉ định đều PASS. Đây là dữ liệu giả của CI, không phải nghiệm thu nhân sự/hàng thật.
+
+Lỗi tiếp theo nằm ở tên nhà xe thử chứa `<UAT>`. Đối chiếu đúng nguồn Frappe16.52.0: `_sanitize_content` lọc nội dung giống HTML khi lưu Data, gây khác tên đầu vào và snapshot. Đã chặn dấu ngoặc nhọn trước khi tạo phiếu ở payload thế hệ mới, để không âm thầm đổi tên/hash; giữ hash payload cũ. Ca HTTP mới bắt buộc từ chối tên chứa thẻ, đồng thời kiểm tên hợp lệ chứa `&` được giữ nguyên và escape khi in. Không bỏ kiểm trạng thái hoặc kiểm tên; tách assertion để lần sau thấy giá trị thực nếu lỗi.
+
+Cục bộ500ca kh_aph (14 ca bỏ qua) và108ca lõi đạt. Có thêm4ca ranh giới hoàn tiền: đúng hóa đơn giữ số dư có, thiếu quyền đối trừ không chuẩn bị chi, còn nợ không tạo chi, ngoại tệ không bị hoàn như VND. Cổng2/2b mã320558a đã success; Cổng3 còn đang chạy. Phải chạy lại UAT125ca và các cổng đúng mã sửa tên mới, chưa coi toàn bộ đã đạt.
+
+PR38 vẫn nháp, production0.16.4/28cờ không đổi. Chưa tăng phiên bản, gắn tag hay triển khai. Còn offline, snapshot đối soát/bộ giấy theo lượt, chuẩn bị và gom kho, giảm theo dòng/kiểm trả sau giảm trước, chọn kho nhận trả gọn, bằng chứng khách cuối riêng và lịch sử bản in/bằng chứng đầy đủ. Các phần này chưa được coi là hoàn tất từ những ca PASS ở trên.
+
+
 ## 21/10/2026 — UAT đã chứng minh trả5kg; sửa nhánh hóa đơn giảm giữ số dư riêng
 
 UAT39575256295 đúng771b365 FAIL được giữ nguyên. Artifact chứng minh HTTP_014_TRA_LE_5KG PASS (kho cách ly5kg, sổbao0, nháp không ghi sổ, retry/reserve và giảm một lần), HTTP_014_TRA_LE_CHUA_THU_KHONG_HOAN PASS. Lỗi thật ở thu một phần: ERPNext16.51.1 tự chuyển update_outstanding_for_self=1 khi giá trị trả vượt phần còn nợ, nên giả định mọi hóa đơn giảm trừ thẳng vào gốc là sai. Không bỏ hoặc hạ assertion.
