@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — A5: tăng khoảng ký, tách bản nhận cuối khi khách yêu cầu
+
+QA trực quan phát hiện bản gọn trước có chỗ ký quá ít. Đã giữ chữ chính9pt và tăng khối ký tại kho lên20mm, giảm dòng trùng về kho/lý do; không thu nhỏ toàn bộ phiếu. Ship không yêu cầu ký cuối: hai liên Phiếu xuất kho A5. Chỉ khi chọn cần khách ký tại nơi nhận mới in thêm một Biên bản giao nhận hàng hóa có cột thực nhận trống, ngày/giờ/người nhận, chất lượng/chênh lệch và hai khối ký25mm. Đây là bản xác nhận hàng ở đích, không phải mẫu3liên nháp cũ hay bản đối soát nợ. Không tự điền số thực nhận cuối bằng lượng đã xuất.
+
+Đã tạo/xem PDF dữ liệu giả bằng Chrome: hai dòng tên dài ra2trang A5 ngang khiKhông,3trang khiCó; các trang đều có số phiếu và đơn vị, phần ký đủ khoảng trống, tiêu đề bảng mang số phiếu để truy khi sang trang. Cục bộ495ca(14skip) đạt. Chưa nghiệm thu máy in/nhân sự thật, chưa phát hành. Lượt771b365 UAT39575256295 vừa lỗi bước nghiệp vụ, cần tải log/artifact để xác định nguyên nhân, không suyĐẠT; các thay đổi sau771b365 chưa chạy trong lượt này. PR38 vẫn draft; production0.16.4 giữ nguyên.
+
+
 ## 21/10/2026 — ĐANG DỞ: theo dõi giấy gốc trong Kho vận và Chốt ngày
 
 Thêm lối native Giấy gốc chưa về trong Kho vận, chỉ lọc phiếu thế hệ mới đã ghi sổ, không đánh dấu thiếu hàng loạt lịch sử. Chốt ngày giữ việc thiếu giấy gốc của ngày trước dù ảnh đã đối chiếu; phân biệt thiếu/đã nhận gốc với trạng thái ảnh. Nhận giấy ở API hiện có làm hết việc thiếu gốc, không ghi lại kho/nợ/tiền. Không thêm màn hình, DocType nhiệm vụ hay số dư riêng.
