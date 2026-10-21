@@ -1,5 +1,10 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — ĐANG KIỂM nền Cổng3 từ production0.16.4
+
+PR36 thiết kế đã gộp main e9a2755 sau chủ dự án chốt tiếp tục. Chuẩn bị phát triển luồng kho/ship/đổi trả/giảm nợ cũ và trảhỏng lẻkg; chưa sửa nghiệp vụ/site. Đổi nền Cổng3 sang0.16.4/digest1a8f0063… đúng log production. Chờ run thực trên mã mới, chưa tuyên bốĐẠT hoặc phát hành. Production vẫn0.16.4,28cờ; nghiệm thu thật gom cuối.
+
+
 ## 21/10/2026 — Chốt bổ sung: giảm nợ đơn cũ, trả hỏng một phần bao và hoàn tiền
 
 Chủ dự án xác nhận có giảm giá chất lượng cho khoản nợ đơn trước và trả lẻ hàng hỏng (bao25kg trả5kg để hoàn tiền). Đã bổ sung vào `docs/bo-sung-doi-tra-giam-gia-20261021.md`: chọn khoản/phiếu cũ không cần đơn mới;5kg thực nhận khác cảbao/vỏ thực nhận,20kg khách giữ; quy đổi theo dònggốc, hànghỏng không tự thành tồn bán. Tiền trả/giảm truy giá-thuế/thỏa thuận hợp lệ, tách giảm phải thu với thực hoàn, không dùng cùng giá trị hai lần. Thêm4ca đề xuất, tổng16ca chưa chạy; chưacode/site/mẫu, production0.16.4 giữ nguyên.
