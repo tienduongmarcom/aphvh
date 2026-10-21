@@ -225,8 +225,9 @@ def validate_credit_limit(doc, original_invoice):
         AND a.reference_name=%s ORDER BY j.name, a.idx FOR UPDATE''',
         (original.name, original.company, original.debit_to, original.customer, original.name), as_dict=True)
     reduced = sum(flt(r.credit_in_account_currency) - flt(r.debit_in_account_currency) for r in reductions)
-    if reduced and len(original.items) != 1:
-        frappe.throw('Khoản giảm cũ có nhiều dòng; cần kế toán đối chiếu phân bổ theo dòng và xử lý chứng từ chuẩn trước khi nhận trả')
+    if reduced and (len(original.items) != 1 or len(doc.items) != 1
+                    or abs(abs(flt(doc.items[0].qty)) - abs(flt(original.items[0].qty))) > 0.000001):
+        frappe.throw('Khoản đã giảm cần phân bổ vào đúng dòng và lượng thực trả; kế toán đối chiếu thỏa thuận và xử lý chứng từ chuẩn')
     try:
         credit_budget(original.grand_total, sum(abs(flt(r.grand_total)) for r in returned), reduced, abs(flt(doc.grand_total)))
     except ValueError as exc:

@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Giới hạn xử lý khoản đã giảm và cấu hình kiểm Chốt ngày
+
+Kiểm giá trị trả sau giảm hiện chỉ tự đối chiếu trường hợp trả toàn bộ lượng gốc của khoản một dòng. Trả một phần sau giảm, nhiều dòng hoặc đã có trả từng phần phải dừng để kế toán phân bổ đúng khoản giảm cho lượng thực trả; chưa có metadata/thao tác gọn để tự quyết định phần nào đã được giảm. Không coi giới hạn tổng hóa đơn là đủ chứng minh đúng giá của từng phần hàng. Đã thêm kiểm ranh giới này; cục bộ510ca (14 ca bỏ qua) đạt.
+
+Các ca mới được đặt sau toàn bộ ca cũ để tránh ảnh hưởng chuẩn số liệu cũ. Bảng Chốt ngày hiện phụ thuộc cờ factory_handover; ca giấy gốc bật/tắt bằng helper CI có kiểm site và chạy đúng schema, không bỏ guard của sản phẩm. Phụ thuộc tên cờ này cần lưu ý khi tiếp tục tách Nhà máy; chưa thay mô hình cờ production. Bộ014 vẫn126PASS kỳ vọng. Cần chạy UAT đúng mã tiếp theo; các lượt FAIL trước giữ nguyên, chưa chứng minh Chrome/giấy gốc/ca trả sau giảm đã đạt.
+
+Production0.16.4 giữ nguyên, PR38 vẫn nháp. Bước tiếp đọc log/ảnh lỗi mới và sửa nguyên nhân, giữ đúng bằng chứng theo SHA; không gắn tag hoặc coi toàn phạm vi hoàn tất.
+
+
 ## 21/10/2026 — Đang kiểm chặn giảm trùng và giữ nguồn điều chỉnh
 
 Đã thêm kiểm giá trị trả mới so với khoản gốc trừ các SI giảm và JE giảm chất lượng đã ghi. Giá thuần trả không vượt đúng dòng giao gốc, kể cả một mã có nhiều mức giá. Giữ mã/hash nhận trả bất biến; JE đề nghị giảm giữ khoản gốc qua sửa/amend và kiểm lại số còn nợ lúc xác nhận. Cùng thứ tự khóa quỹ → khoản gốc. Không tự tăng tiền hoàn vì nợ đã giảm do chất lượng. Với khoản đã giảm có nhiều dòng, hiện dừng để kế toán đối chiếu phân bổ; chưa giả đã hỗ trợ giảm/trả theo dòng đầy đủ.

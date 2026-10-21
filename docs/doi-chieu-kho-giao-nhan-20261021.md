@@ -36,7 +36,7 @@
 | Chưa thu tiền | Giảm khoản gốc, không tạo phiếu chi khống | Còn kiểm hồ sơ giảm giá trước đó |
 | Thu một phần/đủ | Native giữ credit riêng khi cần; đối trừ đúng nguồn rồi chuẩn bị hoàn phần dư | Chưa có tổng quan thu/hoàn/chênh lệch trước khi bấm xác nhận trong một cửa sổ |
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
-| Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng dừng để kế toán phân bổ |
+| Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
 | Mất mạng lâu | Quyết định cho người được giao quyền lập giấy tay đã có trong đặc tả | Chưa có sổ số giấy, nhập bù/liên kết duy nhất và trạng thái xử lý lệch hoàn chỉnh |
 | Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, nhận thực lượng và gom vào cùng lượt giao còn thiếu |
 
@@ -84,7 +84,9 @@ API mới kiểm quyền native trên nguồn và Company/Customer/Warehouse li�
 | HTTP_014_NHAN_GIAY_GOC | Chưa tới ở lượt trên | API, danh sách thiếu gốc và Chốt ngày cần bằng chứng native |
 | PDF A5 dữ liệu giả | Đã xem PDF tạo bằng Chrome |2trang khi không cần ký cuối,3trang khi có; chưa kiểm máy in thật |
 
-Cục bộ509ca kh_aph,14 ca bỏ qua;108ca lõi đạt. Đây không phải số ca nghiệm thu nhân sự thật. Bộ014 kỳ vọng126PASS, phải đọc artifact và kiểm đúng SHA; giữ mọi lượt FAIL làm bằng chứng. Các ca chi tiết của toàn phạm vi trong các đặc tả không được tự đổi thành PASS chỉ vì bảng này có một phần đạt.
+Cục bộ510ca kh_aph,14 ca bỏ qua;108ca lõi đạt. Đây không phải số ca nghiệm thu nhân sự thật. Bộ014 kỳ vọng126PASS, phải đọc artifact và kiểm đúng SHA; giữ mọi lượt FAIL làm bằng chứng. Các ca chi tiết của toàn phạm vi trong các đặc tả không được tự đổi thành PASS chỉ vì bảng này có một phần đạt.
+
+Bảng Chốt ngày hiện phụ thuộc cờ `kh_aph_factory_handover`; ca CI giấy gốc bật đúng schema rồi khôi phục cờ. Cần tách phụ thuộc này khi chuẩn hóa cấu hình Nhà máy độc lập.
 
 ## 9. Triển khai và khôi phục
 

@@ -59,3 +59,10 @@ class ReturnIntegrity(unittest.TestCase):
         doc=self.doc();doc['grand_total']=-100
         with self.assertRaises(ValueError):self.api.validate_credit_limit(doc,'SI')
         self.closing.lock_ledger.assert_called_once_with(doc)
+
+    def test_partial_quantity_after_quality_discount_also_requires_explicit_allocation(self):
+        self.f.get_doc=Mock(return_value=Row(name='SI',company='CO',customer='KH',docstatus=1,currency='VND',
+            party_account_currency='VND',debit_to='REC',grand_total=1000,items=[Row(qty=25)]))
+        self.f.db=Row(sql=Mock(side_effect=[[],[],[Row(credit_in_account_currency=100,debit_in_account_currency=0)]]))
+        doc=self.doc();doc['grand_total']=-100
+        with self.assertRaises(ValueError):self.api.validate_credit_limit(doc,'SI')
