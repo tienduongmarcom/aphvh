@@ -28,7 +28,8 @@ def _linked(doctype, customers, fields, preferred):
             ['Dynamic Link', 'link_name', 'in', customers],
             *([[doctype, 'disabled', '=', 0]] if doctype == 'Address' else []),
         ], fields=['name', *fields, '`tabDynamic Link`.link_name as linked_customer'],
-            order_by=f'{preferred} desc, creation asc, name asc', limit_page_length=0)
+            order_by=f'{preferred} desc, creation asc, name asc' +
+                     (', `tabContact Phone`.idx asc' if doctype == 'Contact' else ''), limit_page_length=0)
     except frappe.PermissionError:
         return None
     result = {}
@@ -52,7 +53,8 @@ def details(customers):
     addresses = _linked('Address', names,
         ['address_title', 'address_type', 'address_line1', 'address_line2', 'city', 'county',
          'state', 'pincode', 'country', 'email_id', 'phone', 'fax', 'is_primary_address'], 'is_primary_address')
-    contacts = _linked('Contact', names, ['mobile_no', 'phone', 'is_primary_contact'], 'is_primary_contact')
+    contacts = _linked('Contact', names, ['mobile_no', 'phone', 'is_primary_contact',
+        '`tabContact Phone`.phone as listed_phone'], 'is_primary_contact')
     for c in customers:
         value = result[c.name]
         address = _preferred((addresses or {}).get(c.name, []), c.get('customer_primary_address'))
@@ -66,7 +68,7 @@ def details(customers):
         elif c.get('customer_primary_address'):
             value['primary_address'] = ''
         if contact:
-            value['mobile_no'] = contact.get('mobile_no') or contact.get('phone') or ''
+            value['mobile_no'] = contact.get('mobile_no') or contact.get('phone') or contact.get('listed_phone') or ''
         elif contacts is None or c.get('customer_primary_contact'):
             value['mobile_no'] = ''
         # Giữ SĐT khai trực tiếp trên Customer nếu không có Contact thay thế.

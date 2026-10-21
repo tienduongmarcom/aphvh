@@ -116,3 +116,8 @@ class CustomerIdentity(unittest.TestCase):
                              primary_address='CACHE-CU', mobile_no='CACHE-CU')
         value = self.m.details([self.customer])['KH-test']
         self.assertEqual((value['primary_address'], value['mobile_no']), ('', ''))
+
+    def test_contact_number_without_primary_phone_checkbox_is_visible(self):
+        self.f.get_list.side_effect = [[],
+            [Row(name='LH1', linked_customer='KH-test', listed_phone='CHUA-DANH-DAU')]]
+        self.assertEqual(self.m.details([self.customer])['KH-test']['mobile_no'], 'CHUA-DANH-DAU')

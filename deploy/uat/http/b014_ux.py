@@ -84,7 +84,7 @@ def do_ux3(rpc, get, insert, lst, denied, f, phien, emit):
     contact['phone_nos'] = []
     contact = rpc('frappe.client.save', {'doc': json.dumps(contact)})
     assert not identity()['mobile_no']
-    contact['phone_nos'] = [{'phone': '0900000143', 'is_primary_phone': 1}]
+    contact['phone_nos'] = [{'phone': '0900000143'}]  # số đã thêm nhưng chưa chọn ô SĐT chính
     rpc('frappe.client.save', {'doc': json.dumps(contact)})
     assert identity()['mobile_no'] == '0900000143'
     query = rpc('kh_aph.ux_task.customer_query', {'doctype': 'Customer', 'txt': f['p'] + '-IMPORT-DC',
