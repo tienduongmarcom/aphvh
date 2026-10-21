@@ -370,11 +370,14 @@ def tim_khach(q):
         frappe.throw('Gõ từ 2 đến 60 ký tự')
     like = f'%{q}%'
     found = {}
+    source_by_name = {}
+    from kh_aph.customer_identity import CUSTOMER_FIELDS, details
     def add(rows, reason):
         for r in rows:
+            source_by_name[r.name] = r
             found.setdefault(r.name, {'name': r.name, 'customer_name': r.customer_name, 'tax_id': r.get('tax_id') or '',
                                        'mobile_no': r.get('mobile_no') or '', 'primary_address': r.get('primary_address') or '', 'khop': reason})
-    fields = ['name', 'customer_name', 'tax_id', 'mobile_no', 'primary_address']
+    fields = CUSTOMER_FIELDS + ['tax_id']
     for field, reason in (('name', 'mã'), ('customer_name', 'tên'), ('tax_id', 'MST'), ('mobile_no', 'điện thoại')):
         add(frappe.get_list('Customer', filters={field: ['like', like], 'disabled': 0}, fields=fields, limit_page_length=20), reason)
     digits = ''.join(ch for ch in q if ch.isdigit())
@@ -387,7 +390,12 @@ def tim_khach(q):
             if links:
                 add(frappe.get_list('Customer', filters={'name': ['in', links], 'disabled': 0}, fields=fields,
                                     limit_page_length=20), 'điện thoại liên hệ')
-    return sorted(found.values(), key=lambda r: (r['customer_name'] or '', r['name']))[:30]
+    rows = sorted(found.values(), key=lambda r: (r['customer_name'] or '', r['name']))[:30]
+    # Giữ Link ưu tiên trên các dòng đã được lọc quyền, không đọc Customer lại bằng get_all.
+    if rows:
+        resolved = details([source_by_name[r['name']] for r in rows])
+        rows = [{**r, **resolved[r['name']]} for r in rows if r['name'] in resolved]
+    return rows
 
 
 @frappe.whitelist(methods=['POST'])
@@ -435,25 +443,24 @@ def customer_query(doctype, txt, searchfield, start, page_len, filters=None):
     if doctype != 'Customer':
         frappe.throw('Chỉ tìm khách hàng')
     text = str(txt or '').strip()[:140]
+    from kh_aph.customer_identity import CUSTOMER_FIELDS, details
     rows = frappe.get_list('Customer', filters={'disabled': 0},
         or_filters={f: ['like', '%' + text + '%'] for f in ('name', 'customer_name', 'mobile_no')},
-        fields=['name', 'customer_name', 'mobile_no', 'primary_address'],
+        fields=CUSTOMER_FIELDS,
         order_by='customer_name asc, name asc', start=max(0, cint(start)),
         limit_page_length=min(30, max(1, cint(page_len))))
-    from frappe.utils import strip_html
-    return [[r.name, r.customer_name, r.mobile_no or 'Chưa có số điện thoại',
-             strip_html(r.primary_address or '') or 'Chưa có địa chỉ'] for r in rows]
+    resolved = details(rows)
+    return [[r.name, r.customer_name, resolved[r.name]['mobile_no'] or 'Chưa có số điện thoại',
+             resolved[r.name]['primary_address'] or 'Chưa có địa chỉ'] for r in rows]
 
 
 @frappe.whitelist(methods=['POST'])
 def customer_identity(customer):
     """Danh tính hiện tại của khách, không ghi đè thông tin lịch sử trên đơn."""
     _guard_doc()
-    from frappe.utils import strip_html
+    from kh_aph.customer_identity import CUSTOMER_FIELDS, details
     values = frappe.get_list('Customer', filters={'name': customer},
-        fields=['name', 'customer_name', 'mobile_no', 'primary_address'], limit_page_length=1)
+        fields=CUSTOMER_FIELDS, limit_page_length=1)
     if not values:
         frappe.throw('Không có quyền xem khách hoặc khách không còn tồn tại', frappe.PermissionError)
-    value = values[0]
-    return {'name': value.name, 'customer_name': value.customer_name,
-            'mobile_no': value.mobile_no or '', 'primary_address': strip_html(value.primary_address or '')}
+    return details(values)[values[0].name]

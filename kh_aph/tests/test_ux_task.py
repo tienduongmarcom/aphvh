@@ -2,6 +2,7 @@
 import importlib
 import json
 import pathlib
+import re
 import sys
 import types
 import unittest
@@ -33,6 +34,7 @@ class UX(unittest.TestCase):
         f.new_doc = lambda dt: ws
         f.get_doc = Mock()
         utils = types.ModuleType('frappe.utils'); utils.cint = lambda v: int(v or 0)
+        utils.strip_html = lambda v: re.sub('<[^>]+>', '', v)
         for key in ('flt','add_days','get_first_day','get_last_day','getdate','nowdate','now_datetime'):
             setattr(utils, key, Mock())
         self.patch = patch.dict(sys.modules, {'frappe': f, 'frappe.utils': utils})
@@ -44,6 +46,7 @@ class UX(unittest.TestCase):
     def tearDown(self):
         self.patch.stop()
         sys.modules.pop('kh_aph.ux_task', None)
+        sys.modules.pop('kh_aph.customer_identity', None)
 
     def test_workspace_three_blocks_unique_labels_and_new_name(self):
         name = self.m._workspace('ban_hang')
@@ -207,12 +210,14 @@ class UX(unittest.TestCase):
     def test_customer_identity_and_query_are_scoped_read_only(self):
         utils = sys.modules['frappe.utils']
         utils.strip_html = lambda v: v.replace('<br>', ' ')
-        self.f.get_list = Mock(return_value=[Row(name='KH1', customer_name='Minh Anh', mobile_no='0912', primary_address='A<br>B')])
-        self.assertEqual(self.m.customer_identity('KH1')['primary_address'], 'A B')
-        self.f.get_list.assert_called_with('Customer', filters={'name': 'KH1'}, fields=['name', 'customer_name', 'mobile_no', 'primary_address'], limit_page_length=1)
-        self.assertEqual(self.m.customer_query('Customer', 'Minh', 'name', 0, 100)[0], ['KH1', 'Minh Anh', '0912', 'A B'])
-        self.assertEqual(self.f.get_list.call_args.kwargs['limit_page_length'], 30)
+        self.f.get_list = Mock(side_effect=lambda dt, **kw: [Row(name='KH1', customer_name='Minh Anh', mobile_no='0912', primary_address='A<br>B')] if dt == 'Customer' else [])
+        self.assertEqual(self.m.customer_identity('KH1')['primary_address'], 'A, B')
+        from kh_aph.customer_identity import CUSTOMER_FIELDS
+        self.f.get_list.assert_any_call('Customer', filters={'name': 'KH1'}, fields=CUSTOMER_FIELDS, limit_page_length=1)
+        self.assertEqual(self.m.customer_query('Customer', 'Minh', 'name', 0, 100)[0], ['KH1', 'Minh Anh', '0912', 'A, B'])
+        self.assertEqual([c for c in self.f.get_list.call_args_list if c.args[0] == 'Customer'][-1].kwargs['limit_page_length'], 30)
         with self.assertRaises(ValueError): self.m.customer_query('User', '', 'password', 0, 20)
+        self.f.get_list.side_effect = None
         self.f.get_list.return_value = []
         with self.assertRaises(PermissionError): self.m.customer_identity('KH-KHONG-CO-QUYEN')
         self.f.db.set_value.assert_not_called()
