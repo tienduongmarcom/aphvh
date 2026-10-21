@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — UAT đã chứng minh trả5kg; sửa nhánh hóa đơn giảm giữ số dư riêng
+
+UAT39575256295 đúng771b365 FAIL được giữ nguyên. Artifact chứng minh HTTP_014_TRA_LE_5KG PASS (kho cách ly5kg, sổbao0, nháp không ghi sổ, retry/reserve và giảm một lần), HTTP_014_TRA_LE_CHUA_THU_KHONG_HOAN PASS. Lỗi thật ở thu một phần: ERPNext16.51.1 tự chuyển update_outstanding_for_self=1 khi giá trị trả vượt phần còn nợ, nên giả định mọi hóa đơn giảm trừ thẳng vào gốc là sai. Không bỏ hoặc hạ assertion.
+
+Đã đối chiếu nguồn native theo đúng tag16.51.1 và sửa: với hóa đơn giảm giữ số dư riêng, dùng reconcile_dr_cr_note của ERPNext đối trừ tối đa phần còn nợ của chính hóa đơn gốc, cùng khách/Company/TK VND. Dịch vụ native tạo bút toán hai dòng cùng công nợ, không thêm doanh thu hoặc tiền. Chỉ khi có quyền tạo/xác nhậnJE mới tự đối trừ; thiếu quyền giữ hàng trả/credit đã ghi và báo kế toán đối trừ, không chuẩn bị chi nhầm. Phiếu chi vẫn nháp và chỉ tham chiếu số dư có còn lại đúng hóa đơn sở hữu số dư. Bù trừ/Đổi hàng dùng đối trừ nguồn tương tự, không tự chi. Bổ sung assertion kiểm cả hóa đơn gốc và hóa đơn giảm hết số dư sau chi.
+
+Cục bộ495ca kh_aph (14skip) đạt. Chưa có nativePASS cho sửa này, đổi mã, theo dõi gốc và mẫuA5 cuối. Bước tiếp chạyUAT125ca và các cổng đúng mã mới, đọc bằng chứng không chỉ nhìn xanh. PR38 vẫn draft, chưa tăng version/tag/phát hành; production0.16.4 và28cờ giữ nguyên. Toàn phạm vi còn phần offline, đối soát snapshot/bộ giấy theo lượt, chuẩn bị/gom kho và giảm theo dòng/kiểm trả sau giảm trước đó.
+
+
 ## 21/10/2026 — A5: tăng khoảng ký, tách bản nhận cuối khi khách yêu cầu
 
 QA trực quan phát hiện bản gọn trước có chỗ ký quá ít. Đã giữ chữ chính9pt và tăng khối ký tại kho lên20mm, giảm dòng trùng về kho/lý do; không thu nhỏ toàn bộ phiếu. Ship không yêu cầu ký cuối: hai liên Phiếu xuất kho A5. Chỉ khi chọn cần khách ký tại nơi nhận mới in thêm một Biên bản giao nhận hàng hóa có cột thực nhận trống, ngày/giờ/người nhận, chất lượng/chênh lệch và hai khối ký25mm. Đây là bản xác nhận hàng ở đích, không phải mẫu3liên nháp cũ hay bản đối soát nợ. Không tự điền số thực nhận cuối bằng lượng đã xuất.

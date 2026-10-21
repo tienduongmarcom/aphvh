@@ -84,13 +84,17 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     partly_paid = receive_return("Hoàn tiền")
     refund = get("Payment Entry", get("Delivery Note", partly_paid["name"], ktt)["kh_aph_chung_tu_xu_ly"], ktt)
     assert refund["docstatus"] == 0 and abs(refund["paid_amount"] - (per_return - remaining_debt)) < 1, refund["name"]
-    assert len(refund["references"]) == 1 and refund["references"][0]["reference_name"] == original_invoice["name"]
+    assert len(refund["references"]) == 1
+    refund_source = get("Sales Invoice", refund["references"][0]["reference_name"], ktt)
+    assert refund_source["is_return"] == 1 and refund_source["return_against"] == original_invoice["name"]
+    assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
     assert refund["references"][0]["allocated_amount"] < 0
     invoices_before_refund = counts()["Sales Invoice"]
     refund["kh_aph_nguoi_giao_tien"] = f["ktbh"]
     refund = submit(refund, ktt)
     assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
     assert counts()["Sales Invoice"] == invoices_before_refund, "Chi hoàn sinh thêm hóa đơn giảm"
+    assert abs(get("Sales Invoice", refund_source["name"], ktt)["outstanding_amount"]) < 1
     assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
 
     # Đã thanh toán đủ phần còn giữ:5kg trả lần sau được hoàn đủ giá trị5kg.
@@ -99,6 +103,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert paid_refund["docstatus"] == 0 and abs(paid_refund["paid_amount"] - per_return) < 1
     paid_refund["kh_aph_nguoi_giao_tien"] = f["ktbh"]
     submit(paid_refund, ktt)
+    assert abs(get("Sales Invoice", paid_refund["references"][0]["reference_name"], ktt)["outstanding_amount"]) < 1
     assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
     emit("HTTP_014_TRA_LE_THU_MOT_PHAN_HOAN_DUNG", "PASS", {"partial_refund": per_return - remaining_debt,
          "full_refund": per_return, "source_invoice_cleared": True, "no_second_credit_invoice": True})

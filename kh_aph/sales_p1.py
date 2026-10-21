@@ -6,7 +6,7 @@
 - Q166–Q168, R044–R045: hạn thanh toán chung của đơn, gia hạn có lịch sử. Q178/Q180: đổi địa chỉ khi đang giao. Q189/Q190:
   báo cáo đơn quá hạn giao.
 - R093–R098, Q148: hồ sơ hóa đơn MISA (APH Hoa don ngoai) với hàng đợi và khóa người xử lý chống trùng.
-App không tự ghi sổ chứng từ tiền nào (bút toán, phiếu chi đều NHÁP).
+Phiếu thu/chi được chuẩn bị NHÁP. Phiếu trả mới có thể đối trừ hóa đơn giảm với khoản gốc bằng dịch vụ native; không ghi thu/chi thêm.
 """
 import json
 
@@ -132,21 +132,24 @@ def sau_ghi_hoa_don_giam(doc, method=None):
     if not enabled() or not cint(doc.is_return):
         return
     dn = next((d.delivery_note for d in doc.items if d.get("delivery_note")), None)
-    if not dn or not frappe.db.get_value("Delivery Note", dn, F_TIEN) == B.TIEN_HOAN:
+    if not dn:
         return
-    # Hóa đơn giảm trừ thẳng vào hóa đơn gốc (update_outstanding_for_self = 0) nên tự nó không còn "nợ" để lập phiếu
-    # theo hóa đơn: lập phiếu chi trả khách theo đúng số tiền hàng trả, không phân bổ; kế toán chọn quỹ / ngân hàng.
-    so_tien = abs(flt(doc.base_rounded_total or doc.base_grand_total))
-    references = []
+    settlement = frappe.db.get_value("Delivery Note", dn, F_TIEN)
     from kh_aph.sales_return import REQUEST
     modern = (frappe.get_meta("Delivery Note").has_field(REQUEST)
               and frappe.db.get_value("Delivery Note", dn, REQUEST))
+    if not modern and settlement != B.TIEN_HOAN:
+        return
+    # Giữ chuẩn bị nháp của phiếu lịch sử. Phiếu mới phải đối chiếu số dư
+    # native thực tế: ERPNext có thể giữ hóa đơn giảm riêng khi giá trị trả vượt khoản còn nợ.
+    so_tien = abs(flt(doc.base_rounded_total or doc.base_grand_total))
+    references = []
     if modern:
         # Phiếu trả mới đã ghi giảm vào đúng hóa đơn gốc. Chỉ phần số dư có
         # còn lại mới được chuẩn bị chi; hoàn tiền tất toán số dư này một lần.
         from kh_aph.return_quantity import refund_after_credit
-        if not doc.return_against or cint(doc.get("update_outstanding_for_self")):
-            frappe.throw("Cần đối chiếu hóa đơn giảm với khoản phải thu gốc trước khi chuẩn bị hoàn tiền")
+        if not doc.return_against:
+            frappe.throw("Cần xác định khoản phải thu gốc trước khi chuẩn bị hoàn tiền")
         frappe.db.sql("SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE", doc.return_against)
         original = frappe.get_doc("Sales Invoice", doc.return_against, for_update=True)
         if original.company != doc.company or original.customer != doc.customer or original.docstatus != 1:
@@ -154,12 +157,38 @@ def sau_ghi_hoa_don_giam(doc, method=None):
         if original.currency != "VND" or original.party_account_currency != "VND":
             frappe.msgprint("Khoản hoàn khác VND: kế toán đối chiếu tỷ giá và lập phiếu chi riêng.", indicator="orange")
             return
-        so_tien = float(refund_after_credit(so_tien, original.outstanding_amount))
+        reference = original
+        if cint(doc.get("update_outstanding_for_self")):
+            credit = frappe.get_doc("Sales Invoice", doc.name, for_update=True)
+            offset = min(max(0, flt(original.outstanding_amount)), max(0, -flt(credit.outstanding_amount)))
+            if offset:
+                if not (frappe.has_permission("Journal Entry", "create") and frappe.has_permission("Journal Entry", "submit")):
+                    frappe.msgprint("Đã nhận trả; khoản giảm chờ kế toán đối trừ với khoản gốc trước khi chuẩn bị hoàn tiền.", indicator="orange")
+                    return
+                from erpnext.accounts.doctype.payment_reconciliation.payment_reconciliation import reconcile_dr_cr_note
+                from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import get_dimensions
+                dimensions = get_dimensions(with_cost_center_and_project=True)[0]
+                allocation = frappe._dict(voucher_type="Sales Invoice", voucher_no=credit.name,
+                    against_voucher_type="Sales Invoice", against_voucher=original.name,
+                    account=original.debit_to, currency=original.party_account_currency, party_type="Customer", party=original.customer,
+                    dr_or_cr="credit_in_account_currency", unadjusted_amount=abs(flt(credit.outstanding_amount)),
+                    allocated_amount=offset, difference_amount=0, exchange_rate=1,
+                    cost_center=credit.cost_center or original.cost_center,
+                    debit_or_credit_note_posting_date=doc.posting_date)
+                for dimension in dimensions:
+                    allocation[dimension.fieldname] = credit.get(dimension.fieldname)
+                # Hai dòng cùng TK/khách/Company đối trừ hai hóa đơn. Không tăng doanh thu hoặc ghi tiền.
+                reconcile_dr_cr_note([allocation], doc.company, dimensions)
+                credit = frappe.get_doc("Sales Invoice", doc.name, for_update=True)
+            reference = credit
+        if settlement != B.TIEN_HOAN:
+            return
+        so_tien = float(refund_after_credit(so_tien, reference.outstanding_amount))
         if not so_tien:
             frappe.msgprint("Giá trị hàng trả đã giảm khoản còn nợ; không phát sinh tiền phải hoàn ở lượt này.", indicator="blue")
             return
-        references = [{"reference_doctype": "Sales Invoice", "reference_name": original.name,
-                       "total_amount": original.grand_total, "outstanding_amount": original.outstanding_amount,
+        references = [{"reference_doctype": "Sales Invoice", "reference_name": reference.name,
+                       "total_amount": reference.grand_total, "outstanding_amount": reference.outstanding_amount,
                        "allocated_amount": -so_tien}]
     quy = frappe.get_cached_value("Company", doc.company, "default_cash_account")
     try:
