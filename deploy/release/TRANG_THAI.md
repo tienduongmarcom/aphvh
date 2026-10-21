@@ -1,5 +1,17 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Tiếp nối kho–giao nhận: đã đối chiếu và lập thiết kế, chưa code
+
+Chủ dự án xác nhận mục kiểm sau nâng0.16.4 về địa chỉ đầu đơn đã xong. Chưa suy thành đã kiểm thêm/sửa SĐT thật hoặc nghiệm thu tất cả nghiệp vụ. Production vẫn0.16.4/digest1a8f0063… như mốc dưới.
+
+Đã đọc nguồn và lập `docs/thiet-ke-kho-giao-nhan-tiep-noi-0164.md`:9nhóm,5sơ đồ,4luồng chính và37ca UAT đề xuất. **Hai quyết định mới được người dùng trực tiếp chốt:** lái xe do khách chỉ định/xác nhận ký nhận tại kho tính là khách đã nhận; giấy gốc lưu tập trung kế toán cửa hàng, vệ tinh chuyển về. Ghi thêm vào quyết định nghiệp vụ, không hỏi lại.
+
+Điểm đã xác minh từ code: DN chờ xuất đã in được; A5 hai liên có cột thực xuất trống khi nháp, nhiều lối in khác mục đích; bảng tổng hợp chỉ nhận DN đã submit; đối chiếu bản ký hiện chỉ khi Khách đã nhận. Chuyển nội bộ send hiện tạo+xác nhận rồi mới mở SE, cần nhánh chuẩn bị/in trước xe đi. validate_kho_ban xét KHONG_BAN nhưng danh sách chưa có Vận chuyển; receive chuyến đối chiếu quy cách Item hiện tại cần kiểm snapshot khi quy cách đổi. Hai điểm sau là rủi ro đọc nguồn, không tuyên bố đã tái hiện/sửa trên production.
+
+Thiết kế: ưu tiên90% tự lấy bằng Chuẩn bị & In → ký thực tế → Xác nhận thực giao, không thêm duyệt thường; pickup xe khách có chỉ định không phải chờ receive lần nữa. Gửi ship tách ký nhận chở/khách nhận cuối; gom cùng Company giữ nguồn–Transit–đích rồi xuất bán tại kho thực giao, khác Company chưa tự làm. Tái dùng DN/SE/service đã kiểm, giữ Nhà máy riêng. Bản in dự kiến/phiên bản/thực giao và nhận giấy gốc là hồ sơ, không sổ kho/nợ mới. Không nhập lại khách/địa chỉ đã có.
+
+**Chưa triển khai:** chưa sửa app/schema/quyền/cờ/mẫu in/site. Số liên/bố cục mẫu vận hành, thời hạn chuyển giấy và danh sách nhân sự thật vẫn là đề xuất chưa chốt; giữ mẫu A5 đã duyệt, mẫu3liên vẫn nháp. Có thể làm phần độc lập đã rõ, không phải đợi đủ hàng tồn thật. Trước code/phát hành kế tiếp cập nhật và kiểm mốc Cổng3 sang production0.16.4 theo hồ sơ. Nghiệm thu thực tế toàn bộ vẫn gom cuối. Bước tiếp: chốt các lựa chọn mẫu còn lại, triển khai lát A tự lấy/in trước giao theo hợp đồng và ca kiểm đã ghi; không tự tạo tag/đánh số bản mới từ hồ sơ thiết kế.
+
 ## 21/10/2026 — Production0.16.4 đã được người vận hành xác nhận ĐẠT
 
 Anh Tiến gửi log từ `tienduongmarcom@erpnext-prod:~/trien-khai`: image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.4**, digest **sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38**, dòng cuối **=== XONG 0.16.4: ĐẠT ===**. Digest khớp log push và registry đã đối chiếu ở [phát hành39539645648](https://github.com/tienduongmarcom/aphvh/actions/runs/39539645648), nguồn tag **v0.16.4 = 1dffa623dc28d239321b7c9cd249968def402123** (PR #30 đã gộp main).
