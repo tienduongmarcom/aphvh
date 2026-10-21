@@ -1,11 +1,12 @@
 # Phiên bản đã triển khai theo log người vận hành xác nhận.
 khach: aph-vh
-image_tag: "0.16.2"
-image_id: "sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917"
-nguon_sha: "95a8b1e63358b190faccfa300010445ee799cac9"
+image_tag: "0.16.3"
+image_id: "sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95"
+nguon_sha: "a1f95b062f2ff7334ed36c176dfb742bf828974a"
 nen: "frappe/erpnext@sha256:a856e7f65c7bfc9cfa2e74f95b62e11d37190c380d958cbf3bea5d05e2ec9268 (ERPNext 16.51.1 + Frappe 16.52.0)"
 moi_truong: production
-# Người vận hành xác nhận trên erpnext-prod/frontend ngày 20/10/2026 ~21:35: log báo === XONG 0.16.2: ĐẠT ===,
-# workflow phát hành 39432250494. 28 cờ bật, không cờ mới.
-# 0.16.1 (cfdd5af): lần 1 quay lui oan do lỗi SIGPIPE ở nang-cap.sh (sửa PR #22); lần 2 (script 62668ab) ĐẠT, so sổ KHỚP.
-# Trước: 0.16.0 sha256:ce8db011338a7f6f521107999ee515a94366deeb7c96a50b2570376b903ccbf3 (mốc quay lui có điều kiện).
+# Người vận hành xác nhận trên erpnext-prod/frontend ngày 21/10/2026: === XONG 0.16.3: ĐẠT ===,
+# digest hiển thị khớp log phát hành39518896902 và registry. Nguồn tag v0.16.3 = a1f95b0 (PR #26 đã gộp main).
+# Diễn tập thực trước nâng: lượt10210126238079, dấu /home/tienduongmarcom/dien-tap-0.16.3.ok,
+# tổng/đếm/chi tiết KHỚP. 28 cờ giữ nguyên, không cờ mới; nghiệm thu nhân sự/dữ liệu thật chưa hoàn tất.
+# Trước: 0.16.2 sha256:34a32f71f10f20421405c0bd1155abb0570b1d48b564f1df6b8e25d6aa146917.
