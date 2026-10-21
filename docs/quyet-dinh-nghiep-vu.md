@@ -27,3 +27,9 @@ Anh Tiến xác nhận khi triển khai đợt3: hàng có vấn đề thường
 Chủ dự án trực tiếp xác nhận: lái xe do khách chỉ định/xác nhận đến nhận đủ và ký tại kho được tính là khách đã nhận hàng; không mặc nhiên áp cho ship/nhà xe do bên bán bố trí hoặc người chưa được khách xác nhận. Ghi căn cứ chỉ định/người thực nhận, không bắt thêm một lần xác nhận nhận tại nhà khách cho nhánh này.
 
 Giấy gốc có chữ ký được gom và lưu tập trung tại kế toán cửa hàng; kho vệ tinh chuyển giấy về. Ảnh/tệp và giấy gốc là hai mốc khác nhau. Chưa chốt số liên/bố cục mẫu mới hoặc thời hạn chuyển giấy/lưu; không suy quyết định này là duyệt bản nháp3liên. Thiết kế tiếp nối tại `thiet-ke-kho-giao-nhan-tiep-noi-0164.md`, chưa áp schema/quy trình mới vào production.
+
+## Bổ sung21/10/2026 — giấy dự phòng, phiếu thu và ký đối soát nợ
+
+Không bắt khách/xe chờ phần mềm xác nhận xuất thành công khi mất mạng. Cho phép lập giấy tay mới do người phụ trách được giao quyền quyết định, kể cả lượt chưa chuẩn bị/kiểm ERP; ghi nhận hệ thống và đối chiếu sau có mạng, giữ đúng thực giao/thu và giấy gốc. Không suy mọi nhân viên được tự duyệt hoặc được bỏ kiểm sổ khi nhập bù.
+
+Khi thực thu tiền phải lập phiếu thu cho người nộp/khách ký. Khi có tăng hoặc giảm công nợ phải có biên bản đối soát ký và lưu, kể cả phát sinh tăng/giảm bù nhau, dư cuối0. Một bản theo khách trình bày riêng từng đơn vị, cọc và tiền chưa phân bổ; không tự cấn chéo. Lái xe có quyền nhận hàng chỉ ký công nợ khi khách giao thêm quyền ký nợ riêng. Ảnh và giấy gốc tiếp tục xử lý sau, kế toán cửa hàng lưu tập trung. Thiết kế cập nhật tại `bo-sung-kho-mat-mang-thu-tien-doi-soat-20261021.md`, chưa triển khai vào ERP.

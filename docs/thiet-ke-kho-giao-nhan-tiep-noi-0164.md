@@ -1,5 +1,7 @@
 # Kho–giao nhận: quy trình ít bước trên nền0.16.4
 
+**Cập nhật sau phản hồi chủ dự án21/10/2026:** đọc ưu tiên `bo-sung-kho-mat-mang-thu-tien-doi-soat-20261021.md`. Cho phép người phụ trách được giao quyền lập giấy tay mới và giao khi mất mạng, không giữ khách chờ ERP; bắt buộc phiếu thu khi thực thu và biên bản ký khi tăng/giảm nợ. Một bản nợ chi tiết từng đơn vị/cọc/tiền chưa phân bổ; lái xe chỉ ký nợ khi có quyền riêng. Các sơ đồ dưới là khung ban đầu, phải bổ sung nhánh giấy dự phòng và bộ giấy theo tài liệu cập nhật, không dùng để bắt xe chờ xác nhận online.
+
 Ngày21/10/2026. **Thiết kế và đối chiếu nguồn; chưa triển khai thay đổi này vào ERPNext.** Production0.16.4 đã ĐẠT theo log người vận hành; người dùng xác nhận địa chỉ đầu đơn đã hiển thị đúng. Chưa suy xác nhận đó thành đã thử thêm/sửa SĐT thật hoặc nghiệm thu toàn bộ kho.
 
 ## 1. Mục tiêu, phạm vi và quyết định đã chốt
@@ -13,7 +15,7 @@ Ngày21/10/2026. **Thiết kế và đối chiếu nguồn; chưa triển khai t
 
 Đề xuất thao tác bình thường: **Chuẩn bị giao & In → người giao/nhận kiểm và ký → Xác nhận thực giao**. Hai thao tác phần mềm có ý nghĩa nghiệp vụ, không thêm lượt duyệt cho mọi phiếu. Đối chiếu ảnh và gom giấy là việc sau giao, không bắt khách đứng chờ. Có thể một người dùng ERP thực hiện cả chuẩn bị và xác nhận nếu đã được cấp đủ quyền phù hợp và kiểm thực tế; không tự cấp/gộp quyền trong bản thiết kế này.
 
-Phạm vi đầu: giao trực tiếp cửa hàng/vệ tinh, gom cùng đơn vị về cửa hàng, nhiều điểm giao/từng phần, gửi ship; bản in trước giao và bằng chứng/gốc. Ngoài phạm vi: đổi chủ hàng giữa các Company, giữ tồn vật lý ngay khi in, QR/offline tự đồng bộ, hóa đơn MISA một phần, lệnh/mẻ sản xuất, đổi mẫu pháp định hoặc tự quyết thời hạn lưu theo luật. Các việc này không được lồng vào để làm gọn nút.
+Phạm vi đầu: giao trực tiếp cửa hàng/vệ tinh, gom cùng đơn vị về cửa hàng, nhiều điểm giao/từng phần, gửi ship; bản in trước giao và bằng chứng/gốc. Ngoài phạm vi: đổi chủ hàng giữa các Company, giữ tồn vật lý ngay khi in, QR/offline tự đồng bộ, hóa đơn MISA một phần, lệnh/mẻ sản xuất, đổi mẫu pháp định hoặc tự quyết thời hạn lưu theo luật. Các việc này không được lồng vào để làm gọn nút. Riêng giấy dự phòng và nhập bù khi mất mạng đã được mở rộng theo phản hồi sau, xem tài liệu bổ sung; không đồng nghĩa duyệt QR/SPA/offline tự đồng bộ.
 
 ## 2. Hiện trạng đã kiểm từ code0.16.4
 
@@ -72,7 +74,7 @@ flowchart TD
 
 Không chuyển tồn giả qua cửa hàng nếu khách lấy trực tiếp ở vệ tinh. Một đầu mối ERP + người thực giao ở vệ tinh + người nhận (thường3 người); người kho không cần tài khoản. Đầu mối xác nhận dựa trên thông tin thực giao có người báo/thời điểm; không tự động xác nhận từ việc gửi PDF hoặc nhận ảnh.
 
-Không bắt có ảnh ngay mới ghi xuất vì quy tắc hiện hành không bắt attachment để giao. Chưa có ảnh thì đưa việc thiếu bản ký vào hàng chờ; chưa liên hệ xác minh được thực giao thì chưa xác nhận. Chưa có mạng/máy in: chuyển giấy đã đánh số từ cửa hàng trước lượt giao; không tự phát giấy trắng/phiếu offline không truy được nguồn. Phương án offline hoàn toàn cần thiết kế riêng.
+Không bắt có ảnh ngay mới ghi xuất vì quy tắc hiện hành không bắt attachment để giao. Chưa có ảnh thì đưa việc thiếu bản ký vào hàng chờ; chưa liên hệ xác minh được thực giao thì chưa ghi nhận đã xác minh trên ERP. Khi mất mạng có thể dùng giấy dự phòng có số, kể cả lượt mới theo quyết định của người được giao quyền; đầu mối ghi ERP sau, không bắt kho giữ khách chờ. Đã bổ sung nhánh giấy tay mới do người phụ trách được giao quyền quyết định tại tài liệu cập nhật; không bắt khách chờ ERP khi mất mạng.
 
 ### 3.3 Gom kho vệ tinh về cửa hàng, rồi khách lấy/gửi ship
 
@@ -127,7 +129,7 @@ Người tham gia: người dùng ERP (một hoặc hai theo phân quyền), ng�
 | Mã hàng/kho/chủ hàng sai | Không sửa tay trên giấy để hợp thức hóa. Dừng giao, đổi nguồn phần chưa giao đúng luồng, cấp lại giấy; vượt quyền chuyển người có quyền xử lý |
 | Khách đổi người/lái xe trước xuất | Khách xác nhận người thay, cập nhật có quyền, vô hiệu giấy cũ; không tự coi trùng tên là cùng người. Lưu căn cứ liên hệ trong hồ sơ |
 | Đã xuất muốn đổi địa chỉ/người nhận | Dùng endpoint điều chỉnh có lý do/lịch sử hiện có; không save/import đè. Không áp thông tin master mới lên chứng từ cũ |
-| Không đến lấy, hủy lượt khi còn nháp | Hủy/bỏ nháp theo quy tắc native và trả lượng còn được lập; đánh dấu giấy cũ không còn hiệu lực; không tạo xuất/thu để rồi hoàn |
+| Chưa thực giao, không đến lấy và hủy lượt còn nháp | Hủy/bỏ nháp theo quy tắc native và trả lượng còn được lập; đánh dấu giấy cũ không còn hiệu lực; không tạo xuất/thu để rồi hoàn |
 | Hủy sau xuất/thu | Kiểm native liên kết, quyền và chứng từ tài chính. Đã có thu/cọc phải xử lý độc lập theo luồng tiền; không xóa DN hoặc restore DB để hủy một giao dịch |
 | Gửi ship thất bại, hàng quay lại | Nhập lại chỉ khi hàng thực về kho, dùng DN trả native đúng nguồn (có thể kho khác cùng Company theo luồng đang có); liên kết xử lý nợ đúng chứng từ, không nhập tồn giả lúc chỉ mới báo sẽ quay về |
 | Mất/thiếu trên đường | Không mặc nhiên tạo phiếu trả. Ghi ngoại lệ có người phụ trách; dùng kiểm kê/hao hụt/giảm nợ theo chứng từ thích hợp và thẩm quyền đã chốt |
