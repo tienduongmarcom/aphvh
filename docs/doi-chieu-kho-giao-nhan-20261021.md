@@ -84,7 +84,7 @@ API mới kiểm quyền native trên nguồn và Company/Customer/Warehouse li�
 | HTTP_014_NHAN_GIAY_GOC | Chưa tới ở lượt trên | API, danh sách thiếu gốc và Chốt ngày cần bằng chứng native |
 | PDF A5 dữ liệu giả | Đã xem PDF tạo bằng Chrome |2trang khi không cần ký cuối,3trang khi có; chưa kiểm máy in thật |
 
-Cục bộ510ca kh_aph,14 ca bỏ qua;108ca lõi đạt. Đây không phải số ca nghiệm thu nhân sự thật. Bộ014 kỳ vọng126PASS, phải đọc artifact và kiểm đúng SHA; giữ mọi lượt FAIL làm bằng chứng. Các ca chi tiết của toàn phạm vi trong các đặc tả không được tự đổi thành PASS chỉ vì bảng này có một phần đạt.
+Cục bộ516ca kh_aph,14 ca bỏ qua;108ca lõi đạt. Đây không phải số ca nghiệm thu nhân sự thật. Bộ014 kỳ vọng127PASS, phải đọc artifact và kiểm đúng SHA; giữ mọi lượt FAIL làm bằng chứng. Các ca chi tiết của toàn phạm vi trong các đặc tả không được tự đổi thành PASS chỉ vì bảng này có một phần đạt.
 
 Bảng Chốt ngày hiện phụ thuộc cờ `kh_aph_factory_handover`; ca CI giấy gốc bật đúng schema rồi khôi phục cờ. Cần tách phụ thuộc này khi chuẩn hóa cấu hình Nhà máy độc lập.
 

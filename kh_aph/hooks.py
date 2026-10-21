@@ -536,3 +536,6 @@ doc_events.setdefault("Journal Entry", {}).setdefault("before_submit", []).appen
 
 for _event in ("validate", "before_cancel", "before_update_after_submit"):
     doc_events.setdefault("Journal Entry", {}).setdefault(_event, []).append("kh_aph.sales_p1.protect_quality_source")
+
+# Frappe16.52 tìm biến thể báo cáo khi mở Query Report; hồ sơ ẩn vốn chỉ nhận [].
+override_whitelisted_methods["frappe.desk.reportview.get_list"] = "kh_aph.report_discovery.get_list"

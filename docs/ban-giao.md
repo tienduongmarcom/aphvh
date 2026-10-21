@@ -1,5 +1,14 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — Sửa yêu cầu phụ của báo cáo số lượng cho hồ sơ ẩn vốn
+
+UAT39625443467 đúng0cfbcdb FAIL trong ca Chrome nhận hàng nhà máy cũ, trước khi chạy các ca mới ở cuối. Đã đọc log đầy đủ: Query Report của Frappe16.52 tự gọi reportview.get_list với Report/reference_report=Ton kho so luong, report_type=Custom Report để tìm biến thể. Chính sách ẩn vốn chặn yêu cầu này và bật Message che thao tác. Không coi là ca mới đạt hoặc bỏ kiểm Chrome.
+
+Đã thêm facade rất hẹp: chỉ đúng yêu cầu tìm biến thể của báo cáo số lượng với hai trường name/report_name, ba bộ lọc xác định, sắp xếp và limit0 mới nhận danh sách rỗng. Không đọc DB/Report/query, không mở quyền báo cáo giá vốn hoặc xuất dữ liệu. before_request chỉ bỏ chặn cho đúng đường API này; yêu cầu khác/fieldquery/wildcard/or_filters/ignore_permissions vẫn bị chặn. Danh sách phiếu nhà máy vốn được phép và người không bị hạn chế vẫn gọi native, giữ quyền if_owner và phạm vi chuẩn.
+
+Đã đọc nguồn query_report.js/db.js/handler.py đúng16.52.0. Cục bộ516ca (14 ca bỏ qua) đạt, gồm6ca ranh giới mới. Bổ sung ca HTTP kiểm rỗng/không đọcSQL/không mở báo cáo vốn và giữ danh sách phiếu được phép; bộ014 kỳ vọng127PASS. Cần chạy native đúng mã mới, chưa tuyên bố khắc phục hoàn toàn ca trình duyệt. Không nâng production hoặc đổi phiên bản; PR38 vẫn nháp.
+
+
 ## 21/10/2026 — Giới hạn xử lý khoản đã giảm và cấu hình kiểm Chốt ngày
 
 Kiểm giá trị trả sau giảm hiện chỉ tự đối chiếu trường hợp trả toàn bộ lượng gốc của khoản một dòng. Trả một phần sau giảm, nhiều dòng hoặc đã có trả từng phần phải dừng để kế toán phân bổ đúng khoản giảm cho lượng thực trả; chưa có metadata/thao tác gọn để tự quyết định phần nào đã được giảm. Không coi giới hạn tổng hóa đơn là đủ chứng minh đúng giá của từng phần hàng. Đã thêm kiểm ranh giới này; cục bộ510ca (14 ca bỏ qua) đạt.

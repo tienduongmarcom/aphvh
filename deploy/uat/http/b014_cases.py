@@ -55,6 +55,9 @@ def chay(admin, phien, f, emit, factory_feature):
     def near(a, b, tol=1.0):
         assert abs(float(a or 0) - float(b or 0)) <= tol, (a, b)
 
+    from b014_report_discovery import chay as discovery_cases
+    discovery_cases(rpc, denied, dung, ktt, emit)
+
     # 1. Tài khoản ngân hàng theo khach.json: dưới nhóm 112, đúng loại tiền, thẻ Bank Account; chạy lại không trùng.
     nh1, nh2 = f["nh"]
     assert len(nh1["tao_tai_khoan"]) == 3 and len(nh1["tao_the"]) == 3, nh1
