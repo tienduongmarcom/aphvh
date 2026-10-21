@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Điều chỉnh thiết kế: giao khi mất mạng, ký phiếu thu và đối soát nợ
+
+Chủ dự án bác bỏ điều kiện phải chờ ERP xác nhận xuất thành công mới cho xe rời. Đã chốt: người phụ trách được giao quyền được lập giấy tay mới và quyết định giao khi mất mạng, kể cả chưa chuẩn bị phiếu trước; ảnh/gốc xử lý sau. Khi thực thu phải lập phiếu thu cho người nộp ký; có tăng hoặc giảm nợ phải in biên bản ký, kể cả cuối lượt về0. Một bản theo khách, chi tiết từng đơn vị, cọc/tiền chưa phân bổ riêng. Lái xe chỉ ký nợ khi khách giao thêm quyền ký nợ riêng. Các quyết định này đã ghi vào quyết định nghiệp vụ, không hỏi lại.
+
+Đã lập `docs/bo-sung-kho-mat-mang-thu-tien-doi-soat-20261021.md` đủ9nhóm và15ca kiểm bổ sung đề xuất, cập nhật chỉ dẫn ưu tiên trong thiết kế trước. Đối chiếu nguồn: mẫu Phiếu thu chi/biên bản đối soát đã có, nguồn nợ hiện theo ngày chứ chưa snapshot ký theo lượt. Thiết kế mới phải giữ snapshot/mốc/phạm vi và số giấy duy nhất xuyên user, không tạo sổ trùng/thu hai lần; người thu khác user nhập phải ghi đúng người giữ tiền. Mất mạng không bảo đảm số dư toàn hệ thống hiện tại: chỉ ký số đã biết/phát sinh với mốc rõ, sau lệch xin xác nhận lại, không sửa số trên bản đã ký hoặc ghi0 giả. Lái xe thiếu quyền nợ không làm chậm giao, hồ sơ chuyển chờ khách ký riêng.
+
+**Chưa code/schema/quyền/cờ/mẫu/site.** Production vẫn0.16.4/digest1a8f0063…; không biến số giấy tay thành bút toán đã ghi hoặc tắt kiểm tồn/hạn mức để nhập bù. Bước tiếp: hoàn thiện trường/khóa/quyền hồ sơ giấy mới, snapshot đối soát và bộ giấy cùng lượt; danh sách người được giao quyền/phạm vi và người giữ tiền thực tế cần cấu hình khi build. Nghiệm thu toàn bộ với nhân sự/dữ liệu thật vẫn gom cuối.
+
 ## 21/10/2026 — Tiếp nối kho–giao nhận: đã đối chiếu và lập thiết kế, chưa code
 
 Chủ dự án xác nhận mục kiểm sau nâng0.16.4 về địa chỉ đầu đơn đã xong. Chưa suy thành đã kiểm thêm/sửa SĐT thật hoặc nghiệm thu tất cả nghiệp vụ. Production vẫn0.16.4/digest1a8f0063… như mốc dưới.
