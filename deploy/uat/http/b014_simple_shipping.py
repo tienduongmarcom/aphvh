@@ -67,10 +67,18 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     emit("HTTP_014_NHA_XE_MOI_BAO_NHAN", "PASS", {"carrier_snapshot": True, "receipt_without_customer_signature": True,
          "no_ledger_change": True, "receipt_protected": True, "retry_no_duplicate": True})
     state = counts()
+    original_filters = {"name": latest["name"], "docstatus": 1, "is_return": 0,
+                        "kh_aph_mau_giao_nhan": 1, "kh_aph_nhan_goc_luc": ["is", "not set"]}
+    assert lst("Delivery Note", original_filters, ["name"], ktt)
+    report = rpc("kh_aph.day_close.review", {"company": f["aph"], "day": f["date"]}, ktt)
+    assert any(r.get("document") == latest["name"] and "Thiếu giấy gốc" in r["status"] for r in report["rows"])
     payload = {"name": latest["name"], "modified": get("Delivery Note", latest["name"], ktt)["modified"], "location": "Tập kho cửa hàng / UAT / 10"}
     original = rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", payload, ktt)
     assert original["received_by"] == f["ktt"] and original["received_at"] and original["location"] == payload["location"]
     assert counts() == state
+    assert not lst("Delivery Note", original_filters, ["name"], ktt)
+    report = rpc("kh_aph.day_close.review", {"company": f["aph"], "day": f["date"]}, ktt)
+    assert any(r.get("document") == latest["name"] and "Đã nhận giấy gốc" in r["status"] for r in report["rows"])
     assert rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", payload, ktt) == original
     denied(lambda: rpc("kh_aph.ho_so_giao_nhan.nhan_giay_goc", {**payload, "location": "Tập khác"}, ktt))
     bad = get("Delivery Note", latest["name"], ktt); bad["kh_aph_vi_tri_goc"] = "Tự đổi gốc"

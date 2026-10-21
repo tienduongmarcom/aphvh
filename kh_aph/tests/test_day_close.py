@@ -74,3 +74,20 @@ class DayClose(unittest.TestCase):
         self.c._state.side_effect=forbidden
         with self.assertRaises(PermissionError):self.m._position('APH','cash','me')
         self.assertEqual(self.f.local.message_log,['prior message','permission denied'])
+
+    def test_review_keeps_old_day_receipt_pending_until_paper_returns(self):
+        issue=types.SimpleNamespace(STATE='issue',ASSIGNEE='assignee',DUE='due')
+        paper=types.SimpleNamespace(FILE='photo',ACTOR='reviewer',ORIGINAL_AT='original_at')
+        self.f.get_meta=lambda dt:Row(has_field=lambda field:True)
+        value=Row(name='DN',docstatus=1,is_return=0,posting_date='2026-10-18',kh_aph_delivery_state='Khách đã nhận',
+                  photo='PRIVATE',reviewer='accountant',kh_aph_mau_giao_nhan=1,original_at=None)
+        self.m.rows=Mock(return_value=[value])
+        item=Row(warehouse='WH',item_code='HANG',stock_qty=5,stock_uom='Kg',kh_aph_bags=0)
+        doc=types.SimpleNamespace(items=[item],check_permission=Mock())
+        self.f.get_doc.return_value=doc
+        with patch.object(self.package,'delivery_issue',issue,create=True), patch.object(self.package,'ho_so_giao_nhan',paper,create=True):
+            result=self.m._goods('CONG-TY','2026-10-19')
+            self.assertEqual(len(result),1)
+            self.assertIn('Thiếu giấy gốc',result[0]['status'])
+            value['original_at']='2026-10-19 10:00:00'
+            self.assertEqual(self.m._goods('CONG-TY','2026-10-19'),[])

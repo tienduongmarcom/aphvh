@@ -1,5 +1,14 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — ĐANG DỞ: theo dõi giấy gốc trong Kho vận và Chốt ngày
+
+Thêm lối native Giấy gốc chưa về trong Kho vận, chỉ lọc phiếu thế hệ mới đã ghi sổ, không đánh dấu thiếu hàng loạt lịch sử. Chốt ngày giữ việc thiếu giấy gốc của ngày trước dù ảnh đã đối chiếu; phân biệt thiếu/đã nhận gốc với trạng thái ảnh. Nhận giấy ở API hiện có làm hết việc thiếu gốc, không ghi lại kho/nợ/tiền. Không thêm màn hình, DocType nhiệm vụ hay số dư riêng.
+
+Cục bộ495ca kh_aph (14skip) đạt; thêm kiểm ngày trước có ảnh đã đối chiếu nhưng chưa có gốc. Bổ sung HTTP vào ca giấy gốc, giữ bộ014125PASS. CHƯA cóPASS native cho phần này hoặc đổi mã44c3c3d. Các lượt771b365 vẫn đang kiểm; cần lưu kết quả theo đúngSHA, không suy sang code mới. PR38 vẫn draft, production0.16.4 giữ nguyên, không version/tag/site.
+
+Phần còn thiếu của toàn phạm vi: nhập giấy tay khi mất mạng, snapshot đối soát có ký và bộ giấy theo lượt, chuẩn bị chuyển/gom kho trước khi giao, giảm giá theo dòng và xử lý trả sau giảm giá cũ. Còn cần hoàn thiện việc chọn kho nhận trả khác kho nguồn, chứng cứ khách cuối khi có yêu cầu riêng và lịch sử phiên bản in. Nghiệm thu nhân sự/hàng tồn/máy in thật vẫn gom cuối; không gọi toàn phạm vi đã xong.
+
+
 ## 21/10/2026 — ĐANG DỞ: đổi sang mã mới bằng đơn bán chuẩn
 
 Đường nhận trả mới chọn Đổi hàng không còn tự chuẩn bị lại mã cũ. Thêm nút Lập đơn hàng thay: API chỉ đọc mở lại đơn đã lưu hoặc điền khách/nguồn vào form đơn chuẩn chưa lưu; người bán chọn mã, lượng, kho, giá mới. Link phiếu nhận trả bất biến, khóa duy nhất cho một đơn thay còn hiệu lực; hủy giữ link lịch sử và nhả khóa cho lập lại. Kiểm cùng khách/Company, cả đường đổi nguồn không được chuyển Company của đơn thay. Native lưu/xác nhận/giao tiếp tục sở hữu giá, hạn mức, tồn và nợ; đơn nháp không ghi sổ. Không tự cấn tiền giữa đơn vị hoặc tự coi trao đổi đã tất toán tiền.
