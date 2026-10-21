@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Đã gộp bản vá0.16.4 vào main, chờ chủ dự án gắn tag
+
+[PR #30](https://github.com/tienduongmarcom/aphvh/pull/30) đã gộp giữ lịch sử bằng **1dffa623dc28d239321b7c9cd249968def402123**. Đã đối chiếu tree: mã app/kiểm giống hệt c9433f3 đã đạt bốn cổng dưới đây; chỉ hai tệp hồ sơ thay sau mã kiểm. Tagv0.16.4 chưa tồn tại khi kiểm, agent không tạo tag/image hoặc sửa VM. Production vẫn0.16.3/digesta252…; phien-ban.yaml giữ đúng mốc này.
+
+Hướng dẫn đúng nguồn và tmux: `docs/phat-hanh-0164.md`. Bước cần người vận hành: chủ dự án tự gắn tag đúng merge commit trên theo AGENTS; chờ phát hành xanh/digest rồi SSH erpnext-prod/frontend, diễn tập bản sao thực và nâng trong tmux nang-cap-0164, không thêm cờ. Khi SSH ngắt chỉ nối lại phiên. Không cần nhập lại địa chỉ khách đã liên kết. Nghiệm thu thực tế toàn nghiệp vụ vẫn để cuối.
+
 ## 21/10/2026 — Ứng viên0.16.4 đã đạt bốn cổng: sửa địa chỉ/SĐT khách nhập riêng
 
 [PR #30](https://github.com/tienduongmarcom/aphvh/pull/30), nhánh fix/dia-chi-khach-lien-ket-20261021, mã app/kiểm cuối **c9433f332230f7704e9ccd87476ddb9154386da1**. Commit hồ sơ theo sau chỉ tài liệu. Production vẫn **0.16.3/digesta252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**, chưa tag/phát hành image0.16.4 hoặc sửa VM/dữ liệu thật.
