@@ -58,7 +58,8 @@ def details(customers):
     for c in customers:
         value = result[c.name]
         address = _preferred((addresses or {}).get(c.name, []), c.get('customer_primary_address'))
-        contact = _preferred((contacts or {}).get(c.name, []), c.get('customer_primary_contact'))
+        contact_rows = (contacts or {}).get(c.name, [])
+        contact = _preferred(contact_rows, c.get('customer_primary_contact'))
         # Hồ sơ liên kết là nguồn hiện tại: cache Customer có thể còn số/địa chỉ cũ.
         if address:
             from frappe.contacts.doctype.address.address import get_address_display
@@ -68,7 +69,10 @@ def details(customers):
         elif c.get('customer_primary_address'):
             value['primary_address'] = ''
         if contact:
-            value['mobile_no'] = contact.get('mobile_no') or contact.get('phone') or contact.get('listed_phone') or ''
+            # Contact rỗng không che số đang có trên liên hệ khác của cùng khách.
+            ordered = [contact, *(r for r in contact_rows if r is not contact)]
+            value['mobile_no'] = next((r.get('mobile_no') or r.get('phone') or r.get('listed_phone')
+                                       for r in ordered if r.get('mobile_no') or r.get('phone') or r.get('listed_phone')), '')
         elif contacts is None or c.get('customer_primary_contact'):
             value['mobile_no'] = ''
         # Giữ SĐT khai trực tiếp trên Customer nếu không có Contact thay thế.

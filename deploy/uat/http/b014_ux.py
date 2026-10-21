@@ -73,6 +73,9 @@ def do_ux3(rpc, get, insert, lst, denied, f, phien, emit):
         assert marker in value['primary_address'] and 'KHONG-DUNG' not in value['primary_address'], value
         return value
     assert not identity()['mobile_no']
+    # Có sẵn Contact rỗng: thêm liên hệ mới có số vẫn phải tải được.
+    insert({'doctype': 'Contact', 'first_name': f['p'] + ' Rong',
+            'links': [{'link_doctype': 'Customer', 'link_name': imported}]})
     # Thêm rồi sửa SĐT sau khi địa chỉ đã import: đọc lại hồ sơ liên kết, không sửa Customer.
     contact = insert({'doctype': 'Contact', 'first_name': f['p'] + ' Import', 'is_primary_contact': 0,
         'phone_nos': [{'phone': '0900000141', 'is_primary_phone': 1}],

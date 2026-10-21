@@ -121,3 +121,8 @@ class CustomerIdentity(unittest.TestCase):
         self.f.get_list.side_effect = [[],
             [Row(name='LH1', linked_customer='KH-test', listed_phone='CHUA-DANH-DAU')]]
         self.assertEqual(self.m.details([self.customer])['KH-test']['mobile_no'], 'CHUA-DANH-DAU')
+
+    def test_existing_empty_contact_does_not_hide_new_contact_number(self):
+        self.f.get_list.side_effect = [[], [Row(name='LH-rong', linked_customer='KH-test'),
+            Row(name='LH-moi', linked_customer='KH-test', listed_phone='SO-MOI')]]
+        self.assertEqual(self.m.details([self.customer])['KH-test']['mobile_no'], 'SO-MOI')
