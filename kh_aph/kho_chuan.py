@@ -5,7 +5,7 @@
 - Bộ dựng cây kho `dung` (chạy tay, Administrator, gõ đúng tên site): đọc mục `cay_kho` của khach.json, chỉ THÊM kho
   còn thiếu; không đổi tên, không xóa, không đổi pháp nhân/loại của kho đã có; kho ngoài cây chỉ báo.
 - Ô "Loại kho" + "Dây chuyền" trên Warehouse; đơn bán / phiếu giao / hóa đơn xuất kho không được chọn kho không bán
-  (dở dang, chờ đóng gói, chờ xử lý, cách ly, gửi).
+  (dở dang, chờ đóng gói, chờ xử lý, cách ly, gửi, vận chuyển).
 - Nhóm hàng "Bao bì đóng gói": dòng chỉ cộng tiền, không cộng kg (stock_entry_kg).
 - Loại phiếu "Đóng gói thành phẩm" (Repack, kg-v4): công đoạn 2, bảo toàn kg hàng chính, giá thành phẩm = hàng chính + bao bì.
 - Kiểm kê có mốc (R054–R056): thiếu → phiếu xuất NHÁP Nợ 1381; thừa → phiếu nhập NHÁP vào kho "Hàng chờ xử lý" của địa
@@ -178,7 +178,7 @@ def validate_kho_ban(doc, method=None):
     sai = []
     for d in doc.get("items") or []:
         loai = loai_kho(d.get("warehouse"))
-        if loai in C.KHONG_BAN:
+        if loai in C.KHONG_BAN or loai == C.VAN_CHUYEN:
             sai.append(f"dòng {d.idx}: {d.warehouse} ({loai})")
     if sai:
         frappe.throw("Không bán từ kho không bán được: " + "; ".join(sai)

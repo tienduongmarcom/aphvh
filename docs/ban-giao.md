@@ -1,5 +1,14 @@
 # Bàn giao — trạng thái mới nhất
 
+## 21/10/2026 — ĐANG DỞ PR38: chặn bán từ kho vận chuyển, chờ kiểm nghiệp vụ toàn lát
+
+Đã sửa guard kho chuẩn (cờ hiện có kh_aph_kho_chuan): đơn chung/đơn con/DN/hóa đơn có xuất kho không lấy kho Vận chuyển làm nguồn bán; trả hàng và hóa đơn không xuất kho giữ đường xử lý riêng. Thêm ca HTTP vào bộ0112, không đổi sốPASS kỳ vọng bộ đó. FormDN cập nhật ô giao nhận ngay khi đổi cách giao, không cần tải lại form.
+
+Cục bộ487ca kh_aph (14skip),108ca lõi đạt. Cổng3 run39571303257 mãfc8e721 đã success và đọc artifact: nâng cấp từ0.16.4, schemafresh1113/1113 và rollback1105/1105 lệch0; so sổ/quay lui/nhánh lỗi chủ độngKHỚP. Cổng2b cùng mã39571323837 success, log xác nhận dựng/nâng/quay lui đạt. Các kết quả này chưa gồm sửaA5/giới hạn hoàn/guardTransit mới nhất. Cần chạy bốn cổng đúng mã cuối; UAT124ca bộ014 chưa cóPASS, không coi đơn vị thuần là kiểm native.
+
+PR38 vẫn draft, version/tag/site giữ nguyên0.16.4. Phần mới đã viết: trảlẻkg, xe khách có chỉ định, nhà xe chọn/nhập, dấu báo nhận, giấy gốc độc lập, A5 và giới hạn chuẩn bị tiền hoàn. Chưa hoàn thiện offline, snapshot ký đối soát, chuẩn bị chuyển/gom kho trước xe đi, đổi mã mới, giảm theo dòng/chống giảm trùng, bộ giấy cùng lượt. Bước tiếp đọc kết quảHTTP/Chrome để sửa lỗi thật, rồi tiếp tục các phần chưa triển khai; chưa đủ điều kiện phát hành toàn phạm vi.
+
+
 ## 21/10/2026 — ĐANG KIỂM: giới hạn phiếu hoàn theo số dư sau trả hàng
 
 Bổ sung cho phiếu nhận trả tạo bằng đường mới: sau khi hóa đơn giảm đã trừ đúng khoản gốc, chỉ chuẩn bị phiếu chi bằng phần số dư có còn lại, tối đa giá trị lần trả. Chưa thu/còn nợ sau giảm thì không tạo phiếu hoàn nháp. Phiếu hoàn mới tham chiếu khoản gốc bằng phân bổ âm, để native kiểm số dư và tất toán khi thực chi; không tạo hóa đơn giảm lần nữa. Đường trả lịch sử chưa đổi cách chuẩn bị nháp; giao dịch khác VND yêu cầu kế toán đối chiếu tỷ giá riêng. Chưa coi thay đổi này đã PASS native.

@@ -1,6 +1,6 @@
 // Một bộ nhập giao nhận theo thế hệ phiếu; không ghi đè hoặc chuyển dữ liệu lịch sử.
-frappe.ui.form.on("Delivery Note", {
-    refresh(frm) {
+(() => {
+    function show_delivery_fields(frm) {
         if (!frappe.boot?.kh_aph?.ux_task_first) return;
         const current = !frm.doc.is_return && (!!frm.doc.kh_aph_cach_giao || frm.is_new());
         const legacy = ["kh_aph_hinh_thuc_giao", "kh_aph_nguoi_nhan", "kh_aph_nha_xe", "kh_aph_lai_xe", "kh_aph_bien_so_xe", "kh_aph_sdt_lai_xe"];
@@ -14,4 +14,9 @@ frappe.ui.form.on("Delivery Note", {
         frm.toggle_display(["kh_aph_nguon_bao_nhan", "kh_aph_ngay_khach_nhan"], ship && frm.doc.docstatus === 1);
         frm.toggle_display(["kh_aph_dot_xuat"], false);
     }
-});
+    frappe.ui.form.on("Delivery Note", {
+        refresh: show_delivery_fields,
+        kh_aph_cach_giao: show_delivery_fields,
+        is_return: show_delivery_fields,
+    });
+})();
