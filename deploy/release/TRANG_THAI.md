@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Production0.16.3 đã được người vận hành xác nhận ĐẠT
+
+Anh Tiến gửi log tại `tienduongmarcom@erpnext-prod:~/trien-khai`: image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.3**, digest **sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**, dòng cuối **=== XONG 0.16.3: ĐẠT ===**. Digest khớp image phát hành39518896902 và registry đã kiểm; nguồn tag **v0.16.3 = a1f95b062f2ff7334ed36c176dfb742bf828974a** (PR #26 đã gộp main). Trước đó diễn tập thực **10210126238079**, dấu `/home/tienduongmarcom/dien-tap-0.16.3.ok`, tổng/đếm/chi tiết khớp, ĐẠT. Mốc khách đã cập nhật `khach/aph-vh/phien-ban.yaml`. Không cờ mới; bộ28cờ giữ nguyên theo thủ tục nâng. Đây là bằng chứng người vận hành gửi, không phải agent tự SSH kiểm lại VM.
+
+ĐÃ TRIỂN KHAI bản làm gọn năm khu/nhận diện khách–hàng/thu tiền–in/chuẩn tên chung. Nghiệm thu với nhân sự đại diện, hàng/tồn và máy in thật vẫn để cuối theo yêu cầu, không coi log nâng cấp thành nghiệm thu toàn nghiệp vụ. Mẫu3liên vẫn nháp; công nợ ròng chốt qua báo cáo chuẩn. Vận hành trong tmux và nối lại đúng phiên khi SSH ngắt, không chạy lặp lượt đang chạy.
+
+Quay lui có điều kiện về image0.16.2/digest34a32f71… với snapshot tương ứng lúc nâng0.16.3; không restore snapshot cũ sau giao dịch mới khi chưa xử lý phần phát sinh. ĐANG KIỂM housekeeping: chuyển mốc Cổng3 sang0.16.3/digest trên để lần sau diễn tập đúng production, chạy CI riêng, không sửa mã app hay triển khai lại. Bước tiếp ghi kết quả Cổng3 vào đây và gộp PR hồ sơ; không phát hành/tag mới cho việc ghi nhận này.
+
 ## 21/10/2026 — Image0.16.3 đã phát hành, CHƯA xác nhận triển khai production
 
 Chủ dự án đã push tag **v0.16.3**, đã kiểm GitHub trỏ đúng merge commit **a1f95b062f2ff7334ed36c176dfb742bf828974a**. [Phát hành39518896902](https://github.com/tienduongmarcom/aphvh/actions/runs/39518896902) **success**: UAT, Cổng2,2b,3 và bước build/push đều success cùng nguồn tag. Image **ghcr.io/tienduongmarcom/kh-aph-erpnext:0.16.3**, digest **sha256:a252478ba9840da9578cfee6ff1bce7412a5afd156c3150ec8da49c59c56ce95**; đã đối chiếu log pushing manifest/containerimage.digest với đọc registry bằng docker buildx imagetools inspect, khớp. Không tag lại hoặc ghi đè image.
