@@ -36,6 +36,15 @@ Kho xác nhận lượng/tình trạng và nơi nhận thực; đầu mối cử
 - Không tự lấy tiền được trả ở một công ty cấn nợ hoặc tiền mua hàng của công ty khác. Bản đối chiếu tổng vẫn có từng đơn vị và số dư có/cọc riêng.
 - Phiếu trả bị hủy, kỳ đã khóa, giá vốn/repost, chứng từ liên kết hoặc lỗi một bước phải có trạng thái rõ. Giữ kết quả bước đã thành công, retry nối lại đúng chứng từ; không giả toàn bộ đã xong hoặc xóa sự kiện thực tế.
 
+### Bổ sung chủ dự án chốt: nợ đơn cũ và trả hỏng một phần bao
+
+- **Giảm giá đơn trước:** khách có thể thương lượng giảm phần công nợ của đơn đã giao từ trước, không cần lập đơn mới. TừKhách hàng → khoản nợ/phiếu cũ → Đổi/Trả/Giảm giá, hoặc ngay trên phiếu gốc; hiển thị đơn vị, ngày, mã hàng, lượng đã giao, số đã trả/giảm và khoản còn phải thu để chọn đúng. Đề nghị chưa thống nhất giữ riêng; khi chấp nhận và ghi nhận đúng chứng từ mới giảm đúng khoản nợ cũ. Không thay giá/lượng lịch sử, không giấu khoản giảm vào lần bán tiếp theo; kỳ cũ khóa thì xử lý phát sinh theo kỳ hợp lệ và giữ liên kết nguồn.
+- **Trả hàng hỏng lẻ trong bao:** ví dụ đã bán1bao25kg, khách dùng/giữ20kg và mang trả5kg hỏng. Cho nhập **5kg**, không bắt trả1bao25kg hoặc làm tròn thành cả bao. Phiếu nhận trả ghi thực nhận5kg;20kg còn lại vẫn là lượng khách giữ, không tự nhập lại. Nếu chỉ báo hỏng mà chưa trả vật chất thì dùng nhánhGiảm giá/đề nghị xử lý, không giả nhập5kg.
+- Lượngkg nhận lại và **bao bì vật lý nhận lại** là hai thông tin khác nhau. 5kg/25kg=0,2bao quy đổi không có nghĩa nhận0,2vỏ bao. Ghi số bao/vỏ thực nhận nếu nghiệp vụ cần (vd1bao đã mở), không ép quy tắckg=bao nguyên×25. Quy cách quy đổi lấy từ dòng gốc, không theoItem đã sửa sau này. Cần đối chiếu validation bao hiện có trước build để hỗ trợ lẻkg đúng sổ mà không phá kiểm bao các luồng khác.
+- Hànghỏng5kg ghi đúng tồn thực nhận và tình trạng/kho không bán được theo cấu hình được duyệt, không tăng tồn bán được. Mua/bán20kg còn lại và số bao bì theo dõi riêng, không tự sửa chứng từ gốc còn20kg để xóa lịch sử25kg đã giao.
+- Số được xử lý theo5kg được chấp nhận và giá/thuế dòng gốc hoặc thỏa thuận giảm hợp lệ; không hoàn tiền cả25kg, không mặc định dùng giá bán hôm nay. Hệ thống hiện trước **giá trị trả/giảm, phần giảm khoản phải thu và tiền thực hoàn**.
+- Nếu khách đã trả tiền, có nhánhHoàn tiền cho phần được chấp nhận; thực chi mới ghi chứng từchi. Nếu còn nợ, mặc định giảm đúng khoản phải thu tương ứng, phần dư sau đối chiếu mới xử lýhoàn/giữ/phân bổ theo lựa chọn. Trường hợp thỏa thuận hoàn tiền dù còn khoản nợ khác phải thể hiện rõ hai giao dịch và đúng quyền, không tự cấn nợ khác. Tổng giá trị giảm được phân bổ một lần; chứng từchi tất toán nghĩa vụ hoàn, không ghi giảm doanh thu/nợ thêm lần nữa.
+
 ## 5. Dữ liệu và màn hình
 
 Màn hình thường chỉ hỏi: loại việc; dòng/lượng trả hoặc giảm; hàng thay nếu đổi; lý do. Tự lấy khách/đơn vị/phiếu/người nhận từ nguồn. Kho nhận chỉ hiện khi nhận hàng; mức đề nghị giảm chỉ hiện với giảm giá; lựa chọn hoàn/giữ/bù trong cùng đơn vị chỉ hiện khi có số dư cần xử lý. Hiển thị trước: hàng nhận lại, hàng giao mới, tăng/giảm nợ, phải thu thêm/phải hoàn/chờ xử lý. Không cho nhập một số “giảm công nợ” không truy nguyên.
@@ -68,7 +77,11 @@ Trả hàng thật ảnh hưởng kho/giá vốn theo chứng từ chuẩn và �
 9. Trả kết hợp giảm giá trước đó: không hoàn/giảm trùng; nhiều đơn vị không tự cấn chéo.
 10. Giao/nhận/thu/hoàn bị mất mạng sau một bước, nhập bù/retry không trùng; đối chiếu số còn chờ.
 11. Kỳ cũ khóa/hóa đơn đã phát hành: giữ lịch sử, xử lý điều chỉnh đúng hồ sơ/MISA, không lùi ngày giả.
-12. Chứng từ giấy có đúng tư cách ký và chênh lệch; trạng thái khách nhận ship không tạo sổ; nhân sựU50 hoàn thành thao tác không phải tìm nhiều màn hình.
+12. Đơn cũ còn nợ giảm do chất lượng: chọn trực tiếp khoản cũ, không cần đơn mới, kỳ khóa không sửa lùi, số đang thương lượng chưa trừ nợ.
+13. Bán1bao25kg trả5kg hỏng: tăng tồn thực nhận đúng5kg trong kho/tình trạng phù hợp, không tăng25kg/tồn bán được;20kg vẫn do khách giữ.
+14. Trả5kg nhưng chưa nhận/đề nghị giảm không trả: không tự tăng tồn; kiểm0,2bao quy đổi khác số vỏ thực nhận, quy cáchItem đổi không sửa quy đổi gốc.
+15. Ca5kg đã trả tiền/còn nợ/trả một phần: đúng giá trị và thuế, khoản giảm/hoàn phân bổ một lần; không hoàn cả25kg hoặc vừa giảm nợ vừa hoàn trùng; retrychi không trùng.
+16. Chứng từ giấy có đúng tư cách ký và chênh lệch; trạng thái khách nhận ship không tạo sổ; nhân sựU50 hoàn thành thao tác không phải tìm nhiều màn hình.
 
 ## 9. Triển khai và khôi phục
 

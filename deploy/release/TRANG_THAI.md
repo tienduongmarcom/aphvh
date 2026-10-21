@@ -1,5 +1,10 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 21/10/2026 — Chốt bổ sung: giảm nợ đơn cũ, trả hỏng một phần bao và hoàn tiền
+
+Chủ dự án xác nhận có giảm giá chất lượng cho khoản nợ đơn trước và trả lẻ hàng hỏng (bao25kg trả5kg để hoàn tiền). Đã bổ sung vào `docs/bo-sung-doi-tra-giam-gia-20261021.md`: chọn khoản/phiếu cũ không cần đơn mới;5kg thực nhận khác cảbao/vỏ thực nhận,20kg khách giữ; quy đổi theo dònggốc, hànghỏng không tự thành tồn bán. Tiền trả/giảm truy giá-thuế/thỏa thuận hợp lệ, tách giảm phải thu với thực hoàn, không dùng cùng giá trị hai lần. Thêm4ca đề xuất, tổng16ca chưa chạy; chưacode/site/mẫu, production0.16.4 giữ nguyên.
+
+
 ## 21/10/2026 — Bổ sung phạm vi đổi tại xe, đổi/trả sau giao và giảm giá hàng xấu
 
 Chủ dự án bổ sung ba tình huống vào lần tối ưu này. Đã ghi `docs/bo-sung-doi-tra-giam-gia-20261021.md`: từ phiếu gốc một lốiĐổi/Trả/Giảm giá; phân biệt đã/chưa ghi xuất và giao thực tế; trả ghi kho theo lượng thực nhận, giao thay xuất riêng; giảm giá giữ hàng chỉ tài chính, đề nghị đang thương lượng chưa tự giảm nợ. Truy đúng dòng/đơn vị/giá-quy cách-thuế gốc, không vượt trả lũy kế hoặc giảm trùng, không cấn chéoCompany; tiền thừa cho xử lýhoàn/giữ/phân bổ rõ, không tự coi là cọc. Có12ca đề xuất chưa chạy.
