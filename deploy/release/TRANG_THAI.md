@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Chỉnh bố cục đối soát và thư mục phép thử PDF CI
+
+UAT39714397708 đúngb3b4507 FAIL sớm tại NATIVE_PDF_BOOT: phép thử Python khởi tạo từ thư mục bench thay vì sites nên logger tìm /home/frappe/logs/database.log. Đã đọc log lỗi119612952998; sửa đúng cwd sang /home/frappe/frappe-bench/sites như các helper native khác. Chưa chạy các ca134 trong lượt này; không coi cấu hình host/PDF hoặc hồ sơ khách ký đã được xác nhận.
+
+Đã dựng/xem PDF Chrome với dữ liệu giả đủ4đơn vị: bản đầu bị tràn bảng và phần ký sang trang riêng. Đã cố định cột, giữ tên pháp nhân đầy đủ tại bảng đầu, lưu tên viết tắt từng Company trong snapshot cho bảng chi tiết, giảm khoảng trắng lặp và giữ mã/khách/mốc cùng khối ký. Bản sửa4đơn vị/5phát sinh/4dòng tiền giữ vừa1A4; đã xem ảnh và kiểm baseline tên người lập nằm trong lề. Đây là QA Chrome cục bộ, chưa thay bằng chứng PDF native/máy in thật. Tái sinh8JSON mốc22/10 10:10;561ca cục bộ không bỏ qua đạt. PR38 nháp, production0.16.4 không đổi. Cần chạy lại UAT134 trên mã mới, đọc lỗi/ảnh/PDF, tiếp tục các phần còn dở trong bảng đối chiếu.
+
 ## 22/10/2026 — Giấy tay native đạt; đang sửa PDF và kiểm hồ sơ khách ký riêng
 
 UAT39711917331 đúngedb3c67 FAIL tại lần tạo PDF đối soát đầu tiên (OSError), không phải ca giấy. Đã tải/đọc artifact /tmp/uat-kho-39711917331: HTTP_014_GIAY_TAY_NHAP_BO_SUNG PASS đủ nháp không ghi sổ, khóa trùng, tệp riêng, thời điểm thực tế, hủy/amend kế thừa và gắn giấy vào DN/PE đã ghi không ghi lại sổ. Bộ014 có129PASS kể cả restore, các bộ hồi quy khác cùng lượt không cóFAIL. Chưa coi snapshot/PDF đạt. Host trình duyệt UAT là aphvh-web-uat, chưa có DNS/port phục vụ PDF trong container; đã cấu hình host_name riêng CI thành http://aphvh-p0-web-uat:8000, thêm phép thử PDF native ngay bước chuẩn bị và giữ traceback HTTP để xác định nếu còn lỗi. Chưa có lượt xác nhận sửa PDF.

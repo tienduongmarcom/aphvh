@@ -64,7 +64,7 @@ try:
  print(json.dumps({"case":"NATIVE_PDF_BOOT","status":"PASS"}))
 finally: frappe.destroy()
 '''
-result = subprocess.run(['docker','exec','-w',ROOT,WEB,ROOT+'/env/bin/python','-c',pdf_probe],
+result = subprocess.run(['docker','exec','-w',ROOT+'/sites',WEB,ROOT+'/env/bin/python','-c',pdf_probe],
                         text=True,capture_output=True,timeout=90)
 if result.returncode:
  print((result.stdout+result.stderr)[-10000:],flush=True)

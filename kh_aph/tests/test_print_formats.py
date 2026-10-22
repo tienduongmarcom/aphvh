@@ -482,7 +482,7 @@ class TestJsonInSync(unittest.TestCase):
         data = snapshot(['CO'], [dict(company='CO', voucher_type='Sales Invoice', voucher_no='SI', amount=10),
                                 dict(company='CO', voucher_type='Payment Entry', voucher_no='PE', amount=-10)],
                         {('Sales Invoice', 'SI'), ('Payment Entry', 'PE')})
-        data.update(customer_name='Khách <script>', customer='KH1', prepared_by='Người lập cũ', tax_id='',
+        data.update(company_labels={'CO': 'CO-VN'}, customer_name='Khách <script>', customer='KH1', prepared_by='Người lập cũ', tax_id='',
                     address='Địa chỉ <b>', phone='0901', funds=[])
         env = _env(False)
         env.globals['kh_aph_doi_soat_da_luu'] = lambda doc: data
@@ -491,6 +491,9 @@ class TestJsonInSync(unittest.TestCase):
         self.assertIn('Khách &lt;script&gt;', html)
         self.assertIn('Địa chỉ &lt;b&gt;', html)
         self.assertIn('Người lập cũ', html)
+        self.assertIn('CO-VN', html)
+        self.assertIn('Xác nhận biên bản', html)
+        self.assertIn('aph-statement-signature', html)
         self.assertNotIn('Nợ đầu ngày', html)
         self.assertIn('không tự cấn chéo', html)
         self.assertIn('SI', html); self.assertIn('PE', html)

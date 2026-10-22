@@ -251,6 +251,7 @@ def create(customer, companies, vouchers, request_id, supersedes=None):
     figures, sources = _figures(customer, scope, selected, sources)
     from kh_aph.customer_identity import details
     identity = details([customer_doc])[customer]
+    figures['company_labels'] = {company: frappe.get_doc('Company', company).get('abbr') or company for company in scope}
     figures.update(customer_name=customer_doc.customer_name, customer=customer,
                    prepared_by=frappe.utils.get_fullname(frappe.session.user),
                    tax_id=customer_doc.tax_id or '',
