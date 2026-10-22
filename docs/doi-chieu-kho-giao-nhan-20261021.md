@@ -8,15 +8,16 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 
 **PR38 là ứng viên đang phát triển, chưa phải bản phát hành hoàn tất toàn phạm vi.** Không dùng số ca đạt của một phần để đóng các yêu cầu còn thiếu.
 
-**Cập nhật22/10:** giấy tay thu gọn đúng chỉ đạo: lưu trên DN/SE/PE khi nhập bổ sung, không hệ thống offline riêng. Đã viết snapshot đối soát và bộ PDF bất biến (`debt_statement.py`, DocType bằng chứng `Bien ban doi soat no`), phân quyền/file/bản ký và cửa thao tác từ phiếu/Khách. Cục bộ545ca cóJinja2 không bỏ qua đạt; mới kỳ vọng132PASS native, chưa đủ bằng chứng cho phần mới. UAT39703447598 c4b93fa FAIL ở kịch bản dùng modified cũ trong ca giấy, đã sửa không nới assertion; nút mở hoàn đã cóHTTP/ChromePASS và đã xem ảnh. Xem mục đầu hai hồ sơ bàn giao để lấy mã/run tiếp theo.
+**Cập nhật22/10:** giấy tay chỉ lưu trên chứng từ nhập bổ sung. UAT39766960041 đúng98c37e3 đã đọc135PASS gồm khôi phục, các bộ hồi quy đều đạt. Gom kho chuẩn bị/in→xuất→nhận, hồ sơ khách ký riêng, lịch sử ảnh, snapshot/phân quyền/ngoại tệ và Chrome mất phản hồi khi tạo đối soát đã nativePASS. Tuy nhiên PDF bộ giấy bị tràn mỗi liên A5 thành2trang; đã xem đủ6trang, không coi bố cục đạt. Bản sửa lề và assertion4trang đang kiểm ở UAT39772096251 đúngfb6ab9c, cùng phần Chốt ngày tách Nhà máy. Cục bộ570ca không bỏ qua đạt. Toàn phạm vi vẫn chưa hoàn tất.
 
 ## 2. Hiện trạng và nguồn
 
 - Production: 0.16.4, tag `1dffa623dc28d239321b7c9cd249968def402123`, digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`; người vận hành đã xác nhận nâng cấp đạt. Không ghi dữ liệu production trong lượt phát triển này.
 - PR38: `feat/kho-giao-nhan-don-gian-20261021`, vẫn nháp. Nền main đã gồm PR37 chuyển Cổng3 sang đúng production0.16.4.
-- Mã kiểm nghiệp vụ mới nhất: `b57445753daf9513a8448d24e92d926d1a9a4d9c`. [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS: đã tải artifact `candidate-image-evidence` (id12360337173), đọc đủ127PASS của bộ014, mốc khôi phục và xem hai ảnh Chrome nhập nhà xe/nhận trảkg. Các bộ hồi quy còn lại của cùng lượt cũng đạt. Cổng2 cùng mã: [39631068245](https://github.com/tienduongmarcom/aphvh/actions/runs/39631068245) SUCCESS.
+- Bằng chứng nền trước các mở rộng: `b57445753daf9513a8448d24e92d926d1a9a4d9c`. [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS: đã tải artifact `candidate-image-evidence` (id12360337173), đọc đủ127PASS của bộ014, mốc khôi phục và xem hai ảnh Chrome nhập nhà xe/nhận trảkg. Các bộ hồi quy còn lại của cùng lượt cũng đạt. Cổng2 cùng mã: [39631068245](https://github.com/tienduongmarcom/aphvh/actions/runs/39631068245) SUCCESS.
 - Các lượt FAIL trước đó vẫn giữ: UAT39581676952 ở helper Chrome, UAT39625443467 ở yêu cầu phụ tìm biến thể báo cáo số lượng của hồ sơ ẩn vốn. Đã sửa và kiểm lại trong lượt mới; không bỏ ca Chrome hoặc mở quyền giá vốn để vượt lỗi.
 - Bằng chứng trước đó: UAT39578838909 trên `320558a` có các ca mới đạt nhưng toàn lượt FAIL ở tên nhà xe chứa HTML. Cổng2 và2b cùng mã đạt; Cổng3 cùng mã đã đạt: schema1115/1115, rollback1105/1105 lệch0; đã đọc artifact.
+- Mã nghiệp vụ mới đã kiểm: `98c37e39ad2fb3ee032ea0ac4a40b153c581a258`, [UAT39766960041](https://github.com/tienduongmarcom/aphvh/actions/runs/39766960041) SUCCESS, artifact đã tải/đọc. Kiểm trực quan PDF phát hiện tràn dù assertion nghiệp vụ xanh; giữ artifact làm bằng chứng. Mã sửa `fb6ab9c` chưa có kết quả native. Cổng3 [39764128191](https://github.com/tienduongmarcom/aphvh/actions/runs/39764128191) đúng9a99835 SUCCESS, schema1151/1151 và quay lui1105/1105 lệch0; không suy cho mã sau.
 - Mã nghiệp vụ chính: `sales_return.py`, `return_quantity.py`, `sales_exchange.py`, `sales_p1.py`, `delivery_info.py`, `delivery_status.py`, `ho_so_giao_nhan.py`, `ban_nhanh.py`, `bag_stock.py`, `kho_chuan.py`.
 
 ## 3. Nhân sự và thao tác đã nối
@@ -26,7 +27,7 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 | Chuẩn bị giao, in | Kế toán bán hàng theo quyền native | Đơn bán chung → Lập phiếu xuất & In | Dùng DN nháp hiện có; chưa có lịch sử PDF bất biến theo mỗi lần chuẩn bị |
 | Xác nhận giao | Người có quyền xác nhận DN | Kiểm lượng/người thực giao → Khách đến lấy hoặc Bàn giao vận chuyển | Kho vệ tinh không cần tài khoản; người nhập vẫn chịu trách nhiệm nội dung |
 | Xe khách đến lấy | Đầu mối cửa hàng | Chọn cách giao, người nhận và căn cứ khách chỉ định | Tính khách đã nhận tại kho; căn cứ này không cấp quyền ký nợ |
-| Ship | Đầu mối cửa hàng | Chọn/nhập tên và SĐT nhà xe; sau đó ghi nguồn báo và ngày nhận cuối | Không bắt khách chờ tải ảnh; đã viết hồ sơ khách ký riêng khi yêu cầuCó, gốc/ảnh và Chốt ngày, chờ UAT134 đúng mã mới |
+| Ship | Đầu mối cửa hàng | Chọn/nhập tên và SĐT nhà xe; sau đó ghi nguồn báo và ngày nhận cuối | Không bắt khách chờ tải ảnh; hồ sơ khách ký riêng khi yêu cầuCó đã nativePASS UAT39766960041, gốc trước ảnh và không ghi sổ lần hai |
 | Nhận trả | Người có quyền lập/xác nhận DN | Phiếu gốc hoặc Khách hàng → Nhận hàng trả lại → kiểm phiếu nháp → xác nhận | Nhập kg và bao riêng; chọn cách ly/bán lại được; chọn kho khác còn qua form chuẩn |
 | Đổi mã | Người có quyền lập đơn | Phiếu nhận trả đã ghi → Lập đơn hàng thay → chọn mã/lượng/giá trên form đơn chuẩn | Một đơn thay còn hiệu lực; chưa có màn tính và thu/hoàn chênh lệch trong một thao tác |
 | Hoàn tiền | Kế toán theo quyền tiền | Đối trừ khoản gốc bằng dịch vụ native, kiểm phiếu chi nháp rồi xác nhận thực chi | Thiếu quyền đối trừ thì giữ credit và chuyển kế toán xử lý; đã có nút Mở phiếu hoàn tiền (HTTP/ChromePASS trênc4b93fa); chưa nối hoàn/chênh lệch một lượt đầy đủ |
@@ -42,8 +43,8 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 | Thu một phần/đủ | Native giữ credit riêng khi cần; đối trừ đúng nguồn rồi chuẩn bị hoàn phần dư | Chưa có tổng quan thu/hoàn/chênh lệch trước khi bấm xác nhận trong một cửa sổ |
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
 | Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
-| Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | Đã nativePASS HTTP_014_GIAY_TAY_NHAP_BO_SUNG trênedb3c67/UAT39711917331, toàn lượt FAIL ở PDF đối soát sau đó; không xây sổ offline/workflow riêng |
-| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Đã viết chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit; chờ UAT133 đúng mã mới. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
+| Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | NativePASS HTTP_014_GIAY_TAY_NHAP_BO_SUNG, đã kiểm lại trong lượt xanh39766960041; không xây sổ offline/workflow riêng |
+| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit đã nativePASS UAT39766960041. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
 
 ## 5. Dữ liệu và trạng thái
 
@@ -56,8 +57,8 @@ Dữ liệu mới lưu trên chứng từ native, không tạo sổ kho/nợ ho�
 | Nhận trả | Link DN và dòng gốc, lý do, request/hash, kg/bao/quy cách gốc; kiểm tổng lượng gồm cả nháp đang giữ |
 | Đơn thay | Link phiếu nhận trả bất biến; khóa duy nhất cho đơn còn hiệu lực; hủy nhả khóa, giữ link lịch sử |
 | Giấy gốc | User, thời điểm, vị trí lưu do API ghi; chưa có gốc khác với chưa có ảnh/ảnh chưa đối chiếu |
-| Ảnh ký tại kho | Đã viết lịch sử trước/sau trên DN, giữ tệp cũ và dấu đối chiếu; chặn xóa/công khai/giả lịch sử, có cửa xem lại; chưa nativePASS mở rộng mới |
-| Đối soát nợ ký theo lượt | Đã viết snapshot và bộ PDF lưu riêng tư, ký/gốc riêng, bản bổ sung nối bản trước; số theo Company và cọc riêng. Chưa nativePASS/QA bố cục PDF mới; mẫu ngày cũ chỉ còn vai trò tương thích và đã lọc phạm vi |
+| Ảnh ký tại kho | Đã viết lịch sử trước/sau trên DN, giữ tệp cũ và dấu đối chiếu; chặn xóa/công khai/giả lịch sử, có cửa xem lại; nativePASS mở rộng tại39766960041 |
+| Đối soát nợ ký theo lượt | Đã viết snapshot và bộ PDF lưu riêng tư, ký/gốc riêng, bản bổ sung nối bản trước; số theo Company và cọc riêng. NativePASS số liệu/quyền/lưu bất biến tại39766960041; QA phát hiện A5 tràn, đang kiểm bản sửa; mẫu ngày cũ chỉ còn vai trò tương thích và đã lọc phạm vi |
 
 ## 6. Phân quyền và kiểm soát
 
@@ -90,7 +91,19 @@ API mới kiểm quyền native trên nguồn và Company/Customer/Warehouse li�
 | HTTP_014_AN_VON_TIM_BIEN_THE_BAO_CAO | PASS cùng lượt | Yêu cầu phụ của báo cáo số lượng nhận danh sách rỗng; không mở Report/query/Stock Balance/Bin hoặc tùy chọn bỏ quyền; ca Chrome nhận hàng nhà máy cũ chạy tiếp đạt |
 | PDF A5 dữ liệu giả | Đã xem PDF tạo bằng Chrome |2trang khi không cần ký cuối,3trang khi có; chưa kiểm máy in thật |
 
-Cục bộ: 516 ca kh_aph, 14 ca bỏ qua; 108 ca lõi đạt. Bộ014 đã đọc đủ 127 PASS trên đúng `b574457`, gồm khôi phục dữ liệu/series. Đây là dữ liệu giả, không phải nghiệm thu nhân sự/hàng tồn/máy in thật. Bốn ca trả lẻ/chưa thu/thu một phần/đổi mã và xe khách chỉ định trong bảng trên cũng được kiểm lại đạt ở lượt mới, không chỉ dựa lượt cũ. Giữ mọi lượt FAIL làm bằng chứng. Các yêu cầu còn thiếu không được tự đổi thành PASS từ kết quả phần đã triển khai.
+Cục bộ mới nhất570ca kh_aph không bỏ qua đạt. Bộ014 đã đọc đủ135PASS đúng98c37e3, gồm khôi phục dữ liệu/series; inventory33, funds20, cost16, dispatch48, b0111=15, b0112=13, b0113=13, b0114=8, b012=9, b013=10, native16511=4 đềuPASS. Các ca nền trong bảng trên cũng được kiểm lại ở lượt này. Đây là dữ liệu giả, không thay nghiệm thu nhân sự/hàng tồn/máy in thật. Giữ mọi lượtFAIL. Bố cục A5 native đang sửa sau QA, không lấy lượt xanh nghiệp vụ để coi mẫu in đạt.
+
+| Ca mở rộng | Bằng chứng39766960041 đúng98c37e3 | Giới hạn |
+| --- | --- | --- |
+| HTTP_014_GIAY_TAY_NHAP_BO_SUNG | PASS | Chỉ lưu trên DN/SE/PE chuẩn, không offline/sổ riêng |
+| HTTP_014_HO_SO_BAN_KY | PASS | Thay ảnh giữ tệp/dấu cũ; không xóa/công khai/giả lịch sử |
+| HTTP_014_CHUAN_BI_GOM_KHO | PASS | Nháp/in không ghi sổ; xuất/nhận qua Transit, đúng kho; chưa nối chọn nhu cầu từ đơn |
+| HTTP_014_KHACH_KY_TAI_DICH | PASS | Chỉ ship yêu cầuCó; độc lập bản kho; gốc trước ảnh, không ghi sổ thêm |
+| HTTP_014_DOI_SOAT_PHAM_VI | PASS | Company/kho/NoCost/privatePDF, tăng/giảm ròng0 vẫn đủ chi tiết |
+| HTTP_014_DOI_SOAT_BAN_KY_BAT_BIEN | PASS | Bản số/PDF bất biến sau hủy nguồn, quyền ký nợ riêng, bản bổ sung nối trước |
+| HTTP_014_DOI_SOAT_TIEN_CHUA_PHAN_BO_NGOAI_TE | PASS |10USD×25.000 về250.000VND, không đổi sổ |
+| NATIVE_DESK_DOI_SOAT_RETRY | PASS | Kế toán bán hàng thật, mất phản hồi sau200/bấm lại chỉ một bản; ảnh đã đọc nhưng còn lớp nền modal lúc chụp |
+| PDF bộ giấy A5 | QA CHƯA ĐẠT |6trang thay vì4 ở ca một dòng; bản sửa lề đang kiểm39772096251 |
 
 Đã tách Chốt ngày khỏi cờ `kh_aph_factory_handover`: dùng các cờ chốt ca, bàn giao và người giữ tiền cửa hàng; giữ quyền quản lý/phạm vi nguồn. Mục chuyển tiếp nhà máy chỉ đọc khi cầu nối bật. Cục bộ570ca đạt; ca native tắt Nhà máy đã bổ sung, chưa có kết quả trên mã mới.
 

@@ -8,6 +8,8 @@ QA PDF phát hiện lỗi ngoài assertion cũ: bộ doi-soat-bo-giay.pdf có6tr
 
 PR38 vẫn nháp, production0.16.4 giữ nguyên. Cần chạy lại UAT trên mã sửa, xem đủ PDF và ảnh; các phần còn thiếu trong bảng đối chiếu tiếp tục mở.
 
+Đã đồng bộ docs/doi-chieu-kho-giao-nhan-20261021.md với bằng chứng135 và giới hạn QA; giữ riêng phần chưa làm. Câu hỏi tính tiền trả một phần sau giảm giá đang chờ chủ dự án chọn bình quân theo mã hay phân biệt phần đã giảm/chưa giảm; chưa tự áp công thức mới. UAT sửaPDF39772096251 đúngfb6ab9c đang chạy; UAT39771756550 đúng6868cff bị lượt mới thay thế/hủy, không tínhPASS.
+
 ## 22/10/2026 — Tách Chốt ngày cửa hàng khỏi cầu nối Nhà máy
 
 Chốt ngày dùng cờ chốt ca + bàn giao + người giữ tiền hiện có; giữ C.guard(manager=True), quyền Company và quyền nguồn, không cần bật quỹ/cầu nối Nhà máy. Mục chuyển tiếp nhà máy chỉ đọc khi cờ đó bật. Bộ cài schema chốt ca nạp báo cáo; lối tắt Thu chi và công nợ dùng các cờ cửa hàng. Không thêm cờ, quyền hoặc sổ. Cục bộ570ca không bỏ qua đạt; thêm2ca đơn vị và mở rộng ca native hiện có: tắt cầu nối nhà máy vẫn xem sao kê/Chốt ngày, nhân sự hạn chế vẫn bị chặn. Chưa có kết quả native của thay đổi này.
