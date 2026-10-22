@@ -4,6 +4,8 @@
 
 Ưu tiên khách hoặc lái xe do khách cử đến lấy; dùng ít người thao tác phần mềm, in trước khi giao, hoàn thiện hồ sơ sau. Ship luôn có phiếu xuất, khách cuối chỉ ký khi có yêu cầu. Trả một phần bao phải ghi đúng kg và bao/vỏ thực nhận. Đổi mã dùng chứng từ nhập trả và xuất mới; giảm giá đơn cũ không được giấu vào đơn mới. Giấy tay khi mất mạng, phiếu thu và bản đối soát nợ theo lượt là phần đã chốt nhưng chưa hoàn thiện trong PR38.
 
+Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – giao nhận gọn](huong-dan-kho-giao-nhan-gon.md); ghi rõ các phần còn thiếu.
+
 **PR38 là ứng viên đang phát triển, chưa phải bản phát hành hoàn tất toàn phạm vi.** Không dùng số ca đạt của một phần để đóng các yêu cầu còn thiếu.
 
 **Cập nhật22/10:** giấy tay thu gọn đúng chỉ đạo: lưu trên DN/SE/PE khi nhập bổ sung, không hệ thống offline riêng. Đã viết snapshot đối soát và bộ PDF bất biến (`debt_statement.py`, DocType bằng chứng `Bien ban doi soat no`), phân quyền/file/bản ký và cửa thao tác từ phiếu/Khách. Cục bộ545ca cóJinja2 không bỏ qua đạt; mới kỳ vọng132PASS native, chưa đủ bằng chứng cho phần mới. UAT39703447598 c4b93fa FAIL ở kịch bản dùng modified cũ trong ca giấy, đã sửa không nới assertion; nút mở hoàn đã cóHTTP/ChromePASS và đã xem ảnh. Xem mục đầu hai hồ sơ bàn giao để lấy mã/run tiếp theo.

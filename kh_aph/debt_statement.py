@@ -7,7 +7,7 @@ import re
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, getdate, now_datetime, today
-from kh_aph.constants import ROLE_NO_COST
+from kh_aph.constants import ROLE_NO_COST, ROLE_FACTORY, PRICE_ROLES
 from kh_aph.debt_statement_rules import amount, snapshot, base_unallocated
 
 DT = 'Bien ban doi soat no'
@@ -25,9 +25,11 @@ def _allowed(user=None):
     user = user or frappe.session.user
     if not enabled() or user == 'Guest':
         return False
+    if user == 'Administrator':
+        return True  # Theo chính sách giá hiện có; Admin được Frappe liệt kê cả vai trò hạn chế.
     roles = set(frappe.get_roles(user))
-    return bool(ROLE_NO_COST not in roles
-                and (user == 'Administrator' or roles & ROLES))
+    price_restricted = ROLE_NO_COST in roles or (ROLE_FACTORY in roles and not roles.intersection(PRICE_ROLES))
+    return bool(not price_restricted and roles & ROLES)
 
 
 def _limited_dimensions(user=None):
@@ -36,6 +38,15 @@ def _limited_dimensions(user=None):
     from frappe.permissions import get_user_permissions
     restrictions = get_user_permissions(user or frappe.session.user)
     dimensions = {'Account', 'Cost Center', 'Project'}
+    # Bộ giấy chứa phiếu nguồn: User Permission trên kho/hàng/link riêng cũng
+    # phải chặn cả API danh sách/tải PDF, không chỉ kiểm Company lúc tạo.
+    for doctype in SOURCES:
+        source_fields = list(frappe.get_meta(doctype).fields or [])
+        for field in tuple(source_fields):
+            if field.fieldtype in ('Table', 'Table MultiSelect') and field.options:
+                source_fields.extend(frappe.get_meta(field.options).fields or [])
+        dimensions.update(field.options for field in source_fields
+                          if field.fieldtype == 'Link' and field.options and not field.get('ignore_user_permissions'))
     dimensions.update(frappe.get_all('Accounting Dimension', pluck='document_type'))
     dimensions -= {'Company', 'Customer'}
     return any(key in dimensions and values for key, values in restrictions.items())
@@ -45,7 +56,7 @@ def _guard():
     if not _allowed():
         frappe.throw('Cần quyền kế toán được xem đối soát công nợ', frappe.PermissionError)
     if _limited_dimensions():
-        frappe.throw('Phạm vi tài chính còn giới hạn theo tài khoản hoặc bộ phận; nhờ kế toán có đủ phạm vi lập bản đối soát', frappe.PermissionError)
+        frappe.throw('Phạm vi chứng từ còn giới hạn theo tài khoản, kho hoặc bộ phận; nhờ kế toán có đủ phạm vi lập bản đối soát', frappe.PermissionError)
 
 
 def has_permission(doc=None, user=None, permission_type=None, ptype=None, **kwargs):

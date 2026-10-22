@@ -29,6 +29,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     before=counts()
     created=rpc('kh_aph.debt_statement.create',args,ktt)
     statement=get(dt,created['name'],ktt)
+    assert get(dt,statement['name'])['payload']==statement['payload'], 'Administrator không đọc được bản đối soát'
     frozen=statement['payload']
     data=json.loads(frozen)
     aph=next(r for r in data['positions'] if r['company']==f['aph'])
@@ -45,11 +46,20 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     assert len(lst(dt,{'request_id':args['request_id']},['name'],ktt))==1
     denied(lambda:rpc('frappe.client.save',{'doc':json.dumps({**statement,'payload':'{}'})},ktt),('PermissionError',))
     denied(lambda:insert({'doctype':dt,'customer':f['kh2'],'scope':args['companies'],'payload':'{}'},ktt),('PermissionError',))
-    no_cost, scoped=phien(f['dung']),phien(f['scope_co'])
-    for caller in (no_cost,scoped):
+    no_cost, scoped, warehouse_scoped=phien(f['dung']),phien(f['scope_co']),phien(f['scope_wh'])
+    for caller in (no_cost,scoped,warehouse_scoped):
         denied(lambda caller=caller:get(dt,statement['name'],caller),('PermissionError',))
         denied(lambda caller=caller:caller.binary_get(created['file_url']),('PermissionError',))
     assert not lst(dt,{'name':statement['name']},['name'],scoped)
+    try:
+        restricted_rows=lst(dt,{'name':statement['name']},['name','payload'],warehouse_scoped)
+    except Exception as exc:
+        if not hasattr(exc,'read'): raise
+        failure=json.loads(exc.read())
+        assert failure.get('exc_type')=='PermissionError',failure
+    else:
+        assert restricted_rows==[], 'Danh sách đã lộ payload bộ giấy ngoài phạm vi kho'
+    denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},warehouse_scoped),('PermissionError',))
     denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},scoped),('PermissionError',))
     denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},no_cost),('PermissionError',))
     partial=rpc('kh_aph.debt_statement.create',{**args,'companies':json.dumps([f['aph']]),'request_id':uuid.uuid4().hex},scoped)

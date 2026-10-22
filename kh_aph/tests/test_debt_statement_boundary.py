@@ -21,6 +21,7 @@ class StatementBoundary(unittest.TestCase):
         f=self.f=types.ModuleType('frappe')
         f.conf={'kh_aph_quan_tri':1}; f.session=Row(user='account@example.invalid')
         f.get_roles=Mock(return_value=['Accounts Manager'])
+        f.get_meta=Mock(return_value=Row(fields=[]))
         f.get_all=Mock(return_value=[]); f.whitelist=lambda *a,**kw:lambda fn:fn
         f.PermissionError=PermissionError; f.TimestampMismatchError=ValueError
         f.throw=lambda message,exc=ValueError:(_ for _ in ()).throw(exc(message))
@@ -100,3 +101,22 @@ class StatementBoundary(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.api._lock_sources('KH',['CO'],{('Sales Invoice','SI')},{('Delivery Note','DN'):Row()})
         self.f.get_doc.assert_called_once_with('Delivery Note','DN',for_update=True)
+
+    def test_stock_and_custom_link_restrictions_block_aggregate_list_and_pdf_scope(self):
+        self.f.get_meta.return_value=Row(fields=[Row(fieldtype='Table',options='ChiTiet')])
+        self.f.get_meta.side_effect=lambda doctype:Row(fields=[Row(fieldtype='Link',options='Warehouse')]) if doctype=='ChiTiet' else Row(fields=[Row(fieldtype='Table',options='ChiTiet')])
+        self.permissions.get_user_permissions.return_value={'Warehouse':[{'doc':'WH'}]}
+        self.assertTrue(self.api._limited_dimensions())
+        self.assertEqual(self.api.query_conditions(),'1=0')
+        with self.assertRaises(PermissionError):self.api._guard()
+        self.permissions.get_user_permissions.return_value={'Employee':[{'doc':'NHAN-SU'}]}
+        self.assertFalse(self.api._limited_dimensions())
+
+    def test_administrator_and_factory_price_policy_match_existing_app(self):
+        self.f.get_roles.return_value=['APH Không xem giá vốn','System Manager']
+        self.assertTrue(self.api._allowed('Administrator'))
+        self.assertFalse(self.api._allowed('nhan-vien'))
+        self.f.get_roles.return_value=['Kế toán bán hàng','Kế toán nhà máy']
+        self.assertFalse(self.api._allowed('nhan-vien'))
+        self.f.get_roles.return_value=['Kế toán bán hàng','Kế toán nhà máy','Accounts User']
+        self.assertTrue(self.api._allowed('nhan-vien'))

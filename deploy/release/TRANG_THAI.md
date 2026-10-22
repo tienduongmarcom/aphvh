@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Giới hạn bộ giấy theo quyền nguồn và giữ Administrator dùng được
+
+Rà lại quyền snapshot: bộ PDF có phiếu nguồn, nên chỉ kiểm Company/Customer là chưa đủ cho tài khoản còn User Permission trên kho/hàng/link của nguồn. Đã mở rộng guard dựa Link và Table metadata của DN/SI/PE/JE cùng dimension kế toán; các giới hạn ngoài Company/Customer chặn đồng thời tạo/đọc/danh sách/PDF. Không vô tình chặn quyền Employee không liên quan nguồn. Người đủ phạm vi Company/Customer vẫn dùng như cũ. Thêm negative control scope_wh cho cả dữ liệu payload và tệp; giữ positive control CompanyAPH.
+
+Đã khớp chính sách giá của app: Administrator được dùng dù Frappe liệt kê cả vai trò hạn chế; nhân viên NoCost vẫn bị chặn kể cả kiêm quản lý, hồ sơ nhà máy bị hạn chế giá không được vào đối soát. Sửa nút hiển thị tương ứng, thêm kiểm Administrator đọc bản đã cấp. Cục bộ568ca không bỏ qua đạt; JS/diff đạt. Các mở rộng ca hiện có không đổi kỳ vọng135PASS, chưa có native kết quả của guard mới. UAT39763635543 mã3c9f34c còn đang kiểm134, Cổng339764128191 mã9a99835 đang chạy. PR38 nháp, production0.16.4 giữ nguyên.
+
+Đã viết docs/huong-dan-kho-giao-nhan-gon.md: nhân sự, khách/xe khách lấy, ship, khách ký cuối, kho vệ tinh, gom kho, giấy tay và lưu giấy/đối soát; ghi rõ đây là ứng viên và phần chưa hoàn thiện. Không gọi giấy tay là workflow offline hoặc coi bản hướng dẫn là nativePASS. Còn phân bổ giảm theo dòng/lượng, trả một phần sau giảm và nối nhu cầu gom kho từ đơn.
+
 ## 22/10/2026 — Tách việc thiếu ảnh/gốc và quy đổi tiền chưa phân bổ
 
 Chốt ngày giữ riêng việc thiếu ảnh và thiếu giấy gốc của bản khách ký tại đích và biên bản đối soát. Nhận gốc trước ảnh vẫn lưu được và không giữ khách lại; việc thiếu ảnh còn hiện đến khi bổ sung. Nguồn là DN/biên bản hiện có, không tạo bảng việc hoặc ghi sổ. Biên bản dùng get_list và quyền/phạm vi native, chỉ trả nguồn trong Company đang xem.

@@ -43,7 +43,8 @@ kh_aph.statement.open = async function(frm) {
 for (const doctype of ["Customer", "Delivery Note", "Payment Entry"]) {
     frappe.ui.form.on(doctype, {refresh(frm) {
         if (!frappe.boot?.kh_aph?.quan_tri || frm.is_new() ||
-            (frappe.user_roles || []).includes("APH Không xem giá vốn") ||
+            (frappe.session.user !== "Administrator" && (frappe.boot?.kh_aph?.price_restricted ||
+                (frappe.user_roles || []).includes("APH Không xem giá vốn"))) ||
             (doctype !== "Customer" && frm.doc.docstatus !== 1) ||
             (doctype === "Payment Entry" && frm.doc.party_type !== "Customer") ||
             !frappe.model.can_create("Bien ban doi soat no")) return;
