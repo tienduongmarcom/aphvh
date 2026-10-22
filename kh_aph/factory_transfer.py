@@ -4,7 +4,7 @@ Phiếu chuyển đi (Material Transfer, add_to_transit) do kho nguồn lập nh
 (Stock Entry nhận từ hàng đang vận chuyển, `outgoing_stock_entry`) theo lượng thực nhận, nhận từng phần được.
 Không dùng phiếu mua (PR) cho chuyến chuyển; chuyển khác đơn vị là mua bán nội bộ, không thuộc cửa sổ này.
 Lượng thiếu nằm lại kho đang vận chuyển chờ đối soát, không tự ghi hao hụt; nhận vượt lượng chuyển bị chặn.
-Tái dùng cờ `kh_aph_factory_receiving` (mặc định tắt).
+Tái dùng cờ nhận nhà máy hoặc kho vận hành (mặc định tắt); không phụ thuộc màn Nhà máy khi dùng ở cửa hàng.
 """
 from contextvars import ContextVar
 import hashlib
@@ -13,7 +13,25 @@ import json
 import frappe
 from frappe.utils import cint, getdate, today, now_datetime
 from kh_aph.cash_transaction import retry_rpc
-from kh_aph.factory_receiving import enabled, guard, _number
+from kh_aph.factory_receiving import _number, ROLES
+
+DESTINATION = "kh_aph_transfer_destination"
+
+
+def enabled():
+    return bool(cint(frappe.conf.get("kh_aph_factory_receiving")) or cint(frappe.conf.get("kh_aph_kho_van_hanh")))
+
+
+def guard():
+    if not enabled() or not cint(frappe.conf.get("kh_aph_quantity_valuation_mvp")):
+        frappe.throw("Chưa bật chuyển và nhận hàng giữa các kho")
+    if not cint(frappe.conf.get("kh_aph_server_cost_guard")):
+        frappe.throw("Cần bật bảo vệ giá vốn trước khi chuyển kho")
+    if (frappe.session.user == "Guest" or (frappe.session.user != "Administrator"
+            and not (set(frappe.get_roles()) & (ROLES | {"Thủ kho bán hàng"})))):
+        frappe.throw("Không đủ quyền chuyển và nhận hàng giữa các kho", frappe.PermissionError)
+    if not frappe.db.get_value("User", frappe.session.user, "enabled"):
+        frappe.throw("Tài khoản chưa hoạt động", frappe.PermissionError)
 
 PREFIX = 'kh_aph_transfer_'
 STAMP = ('request', 'payload', 'actor', 'at', 'receiver', 'note')
@@ -86,7 +104,7 @@ def preview(stock_entry):
         if qty <= 0:
             continue
         item = _item(row)
-        suggested = ''
+        suggested = doc.get(DESTINATION) or ''
         if row.get('material_request_item'):
             suggested = frappe.db.get_value('Material Request Item', row.material_request_item, 'warehouse') or ''
         items.append({'source_row': row.name, 'item_code': row.item_code, 'transit_warehouse': row.t_warehouse,
@@ -157,6 +175,13 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
         weight = _number(item.get('kh_aph_kg_per_bag') or 0)
         if (weight and (not bags or qty != bags * weight)) or (not weight and bags):
             frappe.throw('Kg/số bao không khớp quy cách; không tự sửa kg/bao để cân bằng')
+    planned = doc.get(DESTINATION)
+    if planned and any(v['warehouse'] != planned for v in selected.values()) and not note:
+        frappe.throw('Nhận khác kho dự kiến: ghi lý do và kho thực nhận trong ghi chú')
+    if planned and any(v['warehouse'] != planned for v in selected.values()):
+        note = ('Kho dự kiến: ' + planned + '; kho thực nhận: ' + ', '.join(sorted({v['warehouse'] for v in selected.values()})) + '. ' + note)
+        if len(note) > 2000:
+            frappe.throw('Ghi chú đổi kho nhận quá dài')
     from erpnext.stock.doctype.stock_entry.stock_entry import make_stock_in_entry
     entry = make_stock_in_entry(stock_entry)
     entry.items = [r for r in entry.items if r.ste_detail in selected]
@@ -169,6 +194,7 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
         row.t_warehouse = values['warehouse']
         # Ghi đúng số bao thực nhận (không để mapper chép số bao của cả chuyến khi nhận một phần).
         row.kh_aph_bags = float(_number(values['bags']))
+    entry.set(DESTINATION, None)  # Phiếu nhận không mang kho dự kiến của phiếu chuyển đi.
     entry.posting_date = str(getdate(received_date))
     entry.set_posting_time = 1
     for field, value in {'request': key, 'payload': payload, 'actor': frappe.session.user, 'at': now_datetime(),
@@ -186,10 +212,18 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
 
 @frappe.whitelist(methods=['POST'])
 @retry_rpc
-def send(company, request_id, rows, sent_date, carrier, note=None):
-    """NM05: lập + xác nhận phiếu chuyển đi qua kho đang vận chuyển của chính đơn vị (cùng đơn vị, không đổi chủ sở hữu)."""
+def send(company, request_id, rows, sent_date, carrier, note=None, prepare_only=0, destination=None):
+    """Chuẩn bị để in trước hoặc xác nhận chuyển thực tế qua kho đang vận chuyển, cùng đơn vị."""
     guard()
     frappe.get_doc('Company', company).check_permission('read')
+    if prepare_only not in (0, 1, '0', '1'):
+        frappe.throw('Chọn chuẩn bị phiếu hoặc xác nhận chuyển thực tế')
+    prepare_only = cint(prepare_only)
+    if destination is not None and not isinstance(destination, str):
+        frappe.throw('Kho nhận dự kiến không hợp lệ')
+    destination = (destination or '').strip()
+    if prepare_only and not destination:
+        frappe.throw('Chọn kho nhận dự kiến trước khi chuẩn bị phiếu')
     transit = frappe.db.get_value('Company', company, 'default_in_transit_warehouse')
     if not transit:
         frappe.throw('Đơn vị chưa có kho đang vận chuyển mặc định')
@@ -212,7 +246,10 @@ def send(company, request_id, rows, sent_date, carrier, note=None):
         frappe.throw('Thiếu mã lượt chuyển; mở lại cửa sổ')
     if not sent_date or getdate(sent_date) > getdate(today()):
         frappe.throw('Ngày chuyển không được ở tương lai')
-    body = json.dumps(['send', company, clean, str(getdate(sent_date)), carrier, note], sort_keys=True, ensure_ascii=False)
+    identity = ['send', company, clean, str(getdate(sent_date)), carrier, note]
+    if prepare_only or destination:
+        identity.extend([prepare_only, destination])
+    body = json.dumps(identity, sort_keys=True, ensure_ascii=False)
     payload = hashlib.sha256(body.encode()).hexdigest()
     key = hashlib.sha256(json.dumps(['transfer-send', frappe.session.user, company, request_id]).encode()).hexdigest()
     frappe.db.sql('SELECT name FROM `tabCompany` WHERE name=%s FOR UPDATE', company)
@@ -220,16 +257,18 @@ def send(company, request_id, rows, sent_date, carrier, note=None):
     if old:
         entry = frappe.get_doc('Stock Entry', old[0][0], for_update=True)
         entry.check_permission('read')
-        if entry.get(PREFIX + 'payload') != payload or entry.docstatus != 1:
+        if entry.get(PREFIX + 'payload') != payload or entry.docstatus not in ((0, 1) if prepare_only else (1,)):
             frappe.throw('Lượt chuyển đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
         return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
+    if destination:
+        _destination(destination, company, transit)
     items = []
     for r in clean:
         row = frappe._dict(item_code=r['item_code'], conversion_factor=1)
         item = _item(row)
         src = frappe.get_doc('Warehouse', r['warehouse'])
         src.check_permission('read')
-        if src.company != company or src.is_group or src.disabled or src.name == transit:
+        if src.company != company or src.is_group or src.disabled or src.name == transit or src.get('warehouse_type') == 'Transit' or src.name == destination:
             frappe.throw('Kho chuyển đi phải là kho lá đang dùng của đơn vị')
         weight = _number(item.get('kh_aph_kg_per_bag') or 0)
         qty, bags = _number(r['qty']), _number(r['bags'])
@@ -242,14 +281,15 @@ def send(company, request_id, rows, sent_date, carrier, note=None):
         items.append(line)
     entry = frappe.get_doc({'doctype': 'Stock Entry', 'stock_entry_type': 'Material Transfer', 'purpose': 'Material Transfer',
                             'company': company, 'add_to_transit': 1, 'posting_date': str(getdate(sent_date)),
-                            'set_posting_time': 1, 'items': items})
+                            'set_posting_time': 1, DESTINATION: destination or None, 'items': items})
     for field, value in {'request': key, 'payload': payload, 'actor': frappe.session.user, 'at': now_datetime(),
                          'receiver': carrier, 'note': note}.items():
         entry.set(PREFIX + field, value)
     token = _INTERNAL.set((frappe.session.user, key, payload))
     try:
         entry.insert()
-        entry.submit()
+        if not prepare_only:
+            entry.submit()
     finally:
         _INTERNAL.reset(token)
     entry.check_permission('read')
@@ -262,6 +302,16 @@ def _stamp(doc, field):
 
 def protect(doc, method=None):
     """Dấu nhận chuyến chỉ do cửa sổ tạo, không sửa sau đó (giữ cả khi tắt cờ)."""
+    old = doc.get_doc_before_save() if not doc.is_new() else None
+    destination = doc.get(DESTINATION)
+    if old and cint(old.docstatus) != 0 and (destination or '') != (old.get(DESTINATION) or ''):
+        frappe.throw('Không đổi kho nhận dự kiến sau khi đã chuyển; nhận vào kho khác phải ghi lý do')
+    if destination and cint(doc.docstatus) != 2:
+        if doc.get('purpose') != 'Material Transfer' or not cint(doc.get('add_to_transit')) or doc.get('outgoing_stock_entry'):
+            frappe.throw('Kho nhận dự kiến chỉ dùng trên phiếu chuyển đi qua kho đang vận chuyển')
+        _destination(destination, doc.company, None)
+        if any(row.get('s_warehouse') == destination for row in doc.items):
+            frappe.throw('Kho nhận dự kiến phải khác kho chuyển đi')
     values = [doc.get(PREFIX + f) for f in STAMP]
     if not any(values):
         return
@@ -298,6 +348,9 @@ def lock_outgoing(doc, method=None):
 
 def prevent_delete(doc, method=None):
     if doc.get(PREFIX + 'request'):
+        if (cint(doc.docstatus) == 0 and doc.get(DESTINATION) and cint(doc.get('add_to_transit'))
+                and not doc.get('outgoing_stock_entry')):
+            return  # Bỏ bản chuẩn bị chưa ghi kho bằng xóa native; giữ Deleted Document chuẩn.
         frappe.throw('Giữ phiếu nhận chuyến đã có mã lượt để đối soát, kể cả sau hủy')
 
 
@@ -311,4 +364,8 @@ def schema():
                'fieldtype': 'Datetime' if k == 'at' else 'Small Text' if k == 'note' else 'Data',
                'read_only': 1, 'no_copy': 1, 'hidden': int(k in ('request', 'payload')),
                **({'unique': 1} if k == 'request' else {})} for k in STAMP]
+    fields.append({'fieldname': DESTINATION, 'label': 'Kho nhận dự kiến', 'fieldtype': 'Link', 'options': 'Warehouse',
+                   'insert_after': 'add_to_transit', 'no_copy': 1,
+                   'depends_on': 'eval:doc.add_to_transit && !doc.outgoing_stock_entry',
+                   'read_only_depends_on': 'eval:doc.docstatus != 0'})
     create_custom_fields({'Stock Entry': fields})

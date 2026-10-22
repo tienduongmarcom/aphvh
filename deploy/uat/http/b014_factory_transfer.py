@@ -106,3 +106,39 @@ def chay(rpc, get, insert, submit, lst, denied, f, phien, emit):
         'rows': json.dumps([{'item_code': f['A'], 'warehouse': f['kho_vh'], 'qty': 1, 'bags': 0}])}, dung))
     assert sent['name'] in [x['name'] for x in rpc('kh_aph.factory_transfer.incoming', {'company': f['aph']}, dung)]
     emit('HTTP_NM05_SEND_TRANSIT', 'PASS', {'via_transit': True, 'retry_one_entry': True, 'other_company_source': 'denied'})
+
+
+def chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit):
+    """Kho cửa hàng chuẩn bị giấy trước; xuất/nhận thực tế vẫn là Stock Entry chuẩn."""
+    def counts():
+        return {dt: len(lst(dt, {}, ['name'], ktt)) for dt in
+                ('Stock Entry', 'Stock Ledger Entry', 'GL Entry', 'Payment Ledger Entry')}
+    args = {'company': f['aph'], 'request_id': f['p'] + '-chuan-bi-chuyen', 'sent_date': f['date'],
+            'carrier': 'Xe gom kho UAT', 'destination': f['kho2'], 'prepare_only': 1,
+            'rows': json.dumps([{'item_code': f['A'], 'warehouse': f['kho'], 'qty': 3, 'bags': 0}])}
+    before = counts()
+    result = rpc('kh_aph.factory_transfer.send', args, ktt)
+    doc = get('Stock Entry', result['name'], ktt)
+    assert doc['docstatus'] == 0 and doc['kh_aph_transfer_destination'] == f['kho2']
+    after = counts()
+    assert after == {**before, 'Stock Entry': before['Stock Entry'] + 1}, 'Chuẩn bị giấy đã ghi sổ'
+    assert rpc('kh_aph.factory_transfer.send', args, ktt) == result and counts() == after
+    html = rpc('frappe.www.printview.get_html_and_style', {'doc': json.dumps(doc), 'print_format': 'Phiếu kho'}, ktt)['html']
+    assert 'CHƯA GHI SỔ' in html and 'Xe gom kho UAT' in html and 'Kho nhận cuối dự kiến' in html
+    denied(lambda: rpc('kh_aph.factory_transfer.send', {**args, 'request_id': f['p'] + '-chuan-bi-scope'}, phien(f['scope_wh'])), ('PermissionError',))
+    posted = submit(doc, ktt)
+    assert posted['docstatus'] == 1 and posted['items'][0]['t_warehouse'] == TRANSIT
+    assert counts()['Stock Ledger Entry'] > before['Stock Ledger Entry']
+    assert rpc('kh_aph.factory_transfer.send', args, ktt)['name'] == posted['name']
+    view = rpc('kh_aph.factory_transfer.preview', {'stock_entry': posted['name']}, ktt)
+    assert view['items'][0]['warehouse'] == f['kho2']
+    received = rpc('kh_aph.factory_transfer.receive', {'stock_entry': posted['name'],
+        'request_id': f['p'] + '-nhan-gom-kho', 'received_date': f['date'], 'receiver': 'Thủ kho cửa hàng',
+        'rows': json.dumps([{'source_row': view['items'][0]['source_row'], 'warehouse': f['kho2'], 'qty': 3, 'bags': 0}])}, ktt)
+    receipt = get('Stock Entry', received['name'], ktt)
+    assert receipt['docstatus'] == 1 and receipt['items'][0]['t_warehouse'] == f['kho2']
+    assert not receipt.get('kh_aph_transfer_destination')
+    assert get('Stock Entry', posted['name'], ktt)['per_transferred'] == 100
+    assert counts()['Payment Ledger Entry'] == before['Payment Ledger Entry'], 'Chuyển nội bộ sinh công nợ khách'
+    emit('HTTP_014_CHUAN_BI_GOM_KHO', 'PASS', {'draft_print_no_posting': True, 'repeat_one_entry': True,
+         'native_issue_transit_receive': True, 'planned_destination': True, 'warehouse_scope': True, 'no_customer_debt': True})

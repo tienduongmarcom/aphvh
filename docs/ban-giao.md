@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — Chuẩn bị và in phiếu chuyển kho trước khi thực giao
+
+Đã thêm lựa chọn chuẩn bị nháp vào dịch vụ Stock Entry chuyển kho hiện có. Màn Chuyển hàng đi mặc định Chuẩn bị phiếu & In: kho nhận cuối dự kiến, người/xe chở, phiếu nháp không ghi kho/GL/nợ. Bấm lại cùng lượt mở phiếu cũ, cả sau khi phiếu đã ghi, không tự xác nhận nháp. Người dùng kiểm lượng thực giao trên phiếu chuẩn rồi xác nhận; nhận về kho vẫn dùng Stock Entry nhận từ Transit, có thể nhận từng phần. Kho dự kiến được điền sẵn, đổi kho thực nhận cần lý do. Không chuyển khác Company, không lấy Transit làm kho nguồn. Cho bỏ bản chuẩn bị chưa ghi bằng xóa native; phiếu đã ghi/hủy giữ lịch sử như cũ.
+
+Chuyển/nhận dùng cờ kho vận hành hoặc nhận nhà máy, giữ28cờ; cửa hàng không cần bật màn Nhà máy để dùng. Mẫu phiếu kho nháp đặt lượng ở cột yêu cầu, để trống thực xuất/nhập, hiện kho nhận cuối và người chở. Đã tái sinh8JSON với mốc22/10 09:00. Cục bộ550ca không bỏ qua đạt; thêm HTTP_014_CHUAN_BI_GOM_KHO, bộ014 kỳ vọng133PASS. Chưa có bằng chứng native của mở rộng này. UAT39711917331 đang kiểm riêng mãedb3c67 với132ca, chưa bao gồm chuyển kho mới. PR38 nháp, production/tag0.16.4 giữ nguyên; các phần giảm/trả theo dòng và bằng chứng khách cuối vẫn đang dở.
+
 ## 22/10/2026 — Sửa dữ liệu kiểm sửa đổi giấy tay, giữ nguyên chặn đổi nguồn
 
 UAT39708719665 đúng7efd4b1 dừng ở ca sửa đổi giấy tay: kịch bản gửi lại số giấy/vị trí cũ sau khi giấy gốc đã chuyển về cửa hàng. Guard từ chối đúng việc đổi nguồn. Đã sửa fixture để mô phỏng các ô no_copy trống của thao tác Sửa đổi native, kế thừa đúng số và vị trí hiện tại; thêm ca đơn vị kiểm kế thừa. Không nới kiểm của sản phẩm. Cục bộ546ca đạt, không bỏ qua. Cổng239708673680 và Cổng339708723517 đúng7efd4b1 SUCCESS; chưa suy cho mã sửa kiểm kế tiếp. Cần chạy lại UAT132; snapshot/PDF mới chưa có bằng chứng native. PR38 nháp, production0.16.4 không đổi.
