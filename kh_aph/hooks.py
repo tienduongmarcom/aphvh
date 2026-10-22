@@ -551,3 +551,13 @@ doc_events["File"]["before_validate"].append("kh_aph.paper_archive.protect_file_
 
 for _event in ("validate", "before_update_after_submit", "before_cancel"):
     doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.sales_p1.protect_processing_reference")
+
+has_permission["Bien ban doi soat no"] = "kh_aph.debt_statement.has_permission"
+permission_query_conditions["Bien ban doi soat no"] = "kh_aph.debt_statement.query_conditions"
+extend_doctype_class["File"].append("kh_aph.debt_statement.StatementFileMixin")
+doc_events["File"]["before_validate"].append("kh_aph.debt_statement.protect_file_update")
+jinja["methods"].append("kh_aph.print_utils.kh_aph_doi_soat_da_luu")
+for _dt in ("Customer", "Delivery Note", "Payment Entry", "Bien ban doi soat no"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/debt_statement.js"]

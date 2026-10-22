@@ -6,6 +6,8 @@
 
 **PR38 là ứng viên đang phát triển, chưa phải bản phát hành hoàn tất toàn phạm vi.** Không dùng số ca đạt của một phần để đóng các yêu cầu còn thiếu.
 
+**Cập nhật22/10:** giấy tay thu gọn đúng chỉ đạo: lưu trên DN/SE/PE khi nhập bổ sung, không hệ thống offline riêng. Đã viết snapshot đối soát và bộ PDF bất biến (`debt_statement.py`, DocType bằng chứng `Bien ban doi soat no`), phân quyền/file/bản ký và cửa thao tác từ phiếu/Khách. Cục bộ545ca cóJinja2 không bỏ qua đạt; mới kỳ vọng132PASS native, chưa đủ bằng chứng cho phần mới. UAT39703447598 c4b93fa FAIL ở kịch bản dùng modified cũ trong ca giấy, đã sửa không nới assertion; nút mở hoàn đã cóHTTP/ChromePASS và đã xem ảnh. Xem mục đầu hai hồ sơ bàn giao để lấy mã/run tiếp theo.
+
 ## 2. Hiện trạng và nguồn
 
 - Production: 0.16.4, tag `1dffa623dc28d239321b7c9cd249968def402123`, digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`; người vận hành đã xác nhận nâng cấp đạt. Không ghi dữ liệu production trong lượt phát triển này.
@@ -38,7 +40,7 @@
 | Thu một phần/đủ | Native giữ credit riêng khi cần; đối trừ đúng nguồn rồi chuẩn bị hoàn phần dư | Chưa có tổng quan thu/hoàn/chênh lệch trước khi bấm xác nhận trong một cửa sổ |
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
 | Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
-| Mất mạng lâu | Quyết định cho người được giao quyền lập giấy tay đã có trong đặc tả | Chưa có sổ số giấy, nhập bù/liên kết duy nhất và trạng thái xử lý lệch hoàn chỉnh |
+| Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | Cần nativePASS đủ ca hủy/amend, chặn sửa nguồn và gắn vào DN/PE; không xây sổ offline hoặc workflow riêng theo chỉ đạo22/10 |
 | Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, nhận thực lượng và gom vào cùng lượt giao còn thiếu |
 
 ## 5. Dữ liệu và trạng thái
@@ -53,7 +55,7 @@ Dữ liệu mới lưu trên chứng từ native, không tạo sổ kho/nợ ho�
 | Đơn thay | Link phiếu nhận trả bất biến; khóa duy nhất cho đơn còn hiệu lực; hủy nhả khóa, giữ link lịch sử |
 | Giấy gốc | User, thời điểm, vị trí lưu do API ghi; chưa có gốc khác với chưa có ảnh/ảnh chưa đối chiếu |
 | Ảnh ký tại kho | Cơ chế file riêng tư và đối chiếu hiện có; lịch sử thay/xóa bằng chứng đầy đủ vẫn cần rà soát tiếp |
-| Đối soát nợ ký theo lượt | Chưa có snapshot bất biến mới; mẫu theo ngày hiện có không thay được yêu cầu này |
+| Đối soát nợ ký theo lượt | Đã viết snapshot và bộ PDF lưu riêng tư, ký/gốc riêng, bản bổ sung nối bản trước; số theo Company và cọc riêng. Chưa nativePASS/QA bố cục PDF mới; mẫu ngày cũ chỉ còn vai trò tương thích và đã lọc phạm vi |
 
 ## 6. Phân quyền và kiểm soát
 

@@ -31,7 +31,7 @@ def paper_key(company, number):
 
 
 def fields():
-    return [
+    result = [
         {'fieldname': 'kh_aph_giay_tay_section', 'label': 'Giấy dự phòng khi mất mạng',
          'fieldtype': 'Section Break', 'collapsible': 1, 'insert_after': 'amended_from', 'print_hide': 1},
         {'fieldname': FLAG, 'label': 'Nhập bổ sung từ giấy tay', 'fieldtype': 'Check',
@@ -51,6 +51,9 @@ def fields():
         {'fieldname': KEY, 'label': 'Khóa giấy nhập bổ sung', 'fieldtype': 'Data',
          'unique': 1, 'hidden': 1, 'read_only': 1, 'no_copy': 1, 'allow_on_submit': 1, 'print_hide': 1},
     ]
+    for previous, field in zip(result, result[1:]):
+        field['insert_after'] = previous['fieldname']
+    return result
 
 
 def schema():

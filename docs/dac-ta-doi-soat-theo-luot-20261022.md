@@ -1,6 +1,6 @@
 # Đối soát công nợ và bộ giấy theo lượt
 
-Phần tiếp nối PR38, chưa coi là đã triển khai. Giấy tay đã được thu gọn theo quyết định22/10: chỉ nhập bổ sung và lưu trên phiếu chuẩn; không tạo hệ thống offline riêng.
+Phần tiếp nối PR38. Đã viết entity/API/JS/PDF trên ứng viên, đang kiểm native, **chưa phát hành hoặc tuyên bố đạt**. Giấy tay đã được thu gọn theo quyết định22/10: chỉ nhập bổ sung và lưu trên phiếu chuẩn; không tạo hệ thống offline riêng.
 
 ## Phạm vi triển khai
 
@@ -31,3 +31,5 @@ Phần tiếp nối PR38, chưa coi là đã triển khai. Giấy tay đã đư�
 ## Cách tổ chức trong app
 
 Tái dùng cờ quản trị/quầy bán hiện có (mặc định tắt), schema qua bộ cài rõ ràng. Thêm đúng entity hồ sơ biên bản có lifecycle bằng chứng; không thêm màn hình chính hoặc bảng nhiệm vụ. Chứng từ tiền/hàng vẫn native; mẫu đối soát Customer theo ngày cũ giữ tương thích lịch sử, cửa thao tác mới dùng snapshot. Nghiệm thu nhân sự/hàng/máy in thật giữ cuối như đã chốt.
+
+Nguồn: `debt_statement.py`, `debt_statement_rules.py`, `statement_pdf.py`, DocType `Bien ban doi soat no`, JS `debt_statement.js`, mẫu `doi_soat_theo_luot`. Khi tạo yêu cầu khóa sổ tiền hiện có đang bật (`kh_aph_cash_closing`), rồi current-read khóa nguồn trước chụp để phát hiện nguồn vừa hủy. Bản theo ngày cũ đã được lọc phạm vi Company và giữ guard vai trò/Customer. Bộ014 thêm2HTTP +1Chrome, kỳ vọng132PASS; 545ca cục bộ có Jinja2 đạt, native/PDF thực tế còn phải đọc bằng chứng.

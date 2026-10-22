@@ -1,7 +1,7 @@
 {
  "absolute_value": 0,
  "align_labels_right": 0,
- "creation": "2026-10-21 10:00:00.000000",
+ "creation": "2026-10-22 08:00:00.000000",
  "css": ".aph-vt { font-family: \"Times New Roman\", Times, serif; font-size: 12.5px; color: #000; line-height: 1.35; }\n.aph-vt table { width: 100%; border-collapse: collapse; font-size: inherit; }\n.aph-vt .aph-head td, .aph-vt .aph-title td, .aph-vt .aph-sign td { border: 0; vertical-align: top; padding: 0; }\n.aph-vt .aph-mau { width: 42%; text-align: center; font-size: 11.5px; }\n.aph-vt .aph-title td { padding: 8px 0 4px; }\n.aph-vt .aph-side { width: 24%; }\n.aph-vt .aph-center { text-align: center; }\n.aph-vt .aph-name { font-size: 17px; font-weight: bold; letter-spacing: 0.5px; }\n.aph-vt .aph-date { font-style: italic; }\n.aph-vt .aph-noco { padding-top: 22px !important; padding-left: 12px !important; }\n.aph-vt .aph-info { margin: 4px 0 6px; line-height: 1.6; }\n.aph-vt .aph-sec { font-weight: bold; margin: 10px 0 4px; }\n.aph-vt .aph-tbl th, .aph-vt .aph-tbl td { border: 1px solid #000; padding: 3px 4px; }\n.aph-vt .aph-tbl th { text-align: center; font-weight: bold; vertical-align: middle; }\n.aph-vt .aph-tbl .aph-letter td { text-align: center; font-weight: bold; padding: 1px; }\n.aph-vt .aph-tbl .c { text-align: center; }\n.aph-vt .aph-tbl .r { text-align: right; white-space: nowrap; }\n.aph-vt .aph-tbl small { font-size: 10.5px; }\n.aph-vt .c-stt { width: 5%; }\n.aph-vt .c-ma { width: 14%; }\n.aph-vt .c-dvt { width: 7%; }\n.aph-vt .c-sl { width: 10%; }\n.aph-vt .c-tien { width: 12%; }\n.aph-vt .aph-sign-date { text-align: right; font-style: italic; margin-top: 10px; padding-right: 4%; }\n.aph-vt .aph-sign td { text-align: center; padding-top: 4px; }\n.aph-vt .aph-sign-name { margin-top: 70px; }\n.aph-vt .aph-qh { width: 50%; text-align: center; }\n.aph-vt .aph-lien { font-style: italic; margin-top: 2px; }\n.aph-vt .aph-party { font-weight: bold; margin-top: 6px; }\n.aph-vt .aph-tbl .aph-sum td { font-weight: bold; }\n.aph-vt .aph-tbl .aph-sum .l { text-align: right; }\n.aph-vt .c-lo { width: 11%; }\n.aph-vt .aph-tc { line-height: 1.9; font-size: 13.5px; }\n.aph-vt .aph-tong { width: 55%; margin-left: 45%; margin-top: -1px; }\n.aph-vt .aph-tong .l { text-align: left; }\n.aph-vt .aph-tbl th { color: #000; }\n\n/* Chứng từ vận dụng TT133/TT99; giữ khổ giấy do người dùng chọn, không ép A5 cho phiếu dài. */\n.aph-vt .aph-state { text-align:center; font-weight:bold; border:1px solid #555; padding:3px; margin:3px 0; }\n.aph-vt .aph-head { page-break-inside:avoid; break-inside:avoid; }\n.aph-vt thead { display:table-header-group; }\n.aph-vt tr { page-break-inside:avoid; break-inside:avoid; }\n.aph-vt .aph-sign { page-break-inside:avoid; break-inside:avoid; }\n.aph-vt .aph-sign td { min-width:15%; height:92px; }\n.aph-vt .aph-mau { overflow-wrap:break-word; }\n",
  "custom_format": 1,
  "default_print_language": "vi",
@@ -17,7 +17,7 @@
  "margin_left": 12.0,
  "margin_right": 12.0,
  "margin_top": 12.0,
- "modified": "2026-10-21 10:00:00.000000",
+ "modified": "2026-10-22 08:00:00.000000",
  "modified_by": "Administrator",
  "module": "Kh Aph",
  "name": "Phiếu thu chi",

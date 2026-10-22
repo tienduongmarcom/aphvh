@@ -330,6 +330,11 @@ def kh_aph_doi_soat(customer) -> dict:
     return doi_soat(customer)
 
 
+def kh_aph_doi_soat_da_luu(doc) -> dict:
+    from kh_aph.debt_statement import print_data
+    return print_data(doc)
+
+
 def kh_aph_so_hoa_don_misa(doc) -> list:
     """Lượt 0.14 (cờ kh_aph_trung_tam_ban): số hóa đơn MISA của hóa đơn bán lập từ phiếu giao; cờ tắt: []."""
     from kh_aph.trung_tam_ban import so_hoa_don_misa

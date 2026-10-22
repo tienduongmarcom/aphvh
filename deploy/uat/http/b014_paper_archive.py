@@ -34,7 +34,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert posted[location].startswith('Tập kế toán')
     after_posting = counts()
     assert after_posting['Stock Ledger Entry'] > before['Stock Ledger Entry']
-    save(posted)
+    posted = save(posted)
     assert counts() == after_posting, 'Lưu giấy nguồn ghi sổ lần hai'
     denied(lambda: save({**posted, actual: f['date'] + ' 01:00:00'}))
     cancelled = rpc('frappe.client.cancel', {'doctype': 'Stock Entry', 'name': posted['name']}, ktt)

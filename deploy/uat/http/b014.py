@@ -91,6 +91,7 @@ DB="erp-aph-vh-db-1"
 SITE="aphvh-web-uat"
 ROOT="/home/frappe/frappe-bench"
 TRACKED=["APH Pending Receipt","APH Pending Receipt Item","Purchase Invoice","Bank Transaction","APH Doi chieu lech tien","APH Can cu doi chieu quy","APH Ban giao tien","APH Xac minh quy","APH Chot ca tien","APH Phan bo quy","User","Customer","Item","Item Group","Item Tax Template","Warehouse","Bin","Sales Order","Delivery Note","Sales Invoice","Stock Entry","GL Entry","Stock Ledger Entry","Property Setter","Custom DocPerm","Payment Ledger Entry","Role","Print Format","Supplier","Purchase Order","Purchase Receipt","Stock Reconciliation","BOM","UOM","Landed Cost Voucher","Journal Entry","Cost Center","Account","APH Phieu quy nha may","APH Khoan muc chi nha may","APH Shared Sales Order","Address","Contact","Contact Phone","Dynamic Link","Payment Entry","Payment Ledger Entry","APH Hoa don ngoai","Payment Terms Template","Accounting Period","APH De nghi so lieu","APH So du dau ky nguon","APH Gia san","Material Request","APH Khe uoc vay","Employee","Bank","Bank Account","File","Workspace","APH Hoa don ngoai","Stock Closing Entry","Stock Closing Balance","User Permission"]
+TRACKED.append('Bien ban doi soat no')
 root_secret=""
 token_secret=""
 factory_password=secrets.token_urlsafe(32)
@@ -123,7 +124,17 @@ def session(user,password):
         data=urllib.parse.urlencode(args).encode() if args is not None else None
         req=urllib.request.Request("http://127.0.0.1:18091"+method,data=data,
             headers={"Host":SITE,"X-Frappe-Site-Name":SITE})
-        with op.open(req,timeout=30) as res:return json.load(res)
+        timeout = 90 if method == '/api/method/kh_aph.debt_statement.create' else 30
+        with op.open(req,timeout=timeout) as res:return json.load(res)
+    def binary_get(path):
+        assert path.startswith('/private/files/'), 'Chỉ đọc tệp riêng tư của dữ liệu UAT'
+        req=urllib.request.Request('http://127.0.0.1:18091'+path,
+            headers={'Host':SITE,'X-Frappe-Site-Name':SITE,'Accept':'application/json'})
+        with op.open(req,timeout=30) as res:
+            value=res.read(20_000_001)
+        assert len(value)<=20_000_000, 'Tệp UAT quá20MB, không cắt bớt bằng chứng'
+        return value
+    call.binary_get=binary_get
     call("/api/method/login",{"usr":user,"pwd":password})
     assert call("/api/method/frappe.auth.get_logged_user")["message"]==user
     # Cookie UAT chỉ truyền qua stdin cho Chrome, không đưa mật khẩu vào argv/log.

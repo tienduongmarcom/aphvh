@@ -1,5 +1,17 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — ĐANG KIỂM bản đối soát theo lượt và bộ PDF đã cấp
+
+Đã viết entity bằng chứng `Bien ban doi soat no` (Biên bản đối soát theo lượt), không thêm màn hình chính hay sổ tài chính. Từ DN/PE/Khách chọn chứng từ đã ghi: chụp nợ theo Company, tăng/giảm của lượt và khoản khác tại cùng mốc; tách phải thu/dư có, cọc và tiền chưa phân bổ, không tự cấn chéo. Bản Customer theo ngày cũ cũng đã giới hạn Company/Customer/vai trò và ghi rõ phạm vi. Snapshot dùng cờ quản trị hiện có, yêu cầu cơ chế khóa sổ tiền đang bật để chụp đồng thời; cả hai đã có trong28cờ, không cờ mới.
+
+Bộ PDF gồm biên bản và giấy nguồn DN/PE/SI cần thiết (không đưa toàn JE nội bộ cho khách), giữ A5 của phiếu nhanh. Lưu riêng tư vào hồ sơ để in lại giữ đúng byte; số đã chụp và nguồn bất biến, bản bổ sung nối bản trước. Kiểm vai trò tài chính, NoCost, Company/Customer, phạm vi dimension, quyền đọc/in nguồn và current-read sau khóa sổ. File và lịch sử ký được bảo vệ; quyền lấy hàng không thay quyền ký nợ. Giấy gốc có người/thời điểm/vị trí riêng, ảnh có thể bổ sung sau. API/form không tự tạo hoặc ghi DN/SI/PE/JE/GL/SLE.
+
+Cục bộ545ca kh_aph đạt **không bỏ qua**, chạy với Jinja2 ở /tmp/kiem-mau-a5-goi;15ca mẫu in và kiểm ranh giới mặc định in đạt. Kiểm cú pháp JS/Python đạt. Thêm2ca HTTP và1ca Chrome bằng đúng kế toán bán hàng (phiên CSRF riêng), gồm mất phản hồi sau200/retry, phạm vi một/nhiều Company, privatePDF, chụp ròng0, giấy gốc/ảnh riêng, giữ PDF sau hủy thu và bản bổ sung. Bộ014 kỳ vọng132PASS. CHƯA có kết quả native của phần snapshot/PDF mới; chưa kiểm bố cục PDF native hoặc máy in thật.
+
+UAT39703447598 đúngc4b93fa FAIL được giữ: HTTP_014_MO_PHIEU_HOAN và NATIVE_DESK_KHO_GIAO_NHAN_GON PASS, đã xem ảnh mở đúng PE192.500. Ca giấy tay đã qua lưu/khóa trùng/tệp riêng tư/ghi kho/cập nhật nơi giữ, rồi kịch bản dùng modified cũ sau lưu nên TimestampMismatchError trước guard thời điểm. Đã sửa lấy lại kết quả lưu, giữ assertion ValidationError, không nới chặn. Đã nối insert_after toàn bộ ô giấy tay vào đúng section thu gọn (ảnh trước cho thấy checkbox bị đặt lên đầu PE). Lượt giấy128 trước39702265051 bị concurrency hủy khi chạy lượt129 mới, không coi đạt.
+
+PR38 vẫn nháp, production/version/tag giữ0.16.4. Cần chạy UAT132 đúng mã mới, đọc PDF/ảnh/log; tiếp tục phần gom kho vệ tinh, giảm theo dòng/lượng và trả một phần sau giảm, tách bằng chứng khách cuối/lịch sử ảnh kho đầy đủ. Nghiệm thu người/hàng/tồn/máy in thật vẫn để cuối.
+
 ## 22/10/2026 — Mở phiếu hoàn đã có ngay từ phiếu nhận trả
 
 Bổ sung nút Mở phiếu hoàn tiền, tải lại phiếu nhận trả sau ghi để thấy liên kết nháp do hook chuẩn bị. API chỉ đọc DN/PE, kiểm quyền cả hai, cùng Company/khách, loại chi và chưa hủy; không lập/ghi tiền thêm. Chặn mọi lối form/API tự gán, xóa hoặc tráo ô chứng từ xử lý; các hook chuẩn bị nháp giữ đường ghi nội bộ hiện có. Sửa mô tả xử lý đổi hàng để đúng đơn hàng thay mã mới.

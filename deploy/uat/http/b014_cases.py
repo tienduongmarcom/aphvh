@@ -334,3 +334,5 @@ def chay(admin, phien, f, emit, factory_feature):
         factory_feature(False)
     from b014_paper_archive import chay as paper_cases
     paper_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    from b014_debt_statement import chay as statement_cases
+    statement_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

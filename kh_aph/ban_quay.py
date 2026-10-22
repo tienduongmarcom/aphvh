@@ -308,17 +308,27 @@ def in_hai_lien(delivery_note):
 
 def doi_soat(customer, ngay=None):
     """Số liệu biên bản đối soát: theo từng đơn vị, nợ đầu ngày + phát sinh tăng − đã thu/giảm = còn nợ (sổ công nợ)."""
+    _can_bat()
+    _vai_tro()
+    frappe.get_doc('Customer', customer).check_permission('read')
+    from kh_aph.debt_statement import _limited_dimensions
+    if _limited_dimensions():
+        frappe.throw('Cần phạm vi tài chính đầy đủ để in đối soát khách', frappe.PermissionError)
+    companies = frappe.get_list('Company', pluck='name', limit_page_length=0)
+    if not companies:
+        frappe.throw('Chưa có phạm vi đơn vị để in đối soát', frappe.PermissionError)
     ngay = str(getdate(ngay or nowdate()))
     rows = frappe.db.sql("""SELECT company,
             SUM(CASE WHEN posting_date < %(d)s THEN amount ELSE 0 END) AS no_dau,
             SUM(CASE WHEN posting_date = %(d)s AND amount > 0 THEN amount ELSE 0 END) AS tang,
             SUM(CASE WHEN posting_date = %(d)s AND amount < 0 THEN -amount ELSE 0 END) AS giam
         FROM `tabPayment Ledger Entry` WHERE party_type='Customer' AND party=%(p)s AND delinked=0 AND posting_date<=%(d)s
-        GROUP BY company""", {"p": customer, "d": ngay}, as_dict=True)
+        AND company IN %(companies)s
+        GROUP BY company""", {"p": customer, "d": ngay, 'companies': tuple(companies)}, as_dict=True)
     for r in rows:
         r.con_no = flt(r.no_dau) + flt(r.tang) - flt(r.giam)
     tong = {k: sum(flt(r[k]) for r in rows) for k in ("no_dau", "tang", "giam", "con_no")}
-    return {"ngay": ngay, "dong": rows, "tong": tong}
+    return {"ngay": ngay, "dong": rows, "tong": tong, 'scope': companies}
 
 
 # ---------------------------------------------------------------- thu hồi nợ

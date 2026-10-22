@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may'].includes(mode)) {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may','doi-soat'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -37,7 +37,40 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'kho-giao-nhan') {
+    if (mode === 'doi-soat') {
+      try {
+        const payload=JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(payload.delivery)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Đối soát & In bộ giấy"]');
+        if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong statement principal');
+        await evaluate('cur_frm.custom_buttons["Đối soát & In bộ giấy"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.sources && !!cur_dialog.fields_dict.companies');
+        const initial=await evaluate('({companies:cur_dialog.get_value("companies"),rows:cur_dialog.get_value("sources")})');
+        if(!initial.companies?.length||initial.rows?.[0]?.voucher!==payload.delivery)throw Error('Missing default scope/source: '+JSON.stringify(initial));
+        await evaluate('window.__statementDialog=cur_dialog;true');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.debt_statement.create',requestStage:'Response'}]});
+        await evaluate('__statementDialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<600&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('No committed statement response intercepted');
+        const requestId=new URLSearchParams(lostResponse.request.postData).get('request_id');
+        if(!requestId)throw Error('Missing statement request');
+        await until('frappe.request.ajax_count===0 && !__statementDialog.get_primary_btn().prop("disabled")');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        await command('Fetch.disable');
+        await evaluate('__statementDialog.get_primary_btn().trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doctype==="Bien ban doi soat no" && !!cur_frm.doc.bundle_file && frappe.request.ajax_count===0');
+        const name=await evaluate('cur_frm.doc.name');
+        const shot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('doi-soat-da-luu.png',Buffer.from(shot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_DOI_SOAT_RETRY',status:'PASS',detail:{name,requestId,
+            real_sales_accountant:true,response_dropped_after_200:true,same_dialog_retry:true,scope_and_source_prefilled:true}}));
+      } catch(error) {
+        try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('doi-soat-loi.png',Buffer.from(shot.data,'base64'));} catch {}
+        console.error('STATEMENT_DESK_FAILURE:'+error.message+'; errors='+JSON.stringify(diagnostics.slice(-8)));
+        throw error;
+      }
+    } else if (mode === 'kho-giao-nhan') {
       try {
         const payload = JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride', {width:1440,height:1050,deviceScaleFactor:1,mobile:false});

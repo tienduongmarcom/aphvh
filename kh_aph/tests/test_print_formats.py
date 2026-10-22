@@ -457,6 +457,25 @@ def _load_tools():
 
 
 class TestJsonInSync(unittest.TestCase):
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_statement_uses_stored_numbers_and_escapes_identity(self):
+        from kh_aph.debt_statement_rules import snapshot
+        data = snapshot(['CO'], [dict(company='CO', voucher_type='Sales Invoice', voucher_no='SI', amount=10),
+                                dict(company='CO', voucher_type='Payment Entry', voucher_no='PE', amount=-10)],
+                        {('Sales Invoice', 'SI'), ('Payment Entry', 'PE')})
+        data.update(customer_name='Khách <script>', customer='KH1', prepared_by='Người lập cũ', tax_id='',
+                    address='Địa chỉ <b>', phone='0901', funds=[])
+        env = _env(False)
+        env.globals['kh_aph_doi_soat_da_luu'] = lambda doc: data
+        html = env.from_string((ROOT/'doi_soat_theo_luot'/'doi_soat_theo_luot.html').read_text()).render(
+            doc=Row(name='BBDS-1', snapshot_at='2026-10-22 08:00:00', supersedes=None))
+        self.assertIn('Khách &lt;script&gt;', html)
+        self.assertIn('Địa chỉ &lt;b&gt;', html)
+        self.assertIn('Người lập cũ', html)
+        self.assertNotIn('Nợ đầu ngày', html)
+        self.assertIn('không tự cấn chéo', html)
+        self.assertIn('SI', html); self.assertIn('PE', html)
+
     def test_json_in_sync(self):
         tools = _load_tools()
         for folder in tools.FORMATS:
