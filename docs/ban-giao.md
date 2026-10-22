@@ -1,5 +1,15 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — Quyết định chủ dự án: VAS trên ERP để sang năm 2027
+
+Claude rà (chỉ đọc mã/hồ sơ): ERP **chưa đạt VAS để làm sổ chính thức** — có hệ thống tài khoản TT133/TT99/TT152, mẫu chứng từ,
+kiểm triển khai 54/54; CHƯA có B01/B02/B03/B09, sổ nhật ký chung/sổ cái/CĐPS theo mẫu, kết chuyển 911 (đang dùng Period Closing
+Voucher), TSCĐ/khấu hao, lương, tờ khai; lệch chuẩn có chủ ý: SXC cố định vào 6323 (VAS 02), TK tạm 9990, 3388x, TL không hóa đơn.
+**Chủ dự án quyết: năm 2026 giữ nguyên — MISA là sổ kế toán/thuế chính thức, ERP là sổ vận hành/quản trị; làm VAS trên ERP từ năm
+2027** (ước lượng: sổ + 911 ~1 bản; B01/B02 hai chế độ 1–2 bản cần chị Dung duyệt bảng tài khoản → chỉ tiêu; TSCĐ ~1 bản; B03/B09/VAS 02
+sau; chạy song song MISA 1–2 kỳ trước khi bỏ MISA). Không mở việc VAS trong năm 2026. 8 mục chờ chị Dung ở
+`docs/bang-ra-soat-phap-ly-APH-VH.md` vẫn cần chốt (không chặn).
+
 ## 21/10/2026 — ĐANG KIỂM nền Cổng3 từ production0.16.4
 
 PR36 thiết kế đã gộp main e9a2755 sau chủ dự án chốt tiếp tục. Chuẩn bị phát triển luồng kho/ship/đổi trả/giảm nợ cũ và trảhỏng lẻkg; chưa sửa nghiệp vụ/site. Đổi nền Cổng3 sang0.16.4/digest1a8f0063… đúng log production. Chờ run thực trên mã mới, chưa tuyên bốĐẠT hoặc phát hành. Production vẫn0.16.4,28cờ; nghiệm thu thật gom cuối.
