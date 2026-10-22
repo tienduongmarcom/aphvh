@@ -1,4 +1,5 @@
 {%- set ds = kh_aph_doi_soat_da_luu(doc) -%}
+{%- set moc = (doc.snapshot_at | string)[:19] -%}
 <style>
 .aph-statement .aph-tbl {table-layout:fixed;width:99.8%;}
 .aph-statement .aph-tbl th, .aph-statement .aph-tbl td {overflow-wrap:break-word;}
@@ -12,7 +13,7 @@
 <div class="aph-lien">Mẫu quản trị nội bộ – số liệu đã lưu theo lượt</div>
 <table class="aph-title"><tr><td class="aph-center">
  <div class="aph-name">BIÊN BẢN ĐỐI SOÁT CÔNG NỢ</div>
- <div>Số: <b>{{ doc.name | e }}</b> · Mốc đối chiếu: {{ doc.snapshot_at | e }}</div>
+ <div>Số: <b>{{ doc.name | e }}</b> · Mốc đối chiếu: {{ moc | e }}</div>
 </td></tr></table>
 <div class="aph-info">Khách hàng: <b>{{ ds.customer_name | e }}</b> · Mã: {{ ds.customer | e }}</div>
 {% if ds.tax_id %}<div class="aph-info">Mã số thuế: {{ ds.tax_id | e }}</div>{% endif %}
@@ -45,7 +46,7 @@
 </table>
 <div class="aph-info">Tiền/cọc giữ theo đơn vị thực nhận. Khoản thu đã nằm trong nợ ròng không trừ thêm lần nữa; phân bổ/cấn theo lựa chọn và đúng đơn vị.</div>
 <div class="aph-info">Hai bên đối chiếu các số và chứng từ trên tại mốc ghi trong biên bản. Phiếu chưa ghi sổ hoặc giấy tay chưa nhập được đối chiếu bổ sung riêng. Giao dịch về sau không thay số của bản này.</div>
-<div class="aph-statement-signature"><div class="aph-info">Xác nhận biên bản <b>{{ doc.name | e }}</b> · Khách: {{ ds.customer_name | e }} · Mốc: {{ doc.snapshot_at | e }}</div>
+<div class="aph-statement-signature"><div class="aph-info">Xác nhận biên bản <b>{{ doc.name | e }}</b> · Khách: {{ ds.customer_name | e }} · Mốc: {{ moc | e }}</div>
 <table class="aph-sign"><tr>
  <td><b>Người có quyền ký công nợ</b><br><i>(Ký, ghi rõ họ tên; căn cứ ủy quyền nếu có)</i><div style="height:25mm"></div></td>
  <td><b>Người lập</b><br><i>(Ký, ghi rõ họ tên)</i><div style="height:25mm"></div><div class="aph-sign-name">{{ ds.prepared_by | e }}</div></td>

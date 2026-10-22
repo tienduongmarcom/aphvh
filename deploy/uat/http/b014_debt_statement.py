@@ -3,6 +3,18 @@ import hashlib
 import json
 from pathlib import Path
 import uuid
+from urllib.error import HTTPError
+
+
+def private_denied(caller, url):
+    """Tuyến /private/files trả403HTML native, không phải lỗi RPC JSON."""
+    try:
+        caller.binary_get(url)
+    except HTTPError as exc:
+        body = exc.read()
+        assert exc.code == 403 and not body.startswith(b"%PDF"), (exc.code, body[:200])
+    else:
+        raise AssertionError("Đã tải được bộ PDF ngoài phạm vi")
 
 
 def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
@@ -13,8 +25,9 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     row = rpc('kh_aph.ban_nhanh.preview',{'shared_order':order['name']},ktt)['rows'][0]
     made = rpc('kh_aph.ban_nhanh.create_and_dispatch',{'shared_order':order['name'],'request_id':uuid.uuid4().hex,
         'selections':json.dumps([{'source_row':row['source_row'],'qty':1}]),'dispatcher':'Kho UAT',
-        'delivery':json.dumps({'delivery_method':'Khách đến lấy','recipient':'Khách ký nợ UAT'})},ktt)
+        'delivery':json.dumps({'delivery_method':'Khách đến lấy','recipient':'Khách ký nợ UAT','customer_signature':'Không'})},ktt)
     dn = get('Delivery Note',made['delivery_notes'][0]['name'],ktt)
+    assert dn['kh_aph_mau_giao_nhan']==1, 'Ca bộ giấy phải kiểm nhánh phiếu nhanh A5 mới'
     invoices = [get('Sales Invoice',r['name'],ktt) for r in lst('Sales Invoice',{'customer':f['kh2'],'docstatus':1},['name'],ktt)]
     invoice = next(doc for doc in invoices if any(i.get('delivery_note')==dn['name'] for i in doc['items']))
     payment = rpc('erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry',
@@ -49,7 +62,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     no_cost, scoped, warehouse_scoped=phien(f['dung']),phien(f['scope_co']),phien(f['scope_wh'])
     for caller in (no_cost,scoped,warehouse_scoped):
         denied(lambda caller=caller:get(dt,statement['name'],caller),('PermissionError',))
-        denied(lambda caller=caller:caller.binary_get(created['file_url']),('PermissionError',))
+        private_denied(caller,created['file_url'])
     assert not lst(dt,{'name':statement['name']},['name'],scoped)
     try:
         restricted_rows=lst(dt,{'name':statement['name']},['name','payload'],warehouse_scoped)

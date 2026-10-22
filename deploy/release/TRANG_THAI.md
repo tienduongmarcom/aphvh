@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — PDF native tạo được; sửa ca kiểm tệp403HTML
+
+Đã đọc artifact UAT39763635543 đúng3c9f34c: NATIVE_PDF_BOOT PASS, bộ đối soát được tạo/tải và lưu doi-soat-bo-giay.pdf; đã đọc3trang/PDF và xem trang biên bản native, bảng/ô ký không bị cắt. Bản này gồm biên bảnA4 + phiếu xuất chuẩnA4 + phiếu thuA4 vì fixture dùng payload thế hệ cũ. Chưa coi nhánh ghép A5 mới đã kiểm.
+
+Lượt FAIL vẫn giữ: ca chặn tải tệp gặp đúng403HTML của /private/files, nhưng helper denied dành RPC lại đòi JSON.exc_type. Đã tách helper riêng chỉ chấp nhận HTTP403 và không nhận PDF; không thay quyền/tệp hay nới assert RPC. Positive control kế toán tải PDF vẫn giữ. Đổi fixture đơn mới sang customer_signatureKhông để mang dấu mẫu giao nhận1 và buộc chạy nhánh ghép hai bản A5. Mốc in đối soát bỏ microsecond kỹ thuật, giữ số lưu gốc bất biến; tái sinh8JSON mốc10:20. Cần chạy lại135 đúng mã kế tiếp; giấy tay vẫn có nativePASS, hồ sơ khách ký/gom kho và các guard mới chưa có kết luận đầy đủ. PR38 nháp, production0.16.4 không đổi.
+
 ## 22/10/2026 — Giới hạn bộ giấy theo quyền nguồn và giữ Administrator dùng được
 
 Rà lại quyền snapshot: bộ PDF có phiếu nguồn, nên chỉ kiểm Company/Customer là chưa đủ cho tài khoản còn User Permission trên kho/hàng/link của nguồn. Đã mở rộng guard dựa Link và Table metadata của DN/SI/PE/JE cùng dimension kế toán; các giới hạn ngoài Company/Customer chặn đồng thời tạo/đọc/danh sách/PDF. Không vô tình chặn quyền Employee không liên quan nguồn. Người đủ phạm vi Company/Customer vẫn dùng như cũ. Thêm negative control scope_wh cho cả dữ liệu payload và tệp; giữ positive control CompanyAPH.
