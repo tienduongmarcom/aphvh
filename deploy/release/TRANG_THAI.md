@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Giữ đúng chuyến, cho sửa người chở khi còn chuẩn bị
+
+Đã bổ sung guard phiếu chuyển có mã lượt: không đổi Company, purpose, stock_entry_type, cờ qua Transit hoặc phiếu chuyển gốc; không xóa kho nhận dự kiến của bản chuẩn bị. Người/xe và ghi chú được sửa trên nháp chuẩn bị, sau xuất bất biến; lượng thực tế vẫn sửa/ghi trên phiếu native. Không thêm cờ/quyền hoặc sổ. Thêm ca đơn vị và mở rộng ca HTTP chuẩn bị chuyển (đổi xe trước xuất, chặn tráo Company). Cục bộ563ca không bỏ qua đạt, chưa có native kết quả của guard mới. UAT39763635543 đúng3c9f34c đang chạy134ca, chưa bao gồm guard này; giữ các lượtFAIL và giấy tay nativePASS đã đọc ở các mục trước. PR38 nháp, production0.16.4 không đổi.
+
 ## 22/10/2026 — Chỉnh bố cục đối soát và thư mục phép thử PDF CI
 
 UAT39714397708 đúngb3b4507 FAIL sớm tại NATIVE_PDF_BOOT: phép thử Python khởi tạo từ thư mục bench thay vì sites nên logger tìm /home/frappe/logs/database.log. Đã đọc log lỗi119612952998; sửa đúng cwd sang /home/frappe/frappe-bench/sites như các helper native khác. Chưa chạy các ca134 trong lượt này; không coi cấu hình host/PDF hoặc hồ sơ khách ký đã được xác nhận.

@@ -126,6 +126,10 @@ def chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit):
     html = rpc('frappe.www.printview.get_html_and_style', {'doc': json.dumps(doc), 'print_format': 'Phiếu kho'}, ktt)['html']
     assert 'CHƯA GHI SỔ' in html and 'Xe gom kho UAT' in html and 'Kho nhận cuối dự kiến' in html
     denied(lambda: rpc('kh_aph.factory_transfer.send', {**args, 'request_id': f['p'] + '-chuan-bi-scope'}, phien(f['scope_wh'])), ('PermissionError',))
+    doc['kh_aph_transfer_receiver'] = 'Xe gom kho thực tế'
+    doc = rpc('frappe.client.save', {'doc': json.dumps(doc)}, ktt)
+    assert doc['kh_aph_transfer_receiver'] == 'Xe gom kho thực tế'
+    denied(lambda: rpc('frappe.client.save', {'doc': json.dumps({**doc, 'company': f['vh']})}, ktt))
     posted = submit(doc, ktt)
     assert posted['docstatus'] == 1 and posted['items'][0]['t_warehouse'] == TRANSIT
     assert counts()['Stock Ledger Entry'] > before['Stock Ledger Entry']

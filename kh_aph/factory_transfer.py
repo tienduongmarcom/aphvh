@@ -304,6 +304,8 @@ def protect(doc, method=None):
     """Dấu nhận chuyến chỉ do cửa sổ tạo, không sửa sau đó (giữ cả khi tắt cờ)."""
     old = doc.get_doc_before_save() if not doc.is_new() else None
     destination = doc.get(DESTINATION)
+    if old and old.get(PREFIX + 'request') and old.get(DESTINATION) and not destination:
+        frappe.throw('Giữ kho nhận dự kiến của bản chuẩn bị; chọn kho nhận đúng hoặc bỏ bản nháp chưa ghi')
     if old and cint(old.docstatus) != 0 and (destination or '') != (old.get(DESTINATION) or ''):
         frappe.throw('Không đổi kho nhận dự kiến sau khi đã chuyển; nhận vào kho khác phải ghi lý do')
     if destination and cint(doc.docstatus) != 2:
@@ -312,6 +314,9 @@ def protect(doc, method=None):
         _destination(destination, doc.company, None)
         if any(row.get('s_warehouse') == destination for row in doc.items):
             frappe.throw('Kho nhận dự kiến phải khác kho chuyển đi')
+    if old and old.get(PREFIX + 'request') and any(str(old.get(field) or '') != str(doc.get(field) or '')
+            for field in ('company', 'purpose', 'stock_entry_type', 'add_to_transit', 'outgoing_stock_entry')):
+        frappe.throw('Không đổi đơn vị hoặc loại chuyến của phiếu đã có mã lượt; bỏ nháp chưa ghi và chuẩn bị đúng chuyến')
     values = [doc.get(PREFIX + f) for f in STAMP]
     if not any(values):
         return
@@ -320,8 +325,15 @@ def protect(doc, method=None):
             frappe.throw('Dấu nhận chuyến chỉ được tạo qua cửa sổ nhận chuyến')
         return
     old = doc.get_doc_before_save()
-    if old and any(_stamp(old, f) != _stamp(doc, f) for f in STAMP):
+    planning = (old and cint(old.docstatus) == 0 and old.get(DESTINATION)
+                and cint(old.get('add_to_transit')) and not old.get('outgoing_stock_entry'))
+    frozen = tuple(field for field in STAMP if not planning or field not in ('receiver', 'note'))
+    if old and any(_stamp(old, field) != _stamp(doc, field) for field in frozen):
         frappe.throw('Không sửa dấu và hồ sơ thực nhận chuyến; giữ lịch sử trên phiếu gốc')
+    if planning:
+        carrier, note = _stamp(doc, 'receiver').strip(), _stamp(doc, 'note').strip()
+        if not carrier or len(carrier) > 140 or len(note) > 2000:
+            frappe.throw('Ghi người/xe chở và ghi chú trong giới hạn trước khi xác nhận chuyển')
 
 
 def lock_outgoing(doc, method=None):
@@ -364,6 +376,9 @@ def schema():
                'fieldtype': 'Datetime' if k == 'at' else 'Small Text' if k == 'note' else 'Data',
                'read_only': 1, 'no_copy': 1, 'hidden': int(k in ('request', 'payload')),
                **({'unique': 1} if k == 'request' else {})} for k in STAMP]
+    for field in fields:
+        if field['fieldname'] in (PREFIX + 'receiver', PREFIX + 'note'):
+            field.update(read_only=0, read_only_depends_on='eval:doc.docstatus!=0 || !doc.kh_aph_transfer_request || !doc.kh_aph_transfer_destination || !doc.add_to_transit || doc.outgoing_stock_entry')
     fields.append({'fieldname': DESTINATION, 'label': 'Kho nhận dự kiến', 'fieldtype': 'Link', 'options': 'Warehouse',
                    'insert_after': 'add_to_transit', 'no_copy': 1,
                    'depends_on': 'eval:doc.add_to_transit && !doc.outgoing_stock_entry',

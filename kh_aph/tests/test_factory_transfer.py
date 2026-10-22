@@ -211,6 +211,29 @@ class Transfer(unittest.TestCase):
         draft['docstatus'] = 1
         with self.assertRaises(ValueError): self.m.prevent_delete(draft)
 
+    def test_prepared_request_cannot_be_moved_to_another_company_or_operation(self):
+        values = dict(company='APH', purpose='Material Transfer', stock_entry_type='Material Transfer', add_to_transit=1,
+                      outgoing_stock_entry=None, docstatus=0, **{self.m.PREFIX + 'request': 'k'})
+        old = Row(**values)
+        for field, value in [('company', 'VH'), ('purpose', 'Material Receipt'), ('add_to_transit', 0),
+                             ('stock_entry_type', 'Material Receipt'), ('outgoing_stock_entry', 'KHAC')]:
+            doc = Row(**{**values, field: value}, is_new=lambda: False, get_doc_before_save=lambda: old)
+            with self.subTest(field=field), self.assertRaises(ValueError): self.m.protect(doc)
+
+    def test_driver_can_change_while_preparing_but_is_frozen_after_issue(self):
+        values = dict(company='APH', purpose='Material Transfer', stock_entry_type='Material Transfer', add_to_transit=1,
+                      outgoing_stock_entry=None, docstatus=0, items=[Row(s_warehouse='VT')],
+                      **{self.m.PREFIX+'request':'k', self.m.PREFIX+'receiver':'Xe cũ', self.m.DESTINATION:'CH'})
+        old = Row(**values)
+        doc = Doc(**{**values, self.m.PREFIX+'receiver':'Xe thực tế'}, is_new=lambda:False, get_doc_before_save=lambda:old)
+        self.m._destination = Mock()
+        self.m.protect(doc)
+        doc[self.m.DESTINATION] = None
+        with self.assertRaises(ValueError): self.m.protect(doc)
+        doc[self.m.DESTINATION] = 'CH'
+        old['docstatus'] = 1; doc['docstatus'] = 1
+        with self.assertRaises(ValueError): self.m.protect(doc)
+
     def test_wired_in_hooks_and_installer(self):
         import pathlib
         root = pathlib.Path(__file__).resolve().parents[1]
