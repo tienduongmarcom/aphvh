@@ -47,5 +47,21 @@ def chay(rpc, get, insert, lst, denied, ktt, dn, emit):
     doc = save(doc)
     assert not doc.get("kh_aph_doi_chieu_boi") and not doc.get("kh_aph_doi_chieu_luc"), doc["name"]
     assert counts() == before, "Hồ sơ bản ký đã làm thay đổi sổ"
+    history = json.loads(doc['kh_aph_lich_su_ban_ky'])
+    assert file['file_url'] in history['files']
+    assert any(event['before'].get('kh_aph_doi_chieu_boi') for event in history['events'])
+    newer = insert({'doctype': 'File', 'file_name': 'uat-ban-ky-bo-sung-' + uuid.uuid4().hex + '.txt',
+        'is_private': 1, 'attached_to_doctype': 'Delivery Note', 'attached_to_name': name,
+        'content': json.dumps({'uat': 'ban-ky-bo-sung'})}, ktt)
+    doc['kh_aph_ban_ky'] = newer['file_url']; doc = save(doc)
+    history = json.loads(doc['kh_aph_lich_su_ban_ky'])
+    assert set(history['files']) == {file['file_url'], newer['file_url']}
+    assert history['events'][-1]['before']['kh_aph_ban_ky'] == file['file_url']
+    assert history['events'][-1]['after']['kh_aph_ban_ky'] == newer['file_url']
+    denied(lambda: save({**doc, 'kh_aph_lich_su_ban_ky': '{}'}))
+    denied(lambda: rpc('frappe.client.delete', {'doctype': 'File', 'name': file['name']}, ktt))
+    denied(lambda: rpc('frappe.client.save', {'doc': json.dumps(public)}, ktt))
+    assert ktt(file['file_url']) == {'uat': 'ban-ky-gia-lap'}
+    assert counts() == before, 'Thay/lưu lịch sử bản ký đã ghi lại sổ'
     emit("HTTP_014_HO_SO_BAN_KY", "PASS", {"private_file": True, "stale_denied": True,
-         "reset_on_change": True, "ledger_unchanged": True})
+         "reset_on_change": True, "old_file_history_kept": True, "history_cannot_be_forged": True, "ledger_unchanged": True})

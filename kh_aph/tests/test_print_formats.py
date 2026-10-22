@@ -167,6 +167,25 @@ class TestBienBan0111(unittest.TestCase):
     """0.11.1 (cờ kh_aph_sales_adjust bật): mặc định không giá, cột thực nhận, số lượng bao + kg."""
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_prepared_transfer_prints_requested_quantity_and_escapes_carrier_note(self):
+        html = (ROOT / "phieu_kho" / "phieu_kho.html").read_text(encoding="utf-8")
+        row = Row(item_code="A", item_name="Hàng A", uom="Kg", qty=3, valuation_rate=20000, amount=60000,
+                  s_warehouse="Vệ tinh - APH", t_warehouse="Transit - APH")
+        doc = Row(doctype="Stock Entry", name="CHUAN-BI", company="APH", posting_date="2026-10-22",
+                  docstatus=0, purpose="Material Transfer", stock_entry_type="Material Transfer", owner="kt", items=[row],
+                  kh_aph_transfer_receiver="Xe <script>", kh_aph_transfer_note="Ghi chú <img src=x>",
+                  kh_aph_transfer_destination="Cửa hàng - APH")
+        draft = _env(True).from_string(html).render(doc=doc)
+        self.assertIn("CHƯA GHI SỔ", draft)
+        self.assertIn("Kho nhận cuối dự kiến: Cửa hàng", draft)
+        self.assertIn("Xe &lt;script&gt;", draft)
+        self.assertIn("Ghi chú &lt;img src=x&gt;", draft)
+        self.assertIn('<td class="r">3</td>\n      <td class="r"></td>', draft)
+        doc.docstatus = 1
+        posted = _env(True).from_string(html).render(doc=doc)
+        self.assertIn('<td class="r">3</td>\n      <td class="r">3</td>', posted)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_khong_gia_thuc_nhan_bao(self):
         from kh_aph.sales_adjust_rules import hien_thi_sl
         html = (ROOT / "bien_ban_giao_nhan" / "bien_ban_giao_nhan.html").read_text(encoding="utf-8")
@@ -457,6 +476,25 @@ def _load_tools():
 
 
 class TestJsonInSync(unittest.TestCase):
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_statement_uses_stored_numbers_and_escapes_identity(self):
+        from kh_aph.debt_statement_rules import snapshot
+        data = snapshot(['CO'], [dict(company='CO', voucher_type='Sales Invoice', voucher_no='SI', amount=10),
+                                dict(company='CO', voucher_type='Payment Entry', voucher_no='PE', amount=-10)],
+                        {('Sales Invoice', 'SI'), ('Payment Entry', 'PE')})
+        data.update(customer_name='Khách <script>', customer='KH1', prepared_by='Người lập cũ', tax_id='',
+                    address='Địa chỉ <b>', phone='0901', funds=[])
+        env = _env(False)
+        env.globals['kh_aph_doi_soat_da_luu'] = lambda doc: data
+        html = env.from_string((ROOT/'doi_soat_theo_luot'/'doi_soat_theo_luot.html').read_text()).render(
+            doc=Row(name='BBDS-1', snapshot_at='2026-10-22 08:00:00', supersedes=None))
+        self.assertIn('Khách &lt;script&gt;', html)
+        self.assertIn('Địa chỉ &lt;b&gt;', html)
+        self.assertIn('Người lập cũ', html)
+        self.assertNotIn('Nợ đầu ngày', html)
+        self.assertIn('không tự cấn chéo', html)
+        self.assertIn('SI', html); self.assertIn('PE', html)
+
     def test_json_in_sync(self):
         tools = _load_tools()
         for folder in tools.FORMATS:

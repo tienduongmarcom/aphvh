@@ -1,5 +1,9 @@
 # Bổ sung quy trình kho: mất mạng, phiếu thu và ký đối soát nợ
 
+> **Làm rõ ngày22/10/2026 từ chủ dự án:** giấy viết tay chỉ để lưu và nhập bổ sung khi mất mạng. Phần triển khai này dùng phiếu xuất/phiếu kho/phiếu thu chi native, thêm số giấy theo điểm giao/quyển/tờ, thời điểm thực tế, nơi giữ bản gốc và ảnh riêng tư tùy chọn. Không cần entity hay màn hình hồ sơ offline riêng, không tự đồng bộ hoặc lập sổ tồn/nợ/tiền dự phòng. Giấy giữ ngoài hệ thống cho tới khi có mạng và nhập được chứng từ chuẩn; nếu nhập bị chặn vẫn giữ giấy để người phụ trách xử lý theo quyền hiện có. Những yêu cầu cũ về hàng chờ/entity/sổ số trên ERP trong mục4 và9 được thu hẹp theo làm rõ này. Bộ giấy và snapshot đối soát nợ theo lượt là phần khác, vẫn còn trong phạm vi đã chốt.
+
+> Trên ứng viên PR38, nguồn `paper_archive.py` mở rộng các cờ kho vận hành/người giữ tiền hiện có (mặc định tắt), cài schema rõ ràng. Số giấy duy nhất trong từng loại phiếu và Company, cả nháp giữ khóa; nháp sửa được trước ghi sổ. Sau ghi sổ giữ định danh/thời điểm, hủy giữ nguồn và dùng Sửa đổi để nối lịch sử. Ảnh có thể bổ sung sau; nơi giữ giấy được cập nhật khi chuyển tập về cửa hàng. Không tự đổi ngày hạch toán hoặc bỏ kiểm tồn/giá/kỳ khóa. Chưa có kết quả native cho phần mới tại thời điểm viết.
+
 > Bổ sung21/10/2026: xem [đối chiếu pháp lý và bộ chứng từ đề xuất](de-xuat-chung-tu-kho-theo-phap-ly-20261021.md). NĐ254/2026 và TT91/2026 có hiệu lực01/07/2026 đã thay căn cứ hóa đơn cũ; không dùng NĐ123/2020,NĐ70/2025,TT32/2025 như căn cứ hiện hành cho giao dịch mới. Mẫu ghép/nhân sự/luồngMISA cần đối chiếu như tài liệu bổ sung; chưa thay mẫu production hoặc coi quy chế này đã ban hành.
 
 

@@ -83,6 +83,7 @@ def boot_session(bootinfo):
         "factory_price_groups": factory_price_groups(),
         "cash_custody": cint(frappe.conf.get("kh_aph_cash_custody")),
         "cash_closing": cint(frappe.conf.get("kh_aph_cash_closing")),
+        "warehouse_transfer": cint(frappe.conf.get("kh_aph_kho_van_hanh")),
         "factory_receiving": cint(frappe.conf.get("kh_aph_factory_receiving")),
         "factory_production": cint(frappe.conf.get("kh_aph_factory_production")),
         "ux_task_first": cint(frappe.conf.get("kh_aph_ux_task_first")),

@@ -1,0 +1,40 @@
+{%- set ds = kh_aph_doi_soat_da_luu(doc) -%}
+<div class="aph-vt">
+<div class="aph-lien">Mẫu quản trị nội bộ – số liệu đã lưu theo lượt</div>
+<table class="aph-title"><tr><td class="aph-center">
+ <div class="aph-name">BIÊN BẢN ĐỐI SOÁT CÔNG NỢ</div>
+ <div>Số: <b>{{ doc.name | e }}</b> · Mốc đối chiếu: {{ doc.snapshot_at | e }}</div>
+</td></tr></table>
+<div class="aph-info">Khách hàng: <b>{{ ds.customer_name | e }}</b> · Mã: {{ ds.customer | e }}</div>
+{% if ds.tax_id %}<div class="aph-info">Mã số thuế: {{ ds.tax_id | e }}</div>{% endif %}
+{% if ds.address %}<div class="aph-info">Địa chỉ: {{ ds.address | e }}</div>{% endif %}
+{% if ds.phone %}<div class="aph-info">Điện thoại: {{ ds.phone | e }}</div>{% endif %}
+{% if doc.supersedes %}<div class="aph-info">Bản bổ sung cho: {{ doc.supersedes | e }}. Bản đã cấp trước được giữ nguyên.</div>{% endif %}
+<div class="aph-info">Đơn vị tiền: VND. Phạm vi chỉ gồm các đơn vị trong bảng.</div>
+<table class="aph-tbl">
+ <thead><tr><th>Đơn vị · {{ doc.name | e }}</th><th>Khoản khác tại mốc</th><th>Tăng lượt này</th><th>Giảm lượt này</th><th>Nợ ròng tại mốc</th></tr></thead>
+ <tbody>{% for r in ds.positions %}<tr>
+  <td>{{ r.company | e }}</td><td class="r">{{ kh_aph_so(r.other, 2) }}</td>
+  <td class="r">{{ kh_aph_so(r.increase, 2) }}</td><td class="r">{{ kh_aph_so(r.decrease, 2) }}</td>
+  <td class="r"><b>{{ kh_aph_so(r.current, 2) }}</b></td>
+ </tr>{% endfor %}</tbody>
+</table>
+<div class="aph-info">Tổng phải thu từng đơn vị: <b>{{ kh_aph_so(ds.receivable, 2) }}</b> · Tổng dư có từng đơn vị: <b>{{ kh_aph_so(ds.credit, 2) }}</b>. Hai khoản giữ riêng, không tự cấn chéo đơn vị.</div>
+<div class="aph-info">Số âm là dư có của khách tại đơn vị đó. “Khoản khác tại mốc” là phần ngoài các chứng từ lượt này tại cùng mốc đối chiếu, không phải số dư lịch sử trước khi khách đến.</div>
+<table class="aph-tbl">
+ <thead><tr><th>Đơn vị</th><th>Chứng từ phát sinh của lượt</th><th>Tăng (+) / giảm (−)</th></tr></thead>
+ <tbody>{% for r in ds.movements %}<tr><td>{{ r.company | e }}</td><td>{{ r.name | e }}</td><td class="r">{{ kh_aph_so(r.amount, 2) }}</td></tr>{% endfor %}</tbody>
+</table>
+<div class="aph-info"><b>Cọc và tiền chưa phân bổ – trình bày riêng</b></div>
+<table class="aph-tbl">
+ <thead><tr><th>Đơn vị nhận/giữ</th><th>Cọc đang giữ</th><th>Tiền giữ chưa phân bổ</th><th>Thu chưa phân bổ vào hóa đơn</th><th>Chi chưa phân bổ</th></tr></thead>
+ <tbody>{% for r in ds.funds %}<tr><td>{{ r.company | e }}</td><td class="r">{{ kh_aph_so(r.reserved, 2) }}</td>
+  <td class="r">{{ kh_aph_so(r.available, 2) }}</td><td class="r">{{ kh_aph_so(r.unallocated_received, 2) }}</td><td class="r">{{ kh_aph_so(r.unallocated_paid, 2) }}</td></tr>{% endfor %}</tbody>
+</table>
+<div class="aph-info">Tiền/cọc giữ theo đơn vị thực nhận. Khoản thu đã nằm trong nợ ròng không trừ thêm lần nữa; phân bổ/cấn theo lựa chọn và đúng đơn vị.</div>
+<div class="aph-info">Hai bên đối chiếu các số và chứng từ trên tại mốc ghi trong biên bản. Phiếu chưa ghi sổ hoặc giấy tay chưa nhập được đối chiếu bổ sung riêng. Giao dịch về sau không thay số của bản này.</div>
+<table class="aph-sign"><tr>
+ <td><b>Người có quyền ký công nợ</b><br><i>(Ký, ghi rõ họ tên; căn cứ ủy quyền nếu có)</i><div style="height:25mm"></div></td>
+ <td><b>Người lập</b><br><i>(Ký, ghi rõ họ tên)</i><div style="height:25mm"></div><div class="aph-sign-name">{{ ds.prepared_by | e }}</div></td>
+</tr></table>
+</div>

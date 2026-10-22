@@ -47,9 +47,11 @@ if (!kh_aph.transfer_in.open) {
     kh_aph.transfer_in.send = function(company) {
         if (!company) return frappe.msgprint("Chọn đơn vị trước.");
         const request_id = frappe.utils.get_random(32);
-        const dialog = new frappe.ui.Dialog({title: "Chuyển hàng đi (cùng đơn vị)", primary_action_label: "Xác nhận xuất lên xe",
+        const dialog = new frappe.ui.Dialog({title: "Chuyển hàng đi (cùng đơn vị)", primary_action_label: "Chuẩn bị phiếu & In",
             fields: [
                 {fieldname: "sent_date", label: "Ngày chuyển", fieldtype: "Date", reqd: 1, default: frappe.datetime.get_today()},
+                {fieldname: "destination", label: "Kho nhận dự kiến", fieldtype: "Link", options: "Warehouse", reqd: 1,
+                    get_query: () => ({filters: {company, is_group: 0, disabled: 0, warehouse_type: ["!=", "Transit"]}})},
                 {fieldname: "carrier", label: "Người / xe chở", fieldtype: "Data", reqd: 1},
                 {fieldname: "note", label: "Ghi chú (chuyển về kho nào…)", fieldtype: "Small Text"},
                 {fieldname: "items", label: "Hàng chuyển", fieldtype: "Table", fields: [
@@ -62,14 +64,16 @@ if (!kh_aph.transfer_in.open) {
             primary_action(v) {
                 const rows = (v.items || []).filter(x => Number(x.qty) > 0).map(x => ({item_code: x.item_code, warehouse: x.warehouse, qty: x.qty, bags: x.bags || 0}));
                 if (!rows.length) return frappe.msgprint("Nhập ít nhất một dòng hàng chuyển.");
-                frappe.confirm("Xác nhận hàng đã lên xe? Hàng chuyển sang kho đang vận chuyển, chưa vào kho nhận.", () => {
-                    dialog.get_primary_btn().prop("disabled", true);
+                const printWindow = window.open("", "_blank");
+                dialog.get_primary_btn().prop("disabled", true);
                     frappe.call({method: "kh_aph.factory_transfer.send", freeze: true, args: {company, request_id, rows: JSON.stringify(rows),
-                        sent_date: v.sent_date, carrier: v.carrier, note: v.note || ""}, callback(res) {
-                            if (!res.message?.name) return;
+                        sent_date: v.sent_date, carrier: v.carrier, note: v.note || "", prepare_only: 1, destination: v.destination}, callback(res) {
+                            if (!res.message?.name) { printWindow?.close(); return; }
+                            const url = `/printview?doctype=Stock%20Entry&name=${encodeURIComponent(res.message.name)}&format=${encodeURIComponent("Phiếu kho")}&no_letterhead=1`;
+                            if (printWindow) printWindow.location = url;
                             dialog.hide(); frappe.set_route("Form", "Stock Entry", res.message.name);
-                        }}).always(() => dialog.get_primary_btn().prop("disabled", false));
-                });
+                            frappe.show_alert({message: "Đã chuẩn bị phiếu. Kiểm lượng thực giao rồi xác nhận xuất trên phiếu.", indicator: "blue"});
+                        }}).fail(() => printWindow?.close()).always(() => dialog.get_primary_btn().prop("disabled", false));
             }});
         dialog.show();
     };
@@ -91,7 +95,7 @@ if (frappe.ui.form?.on && !kh_aph.transfer_in.form_registered) {
     kh_aph.transfer_in.form_registered = true;
     frappe.ui.form.on("Stock Entry", {refresh(frm) {
         const d = frm.doc;
-        if (!frappe.boot?.kh_aph?.factory_receiving || d.docstatus !== 1 || d.purpose !== "Material Transfer"
+        if (!(frappe.boot?.kh_aph?.factory_receiving || frappe.boot?.kh_aph?.warehouse_transfer) || d.docstatus !== 1 || d.purpose !== "Material Transfer"
             || !d.add_to_transit || d.outgoing_stock_entry || Number(d.per_transferred || 0) >= 100) return;
         frm.add_custom_button("Nhận chuyến về kho", () => kh_aph.transfer_in.open(d.name)).addClass("btn-primary");
     }});

@@ -397,6 +397,7 @@ for _dt in ("Customer", "Supplier"):
 # Hồ sơ giao nhận dùng cờ Trung tâm Bán hàng và quyền phiếu giao hiện có.
 for _event in ("validate", "before_update_after_submit"):
     doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.ho_so_giao_nhan.validate")
+doc_events["Delivery Note"].setdefault("on_trash", []).append("kh_aph.ho_so_giao_nhan.prevent_delete")
 extend_doctype_class.setdefault("File", []).append("kh_aph.ho_so_giao_nhan.HoSoFileMixin")
 doc_events.setdefault("File", {})["before_validate"] = "kh_aph.ho_so_giao_nhan.protect_file_update"
 
@@ -517,3 +518,47 @@ doctype_list_js["Customer"] = _lists + ["public/js/ux_thu_tien.js", "public/js/u
 # Đầu đơn hiện nhận diện khách và công nợ gọn, chỉ đọc theo cờ giao diện.
 doctype_js["APH Shared Sales Order"].append("public/js/ux_order_context.js")
 doctype_js["Delivery Note"].append("public/js/ux_delivery_layout.js")
+
+# Nhận trả một phần bao: kiểm nguồn và tổng lượng ở mọi lối lưu/ghi native.
+doc_events["Delivery Note"].setdefault("validate", []).append("kh_aph.sales_return.validate")
+doc_events["Delivery Note"].setdefault("before_submit", []).append("kh_aph.sales_return.validate")
+for _dt in ("Delivery Note", "Customer"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/sales_return.js"]
+
+# Đổi mã mới dùng đơn chuẩn; khóa một đơn thay còn hiệu lực trên mỗi phiếu nhận trả.
+for _event, _handler in (("validate", "validate"), ("before_submit", "validate"), ("before_cancel", "before_cancel")):
+    doc_events.setdefault("APH Shared Sales Order", {}).setdefault(_event, []).append("kh_aph.sales_exchange." + _handler)
+for _event in ("validate", "before_submit"):
+    doc_events.setdefault("APH Source Change", {}).setdefault(_event, []).append("kh_aph.sales_exchange.validate_source_change")
+
+doc_events.setdefault("Journal Entry", {}).setdefault("before_submit", []).append("kh_aph.sales_p1.guard_quality_credit")
+
+for _event in ("validate", "before_cancel", "before_update_after_submit"):
+    doc_events.setdefault("Journal Entry", {}).setdefault(_event, []).append("kh_aph.sales_p1.protect_quality_source")
+
+# Frappe16.52 tìm biến thể báo cáo khi mở Query Report; hồ sơ ẩn vốn chỉ nhận [].
+override_whitelisted_methods["frappe.desk.reportview.get_list"] = "kh_aph.report_discovery.get_list"
+
+# Giấy tay chỉ là bằng chứng cho chứng từ chuẩn nhập bổ sung; không có sổ offline.
+for _dt in ("Delivery Note", "Payment Entry", "Stock Entry"):
+    for _event in ("validate", "before_submit", "before_cancel", "before_update_after_submit"):
+        _old = doc_events.setdefault(_dt, {}).get(_event, [])
+        _old = [_old] if isinstance(_old, str) else list(_old)
+        doc_events[_dt][_event] = _old + ["kh_aph.paper_archive.validate"]
+extend_doctype_class["File"].append("kh_aph.paper_archive.PaperFileMixin")
+doc_events["File"]["before_validate"].append("kh_aph.paper_archive.protect_file_update")
+
+for _event in ("validate", "before_update_after_submit", "before_cancel"):
+    doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.sales_p1.protect_processing_reference")
+
+has_permission["Bien ban doi soat no"] = "kh_aph.debt_statement.has_permission"
+permission_query_conditions["Bien ban doi soat no"] = "kh_aph.debt_statement.query_conditions"
+extend_doctype_class["File"].append("kh_aph.debt_statement.StatementFileMixin")
+doc_events["File"]["before_validate"].append("kh_aph.debt_statement.protect_file_update")
+jinja["methods"].append("kh_aph.print_utils.kh_aph_doi_soat_da_luu")
+for _dt in ("Customer", "Delivery Note", "Payment Entry", "Bien ban doi soat no"):
+    _scripts = doctype_js.get(_dt, [])
+    _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
+    doctype_js[_dt] = _scripts + ["public/js/debt_statement.js"]

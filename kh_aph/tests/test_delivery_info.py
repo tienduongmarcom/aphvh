@@ -27,6 +27,31 @@ class DeliveryInfoRules(unittest.TestCase):
         self.assertEqual(normalize(None), {})
         self.assertEqual(normalize({}), {})
 
+    def test_carrier_details_required_only_for_new_payload(self):
+        old = {"delivery_method": "Vận chuyển", "recipient": "Nam"}
+        self.assertNotIn("carrier", normalize(old))  # Hash đợt cũ giữ nguyên.
+        with self.assertRaises(ValueError): normalize({**old, "carrier": "Xe mới"})
+        got = normalize({**old, "carrier": "Xe mới", "carrier_phone": "0901"})
+        self.assertEqual(got["carrier"], "Xe mới")
+
+    def test_new_snapshot_rejects_html_before_frappe_can_silently_change_text(self):
+        values = {"delivery_method": "Vận chuyển", "recipient": "Người nhận", "carrier": "Nhà xe A & B", "carrier_phone": "0901"}
+        self.assertEqual(normalize(values)["carrier"], "Nhà xe A & B")
+        for key in ("carrier", "recipient", "authorization"):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                normalize({**values, key: "Tên <UAT>"})
+
+    def test_customer_driver_needs_separate_pickup_authorization(self):
+        values = {"delivery_method": "Xe khách đến lấy", "recipient": "Lái xe"}
+        with self.assertRaises(ValueError): normalize(values)
+        got = normalize({**values, "authorization": "Khách gọi xác nhận"})
+        self.assertEqual(got["authorization"], "Khách gọi xác nhận")
+
+    def test_snapshot_uses_document_carrier_not_current_master(self):
+        from kh_aph.delivery_info_rules import print_snapshot
+        info = print_snapshot({"kh_aph_cach_giao": "Vận chuyển", "kh_aph_nha_xe_dot": "Xe cũ", "kh_aph_sdt_nha_xe_dot": "0901", "kh_aph_mau_giao_nhan": 1})
+        self.assertEqual((info["carrier"], info["carrier_phone"]), ("Xe cũ", "0901"))
+
     def test_invalid_payload(self):
         good = {"delivery_method": "Khách đến lấy", "recipient": "Bình"}
         for value in ([], "abc", {**good, "docstatus": 1}, {**good, "phone": 123},
@@ -39,6 +64,7 @@ class DeliveryInfoBoundary(unittest.TestCase):
     def setUp(self):
         self.f = types.ModuleType("frappe")
         self.f.conf = {"kh_aph_trung_tam_ban": 1}
+        self.f.whitelist = lambda *a, **kw: lambda fn: fn
         self.f.PermissionError = PermissionError
         self.f.flags = {}
         self.f.session = types.SimpleNamespace(user="kho")

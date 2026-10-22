@@ -36,6 +36,27 @@ def validate(doc, method=None):
                 if not source or source.item_code != row.item_code:
                     frappe.throw("Dòng chứng từ gốc không đúng mã hàng: " + row.item_code)
                 saved = flt(source.kh_aph_kg_per_bag) or saved
+        from kh_aph.return_quantity import LOOSE, loose_return
+        if cint(row.get(LOOSE)):
+            if doc.doctype != "Delivery Note" or not cint(doc.get("is_return")) or not doc.get("return_against"):
+                frappe.throw("Trả lẻ kg chỉ dùng trên phiếu nhận trả theo phiếu xuất gốc")
+            from kh_aph.sales_return import enabled as return_enabled
+            if not return_enabled():
+                frappe.throw("Chưa bật nghiệp vụ trả lẻ kg")
+            original = frappe.db.get_value("Delivery Note Item", row.get("dn_detail"),
+                ["parent", "item_code", "qty", "kh_aph_bags", "kh_aph_kg_per_bag"], as_dict=True) if row.get("dn_detail") else None
+            if not original or original.parent != doc.return_against or original.item_code != row.item_code:
+                frappe.throw("Dòng trả lẻ không thuộc phiếu giao gốc")
+            if row.get("uom") != "Kg" or flt(row.get("conversion_factor")) != 1:
+                frappe.throw("Trả lẻ kg phải dùng đơn vị Kg")
+            saved = flt(original.kh_aph_kg_per_bag)
+            try:
+                loose_return(row.qty, row.get("kh_aph_bags"), saved, original.qty, original.kh_aph_bags)
+            except ValueError as exc:
+                frappe.throw(str(exc))
+            row.kh_aph_kg_per_bag = saved
+            row.kh_aph_bag_rate = 0  # Không suy giá/bao nguyên cho hàng trả trong bao đã mở.
+            continue
         try:
             result = bag_conversion(row.get("kh_aph_bags"), saved,
                 row.get("rate") if doc.doctype in ("Sales Order", "APH Shared Sales Order") else None)
@@ -95,7 +116,8 @@ def _moves(doc):
     moves = []
     for row in doc.items:
         bags = flt(row.get("kh_aph_bags"))
-        if not bags:
+        loose = doc.doctype == "Delivery Note" and cint(row.get("kh_aph_tra_le_kg")) and cint(doc.get("is_return"))
+        if not bags and not loose:
             continue
         if doc.doctype == "Stock Entry":
             for field, sign in (("s_warehouse", -1), ("t_warehouse", 1)):
@@ -122,7 +144,8 @@ def post(doc, method=None):
             frappe.throw("Không đủ số bao thực tế: " + row.item_code)
         movement = frappe.get_doc({"doctype": "APH Bag Movement", **key,
             "company": doc.company, "item_code": row.item_code, "bags": bags,
-            "kg": bags * flt(row.kh_aph_kg_per_bag), "kg_per_bag": row.kh_aph_kg_per_bag,
+            "kg": (-flt(row.stock_qty) if doc.doctype == "Delivery Note" and cint(row.get("kh_aph_tra_le_kg"))
+                   else bags * flt(row.kh_aph_kg_per_bag)), "kg_per_bag": row.kh_aph_kg_per_bag,
             "posting_date": doc.posting_date, "inactive": 0})
         frappe.flags.bag_internal_process = True
         try:

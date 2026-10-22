@@ -72,8 +72,12 @@ def schema(cho_phep_du_lieu=False):
     # 0.14: Trung tâm Bán hàng, tiền và vay (mỗi hàm tự đòi cờ của mình).
     from kh_aph import tien_vay, trung_tam_ban
     trung_tam_ban.schema()
+    from kh_aph import debt_statement
+    debt_statement.schema()
     from kh_aph import cash_custody
     cash_custody.schema()
+    from kh_aph import paper_archive
+    paper_archive.schema()
     from kh_aph import cash_closing
     cash_closing.schema()
     from kh_aph import cash_handover

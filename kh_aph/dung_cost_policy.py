@@ -49,6 +49,9 @@ def before_request():
     path = frappe.request.path
     if not cmd and "/api/method/" in path:
         cmd = path.split("/api/method/", 1)[1]
+    from kh_aph.report_discovery import is_quantity_lookup
+    if path == "/api/method/frappe.desk.reportview.get_list" and is_quantity_lookup(frappe.form_dict, cmd):
+        return  # Facade chỉ trả [], không đọc metadata hoặc mở quyền Report.
     deny = (bool(cint(frappe.form_dict.get("as_csv"))) or "export" in cmd.lower() or "download_template" in cmd.lower()
             or (cmd.startswith("frappe.desk.reportview.") and frappe.form_dict.get("doctype") not in DANH_SACH_DUOC_XEM)
             or cmd.startswith("erpnext.stock.get_item_details.")

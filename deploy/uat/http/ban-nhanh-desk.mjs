@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may'].includes(mode)) {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may','doi-soat'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -37,7 +37,84 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'xuat-ngay') {
+    if (mode === 'doi-soat') {
+      try {
+        const payload=JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(payload.delivery)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Đối soát & In bộ giấy"]');
+        if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong statement principal');
+        await evaluate('cur_frm.custom_buttons["Đối soát & In bộ giấy"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.sources && !!cur_dialog.fields_dict.companies');
+        const initial=await evaluate('({companies:cur_dialog.get_value("companies"),rows:cur_dialog.get_value("sources")})');
+        if(!initial.companies?.length||initial.rows?.[0]?.voucher!==payload.delivery)throw Error('Missing default scope/source: '+JSON.stringify(initial));
+        await evaluate('window.__statementDialog=cur_dialog;true');
+        await command('Fetch.enable',{patterns:[{urlPattern:'*kh_aph.debt_statement.create',requestStage:'Response'}]});
+        await evaluate('__statementDialog.get_primary_btn().trigger("click");true');
+        for(let i=0;i<600&&!lostResponse;i++)await pause(100);
+        if(!lostResponse)throw Error('No committed statement response intercepted');
+        const requestId=new URLSearchParams(lostResponse.request.postData).get('request_id');
+        if(!requestId)throw Error('Missing statement request');
+        await until('frappe.request.ajax_count===0 && !__statementDialog.get_primary_btn().prop("disabled")');
+        await evaluate('frappe.msg_dialog?.hide();true');
+        await command('Fetch.disable');
+        await evaluate('__statementDialog.get_primary_btn().trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doctype==="Bien ban doi soat no" && !!cur_frm.doc.bundle_file && frappe.request.ajax_count===0');
+        const name=await evaluate('cur_frm.doc.name');
+        const shot=await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('doi-soat-da-luu.png',Buffer.from(shot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_DOI_SOAT_RETRY',status:'PASS',detail:{name,requestId,
+            real_sales_accountant:true,response_dropped_after_200:true,same_dialog_retry:true,scope_and_source_prefilled:true}}));
+      } catch(error) {
+        try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('doi-soat-loi.png',Buffer.from(shot.data,'base64'));} catch {}
+        console.error('STATEMENT_DESK_FAILURE:'+error.message+'; errors='+JSON.stringify(diagnostics.slice(-8)));
+        throw error;
+      }
+    } else if (mode === 'kho-giao-nhan') {
+      try {
+        const payload = JSON.parse(source);
+        await command('Emulation.setDeviceMetricsOverride', {width:1440,height:1050,deviceScaleFactor:1,mobile:false});
+        await command('Page.navigate', {url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(payload.order)});
+        await until('!!window.cur_frm && !!cur_frm.custom_buttons["Lập phiếu xuất & In"]');
+        await evaluate('cur_frm.custom_buttons["Lập phiếu xuất & In"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.carrier && !!cur_dialog.__carriers');
+        const entered = await evaluate(`(async()=>{await cur_dialog.set_value('delivery_method','Vận chuyển');
+            await cur_dialog.set_value('carrier','Nhà xe mới nhập trên Chrome');
+            await cur_dialog.set_value('carrier_phone','0901999000');
+            return {name:cur_dialog.get_value('carrier'),phone:cur_dialog.get_value('carrier_phone'),
+                free:cur_dialog.fields_dict.carrier.df.ignore_validation,visible:cur_dialog.fields_dict.carrier.$wrapper.is(':visible')};})()`);
+        if(entered.name!=='Nhà xe mới nhập trên Chrome'||entered.phone!=='0901999000'||!entered.free||!entered.visible)
+            throw Error('Không nhập được nhà xe mới: '+JSON.stringify(entered));
+        let shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-nha-xe-moi.png',Buffer.from(shot.data,'base64'));
+        await evaluate('cur_dialog.hide();true');
+        await command('Page.navigate', {url:base+'/desk/delivery-note/'+encodeURIComponent(payload.delivery)});
+        await until('!!window.cur_frm && cur_frm.doc.name==='+JSON.stringify(payload.delivery)+' && !!cur_frm.custom_buttons["Khách đã nhận"]');
+        await evaluate('cur_frm.custom_buttons["Khách đã nhận"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.reported_by');
+        const receipt = await evaluate('({date:!!cur_dialog.get_value("received_on"),fields:cur_dialog.fields.filter(f=>f.fieldname&&!["Section Break","Column Break","Tab Break","HTML"].includes(f.fieldtype)).map(f=>f.fieldname)})');
+        if(!receipt.date||JSON.stringify(receipt.fields)!==JSON.stringify(['reported_by','received_on']))throw Error('Nhận hàng không gọn: '+JSON.stringify(receipt));
+        await evaluate('cur_dialog.hide();true');
+        await evaluate('cur_frm.custom_buttons["Nhận hàng trả lại"].trigger("click");true');
+        await until('!!window.cur_dialog?.fields_dict.condition && !!cur_dialog.fields_dict.rows');
+        const columns = await evaluate('cur_dialog.fields_dict.rows.df.fields.map(f=>f.fieldname)');
+        if(!columns.includes('qty')||!columns.includes('bags'))throw Error('Thiếu kg/bao nhận trả riêng');
+        shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-nhan-tra-kg.png',Buffer.from(shot.data,'base64'));
+        await evaluate('cur_dialog.hide();true');
+        await command('Page.navigate', {url:base+'/desk/delivery-note/'+encodeURIComponent(payload.refund_return)});
+        await until('!!window.cur_frm && cur_frm.doc.name==='+JSON.stringify(payload.refund_return)+' && !!cur_frm.custom_buttons["Mở phiếu hoàn tiền"]');
+        await evaluate('cur_frm.custom_buttons["Mở phiếu hoàn tiền"].trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doctype==="Payment Entry" && cur_frm.doc.name==='+JSON.stringify(payload.refund));
+        shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-phieu-hoan.png',Buffer.from(shot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_KHO_GIAO_NHAN_GON',status:'PASS',detail:{new_carrier_typed:true,receipt_two_fields:true,return_kg_bags_separate:true,opens_existing_refund:true,no_posting:true}}));
+      } catch (error) {
+        try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('kho-giao-nhan-loi.png',Buffer.from(shot.data,'base64'));} catch {}
+        console.error('KHO_DESK_FAILURE:'+error.message+'; errors='+JSON.stringify(diagnostics.slice(-8)));
+        throw error;
+      }
+    } else if (mode === 'xuat-ngay') {
         await command('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:base+'/desk/aph-shared-sales-order/'+encodeURIComponent(source)});
         await until('!!window.cur_frm && !!cur_frm.custom_buttons["Lập phiếu xuất & In"]');

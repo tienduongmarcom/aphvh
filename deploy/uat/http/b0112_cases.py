@@ -80,8 +80,9 @@ def chay(admin, phien, f, emit):
                                   "item_tax_template": f["tax"]}]}, caller)
     denied(lambda: don(K("Kho chờ đóng gói")), text="Không bán từ kho")
     denied(lambda: don(K("Dở dang dây chuyền phồng tôm")), text="Không bán từ kho")
+    denied(lambda: don(K("Hàng đang vận chuyển")), text="Không bán từ kho")
     duoc = don(K("Kho thành phẩm nhà máy"))
-    emit("HTTP_0112_CHAN_BAN_KHO", "PASS", {"cho_dong_goi": "chặn", "do_dang": "chặn", "thanh_pham": duoc["name"]})
+    emit("HTTP_0112_CHAN_BAN_KHO", "PASS", {"cho_dong_goi": "chặn", "do_dang": "chặn", "van_chuyen": "chặn", "thanh_pham": duoc["name"]})
 
     # 3–4. Phồng tôm: cấp 2 mẻ (320 kg bột), ra 1,8 mẻ (324 kg bánh khô), ghi tiêu hao 280 → quyết toán theo định mức
     wip = K("Dở dang dây chuyền phồng tôm")

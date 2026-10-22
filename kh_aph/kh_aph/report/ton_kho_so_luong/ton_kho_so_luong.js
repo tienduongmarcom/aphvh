@@ -5,14 +5,16 @@
 frappe.query_reports["Ton kho so luong"] = {
 	onload(report) {
         const k = frappe.boot?.kh_aph || {};
-        if (!k.factory_receiving && !k.factory_production) return;
+        if (!k.factory_receiving && !k.factory_production && !k.warehouse_transfer) return;
         if (frappe.session.user !== "Administrator" && !(frappe.user_roles || []).some(r =>
-            ["Kế toán nhà máy", "Stock User", "Stock Manager", "Accounts Manager", "System Manager"].includes(r))) return;
+            ["Thủ kho bán hàng", "Kế toán nhà máy", "Stock User", "Stock Manager", "Accounts Manager", "System Manager"].includes(r))) return;
         if (k.factory_receiving) {
             report.page.add_inner_button("Nhận hàng nhà máy", () => {
                 frappe.require("form.bundle.js", () =>
                     kh_aph.receiving.pick(report.get_filter_value("company")));
             });
+        }
+        if (k.factory_receiving || k.warehouse_transfer) {
             report.page.add_inner_button("Nhận chuyến chuyển đến", () => {
                 frappe.require("form.bundle.js", () =>
                     kh_aph.transfer_in.pick(report.get_filter_value("company")));

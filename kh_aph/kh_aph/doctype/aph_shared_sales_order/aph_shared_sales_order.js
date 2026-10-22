@@ -19,10 +19,21 @@ async function kh_aph_lap_dot_xuat(frm) {
         fields: [
             {fieldtype: "HTML", options: '<div class="alert alert-info">Chọn lượng giao bằng kg; hàng theo bao phải đủ bao theo quy cách đã lưu. Phiếu được tạo ở trạng thái <b>Chờ xuất</b>. Kho xác nhận thực giao mới trừ tồn và ghi công nợ.</div>'},
             {fieldname: "delivery_method", label: "Cách giao đợt này", fieldtype: "Select",
-                options: ["Khách đến lấy", "Vận chuyển"], default: "Khách đến lấy", reqd: 1},
+                options: ["Khách đến lấy", "Xe khách đến lấy", "Vận chuyển"], default: "Khách đến lấy", reqd: 1},
             {fieldname: "recipient", label: "Người thực nhận hàng tại kho", fieldtype: "Data", reqd: 1,
                 description: "Người nhận/lái xe ký nhận tại kho, không bắt buộc có tài khoản phần mềm."},
             {fieldname: "phone", label: "Điện thoại liên hệ", fieldtype: "Data"},
+            {fieldname: "authorization", label: "Khách chỉ định người nhận", fieldtype: "Data",
+                depends_on: "eval:doc.delivery_method==='Xe khách đến lấy'", mandatory_depends_on: "eval:doc.delivery_method==='Xe khách đến lấy'",
+                description: "Ví dụ: khách gọi xác nhận hoặc tin nhắn chỉ định lái xe. Quyền nhận hàng không phải quyền ký công nợ."},
+            {fieldname: "carrier", label: "Nhà xe (chọn hoặc nhập mới)", fieldtype: "Autocomplete", ignore_validation: true, translate_values: false,
+                depends_on: "eval:doc.delivery_method==='Vận chuyển'", mandatory_depends_on: "eval:doc.delivery_method==='Vận chuyển'",
+                onchange() {if (!dialog) return; const match = (dialog.__carriers || []).find(r => r.carrier === dialog.get_value("carrier"));
+                    dialog.set_value("carrier_phone", match ? match.carrier_phone : "");}},
+            {fieldname: "carrier_phone", label: "Điện thoại nhà xe", fieldtype: "Data",
+                depends_on: "eval:doc.delivery_method==='Vận chuyển'", mandatory_depends_on: "eval:doc.delivery_method==='Vận chuyển'"},
+            {fieldname: "customer_signature", label: "Khách cần ký biên bản giao nhận", fieldtype: "Select", options: ["Không", "Có"], default: "Không",
+                depends_on: "eval:doc.delivery_method==='Vận chuyển'"},
             {fieldname: "dispatch_now", label: "Xuất ngay — đã kiểm thực giao tại kho", fieldtype: "Check", default: 0,
                 hidden: !response.message.can_dispatch,
                 description: "Chỉ chọn khi hàng đã thực giao. Hệ thống sẽ trừ tồn và ghi công nợ theo cách giao đã chọn.",
@@ -67,7 +78,7 @@ async function kh_aph_lap_dot_xuat(frm) {
                 const made = await frappe.call({method: dispatch ? "kh_aph.ban_nhanh.create_and_dispatch" : "kh_aph.ban_nhanh.create_drafts", freeze: true,
                     args: {shared_order: frm.doc.name, selections: JSON.stringify(selections), request_id,
                         ...(dispatch ? {dispatcher: values.dispatcher} : {}),
-                        delivery: JSON.stringify(Object.fromEntries(["delivery_method", "recipient", "phone", "driver_name", "vehicle_no", "shipping_address_name"]
+                        delivery: JSON.stringify(Object.fromEntries(["delivery_method", "recipient", "phone", "driver_name", "vehicle_no", "shipping_address_name", "authorization", "carrier", "carrier_phone", "customer_signature"]
                             .map(key => [key, values[key] || ""])))}});
                 created = true;
                 const names = made.message.delivery_notes.map(n => n.name);
@@ -96,6 +107,10 @@ async function kh_aph_lap_dot_xuat(frm) {
         },
     });
     dialog.show();
+    frappe.call({method: "kh_aph.delivery_info.recent_carriers"}).then(r => {
+        dialog.__carriers = r.message || [];
+        dialog.fields_dict.carrier.set_data(dialog.__carriers.map(x => ({value: x.carrier, label: frappe.utils.escape_html(x.carrier)})));
+    });
 }
 frappe.ui.form.on("APH Shared Sales Order", {
     async refresh(frm) {

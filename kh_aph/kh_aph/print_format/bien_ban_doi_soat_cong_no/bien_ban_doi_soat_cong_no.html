@@ -8,6 +8,7 @@
   <div class="aph-date">{{ kh_aph_ngay(ds.ngay) }}</div>
 </td><td class="aph-side"></td></tr></table>
 <div class="aph-info">
+  <div>Phạm vi đối soát: {{ ds.scope | join('; ') | e }}. Chỉ gồm các đơn vị người lập được xem.</div>
   <div>Khách hàng: <b>{{ doc.customer_name }}</b> (mã {{ doc.name }}){% if doc.tax_id %} &nbsp; MST: {{ doc.tax_id }}{% endif %}</div>
   {%- if doc.mobile_no %}<div>Điện thoại: {{ doc.mobile_no }}</div>{% endif %}
 </div>

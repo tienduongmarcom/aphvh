@@ -22,7 +22,7 @@ class DayClose(unittest.TestCase):
         self.c=types.ModuleType('kh_aph.cash_closing');self.c.guard=Mock()
         self.h=types.ModuleType('kh_aph.cash_handover')
         self.factory=types.ModuleType('kh_aph.factory_handover');self.factory.enabled=lambda:True;self.factory.guard=Mock()
-        self.u=types.ModuleType('frappe.utils');self.u.now_datetime=lambda:'now';self.u.getdate=lambda v=None:date.fromisoformat(str(v)) if v else date(2026,10,19)
+        self.u=types.ModuleType('frappe.utils');self.u.cint=lambda value:int(value or 0);self.u.now_datetime=lambda:'now';self.u.getdate=lambda v=None:date.fromisoformat(str(v)) if v else date(2026,10,19)
         mapping={'frappe':self.f,'frappe.utils':self.u}
         for n,value in [('cash_closing',self.c),('cash_handover',self.h),('factory_handover',self.factory)]:mapping['kh_aph.'+n]=value;setattr(kh_aph,n,value)
         self.patch=patch.dict(sys.modules,mapping);self.patch.start();sys.modules.pop('kh_aph.day_close',None);self.m=importlib.import_module('kh_aph.day_close')
@@ -74,3 +74,38 @@ class DayClose(unittest.TestCase):
         self.c._state.side_effect=forbidden
         with self.assertRaises(PermissionError):self.m._position('APH','cash','me')
         self.assertEqual(self.f.local.message_log,['prior message','permission denied'])
+
+    def test_review_keeps_old_day_receipt_pending_until_paper_returns(self):
+        issue=types.SimpleNamespace(STATE='issue',ASSIGNEE='assignee',DUE='due')
+        paper=types.SimpleNamespace(FILE='photo',ACTOR='reviewer',ORIGINAL_AT='original_at')
+        self.f.get_meta=lambda dt:Row(has_field=lambda field:True)
+        value=Row(name='DN',docstatus=1,is_return=0,posting_date='2026-10-18',kh_aph_delivery_state='Khách đã nhận',
+                  photo='PRIVATE',reviewer='accountant',kh_aph_mau_giao_nhan=1,original_at=None)
+        self.m.rows=Mock(return_value=[value])
+        item=Row(warehouse='WH',item_code='HANG',stock_qty=5,stock_uom='Kg',kh_aph_bags=0)
+        doc=types.SimpleNamespace(items=[item],check_permission=Mock())
+        self.f.get_doc.return_value=doc
+        with patch.object(self.package,'delivery_issue',issue,create=True), patch.object(self.package,'ho_so_giao_nhan',paper,create=True):
+            result=self.m._goods('CONG-TY','2026-10-19')
+            self.assertEqual(len(result),1)
+            self.assertIn('Thiếu giấy gốc',result[0]['status'])
+            value['original_at']='2026-10-19 10:00:00'
+            self.assertEqual(self.m._goods('CONG-TY','2026-10-19'),[])
+
+    def test_required_customer_paper_is_independent_and_keeps_old_day_in_work(self):
+        issue=types.SimpleNamespace(STATE='issue',ASSIGNEE='assignee',DUE='due')
+        paper=types.SimpleNamespace(FILE='photo',ACTOR='reviewer',ORIGINAL_AT='original_at')
+        self.f.get_meta=lambda dt:Row(has_field=lambda field:True)
+        value=Row(name='DN',docstatus=1,is_return=0,posting_date='2026-10-18',kh_aph_delivery_state='Khách đã nhận',
+            photo='WAREHOUSE',reviewer='kt',original_at='2026-10-19',kh_aph_mau_giao_nhan=1,
+            kh_aph_cach_giao='Vận chuyển',kh_aph_can_ky_khach='Có')
+        self.m.rows=Mock(return_value=[value])
+        self.f.get_doc.return_value=types.SimpleNamespace(items=[Row(warehouse='WH',item_code='A',stock_qty=1,stock_uom='Kg')],check_permission=Mock())
+        with patch.object(self.package,'delivery_issue',issue,create=True),patch.object(self.package,'ho_so_giao_nhan',paper,create=True):
+            self.assertIn('Khách ký: chưa kiểm hồ sơ',self.m._goods('CO','2026-10-19')[0]['status'])
+            value['kh_aph_kiem_ky_khach_boi']='kt'
+            self.assertIn('Khách ký: thiếu giấy gốc',self.m._goods('CO','2026-10-19')[0]['status'])
+            value['kh_aph_nhan_goc_khach_luc']='2026-10-19'
+            self.assertEqual(self.m._goods('CO','2026-10-19'),[])
+            value['kh_aph_can_ky_khach']='Không';value['kh_aph_kiem_ky_khach_boi']=None;value['kh_aph_nhan_goc_khach_luc']=None
+            self.assertEqual(self.m._goods('CO','2026-10-19'),[])

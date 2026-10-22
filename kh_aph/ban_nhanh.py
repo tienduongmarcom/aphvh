@@ -9,6 +9,7 @@ from frappe.utils import cint, flt
 
 from kh_aph.dispatch_plan import plan
 from kh_aph import delivery_info
+from kh_aph.delivery_info_rules import PICKUP_METHODS
 
 F_ORDER = "kh_aph_don_chung_xuat"
 F_BATCH = "kh_aph_dot_xuat"
@@ -165,11 +166,11 @@ def _dispatched_matches(doc, notes, choices, info, dispatcher):
         _dispatch_permissions(dn)
         if dn.docstatus != 1 or cint(dn.is_return) or dn.customer != doc.customer or dn.get(delivery_info.DISPATCHER) != dispatcher:
             frappe.throw("Đợt xuất ngay không còn nguyên trạng; mở phiếu để đối soát, không tự xuất tiếp")
-        states = {"Khách đã nhận"} if info["delivery_method"] == "Khách đến lấy" else {"Đang giao", "Khách đã nhận"}
+        states = {"Khách đã nhận"} if info["delivery_method"] in PICKUP_METHODS else {"Đang giao", "Khách đã nhận"}
         if dn.get("kh_aph_delivery_state") not in states or not dn.get(delivery_info.HANDED_AT) or not dn.get(delivery_info.HANDED_BY):
             frappe.throw("Phiếu chưa có xác nhận xuất hợp lệ của đợt; mở phiếu để đối soát")
-        if any((dn.get(field) or "") != value for key, field in delivery_info.MAPPING.items()
-               if (value := info[key]) or key != "shipping_address_name"):
+        if any((dn.get(field) or "") != value for key, field in (delivery_info.MAPPING | delivery_info.EXTRA_MAPPING).items()
+               if key in info and ((value := info[key]) or key != "shipping_address_name")):
             frappe.throw("Thông tin trên phiếu không khớp yêu cầu xuất ngay")
         for row in dn.items:
             so = frappe.get_doc("Sales Order", row.against_sales_order, for_update=True)
@@ -248,7 +249,7 @@ def _create(shared_order, selections, request_id, delivery=None, dispatcher=None
     if dispatch:
         from kh_aph.delivery_status import confirm
         for dn in notes:
-            confirm(dn.name, "pickup" if info["delivery_method"] == "Khách đến lấy" else "handoff")
+            confirm(dn.name, "pickup" if info["delivery_method"] in PICKUP_METHODS else "handoff")
         notes = [frappe.get_doc("Delivery Note", n.name, for_update=True) for n in notes]
     return {"delivery_notes": _summaries(notes), "reused": False}
 
@@ -307,6 +308,8 @@ def _render_notes(shared_order, documents):
                       "print_form": kh_aph_mau_info(dn.company, "xuat", True), "accounts": kh_aph_no_co(dn),
                       "customer_name": dn.customer_name, "docstatus": dn.docstatus,
                       "delivery_method": info["method"], "recipient": info["recipient"],
+                      "carrier": info["carrier"], "carrier_phone": info["carrier_phone"], "authorization": info["authorization"],
+                      "customer_signature": info["customer_signature"], "delivery_version": info["version"],
                       "phone": info["phone"], "dispatcher": info["dispatcher"],
                       "driver_name": info["driver"], "vehicle_no": info["vehicle"],
                       "address": frappe.utils.strip_html(dn.get("shipping_address") or ""),

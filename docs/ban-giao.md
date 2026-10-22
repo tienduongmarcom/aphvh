@@ -1,5 +1,191 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — Giấy tay native đạt; đang sửa PDF và kiểm hồ sơ khách ký riêng
+
+UAT39711917331 đúngedb3c67 FAIL tại lần tạo PDF đối soát đầu tiên (OSError), không phải ca giấy. Đã tải/đọc artifact /tmp/uat-kho-39711917331: HTTP_014_GIAY_TAY_NHAP_BO_SUNG PASS đủ nháp không ghi sổ, khóa trùng, tệp riêng, thời điểm thực tế, hủy/amend kế thừa và gắn giấy vào DN/PE đã ghi không ghi lại sổ. Bộ014 có129PASS kể cả restore, các bộ hồi quy khác cùng lượt không cóFAIL. Chưa coi snapshot/PDF đạt. Host trình duyệt UAT là aphvh-web-uat, chưa có DNS/port phục vụ PDF trong container; đã cấu hình host_name riêng CI thành http://aphvh-p0-web-uat:8000, thêm phép thử PDF native ngay bước chuẩn bị và giữ traceback HTTP để xác định nếu còn lỗi. Chưa có lượt xác nhận sửa PDF.
+
+Đã viết hồ sơ khách ký tại đích trên DN, độc lập bản giao nhà xe; chỉ hiện/cho nhập khi phiếu mới gửi vận chuyển và yêu cầuCó. Giấy gốc trước ảnh được, giữ người/thời điểm/vị trí; nhận hồ sơ khi đang giao dùng chính dấu Khách đã nhận hiện có trong cùng transaction, không ghi kho/nợ/tiền thêm. Người nhập kiểm và lưu cùng thao tác, không cấp duyệt mới. Bản khách ký vào lịch sử/tệp riêng tư và Chốt ngày, không thêm màn hình chính/cờ. Thêm ca native HTTP_014_KHACH_KY_TAI_DICH, bộ014 kỳ vọng134PASS; chưa có kết quả native của phần này hoặc phần chuẩn bị chuyển kho/lịch sử sau1725d3b.
+
+Bổ sung giữ đúng các link đơn/hóa đơn mà mapper trả hàng16.51.1 chép, chặn tráo nguồn; không áp si_detail vì native mapper không chép trường no_copy đó. Mẫu chuyển kho escape tên xe/ghi chú/kho cuối, kiểm ô thực giao trống khi nháp và tái sinh8JSON mốc09:10. Cục bộ561ca không bỏ qua đạt; JS/Python/diff đạt. PR38 nháp, production/tag0.16.4 và28cờ giữ nguyên. Còn phân bổ giảm theo dòng/lượng, trả một phần sau giảm và nối nhu cầu gom kho trực tiếp từ đơn; không tuyên bố hoàn tất toàn phạm vi.
+
+## 22/10/2026 — Giữ phiên bản ảnh ký cũ và dấu đối chiếu trước khi thay
+
+Hồ sơ DN có lịch sử JSON do server ghi trên chính phiếu, không sổ nhiệm vụ/DocType mới. Mỗi lần chọn/gỡ/thay tệp, ghi chú, đối chiếu hoặc nhận gốc giữ trước/sau, user/time; tệp cũ vẫn riêng tư và không bị xóa/công khai/đổi nguồn, kể cả phiếu hủy. Chặn sửa lịch sử bằng form/API và xóa phiếu đã có bằng chứng/gốc. Mục Hồ sơ giao nhận có Lịch sử bản ký để mở các tệp cũ; thay ảnh vẫn bỏ dấu đối chiếu hiện tại để kiểm lại. Đã nối các ô giấy gốc vào đúng cụm hồ sơ.
+
+Cục bộ552ca không bỏ qua đạt, JS/cú pháp/diff đạt. Mở rộng ca HTTP_014_HO_SO_BAN_KY kiểm thay tệp/giữ blob cũ/chặn xóa và giả lịch sử, không tăng số ca: bộ014 vẫn133PASS kỳ vọng cùng phần chuẩn bị chuyển kho. Chưa có bằng chứng native của lịch sử mới. UAT39711917331 mãedb3c67 đang chạy, không chứa chuyển kho/lịch sử sau đó. PR38 vẫn nháp, production0.16.4/28cờ không đổi. Bằng chứng khách cuối riêng và giảm/trả theo dòng vẫn cần hoàn thiện; không tuyên bố cả phạm vi xong.
+
+## 22/10/2026 — Chuẩn bị và in phiếu chuyển kho trước khi thực giao
+
+Đã thêm lựa chọn chuẩn bị nháp vào dịch vụ Stock Entry chuyển kho hiện có. Màn Chuyển hàng đi mặc định Chuẩn bị phiếu & In: kho nhận cuối dự kiến, người/xe chở, phiếu nháp không ghi kho/GL/nợ. Bấm lại cùng lượt mở phiếu cũ, cả sau khi phiếu đã ghi, không tự xác nhận nháp. Người dùng kiểm lượng thực giao trên phiếu chuẩn rồi xác nhận; nhận về kho vẫn dùng Stock Entry nhận từ Transit, có thể nhận từng phần. Kho dự kiến được điền sẵn, đổi kho thực nhận cần lý do. Không chuyển khác Company, không lấy Transit làm kho nguồn. Cho bỏ bản chuẩn bị chưa ghi bằng xóa native; phiếu đã ghi/hủy giữ lịch sử như cũ.
+
+Chuyển/nhận dùng cờ kho vận hành hoặc nhận nhà máy, giữ28cờ; cửa hàng không cần bật màn Nhà máy để dùng. Mẫu phiếu kho nháp đặt lượng ở cột yêu cầu, để trống thực xuất/nhập, hiện kho nhận cuối và người chở. Đã tái sinh8JSON với mốc22/10 09:00. Cục bộ550ca không bỏ qua đạt; thêm HTTP_014_CHUAN_BI_GOM_KHO, bộ014 kỳ vọng133PASS. Chưa có bằng chứng native của mở rộng này. UAT39711917331 đang kiểm riêng mãedb3c67 với132ca, chưa bao gồm chuyển kho mới. PR38 nháp, production/tag0.16.4 giữ nguyên; các phần giảm/trả theo dòng và bằng chứng khách cuối vẫn đang dở.
+
+## 22/10/2026 — Sửa dữ liệu kiểm sửa đổi giấy tay, giữ nguyên chặn đổi nguồn
+
+UAT39708719665 đúng7efd4b1 dừng ở ca sửa đổi giấy tay: kịch bản gửi lại số giấy/vị trí cũ sau khi giấy gốc đã chuyển về cửa hàng. Guard từ chối đúng việc đổi nguồn. Đã sửa fixture để mô phỏng các ô no_copy trống của thao tác Sửa đổi native, kế thừa đúng số và vị trí hiện tại; thêm ca đơn vị kiểm kế thừa. Không nới kiểm của sản phẩm. Cục bộ546ca đạt, không bỏ qua. Cổng239708673680 và Cổng339708723517 đúng7efd4b1 SUCCESS; chưa suy cho mã sửa kiểm kế tiếp. Cần chạy lại UAT132; snapshot/PDF mới chưa có bằng chứng native. PR38 nháp, production0.16.4 không đổi.
+
+## 22/10/2026 — ĐANG KIỂM bản đối soát theo lượt và bộ PDF đã cấp
+
+Đã viết entity bằng chứng `Bien ban doi soat no` (Biên bản đối soát theo lượt), không thêm màn hình chính hay sổ tài chính. Từ DN/PE/Khách chọn chứng từ đã ghi: chụp nợ theo Company, tăng/giảm của lượt và khoản khác tại cùng mốc; tách phải thu/dư có, cọc và tiền chưa phân bổ, không tự cấn chéo. Bản Customer theo ngày cũ cũng đã giới hạn Company/Customer/vai trò và ghi rõ phạm vi. Snapshot dùng cờ quản trị hiện có, yêu cầu cơ chế khóa sổ tiền đang bật để chụp đồng thời; cả hai đã có trong28cờ, không cờ mới.
+
+Bộ PDF gồm biên bản và giấy nguồn DN/PE/SI cần thiết (không đưa toàn JE nội bộ cho khách), giữ A5 của phiếu nhanh. Lưu riêng tư vào hồ sơ để in lại giữ đúng byte; số đã chụp và nguồn bất biến, bản bổ sung nối bản trước. Kiểm vai trò tài chính, NoCost, Company/Customer, phạm vi dimension, quyền đọc/in nguồn và current-read sau khóa sổ. File và lịch sử ký được bảo vệ; quyền lấy hàng không thay quyền ký nợ. Giấy gốc có người/thời điểm/vị trí riêng, ảnh có thể bổ sung sau. API/form không tự tạo hoặc ghi DN/SI/PE/JE/GL/SLE.
+
+Cục bộ545ca kh_aph đạt **không bỏ qua**, chạy với Jinja2 ở /tmp/kiem-mau-a5-goi;15ca mẫu in và kiểm ranh giới mặc định in đạt. Kiểm cú pháp JS/Python đạt. Thêm2ca HTTP và1ca Chrome bằng đúng kế toán bán hàng (phiên CSRF riêng), gồm mất phản hồi sau200/retry, phạm vi một/nhiều Company, privatePDF, chụp ròng0, giấy gốc/ảnh riêng, giữ PDF sau hủy thu và bản bổ sung. Bộ014 kỳ vọng132PASS. CHƯA có kết quả native của phần snapshot/PDF mới; chưa kiểm bố cục PDF native hoặc máy in thật.
+
+UAT39703447598 đúngc4b93fa FAIL được giữ: HTTP_014_MO_PHIEU_HOAN và NATIVE_DESK_KHO_GIAO_NHAN_GON PASS, đã xem ảnh mở đúng PE192.500. Ca giấy tay đã qua lưu/khóa trùng/tệp riêng tư/ghi kho/cập nhật nơi giữ, rồi kịch bản dùng modified cũ sau lưu nên TimestampMismatchError trước guard thời điểm. Đã sửa lấy lại kết quả lưu, giữ assertion ValidationError, không nới chặn. Đã nối insert_after toàn bộ ô giấy tay vào đúng section thu gọn (ảnh trước cho thấy checkbox bị đặt lên đầu PE). Lượt giấy128 trước39702265051 bị concurrency hủy khi chạy lượt129 mới, không coi đạt.
+
+PR38 vẫn nháp, production/version/tag giữ0.16.4. Cần chạy UAT132 đúng mã mới, đọc PDF/ảnh/log; tiếp tục phần gom kho vệ tinh, giảm theo dòng/lượng và trả một phần sau giảm, tách bằng chứng khách cuối/lịch sử ảnh kho đầy đủ. Nghiệm thu người/hàng/tồn/máy in thật vẫn để cuối.
+
+## 22/10/2026 — Mở phiếu hoàn đã có ngay từ phiếu nhận trả
+
+Bổ sung nút Mở phiếu hoàn tiền, tải lại phiếu nhận trả sau ghi để thấy liên kết nháp do hook chuẩn bị. API chỉ đọc DN/PE, kiểm quyền cả hai, cùng Company/khách, loại chi và chưa hủy; không lập/ghi tiền thêm. Chặn mọi lối form/API tự gán, xóa hoặc tráo ô chứng từ xử lý; các hook chuẩn bị nháp giữ đường ghi nội bộ hiện có. Sửa mô tả xử lý đổi hàng để đúng đơn hàng thay mã mới.
+
+Cục bộ529ca (14 bỏ qua) đạt, gồm kiểm quyền/nguồn/ô liên kết. Bộ014 kỳ vọng129PASS: thêm ca mở phiếu đã có/chặn tráo nguồn và mở bằng Chrome thật, giữ ảnh kho-phieu-hoan.png; CHƯA có kết quả native của phần mới. Lượt39702265051 mãe91d55d đang kiểm riêng giấy tay với128PASS kỳ vọng, không bao gồm nút hoàn và guard mới. Đặc tả bước kế tiếp snapshot nợ/bộ giấy theo lượt tại docs/dac-ta-doi-soat-theo-luot-20261022.md, chưa triển khai entity/API/PDF mới.
+
+Production0.16.4,28cờ và version/tag giữ nguyên; PR38 nháp. Bước tiếp đọc các lượt UAT đúng mã, sửa lỗi thật, tiếp tục snapshot/bộ giấy, gom kho và giảm theo dòng/lượng. Không coi127PASS củab574457 là bằng chứng cho các mở rộng sau đó.
+
+## 22/10/2026 — Thu gọn giấy tay thành thông tin lưu trên phiếu nhập bổ sung
+
+Chủ dự án làm rõ giấy viết tay chỉ lưu để nhập bổ sung khi mất mạng. Đã thu hẹp thiết kế: không hồ sơ/sổ/đồng bộ offline riêng. Trên phiếu xuất (DN), phiếu kho (SE), phiếu thu chi (PE) thêm phần thu gọn: số giấy theo điểm/quyển/tờ, thời điểm giao/thu thực tế, nơi giữ gốc và ảnh/PDF riêng tư tùy chọn. Nhập và ghi sổ native như thường, không bỏ kiểm tồn/giá/hạn mức/kỳ khóa hoặc tự đổi ngày hạch toán.
+
+Nguồn mới `paper_archive.py`: khóa duy nhất giấy theo Company/loại phiếu (cả nháp), giữ định danh sau ghi sổ, hủy giữ giấy và dùng Sửa đổi để nhập lại đúng lịch sử. Nháp sửa được trước ghi. Lưu ảnh sau và chuyển nơi giữ gốc không ghi kho/tiền/nợ lần hai; tệp đang là giấy nguồn không bị xóa/đổi thành công khai hoặc chuyển sang phiếu khác. Tái dùng cờ kho vận hành/người giữ tiền hiện có, schema qua bộ cài rõ ràng, vẫn28cờ; không DocType mới, không tự duyệt/giao/thu.
+
+Cục bộ525ca kh_aph (14 bỏ qua) đạt, có9ca ranh giới giấy mới. Bộ014 bổ sung HTTP_014_GIAY_TAY_NHAP_BO_SUNG, kỳ vọng128PASS: còn phải chạy native trên đúng mã mới, chưa tuyên bố đạt phần giấy tay. Bản b574457 trước mở rộng giấy đã đủ bốn cổng: UAT39631103596, Cổng239631068245, Cổng2b39632778370, Cổng339632783717 SUCCESS. Đã đọc Cổng3: schema1115/1115, rollback1105/1105 lệch0, dữ liệu và nhánh lỗi chủ động KHỚP; không suy kết quả này cho code giấy mới.
+
+PR38 vẫn nháp, production0.16.4 giữ nguyên, chưa tăng version/tag/triển khai. Tiếp theo đọc UAT128 đúng mã giấy mới, sửa lỗi thật rồi nối các phần còn thiếu: snapshot nợ/bộ giấy theo lượt, gom kho, giảm theo dòng/lượng và thao tác hoàn/chênh lệch gọn. Nghiệm thu người/hàng/máy in thật vẫn để cuối.
+
+## 21/10/2026 — UAT kho/giao nhận đạt trên b574457; toàn phạm vi vẫn đang phát triển
+
+Đúng mã `b57445753daf9513a8448d24e92d926d1a9a4d9c`: [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS. Đã tải và đọc artifact `candidate-image-evidence` id12360337173, đủ127PASS bộ014 và HTTP_UAT_RESTORE (khôi phục số bản ghi/series); các bộ kho/quỹ/giá vốn/giao hàng/hồi quy cũ của cùng lượt cũng đạt. Đã xem ảnh Chrome `kho-nha-xe-moi.png` và `kho-nhan-tra-kg.png`.
+
+Bằng chứng mới gồm: nhận5kg từ bao25kg vào cách ly, bao vật lý0; chưa thu thì không hoàn; thu một phần hoàn96.250 và thu đủ hoàn192.500, đối trừ/thực chi đúng khoản; đổi mã bằng đơn native; xe khách chỉ định; nhà xe nhập mới, báo nhận chỉ ghi dấu; nhận giấy gốc độc lập ảnh và cập nhật danh sách/Chốt ngày. Trả sau giảm chất lượng đã đạt trường hợp khoản một dòng, nhận đủ25kg theo giá trị còn lại đã đối chiếu, chặn giá gốc và đề nghị giảm nháp quá hạn số dư. Trả một phần sau giảm hoặc phân bổ nhiều dòng chưa hỗ trợ tự động, vẫn chặn để kế toán đối chiếu; không tuyên bố đã bao phủ.
+
+Lỗi Chrome nhận hàng nhà máy ở lượt0cf đã hết trong lượt mới: yêu cầu tìm biến thể báo cáo số lượng trảrỗng, giữ các lối Report/query/giá vốn bị chặn. Cổng2 [39631068245](https://github.com/tienduongmarcom/aphvh/actions/runs/39631068245) cùng mã SUCCESS. Cổng2b39632778370 và Cổng339632783717 đang chạy cùng mã, chưa có kết luận. Cục bộ516ca (14 bỏ qua),108ca lõi đã đạt. Các lượt FAIL trước giữ nguyên làm bằng chứng.
+
+**ĐANG DỞ:** nhập giấy dự phòng khi mất mạng, snapshot đối soát nợ/bộ giấy theo lượt, chuẩn bị và gom kho vệ tinh, giảm theo dòng/lượng và trả một phần sau giảm, thao tác hoàn/chênh lệch gọn, bằng chứng khách cuối riêng khi yêu cầu và lịch sử phiên bản đầy đủ. Xem bảng9nhóm `docs/doi-chieu-kho-giao-nhan-20261021.md`. PR38 vẫn nháp; version/tag/production0.16.4 và28cờ không đổi. Nghiệm thu dữ liệu/nhân sự/máy in thật tiếp tục để cuối theo quyết định đã chốt.
+
+## 21/10/2026 — Sửa yêu cầu phụ của báo cáo số lượng cho hồ sơ ẩn vốn
+
+UAT39625443467 đúng0cfbcdb FAIL trong ca Chrome nhận hàng nhà máy cũ, trước khi chạy các ca mới ở cuối. Đã đọc log đầy đủ: Query Report của Frappe16.52 tự gọi reportview.get_list với Report/reference_report=Ton kho so luong, report_type=Custom Report để tìm biến thể. Chính sách ẩn vốn chặn yêu cầu này và bật Message che thao tác. Không coi là ca mới đạt hoặc bỏ kiểm Chrome.
+
+Đã thêm facade rất hẹp: chỉ đúng yêu cầu tìm biến thể của báo cáo số lượng với hai trường name/report_name, ba bộ lọc xác định, sắp xếp và limit0 mới nhận danh sách rỗng. Không đọc DB/Report/query, không mở quyền báo cáo giá vốn hoặc xuất dữ liệu. before_request chỉ bỏ chặn cho đúng đường API này; yêu cầu khác/fieldquery/wildcard/or_filters/ignore_permissions vẫn bị chặn. Danh sách phiếu nhà máy vốn được phép và người không bị hạn chế vẫn gọi native, giữ quyền if_owner và phạm vi chuẩn.
+
+Đã đọc nguồn query_report.js/db.js/handler.py đúng16.52.0. Cục bộ516ca (14 ca bỏ qua) đạt, gồm6ca ranh giới mới. Bổ sung ca HTTP kiểm rỗng/không đọcSQL/không mở báo cáo vốn và giữ danh sách phiếu được phép; bộ014 kỳ vọng127PASS. Cần chạy native đúng mã mới, chưa tuyên bố khắc phục hoàn toàn ca trình duyệt. Không nâng production hoặc đổi phiên bản; PR38 vẫn nháp.
+
+
+## 21/10/2026 — Giới hạn xử lý khoản đã giảm và cấu hình kiểm Chốt ngày
+
+Kiểm giá trị trả sau giảm hiện chỉ tự đối chiếu trường hợp trả toàn bộ lượng gốc của khoản một dòng. Trả một phần sau giảm, nhiều dòng hoặc đã có trả từng phần phải dừng để kế toán phân bổ đúng khoản giảm cho lượng thực trả; chưa có metadata/thao tác gọn để tự quyết định phần nào đã được giảm. Không coi giới hạn tổng hóa đơn là đủ chứng minh đúng giá của từng phần hàng. Đã thêm kiểm ranh giới này; cục bộ510ca (14 ca bỏ qua) đạt.
+
+Các ca mới được đặt sau toàn bộ ca cũ để tránh ảnh hưởng chuẩn số liệu cũ. Bảng Chốt ngày hiện phụ thuộc cờ factory_handover; ca giấy gốc bật/tắt bằng helper CI có kiểm site và chạy đúng schema, không bỏ guard của sản phẩm. Phụ thuộc tên cờ này cần lưu ý khi tiếp tục tách Nhà máy; chưa thay mô hình cờ production. Bộ014 vẫn126PASS kỳ vọng. Cần chạy UAT đúng mã tiếp theo; các lượt FAIL trước giữ nguyên, chưa chứng minh Chrome/giấy gốc/ca trả sau giảm đã đạt.
+
+Production0.16.4 giữ nguyên, PR38 vẫn nháp. Bước tiếp đọc log/ảnh lỗi mới và sửa nguyên nhân, giữ đúng bằng chứng theo SHA; không gắn tag hoặc coi toàn phạm vi hoàn tất.
+
+
+## 21/10/2026 — Đang kiểm chặn giảm trùng và giữ nguồn điều chỉnh
+
+Đã thêm kiểm giá trị trả mới so với khoản gốc trừ các SI giảm và JE giảm chất lượng đã ghi. Giá thuần trả không vượt đúng dòng giao gốc, kể cả một mã có nhiều mức giá. Giữ mã/hash nhận trả bất biến; JE đề nghị giảm giữ khoản gốc qua sửa/amend và kiểm lại số còn nợ lúc xác nhận. Cùng thứ tự khóa quỹ → khoản gốc. Không tự tăng tiền hoàn vì nợ đã giảm do chất lượng. Với khoản đã giảm có nhiều dòng, hiện dừng để kế toán đối chiếu phân bổ; chưa giả đã hỗ trợ giảm/trả theo dòng đầy đủ.
+
+Đã thêm ca HTTP đơn cũ giảm100.000, khách chưa trả tiền rồi trả cả25kg: yêu cầu chặn giá trị trả ban đầu, giữ nguyên kho/nợ khi lỗi; sau kế toán đối chiếu giá còn lại mới nhận đủ25kg, không hoàn khống; đề nghị giảm thêm còn nháp phải bị chặn nếu nguồn đã hết nợ. **Chưa có kết quả native của ca mới.** Cục bộ509ca (14 ca bỏ qua) đạt; kiểm cú pháp JS/Python đạt. Bộ014 kỳ vọng126PASS, giữ toàn bộ117ca cũ và chuyển các ca mới về cuối để dữ liệu mới không ảnh hưởng chuẩn so sánh cũ.
+
+UAT39581676952 đúng3b0219f FAIL ở helper Chrome sau khi nhập nhà xe. Đã xem ảnh: nhập tên/SĐT nhà xe mới thành công. Chưa có stderr chi tiết do check=True của subprocess che mất. Đã thêm stderr/ảnh lỗi; bộ đếm chỉ kiểm ô dữ liệu, bỏ Section/Column/Tab/HTML do Frappe16.52 tự thêm (đã đọc nguồn). Chưa khẳng định đây là lỗi duy nhất của lượt đó, cần chạy lại. Chuyển kiểm Chrome sau các ca nhận cuối/giấy gốc độc lập; vẫn bắt buộc đạt và không bỏ assertion nghiệp vụ.
+
+Cổng3 [39578848510](https://github.com/tienduongmarcom/aphvh/actions/runs/39578848510) mã320558a success, đã đọc artifact: schema1115/1115, rollback1105/1105 lệch0, so sổ và nhánh hỏng chủ động KHỚP. Đây chưa phải chứng minh code chặn giảm trùng mới. Bảng9nhóm và phần còn thiếu: `docs/doi-chieu-kho-giao-nhan-20261021.md`. PR38 vẫn nháp, chưa tăng version/tag/triển khai; production0.16.4/28cờ không đổi.
+
+
+## 21/10/2026 — Trả lẻ, hoàn tiền và đổi mã đã có bằng chứng native; đang sửa tên nhà xe
+
+UAT [39578838909](https://github.com/tienduongmarcom/aphvh/actions/runs/39578838909), đúng mã `320558a42f1a4b8a9dd9297fb440d6a1e7ef04fc`, vẫn FAIL và được giữ nguyên. Đã đọc artifact: các ca trả 5kg/bao vật lý0, chưa thu không hoàn, thu một phần hoàn96.250 và thu đủ hoàn192.500, đối trừ đúng nguồn, đổi mã mới, chặn đơn thay trùng, hủy/lập lại và xe khách chỉ định đều PASS. Đây là dữ liệu giả của CI, không phải nghiệm thu nhân sự/hàng thật.
+
+Lỗi tiếp theo nằm ở tên nhà xe thử chứa `<UAT>`. Đối chiếu đúng nguồn Frappe16.52.0: `_sanitize_content` lọc nội dung giống HTML khi lưu Data, gây khác tên đầu vào và snapshot. Đã chặn dấu ngoặc nhọn trước khi tạo phiếu ở payload thế hệ mới, để không âm thầm đổi tên/hash; giữ hash payload cũ. Ca HTTP mới bắt buộc từ chối tên chứa thẻ, đồng thời kiểm tên hợp lệ chứa `&` được giữ nguyên và escape khi in. Không bỏ kiểm trạng thái hoặc kiểm tên; tách assertion để lần sau thấy giá trị thực nếu lỗi.
+
+Cục bộ500ca kh_aph (14 ca bỏ qua) và108ca lõi đạt. Có thêm4ca ranh giới hoàn tiền: đúng hóa đơn giữ số dư có, thiếu quyền đối trừ không chuẩn bị chi, còn nợ không tạo chi, ngoại tệ không bị hoàn như VND. Cổng2/2b mã320558a đã success; Cổng3 còn đang chạy. Phải chạy lại UAT125ca và các cổng đúng mã sửa tên mới, chưa coi toàn bộ đã đạt.
+
+PR38 vẫn nháp, production0.16.4/28cờ không đổi. Chưa tăng phiên bản, gắn tag hay triển khai. Còn offline, snapshot đối soát/bộ giấy theo lượt, chuẩn bị và gom kho, giảm theo dòng/kiểm trả sau giảm trước, chọn kho nhận trả gọn, bằng chứng khách cuối riêng và lịch sử bản in/bằng chứng đầy đủ. Các phần này chưa được coi là hoàn tất từ những ca PASS ở trên.
+
+
+## 21/10/2026 — UAT đã chứng minh trả5kg; sửa nhánh hóa đơn giảm giữ số dư riêng
+
+UAT39575256295 đúng771b365 FAIL được giữ nguyên. Artifact chứng minh HTTP_014_TRA_LE_5KG PASS (kho cách ly5kg, sổbao0, nháp không ghi sổ, retry/reserve và giảm một lần), HTTP_014_TRA_LE_CHUA_THU_KHONG_HOAN PASS. Lỗi thật ở thu một phần: ERPNext16.51.1 tự chuyển update_outstanding_for_self=1 khi giá trị trả vượt phần còn nợ, nên giả định mọi hóa đơn giảm trừ thẳng vào gốc là sai. Không bỏ hoặc hạ assertion.
+
+Đã đối chiếu nguồn native theo đúng tag16.51.1 và sửa: với hóa đơn giảm giữ số dư riêng, dùng reconcile_dr_cr_note của ERPNext đối trừ tối đa phần còn nợ của chính hóa đơn gốc, cùng khách/Company/TK VND. Dịch vụ native tạo bút toán hai dòng cùng công nợ, không thêm doanh thu hoặc tiền. Chỉ khi có quyền tạo/xác nhậnJE mới tự đối trừ; thiếu quyền giữ hàng trả/credit đã ghi và báo kế toán đối trừ, không chuẩn bị chi nhầm. Phiếu chi vẫn nháp và chỉ tham chiếu số dư có còn lại đúng hóa đơn sở hữu số dư. Bù trừ/Đổi hàng dùng đối trừ nguồn tương tự, không tự chi. Bổ sung assertion kiểm cả hóa đơn gốc và hóa đơn giảm hết số dư sau chi.
+
+Cục bộ495ca kh_aph (14skip) đạt. Chưa có nativePASS cho sửa này, đổi mã, theo dõi gốc và mẫuA5 cuối. Bước tiếp chạyUAT125ca và các cổng đúng mã mới, đọc bằng chứng không chỉ nhìn xanh. PR38 vẫn draft, chưa tăng version/tag/phát hành; production0.16.4 và28cờ giữ nguyên. Toàn phạm vi còn phần offline, đối soát snapshot/bộ giấy theo lượt, chuẩn bị/gom kho và giảm theo dòng/kiểm trả sau giảm trước đó.
+
+
+## 21/10/2026 — A5: tăng khoảng ký, tách bản nhận cuối khi khách yêu cầu
+
+QA trực quan phát hiện bản gọn trước có chỗ ký quá ít. Đã giữ chữ chính9pt và tăng khối ký tại kho lên20mm, giảm dòng trùng về kho/lý do; không thu nhỏ toàn bộ phiếu. Ship không yêu cầu ký cuối: hai liên Phiếu xuất kho A5. Chỉ khi chọn cần khách ký tại nơi nhận mới in thêm một Biên bản giao nhận hàng hóa có cột thực nhận trống, ngày/giờ/người nhận, chất lượng/chênh lệch và hai khối ký25mm. Đây là bản xác nhận hàng ở đích, không phải mẫu3liên nháp cũ hay bản đối soát nợ. Không tự điền số thực nhận cuối bằng lượng đã xuất.
+
+Đã tạo/xem PDF dữ liệu giả bằng Chrome: hai dòng tên dài ra2trang A5 ngang khiKhông,3trang khiCó; các trang đều có số phiếu và đơn vị, phần ký đủ khoảng trống, tiêu đề bảng mang số phiếu để truy khi sang trang. Cục bộ495ca(14skip) đạt. Chưa nghiệm thu máy in/nhân sự thật, chưa phát hành. Lượt771b365 UAT39575256295 vừa lỗi bước nghiệp vụ, cần tải log/artifact để xác định nguyên nhân, không suyĐẠT; các thay đổi sau771b365 chưa chạy trong lượt này. PR38 vẫn draft; production0.16.4 giữ nguyên.
+
+
+## 21/10/2026 — ĐANG DỞ: theo dõi giấy gốc trong Kho vận và Chốt ngày
+
+Thêm lối native Giấy gốc chưa về trong Kho vận, chỉ lọc phiếu thế hệ mới đã ghi sổ, không đánh dấu thiếu hàng loạt lịch sử. Chốt ngày giữ việc thiếu giấy gốc của ngày trước dù ảnh đã đối chiếu; phân biệt thiếu/đã nhận gốc với trạng thái ảnh. Nhận giấy ở API hiện có làm hết việc thiếu gốc, không ghi lại kho/nợ/tiền. Không thêm màn hình, DocType nhiệm vụ hay số dư riêng.
+
+Cục bộ495ca kh_aph (14skip) đạt; thêm kiểm ngày trước có ảnh đã đối chiếu nhưng chưa có gốc. Bổ sung HTTP vào ca giấy gốc, giữ bộ014125PASS. CHƯA cóPASS native cho phần này hoặc đổi mã44c3c3d. Các lượt771b365 vẫn đang kiểm; cần lưu kết quả theo đúngSHA, không suy sang code mới. PR38 vẫn draft, production0.16.4 giữ nguyên, không version/tag/site.
+
+Phần còn thiếu của toàn phạm vi: nhập giấy tay khi mất mạng, snapshot đối soát có ký và bộ giấy theo lượt, chuẩn bị chuyển/gom kho trước khi giao, giảm giá theo dòng và xử lý trả sau giảm giá cũ. Còn cần hoàn thiện việc chọn kho nhận trả khác kho nguồn, chứng cứ khách cuối khi có yêu cầu riêng và lịch sử phiên bản in. Nghiệm thu nhân sự/hàng tồn/máy in thật vẫn gom cuối; không gọi toàn phạm vi đã xong.
+
+
+## 21/10/2026 — ĐANG DỞ: đổi sang mã mới bằng đơn bán chuẩn
+
+Đường nhận trả mới chọn Đổi hàng không còn tự chuẩn bị lại mã cũ. Thêm nút Lập đơn hàng thay: API chỉ đọc mở lại đơn đã lưu hoặc điền khách/nguồn vào form đơn chuẩn chưa lưu; người bán chọn mã, lượng, kho, giá mới. Link phiếu nhận trả bất biến, khóa duy nhất cho một đơn thay còn hiệu lực; hủy giữ link lịch sử và nhả khóa cho lập lại. Kiểm cùng khách/Company, cả đường đổi nguồn không được chuyển Company của đơn thay. Native lưu/xác nhận/giao tiếp tục sở hữu giá, hạn mức, tồn và nợ; đơn nháp không ghi sổ. Không tự cấn tiền giữa đơn vị hoặc tự coi trao đổi đã tất toán tiền.
+
+Cục bộ494ca kh_aph (14skip) đạt; kiểm cú pháp JS đạt. Thêm ca HTTP đổi mã, mở lại/chống trùng, chặn xóa nguồn/chuyển Company, hủy rồi lập lại và xuất mã mới; kỳ vọng bộ014125PASS. CHƯA có bằng chứng native cho thay đổi này. Lượt UAT39575256295 và Cổng2b39575261403/Cổng339575265840 đang chạy trên771b365 trước phần đổi mã; Cổng2 cùng mã39575248458 success. Chưa coi các cổng này xác nhận code mới chưa nằm trong run.
+
+PR38 vẫn draft, không tag/phát hành/site. Production0.16.4 giữ nguyên. Cần hoàn thiện offline, snapshot ký đối soát, chuẩn bị/gom kho, giảm theo dòng/chống giảm trùng sau giảm cũ, bộ giấy cùng lượt, danh sách giấy gốc còn thiếu. Bước tiếp chờ đọc bằng chứng nghiệp vụ của lượt hiện tại rồi chạy UAT125ca đúng mã đổi hàng, sửa lỗi thật nếu có.
+
+
+## 21/10/2026 — ĐANG DỞ PR38: chặn bán từ kho vận chuyển, chờ kiểm nghiệp vụ toàn lát
+
+Đã sửa guard kho chuẩn (cờ hiện có kh_aph_kho_chuan): đơn chung/đơn con/DN/hóa đơn có xuất kho không lấy kho Vận chuyển làm nguồn bán; trả hàng và hóa đơn không xuất kho giữ đường xử lý riêng. Thêm ca HTTP vào bộ0112, không đổi sốPASS kỳ vọng bộ đó. FormDN cập nhật ô giao nhận ngay khi đổi cách giao, không cần tải lại form.
+
+Cục bộ487ca kh_aph (14skip),108ca lõi đạt. Cổng3 run39571303257 mãfc8e721 đã success và đọc artifact: nâng cấp từ0.16.4, schemafresh1113/1113 và rollback1105/1105 lệch0; so sổ/quay lui/nhánh lỗi chủ độngKHỚP. Cổng2b cùng mã39571323837 success, log xác nhận dựng/nâng/quay lui đạt. Các kết quả này chưa gồm sửaA5/giới hạn hoàn/guardTransit mới nhất. Cần chạy bốn cổng đúng mã cuối; UAT124ca bộ014 chưa cóPASS, không coi đơn vị thuần là kiểm native.
+
+PR38 vẫn draft, version/tag/site giữ nguyên0.16.4. Phần mới đã viết: trảlẻkg, xe khách có chỉ định, nhà xe chọn/nhập, dấu báo nhận, giấy gốc độc lập, A5 và giới hạn chuẩn bị tiền hoàn. Chưa hoàn thiện offline, snapshot ký đối soát, chuẩn bị chuyển/gom kho trước xe đi, đổi mã mới, giảm theo dòng/chống giảm trùng, bộ giấy cùng lượt. Bước tiếp đọc kết quảHTTP/Chrome để sửa lỗi thật, rồi tiếp tục các phần chưa triển khai; chưa đủ điều kiện phát hành toàn phạm vi.
+
+
+## 21/10/2026 — ĐANG KIỂM: giới hạn phiếu hoàn theo số dư sau trả hàng
+
+Bổ sung cho phiếu nhận trả tạo bằng đường mới: sau khi hóa đơn giảm đã trừ đúng khoản gốc, chỉ chuẩn bị phiếu chi bằng phần số dư có còn lại, tối đa giá trị lần trả. Chưa thu/còn nợ sau giảm thì không tạo phiếu hoàn nháp. Phiếu hoàn mới tham chiếu khoản gốc bằng phân bổ âm, để native kiểm số dư và tất toán khi thực chi; không tạo hóa đơn giảm lần nữa. Đường trả lịch sử chưa đổi cách chuẩn bị nháp; giao dịch khác VND yêu cầu kế toán đối chiếu tỷ giá riêng. Chưa coi thay đổi này đã PASS native.
+
+Cục bộ483ca kh_aph (14skip) đạt; lõi108ca đã đạt ở mốc trước (không đổi lõi). Thêm2ca HTTP kiểm chưa thu và thu một phần/đủ, dự kiến b014124PASS; cần chạy đúng mã mới. Mãf7f284c đang có UAT39573964111 chạy cho bản sửa A5, chưa gồm giới hạn hoàn này. Cổng2 của f7f284c run39573956188 success. Cổng3 run39571303257 của fc8e721 success; phải đọc artifact và kiểm lại mã cuối, không suy sang thay đổi hoàn chưa chạy. PR38 vẫn draft, chưa tag/phát hành; production0.16.4 giữ nguyên, phần offline/đối soát/gom kho/đổi mã và giảm theo dòng vẫn còn mở.
+
+
+## 21/10/2026 — ĐANG DỞ PR38: sửa phân trang A5 và lỗi tương thích mẫu cũ
+
+Ứng viên `fc8e721cbeddfe5e1011be1f4dff87c912572ed2`: Cổng2 run39571104062 và Cổng2b run39571323837 success. UAT39571298855 FAIL tại ca in cũ vì mất chú thích “Người thực nhận hàng”; giữ bằng chứng trong artifact candidate-image-evidence/http-b014-evidence.txt, chưa chạy tới ca trả lẻ mới. Đã sửa giữ chú thích cũ cho phiếu thế hệ cũ; không bỏ assertion. Cổng3 run39571303257 đang chạy, chưa kết luận.
+
+Kiểm PDF bằng Chrome với dữ liệu giả: mẫu A5 mới có hai dòng hàng tên dài và yêu cầu khách ký tại nơi giao, hai liên ra đúng2trang A5 ngang; đã xem cả hai trang, phần ký không bị tách riêng. Giữ chữ chính9pt, thu gọn khoảng cách/thông tin cuối phiếu cho thế hệ mới; phiếu cũ giữ bố cục cũ. Đây là kiểm bố cục trên máy, chưa phải nghiệm thu máy in/người dùng thật. Bổ sung5ca kiểm ranh giới trả lẻ: nguồn khác/phiếu xuất thường bị chặn, giữ quy cách gốc dù Item đổi,5kg không bao không thành25kg hoặc0.2bao.
+
+Cục bộ480ca kh_aph (14skip) và108ca lõi đạt; kiểm cú pháp helper Chrome đạt. PR38 vẫn draft, chưa tăng version/tag, production vẫn0.16.4. Chưa hoàn thiện đổi mã hàng, giảm giá theo dòng/chống giảm trùng sau giảm trước đó, hoàn tiền gọn, nhập giấy tay khi mất mạng, snapshot đối soát và gom kho. Bước tiếp chạy lạiUAT đúng mã đã sửa, đọc bằng chứng ca mới; tiếp tục phần còn thiếu, không coi phần đã kiểm này là hoàn tất toàn phạm vi.
+
+
+## 21/10/2026 — NềnCổng3 ĐẠT; ứng viên kho tiếp tục sửa/kiểm, chưa phát hành
+
+PR37 đã gộp main7a588c9. Cổng3 run39567580998 success đúngd5a9491ffb27e68c93f708fc831f9fbdb79917f7, đã đọc log/artifactcong-3-bang-chứng12331362860: nền0.16.4 đúngdigest, diễn tập/nâng/sochi tiết/quay lui/nhánh hỏng chủ độngKHỚP; schemafresh1099/1099,rollback1105/1105, lệch0. Đây là nền trước sửa nghiệp vụ, không chứng minh ứng viên mới đãPASS.
+
+PR38 trảlẻ mã164962b: Cổng239568824265 success; UAT39568824330 FAIL ởfixtureItemmới thiếuItemTaxTemplate trước khi vào ca trảlẻ, đã giữrun và sửafixturegánthuếtheomãmẫugiả; không nới kiểmthuế. Manual39568812563 bịhủy do lượtPRthay thế. Chưa cóPASSnative của ca mới.
+
+Working branch có thêm kho/ảnh–giấygốc độc lập: API nhận giấy gốc kiểmwrite/modified, lưuuser/time/vị trí, retry giữdấu, không đổi sổ; đối chiếu bản kýnhàxe cho phiếu thếhệmới đanggiao. Đã đối chiếuAutocomplete đúngFrappe16.52: phảiignore_validation mới nhậpnhàxemới ngoài gợiý, label gợiýescape; đổi tênxe mới xóaSĐTxe cũ. UI/caseChrome mới kiểm nhậpnhàxe và2ô báo nhận, kg/bao nhận trả; HTTPmới dự kiến122PASS (117cũ+5mới), chưa chạy đúngheadmới. Cục bộ475ca(14skip) đạt trước lần sửafixturecuối; kiểmcúphápJSđạt. Chưa hoànthiệnđổi mã/giảmtheodòng/hoàn gọn/offline/snapshotđốisoát, chưa nângversion/tag/site. Bước tiếp chạy lạiUAT/Cổng2 trênheadmới, sửa lỗi thật, tiếp tục phầncònthiếu.
+
+
+## 21/10/2026 — ĐANG DỞ: thêm thông tin nhà xe/xe khách và dấu nhận cuối
+
+Working branchfeat/kho-giao-nhan-don-gian-20261021 đã bổ sung thế hệ thông tin giao nhận1: xe khách phải có căn cứ chỉ định, tínhpickup; nhà xeData/Autocomplete chọn đã dùng hoặc nhập mới+tên/SĐT, snapshot từngphiếu, nguồn báo/ngày nhận cuối readonly theoAPI. Chuẩn bị/inA5 ghi nhàxe, bên nhận vận chuyển khác khách cuối; mẫu chuẩn/reprint đồng bộ carrier/căn cứ. Hashpayload cũ không thêm khóa mới để giữretry. CửaKhách thêm lốiGiảmgiáđơn cũ gọi đề nghịJEnháp sẵn có; khóaSI và kiểm quyền đọc khi mở lạiJEnháp, chưa thay cơ chế giảm theo dòng.
+
+Cục bộ475ca (14skip) và kiểm cú phápJS đã chạy trong quá trình sửa; cần lưu kết quả cuối sau đồng bộmẫu. Cổng3nền0.16.4 run39567580998 mãd5a9491 còn đang chạy; UATtrảlẻ mã164962b run39568824330/Cổng239568824265 đang chạy; lượtmanual39568812563 bịhủy do lượtPRthay thế, không làPASS. HTTPmới dự kiến120PASS=117cũ+trảlẻ+2ship, chưa chạy trên mãship. PR38 vẫndraft. Chưa hoàn thiện đổi mã,giảmgiátheodòng/giảmtrùngsauđãgiảm,hoàn tiền gọn,giấygốc,offline,snapshotđốisoát; chưa phát hành/site/tag.
+
+
+## 21/10/2026 — ĐANG DỞ triển khai tối ưu kho: lát nhận trả lẻ kg
+
+Nhánhfeat/kho-giao-nhan-don-gian-20261021 bắt đầu từ nềnCổng3 PR37. Đã thêm đường lậpDNtrả nháp theo phiếu gốc dùKhách đã nhận, khóa nguồn/reserve lượng mọiuser, requestid/hash retry; cho5kg và bao vật lý độc lập, nhậpCáchly qua luồng có sẵn. Bổ sung ôTrả lẻ theo kg, sổbao ghi đúngkg vàbao0 khi không nhận vỏ; JS không nhân ngược thành bao nguyên. UI nhận trả trênphiếu/Khách, chưa thống nhất xong mọi lốiĐổi/Trả/Giảmgiá. Cờsales_adjust/sales_p1 hiện có (mặc địnhtắt) sở hữu bổ sung; schema gọi bộ cài rõ ràng.
+
+Cục bộ472ca (14skip) đạt trước thay đổi caseHTTP; thêmHTTP_014_TRA_LE_5KG vào b014, dự kiến118PASS thay117 do thêm1ca, CHƯA có kết quảCI. Không coi unit là đã kiểm native. Cần kiểm thực tế mapping/permissions/giá trị giảm/receiptCáchly vàrollback. Chưa hoàn thiện các látship,phiếuA5,giấy gốc,offline,đốisoát snapshot,giảm nợ cũ theo dòng,đổi mã/hoàn tiền. Chưa nângversion/tag/deploy, production0.16.4 giữ nguyên. Bước tiếp: chạyUATnative ca mới, sửa lỗi nếu có; tiếp tục látship và các phần còn thiếu, không tuyên bố cả phạm vi đã xong.
+
+
 ## 21/10/2026 — ĐANG KIỂM nền Cổng3 từ production0.16.4
 
 PR36 thiết kế đã gộp main e9a2755 sau chủ dự án chốt tiếp tục. Chuẩn bị phát triển luồng kho/ship/đổi trả/giảm nợ cũ và trảhỏng lẻkg; chưa sửa nghiệp vụ/site. Đổi nền Cổng3 sang0.16.4/digest1a8f0063… đúng log production. Chờ run thực trên mã mới, chưa tuyên bốĐẠT hoặc phát hành. Production vẫn0.16.4,28cờ; nghiệm thu thật gom cuối.

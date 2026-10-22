@@ -165,6 +165,52 @@ class Transfer(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.m.send('APH', 'r', json.dumps([{'item_code': 'A', 'warehouse': 'Transit - APH', 'qty': 5, 'bags': 0}]), '2026-10-20', 'Xe')
 
+    def test_store_transfer_does_not_require_factory_screen(self):
+        self.f.conf['kh_aph_factory_receiving'] = 0
+        self.f.conf['kh_aph_kho_van_hanh'] = 1
+        self.f.get_roles = lambda: ['Stock User']
+        self.m.guard()
+        self.f.conf['kh_aph_server_cost_guard'] = 0
+        with self.assertRaises(ValueError): self.m.guard()
+
+    def test_prepare_inserts_draft_and_replay_never_submits(self):
+        src = Row(name='HN - APH', company='APH', is_group=0, disabled=0, check_permission=Mock())
+        entry = Doc(name='SE-DRAFT', docstatus=0, check_permission=Mock(), insert=Mock(), submit=Mock())
+        entry.set = lambda k, v: entry.update({k: v})
+        self.f.get_doc.side_effect = lambda dt, *a, **kw: entry if isinstance(dt, dict) else src
+        self.f.db.get_value.side_effect = lambda dt, *a: 1 if dt == 'User' else 'Transit - APH'
+        self.m._item = Mock(return_value=Row(kh_aph_kg_per_bag=0))
+        self.m._destination = Mock()
+        args = dict(company='APH', request_id='draft-1', rows=[dict(item_code='A', warehouse='HN - APH', qty=5, bags=0)],
+                    sent_date='2026-10-20', carrier='Xe', prepare_only=1, destination='CH - APH')
+        self.assertEqual(self.m.send(**args)['docstatus'], 0)
+        entry.insert.assert_called_once(); entry.submit.assert_not_called()
+        self.f.db.sql.side_effect = lambda q, *a: [('SE-DRAFT',)] if 'kh_aph_transfer_request' in q else []
+        self.f.get_doc.side_effect = lambda dt, *a, **kw: entry if dt == 'Stock Entry' else src
+        self.assertEqual(self.m.send(**args)['name'], 'SE-DRAFT')
+        entry['docstatus'] = 1
+        self.assertEqual(self.m.send(**args)['docstatus'], 1)
+        entry.submit.assert_not_called()
+        with self.assertRaises(ValueError): self.m.send(**{**args, 'destination': 'OTHER'})
+        entry['docstatus'] = 2
+        with self.assertRaises(ValueError): self.m.send(**args)
+
+    def test_prepare_requires_destination_and_strict_mode(self):
+        self.f.get_doc.return_value = Row(check_permission=Mock())
+        args = dict(company='APH', request_id='r', rows=[], sent_date='2026-10-20', carrier='Xe')
+        for options in ({'prepare_only': 1}, {'prepare_only': 'yes'}, {'destination': []}):
+            with self.assertRaises(ValueError): self.m.send(**args, **options)
+
+    def test_posted_destination_frozen_and_only_unposted_preparation_can_be_deleted(self):
+        old = Row(docstatus=1, **{self.m.DESTINATION: 'CH'})
+        doc = Row(docstatus=1, is_new=lambda: False, get_doc_before_save=lambda: old,
+                  **{self.m.DESTINATION: 'KHAC'})
+        with self.assertRaises(ValueError): self.m.protect(doc)
+        draft = Row(docstatus=0, add_to_transit=1, **{self.m.PREFIX + 'request': 'k', self.m.DESTINATION: 'CH'})
+        self.m.prevent_delete(draft)
+        draft['docstatus'] = 1
+        with self.assertRaises(ValueError): self.m.prevent_delete(draft)
+
     def test_wired_in_hooks_and_installer(self):
         import pathlib
         root = pathlib.Path(__file__).resolve().parents[1]

@@ -6,6 +6,7 @@ if (!kh_aph.quantity.registered) {
     const recalc = async (frm, cdt, cdn) => {
         if (!enabled() || frm.doc.docstatus !== 0) return;
         const row = locals[cdt]?.[cdn];
+        if (row?.kh_aph_tra_le_kg && frm.doctype === "Delivery Note" && frm.doc.is_return) return;
         if (!row || !Number(row.kh_aph_kg_per_bag) || !Number(row.kh_aph_bags)) return;
         const bags = Number(row.kh_aph_bags), weight = Number(row.kh_aph_kg_per_bag);
         if (!Number.isInteger(bags) || !Number.isFinite(weight) || weight <= 0) {

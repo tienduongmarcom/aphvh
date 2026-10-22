@@ -9,7 +9,9 @@ TIME = 'kh_aph_delivery_at'
 WAITING = 'Chờ xuất'
 TRANSIT = 'Đang giao'
 RECEIVED = 'Khách đã nhận'
-FIELDS = (STATE, ACTOR, TIME)
+REPORTER = "kh_aph_nguon_bao_nhan"
+RECEIVED_ON = "kh_aph_ngay_khach_nhan"
+FIELDS = (STATE, ACTOR, TIME, REPORTER, RECEIVED_ON)
 
 
 def stamp(doc, state):
@@ -23,7 +25,7 @@ def validate(doc, method=None):
         return
     old = doc.get_doc_before_save()
     if not old:
-        if doc.get(STATE) not in (None, '', WAITING) or doc.get(ACTOR) or doc.get(TIME):
+        if doc.get(STATE) not in (None, '', WAITING) or doc.get(ACTOR) or doc.get(TIME) or doc.get(REPORTER) or doc.get(RECEIVED_ON):
             frappe.throw('Trạng thái giao hàng phải được xác nhận bằng thao tác giao/nhận')
         stamp(doc, WAITING)
     elif frappe.flags.get('kh_aph_delivery_transition') != doc.name:
@@ -40,7 +42,7 @@ def before_update_after_submit(doc, method=None):
     validate(doc, method)
 
 
-KET_QUA = ("name", "docstatus", "company", "customer", STATE, ACTOR, TIME, "modified")
+KET_QUA = ("name", "docstatus", "company", "customer", STATE, ACTOR, TIME, REPORTER, RECEIVED_ON, "modified")
 
 
 def _ket_qua(doc):
@@ -49,7 +51,7 @@ def _ket_qua(doc):
 
 
 @frappe.whitelist(methods=['POST'])
-def confirm(name, action):
+def confirm(name, action, reported_by=None, received_on=None):
     if not enabled():
         frappe.throw('Quy trình giao hàng chưa được bật')
     if action not in ('handoff', 'pickup', 'receive'):
@@ -69,10 +71,24 @@ def confirm(name, action):
             frappe.throw('Chỉ xác nhận nhận hàng sau khi xuất hàng')
         if current == RECEIVED:
             return _ket_qua(doc)
+        modern = cint(doc.get("kh_aph_mau_giao_nhan"))
+        if modern or reported_by or received_on:
+            from frappe.utils import getdate, nowdate
+            if reported_by not in ("Khách báo", "Nhà xe báo") or not received_on:
+                frappe.throw("Chọn nguồn báo nhận và ngày khách nhận thực tế")
+            try:
+                received_date = getdate(received_on)
+            except (ValueError, TypeError):
+                frappe.throw("Ngày nhận hàng không hợp lệ")
+            if received_date > getdate(nowdate()) or received_date < getdate(doc.posting_date):
+                frappe.throw("Ngày nhận phải từ ngày xuất đến hôm nay")
         previous = frappe.flags.get('kh_aph_delivery_transition')
         frappe.flags.kh_aph_delivery_transition = doc.name
         try:
             stamp(doc, RECEIVED)
+            if modern or reported_by or received_on:
+                doc.set(REPORTER, reported_by)
+                doc.set(RECEIVED_ON, received_date)
             # Server-loaded document; this endpoint accepts no document content.
             # Read scope is checked above; only the three receipt fields are changed.
             doc.save(ignore_permissions=receipt_only)

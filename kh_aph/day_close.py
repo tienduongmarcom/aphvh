@@ -142,18 +142,31 @@ def _debt(company, day):
 
 
 def _goods(company, day):
-    from kh_aph import delivery_issue as I, ho_so_giao_nhan as S
+    from kh_aph import delivery_issue as I, ho_so_giao_nhan as S, customer_delivery_proof as P
     result = []
-    values = rows('Delivery Note', {'company': company, 'docstatus': ['in', [1,2]], 'posting_date': ['<=', day]},
-        ['name','docstatus','is_return','posting_date','kh_aph_delivery_state', S.FILE, S.ACTOR, I.STATE, I.ASSIGNEE, I.DUE])
+    fields = ['name','docstatus','is_return','posting_date','kh_aph_delivery_state', S.FILE, S.ACTOR, I.STATE, I.ASSIGNEE, I.DUE]
+    originals = frappe.get_meta('Delivery Note').has_field(S.ORIGINAL_AT)
+    if originals:
+        fields += ['kh_aph_mau_giao_nhan', S.ORIGINAL_AT]
+    customer_proof = frappe.get_meta('Delivery Note').has_field(P.FILE)
+    if customer_proof:
+        fields += [key for key in (P.FILE, P.ACTOR, P.ORIGINAL_AT, 'kh_aph_mau_giao_nhan', 'kh_aph_cach_giao',
+                                  'kh_aph_can_ky_khach') if key not in fields]
+    values = rows('Delivery Note', {'company': company, 'docstatus': ['in', [1,2]], 'posting_date': ['<=', day]}, fields)
     for value in values:
         pending = value.get(I.STATE) in ('Cần xử lý', 'Đang xử lý')
-        missing = not value.get(S.FILE) or not value.get(S.ACTOR)
+        missing_original = originals and value.get('kh_aph_mau_giao_nhan') == 1 and not value.get(S.ORIGINAL_AT)
+        missing_customer = customer_proof and P.required(value) and (not value.get(P.ACTOR) or not value.get(P.ORIGINAL_AT))
+        missing = not value.get(S.FILE) or not value.get(S.ACTOR) or missing_original or missing_customer
         if getdate(value.posting_date) != getdate(day) and not pending and not (missing and value.docstatus == 1 and not value.is_return):
             continue
         state = 'Đã hủy' if value.docstatus == 2 else 'Trả hàng' if value.is_return else value.kh_aph_delivery_state or 'Đã xuất'
         if not value.is_return and value.docstatus == 1:
             state += ' / ' + ('Thiếu bản ký' if not value.get(S.FILE) else 'Có tệp chưa đối chiếu' if not value.get(S.ACTOR) else 'Đã đối chiếu bản ký')
+            if originals and value.get('kh_aph_mau_giao_nhan') == 1:
+                state += ' / ' + ('Thiếu giấy gốc' if missing_original else 'Đã nhận giấy gốc')
+        if customer_proof and P.required(value) and value.docstatus == 1:
+            state += ' / ' + ('Khách ký: chưa kiểm hồ sơ' if not value.get(P.ACTOR) else 'Khách ký: thiếu giấy gốc' if not value.get(P.ORIGINAL_AT) else 'Khách ký: đã nhận gốc')
         if pending:
             state += ' / ' + value.get(I.STATE)
         doc = frappe.get_doc('Delivery Note', value.name)

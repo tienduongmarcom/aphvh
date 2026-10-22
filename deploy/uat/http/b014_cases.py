@@ -55,6 +55,9 @@ def chay(admin, phien, f, emit, factory_feature):
     def near(a, b, tol=1.0):
         assert abs(float(a or 0) - float(b or 0)) <= tol, (a, b)
 
+    from b014_report_discovery import chay as discovery_cases
+    discovery_cases(rpc, denied, dung, ktt, emit)
+
     # 1. Tài khoản ngân hàng theo khach.json: dưới nhóm 112, đúng loại tiền, thẻ Bank Account; chạy lại không trùng.
     nh1, nh2 = f["nh"]
     assert len(nh1["tao_tai_khoan"]) == 3 and len(nh1["tao_the"]) == 3, nh1
@@ -318,3 +321,24 @@ def chay(admin, phien, f, emit, factory_feature):
     from b014_ux import do_ux0, do_ux3
     do_ux3(rpc, get, insert, lst, denied, f, phien, emit)
     do_ux0(get, insert, submit, lst, f, emit)
+
+    # Giữ các ca cũ độc lập với dữ liệu kho/đổi trả mới; mọi ca vẫn bắt buộc PASS.
+    from b014_return_loose import chay as loose_return_cases
+    refund_evidence = loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    from b014_simple_shipping import chay as simple_shipping_cases
+    # Bảng Chốt ngày hiện dùng cờ này; bật đúng bộ cài của CI, không bỏ guard nghiệp vụ.
+    factory_feature(True)
+    try:
+        simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit, refund_evidence)
+    finally:
+        factory_feature(False)
+    from b014_paper_archive import chay as paper_cases
+    paper_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    from b014_debt_statement import chay as statement_cases
+    statement_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_factory_transfer import chay_chuan_bi
+    chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_customer_proof import chay as customer_proof_cases
+    customer_proof_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)

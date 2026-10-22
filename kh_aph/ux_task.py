@@ -30,6 +30,7 @@ _LAM = {
         ('Đã nhận, thiếu bản ký', 'DocType', 'Delivery Note', {'docstatus': 1, 'is_return': 0, 'kh_aph_delivery_state': 'Khách đã nhận', 'kh_aph_ban_ky': ['is', 'not set']}, 'List'),
     ],
     'kho': [
+        ('Giấy gốc chưa về', 'DocType', 'Delivery Note', {'docstatus': 1, 'is_return': 0, 'kh_aph_mau_giao_nhan': 1, 'kh_aph_nhan_goc_luc': ['is', 'not set']}, 'List'),
         ('Phiếu chờ xuất kho', 'DocType', 'Delivery Note', {'docstatus': 0}, 'List'),
         ('Hàng đang giao', 'DocType', 'Delivery Note', {'docstatus': 1, 'kh_aph_delivery_state': 'Đang giao'}, 'List'),
         ('Chuyến đang trên đường', 'DocType', 'Stock Entry', {'docstatus': 1, 'purpose': 'Material Transfer', 'add_to_transit': 1, 'per_transferred': ['<', 100]}, 'List'),

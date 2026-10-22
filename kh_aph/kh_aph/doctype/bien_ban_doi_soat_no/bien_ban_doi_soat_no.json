@@ -1,0 +1,37 @@
+{
+ "doctype": "DocType",
+ "name": "Bien ban doi soat no",
+ "module": "Kh Aph",
+ "engine": "InnoDB",
+ "autoname": "BBDS-.YYYY.-.#####",
+ "track_changes": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "fields": [
+  {"fieldname":"customer","label":"Khách hàng","fieldtype":"Link","options":"Customer","reqd":1,"read_only":1,"in_list_view":1},
+  {"fieldname":"snapshot_at","label":"Mốc lập biên bản","fieldtype":"Datetime","read_only":1,"in_list_view":1},
+  {"fieldname":"status","label":"Tình trạng bản ký","fieldtype":"Select","options":"Chờ ký\nĐã nhận bản ký\nĐã nhận giấy gốc","read_only":1,"in_list_view":1},
+  {"fieldname":"supersedes","label":"Biên bản trước","fieldtype":"Link","options":"Bien ban doi soat no","read_only":1},
+  {"fieldname":"bundle_file","label":"Bộ giấy đã cấp","fieldtype":"Attach","read_only":1,"description":"Bản PDF lưu tại mốc lập, in lại giữ nguyên số đã cấp."},
+  {"fieldname":"signed_section","label":"Bản ký và giấy gốc","fieldtype":"Section Break","collapsible":1},
+  {"fieldname":"signer","label":"Người ký công nợ","fieldtype":"Data","read_only":1},
+  {"fieldname":"signature_authority","label":"Tư cách ký nợ","fieldtype":"Select","options":"\nKhách hàng\nĐược ủy quyền ký nợ","read_only":1},
+  {"fieldname":"authorization","label":"Căn cứ ủy quyền ký nợ","fieldtype":"Small Text","read_only":1},
+  {"fieldname":"signed_file","label":"Ảnh / PDF bản đã ký","fieldtype":"Attach","read_only":1},
+  {"fieldname":"signed_by","label":"Người ghi nhận bản ký","fieldtype":"Link","options":"User","read_only":1},
+  {"fieldname":"signed_at","label":"Thời điểm ghi nhận bản ký","fieldtype":"Datetime","read_only":1},
+  {"fieldname":"original_location","label":"Vị trí lưu giấy gốc","fieldtype":"Data","read_only":1},
+  {"fieldname":"original_by","label":"Người nhận giấy gốc","fieldtype":"Link","options":"User","read_only":1},
+  {"fieldname":"original_at","label":"Thời điểm nhận giấy gốc","fieldtype":"Datetime","read_only":1},
+  {"fieldname":"scope","label":"Phạm vi đơn vị đã chụp","fieldtype":"Code","options":"JSON","read_only":1,"hidden":1},
+  {"fieldname":"payload","label":"Số liệu đã chụp","fieldtype":"Code","options":"JSON","read_only":1,"hidden":1},
+  {"fieldname":"request_id","label":"Mã lượt lập biên bản","fieldtype":"Data","read_only":1,"hidden":1,"unique":1},
+  {"fieldname":"request_hash","label":"Dấu nội dung yêu cầu","fieldtype":"Data","read_only":1,"hidden":1}
+ ],
+ "field_order":["customer","snapshot_at","status","supersedes","bundle_file","signed_section","signer","signature_authority","authorization","signed_file","signed_by","signed_at","original_location","original_by","original_at","scope","payload","request_id","request_hash"],
+ "permissions":[
+  {"role":"Accounts User","read":1,"create":1,"write":1,"print":1,"report":1},
+  {"role":"Accounts Manager","read":1,"create":1,"write":1,"print":1,"report":1},
+  {"role":"System Manager","read":1,"create":1,"write":1,"print":1,"report":1}
+ ]
+}

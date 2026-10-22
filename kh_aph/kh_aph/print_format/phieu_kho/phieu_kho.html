@@ -46,8 +46,8 @@
         {%- if loai == "xuat" and row.t_warehouse %}<br><small>Sang kho: {{ kh_aph_ten_kho(row.t_warehouse) }}</small>{% endif %}</td>
       <td class="c">{{ row.item_code }}</td>
       <td class="c">{{ row.uom }}</td>
-      <td></td>
       <td class="r">{{ kh_aph_so(row.qty) }}</td>
+      <td class="r">{{ "" if doc.docstatus == 0 else kh_aph_so(row.qty) }}</td>
       <td class="r">{{ "" if an else kh_aph_so(row.valuation_rate, 0) }}</td>
       <td class="r">{{ "" if an else kh_aph_so(row.amount, 0) }}</td>
     </tr>
@@ -93,9 +93,11 @@
 {{ bang(vao, "nhap", an) }}
 {%- elif kieu == "xuat" %}
 <div class="aph-info">
-  <div>- Họ và tên người nhận hàng: ..............................  Địa chỉ (bộ phận): ..............................</div>
+  <div>- Họ và tên người nhận hàng: {{ (doc.get("kh_aph_transfer_receiver") or "..............................") | e }}  Địa chỉ (bộ phận): ..............................</div>
   <div>- Lý do xuất kho: {{ kh_aph_loai_phieu_kho(doc.stock_entry_type) }}{% if doc.remarks %} — {{ doc.remarks }}{% endif %}</div>
   <div>- Xuất tại kho: {{ ten_kho(ra, "s_warehouse") }}{% if vao %}. Nhập tại kho: {{ ten_kho(vao, "t_warehouse") }}{% endif %}</div>
+  {% if doc.get("kh_aph_transfer_destination") %}<div>- Kho nhận cuối dự kiến: {{ kh_aph_ten_kho(doc.get("kh_aph_transfer_destination")) | e }}. Kho đang vận chuyển chưa phải kho đã thực nhận.</div>{% endif %}
+  {% if doc.get("kh_aph_transfer_note") %}<div>- Ghi chú chuyến: {{ doc.get("kh_aph_transfer_note") | e }}</div>{% endif %}
 </div>
 {{ bang(ra, "xuat", an) }}
 {%- else %}

@@ -44,6 +44,8 @@
   <div>- Xuất tại kho: {% for k in khos %}{{ kh_aph_ten_kho(k) }}{% if not loop.last %}, {% endif %}{% endfor %}
     {%- set dc = kh_aph_dia_chi(doc.shipping_address or doc.address_display) %}{% if dc %}. Giao đến: {{ dc }}{% endif %}</div>
 {%- endif %}
+{% if gn.current and gn.carrier %}<div>- Nhà xe: {{ gn.carrier | e }}; Điện thoại nhà xe: {{ gn.carrier_phone | e }}</div>{% endif %}
+{% if gn.current and gn.authorization %}<div>- Khách chỉ định người nhận: {{ gn.authorization | e }}</div>{% endif %}
 {% if gn.current %}<div>- Cách giao: {{ gn.method | e }}; Điện thoại người nhận: {{ (gn.phone or cham) | e }}{% if gn.driver %}; Lái xe: {{ gn.driver | e }}{% endif %}{% if gn.vehicle %}; Biển số: {{ gn.vehicle | e }}{% endif %}</div>
   <div>- Người thực giao: {{ (gn.dispatcher or cham) | e }}; Thời điểm xuất tại kho: {{ (gn.time or cham) | e }}</div>{% endif %}
 </div>

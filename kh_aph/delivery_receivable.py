@@ -43,6 +43,9 @@ def post_receivable(doc):
         if len(originals) != 1:
             frappe.throw("Phiếu trả lại phải xác định duy nhất chứng từ bán hàng gốc đã xác nhận.")
         original = originals[0]
+        if doc.get("kh_aph_ma_nhan_tra") or any(cint(r.get("kh_aph_tra_le_kg")) for r in doc.items):
+            from kh_aph.sales_return import validate_credit_limit
+            validate_credit_limit(doc, original)
 
     si = _build_invoice(doc, original)
     si.update_stock = 0  # DN already posted stock. SI only posts receivable/revenue/tax.
