@@ -134,9 +134,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     emit('HTTP_014_DOI_SOAT_BAN_KY_BAT_BIEN','PASS',{'paper_and_photo_independent':True,'separate_debt_authority':True,
         'old_payload_pdf_frozen_after_cancel':True,'retry_after_cancel_opens_old_copy':True,'new_version_links_old':True,
         'private_evidence_kept':True,'pdf_sha256':digest})
-    import os
     if os.environ.get('GITHUB_ACTIONS')=='true':
-        import subprocess
         browser=phien(f['ktbh'])  # Phiên riêng: Desk khởi tạo CSRF, không tái dùng cho HTTP POST.
         state=counts()
         result=subprocess.run(['node','--experimental-websocket',str(Path(__file__).with_name('ban-nhanh-desk.mjs')),

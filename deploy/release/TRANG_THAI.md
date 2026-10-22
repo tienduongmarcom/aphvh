@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — PDF native đúng4trang; Chốt ngày cửa hàng đã nativePASS
+
+UAT39772096251 đúngfb6ab9c FAIL do bộ kiểm mới: import os/subprocess bên trong chay khiến os trở thành biến cục bộ trước phép đọc PDF (UnboundLocalError), không phải lỗi sản phẩm. Đã bỏ import cục bộ trùng, giữ import module và assertion4trang, kiểm Pyflakes riêng tệp đạt. Cục bộ570ca không bỏ qua vẫn đạt. Cần chạy lại toàn lượt trên mã sửa helper; không lấy kết quả riêng để gọi cả lượtPASS.
+
+Đã tải/đọc artifact: bộ014129PASS gồm RESTORE rồi1FAIL helper; HTTP_2B_FACTORY_DAY_CLOSE và DESK_2B_DAY_CLOSE đãPASS với ca mở rộng tắt cầu nối Nhà máy. Người quản lý vẫn xem sao kê/hàng/nợ, tài khoản hạn chế bị chặn, không ghi sổ. PDF doi-soat-bo-giay.pdf được tạo/lưu trước lỗi helper; đã đọc bằng pypdf và xem đủ4ảnh: A4đối soát +2A5Landscape595×420pt +A4phiếu thu. Mã/ô ký cùng trên mỗiA5, chữ và bảng không cắt, giữ ô ký20mm. Đây là ca một dòng giả, chưa máy in thật hoặc cam kết mọi độ dài hàng/địa chỉ đều một trang.
+
+Cổng239772314861 đúngfb6ab9c SUCCESS, đã đọc log570ca image và53mục cấu hình không lỗi. Cổng2b39771765446 đúng6868cff SUCCESS, đã đọc log dựng/nâng/quay lui đều53mục đạt. Cổng339771761224 đúng6868cff đang bước cố ý làm hỏng/tự khôi phục; chưa lấy kết quả. Câu hỏi tính giá trả một phần sau giảm vẫn chờ chủ dự án, không tự chốt công thức. PR38 nháp; production0.16.4/28cờ giữ nguyên.
+
 ## 22/10/2026 — UAT135 xanh nhưng QA phát hiện phần ký A5 tràn trang
 
 Đã tải/đọc candidate-image-evidence UAT39766960041 đúng98c37e39ad2fb3ee032ea0ac4a40b153c581a258: bộ014135PASS gồm RESTORE; inventory33, funds20, cost16, dispatch48, b0111=15, b0112=13, b0113=13, b0114=8, b012=9, b013=10, native16511=4 đềuPASS. Các ca mới gom kho chuẩn bị/in→xuất→nhận, hồ sơ khách ký riêng, lịch sử ảnh, đối soát bất biến/quyền và ngoại tệ đã nativePASS. Chrome kế toán thật mất phản hồi sau200/bấm lại chỉ một biên bảnPASS. Chưa suy sang thay đổi Chốt ngày sau đó.

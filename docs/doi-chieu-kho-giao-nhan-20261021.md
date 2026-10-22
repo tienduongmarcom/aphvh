@@ -103,9 +103,9 @@ Cục bộ mới nhất570ca kh_aph không bỏ qua đạt. Bộ014 đã đọc 
 | HTTP_014_DOI_SOAT_BAN_KY_BAT_BIEN | PASS | Bản số/PDF bất biến sau hủy nguồn, quyền ký nợ riêng, bản bổ sung nối trước |
 | HTTP_014_DOI_SOAT_TIEN_CHUA_PHAN_BO_NGOAI_TE | PASS |10USD×25.000 về250.000VND, không đổi sổ |
 | NATIVE_DESK_DOI_SOAT_RETRY | PASS | Kế toán bán hàng thật, mất phản hồi sau200/bấm lại chỉ một bản; ảnh đã đọc nhưng còn lớp nền modal lúc chụp |
-| PDF bộ giấy A5 | QA CHƯA ĐẠT |6trang thay vì4 ở ca một dòng; bản sửa lề đang kiểm39772096251 |
+| PDF bộ giấy A5 | QA ca một dòng đã đạt riêng |Lượt cũ6trang; bản sửa lề đúng4trang tại39772096251, đã xem đủ; cả lượt FAIL helper import, chờ chạy lại |
 
-Đã tách Chốt ngày khỏi cờ `kh_aph_factory_handover`: dùng các cờ chốt ca, bàn giao và người giữ tiền cửa hàng; giữ quyền quản lý/phạm vi nguồn. Mục chuyển tiếp nhà máy chỉ đọc khi cầu nối bật. Cục bộ570ca đạt; ca native tắt Nhà máy đã bổ sung, chưa có kết quả trên mã mới.
+Đã tách Chốt ngày khỏi cờ `kh_aph_factory_handover`: dùng các cờ chốt ca, bàn giao và người giữ tiền cửa hàng; giữ quyền quản lý/phạm vi nguồn. Mục chuyển tiếp nhà máy chỉ đọc khi cầu nối bật. Cục bộ570ca đạt; ca native tắt Nhà máy đã HTTP_2B_FACTORY_DAY_CLOSE/DESK_2B_DAY_CLOSE PASS tại39772096251/fb6ab9c; toàn lượt FAIL helper PDF sau đó.
 
 ## 9. Triển khai và khôi phục
 
