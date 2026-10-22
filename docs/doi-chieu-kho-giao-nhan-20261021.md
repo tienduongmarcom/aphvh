@@ -27,7 +27,7 @@
 | Ship | Đầu mối cửa hàng | Chọn/nhập tên và SĐT nhà xe; sau đó ghi nguồn báo và ngày nhận cuối | Không bắt khách chờ tải ảnh; bằng chứng khách cuối khi có yêu cầu riêng chưa có bộ kiểm soát hoàn chỉnh |
 | Nhận trả | Người có quyền lập/xác nhận DN | Phiếu gốc hoặc Khách hàng → Nhận hàng trả lại → kiểm phiếu nháp → xác nhận | Nhập kg và bao riêng; chọn cách ly/bán lại được; chọn kho khác còn qua form chuẩn |
 | Đổi mã | Người có quyền lập đơn | Phiếu nhận trả đã ghi → Lập đơn hàng thay → chọn mã/lượng/giá trên form đơn chuẩn | Một đơn thay còn hiệu lực; chưa có màn tính và thu/hoàn chênh lệch trong một thao tác |
-| Hoàn tiền | Kế toán theo quyền tiền | Đối trừ khoản gốc bằng dịch vụ native, kiểm phiếu chi nháp rồi xác nhận thực chi | Thiếu quyền đối trừ thì giữ credit và chuyển kế toán xử lý; chưa có nút mở/hoàn một lượt đầy đủ |
+| Hoàn tiền | Kế toán theo quyền tiền | Đối trừ khoản gốc bằng dịch vụ native, kiểm phiếu chi nháp rồi xác nhận thực chi | Thiếu quyền đối trừ thì giữ credit và chuyển kế toán xử lý; đã có nút Mở phiếu hoàn tiền (HTTP/ChromePASS trênc4b93fa); chưa nối hoàn/chênh lệch một lượt đầy đủ |
 | Nhận giấy gốc | Kế toán lưu tập trung | DN → Nhận giấy gốc → vị trí tập | Độc lập ảnh; chưa có thao tác chuyển vị trí lưu đã xác nhận |
 
 ## 4. Quy tắc và ngoại lệ
@@ -41,7 +41,7 @@
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
 | Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
 | Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | Cần nativePASS đủ ca hủy/amend, chặn sửa nguồn và gắn vào DN/PE; không xây sổ offline hoặc workflow riêng theo chỉ đạo22/10 |
-| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, nhận thực lượng và gom vào cùng lượt giao còn thiếu |
+| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Đã viết chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit; chờ UAT133 đúng mã mới. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
 
 ## 5. Dữ liệu và trạng thái
 
@@ -54,7 +54,7 @@ Dữ liệu mới lưu trên chứng từ native, không tạo sổ kho/nợ ho�
 | Nhận trả | Link DN và dòng gốc, lý do, request/hash, kg/bao/quy cách gốc; kiểm tổng lượng gồm cả nháp đang giữ |
 | Đơn thay | Link phiếu nhận trả bất biến; khóa duy nhất cho đơn còn hiệu lực; hủy nhả khóa, giữ link lịch sử |
 | Giấy gốc | User, thời điểm, vị trí lưu do API ghi; chưa có gốc khác với chưa có ảnh/ảnh chưa đối chiếu |
-| Ảnh ký tại kho | Cơ chế file riêng tư và đối chiếu hiện có; lịch sử thay/xóa bằng chứng đầy đủ vẫn cần rà soát tiếp |
+| Ảnh ký tại kho | Đã viết lịch sử trước/sau trên DN, giữ tệp cũ và dấu đối chiếu; chặn xóa/công khai/giả lịch sử, có cửa xem lại; chưa nativePASS mở rộng mới |
 | Đối soát nợ ký theo lượt | Đã viết snapshot và bộ PDF lưu riêng tư, ký/gốc riêng, bản bổ sung nối bản trước; số theo Company và cọc riêng. Chưa nativePASS/QA bố cục PDF mới; mẫu ngày cũ chỉ còn vai trò tương thích và đã lọc phạm vi |
 
 ## 6. Phân quyền và kiểm soát

@@ -1,7 +1,10 @@
 """Hồ sơ bản ký trên phiếu giao nguồn; không tạo sổ hoặc trạng thái giao hàng thứ hai."""
+import json
+
 import frappe
 from frappe.utils import cint, now_datetime
 
+HISTORY = "kh_aph_lich_su_ban_ky"
 FILE = "kh_aph_ban_ky"
 NOTE = "kh_aph_ghi_chu_ban_ky"
 ACTOR = "kh_aph_doi_chieu_boi"
@@ -30,12 +33,15 @@ def fields():
          "insert_after": NOTE, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
         {"fieldname": TIME, "label": "Thời điểm đối chiếu bản ký", "fieldtype": "Datetime",
          "insert_after": ACTOR, "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
+        {"fieldname": HISTORY, "label": "Lịch sử hồ sơ bản ký", "fieldtype": "Long Text",
+         "insert_after": TIME, "allow_on_submit": 1, "read_only": 1, "hidden": 1,
+         "no_copy": 1, "depends_on": condition},
     ] + [
-        {"fieldname": ORIGINAL_BY, "label": "Người nhận giấy gốc", "fieldtype": "Link", "options": "User",
+        {"insert_after": HISTORY, "fieldname": ORIGINAL_BY, "label": "Người nhận giấy gốc", "fieldtype": "Link", "options": "User",
          "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
-        {"fieldname": ORIGINAL_AT, "label": "Thời điểm nhận giấy gốc", "fieldtype": "Datetime",
+        {"insert_after": ORIGINAL_BY, "fieldname": ORIGINAL_AT, "label": "Thời điểm nhận giấy gốc", "fieldtype": "Datetime",
          "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
-        {"fieldname": ORIGINAL_LOCATION, "label": "Vị trí lưu giấy gốc", "fieldtype": "Data",
+        {"insert_after": ORIGINAL_AT, "fieldname": ORIGINAL_LOCATION, "label": "Vị trí lưu giấy gốc", "fieldtype": "Data",
          "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
     ]
 
@@ -55,6 +61,8 @@ def validate(doc, method=None):
     if not enabled() or not doc.meta.has_field(FILE):
         return
     old = doc.get_doc_before_save()
+    if doc.meta.has_field(HISTORY) and (doc.get(HISTORY) or '') != ((old.get(HISTORY) if old else None) or ''):
+        frappe.throw("Không sửa lịch sử hồ sơ bản ký; tải bản mới trên phiếu để giữ dấu thay đổi")
     original_update = frappe.flags.get("kh_aph_nhan_goc") == doc.name
     if not original_update and any(str(doc.get(f) or "") != str((old.get(f) if old else None) or "") for f in ORIGINAL_FIELDS):
         frappe.throw("Dùng thao tác Nhận giấy gốc để ghi người, thời điểm và vị trí lưu")
@@ -70,6 +78,44 @@ def validate(doc, method=None):
         # Thay tệp hoặc ghi chú làm mất xác nhận trước, không giữ dấu đối chiếu cũ.
         doc.set(ACTOR, None)
         doc.set(TIME, None)
+    _record_history(doc, old)
+
+
+def _record_history(doc, old):
+    if not doc.meta.has_field(HISTORY):
+        return
+    keys = (FILE, NOTE, ACTOR, TIME, *ORIGINAL_FIELDS)
+    def state(source):
+        return {key: str((source.get(key) if source else None) or '') for key in keys}
+    before, after = state(old), state(doc)
+    if before == after:
+        return
+    raw = old.get(HISTORY) if old else None
+    history = json.loads(raw) if raw else {'files': [], 'events': []}
+    if not isinstance(history, dict) or set(history) != {'files', 'events'}:
+        frappe.throw('Lịch sử bản ký cần quản trị kiểm tra, không tự ghi đè')
+    files = history['files']
+    for value in (before[FILE], after[FILE]):
+        if value and value not in files:
+            files.append(value)
+    history['events'].append({'by': frappe.session.user, 'at': str(now_datetime()), 'before': before, 'after': after})
+    doc.set(HISTORY, json.dumps(history, ensure_ascii=False, sort_keys=True))
+
+
+def _file_in_use(url):
+    # Giữ cả bản trên phiếu đã hủy và phiên bản đã thay; không xóa blob rồi trông vào rollback DB.
+    if frappe.db.exists('Delivery Note', {FILE: url}):
+        return True
+    if not frappe.get_meta('Delivery Note').has_field(HISTORY):
+        return False
+    return bool(frappe.db.sql(f"""SELECT name FROM `tabDelivery Note`
+        WHERE IF(JSON_VALID(`{HISTORY}`), JSON_CONTAINS(`{HISTORY}`, %s, '$.files'), 0) LIMIT 1""",
+        (json.dumps(url),)))
+
+
+def prevent_delete(doc, method=None):
+    if enabled() and (doc.get(FILE) or doc.get(HISTORY) or doc.get(ORIGINAL_BY)):
+        frappe.throw('Giữ phiếu có hồ sơ ký hoặc giấy gốc để truy nguyên, kể cả sau hủy')
 
 
 @frappe.whitelist(methods=["POST"])
@@ -102,11 +148,11 @@ def doi_chieu(name, modified):
 
 
 def protect_file(doc, method=None):
-    """Không xóa tệp đang được dùng làm hồ sơ; gỡ/thay trên phiếu trước để mất dấu đối chiếu."""
+    """Không xóa tệp hiện tại hoặc phiên bản cũ đã được chọn làm hồ sơ."""
     if not enabled() or not doc.file_url or not frappe.get_meta("Delivery Note").has_field(FILE):
         return
-    if frappe.db.exists("Delivery Note", {FILE: doc.file_url, "docstatus": ["!=", 2]}):
-        frappe.throw("Tệp đang là bản ký của phiếu giao. Gỡ hoặc thay bản ký trên phiếu trước khi xóa tệp")
+    if _file_in_use(doc.file_url):
+        frappe.throw("Tệp thuộc hồ sơ bản ký của phiếu giao; giữ cả bản cũ để truy nguyên")
 
 
 def protect_file_update(doc, method=None):
@@ -116,7 +162,7 @@ def protect_file_update(doc, method=None):
     old = doc.get_doc_before_save()
     if not old or not old.file_url:
         return
-    if not frappe.db.exists("Delivery Note", {FILE: old.file_url, "docstatus": ["!=", 2]}):
+    if not _file_in_use(old.file_url):
         return
     if any(doc.get(f) != old.get(f) for f in ("file_url", "is_private", "attached_to_doctype", "attached_to_name")) or doc.get("content"):
         frappe.throw("Tệp đang là bản ký. Tải tệp mới và thay trên phiếu để đối chiếu lại")

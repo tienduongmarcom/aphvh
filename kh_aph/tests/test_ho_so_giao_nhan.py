@@ -18,6 +18,7 @@ class HoSoGiaoNhan(unittest.TestCase):
         self.f.throw = lambda msg, *a: (_ for _ in ()).throw(ValueError(msg))
         self.f.get_all = Mock(return_value=[{"name": "file-1"}])
         self.f.db = Mock()
+        self.f.db.sql.return_value = []
         utils = types.ModuleType("frappe.utils")
         utils.cint = lambda v: int(v or 0)
         utils.now_datetime = lambda: "2026-10-17 15:00:00"
@@ -91,6 +92,32 @@ class HoSoGiaoNhan(unittest.TestCase):
         for change in ({"is_private": 0}, {"attached_to_name": "DN-2"}, {"content": "ghi de"}):
             d = self.doc(old, **{"file_url": old.file_url, "is_private": 1, "attached_to_name": "DN-1", **change})
             with self.assertRaises(ValueError): self.m.protect_file_update(d)
+
+    def test_thay_ban_ky_giu_tap_cu_va_nguoi_da_doi_chieu(self):
+        import json
+        old = self.doc(kh_aph_ban_ky='/private/files/cu.pdf', kh_aph_doi_chieu_boi='kt', kh_aph_doi_chieu_luc='hom qua')
+        doc = self.doc(old, kh_aph_ban_ky='/private/files/moi.pdf', kh_aph_doi_chieu_boi='kt', kh_aph_doi_chieu_luc='hom qua')
+        self.m.validate(doc)
+        history = json.loads(doc.get(self.m.HISTORY))
+        self.assertEqual(history['files'], ['/private/files/cu.pdf', '/private/files/moi.pdf'])
+        self.assertEqual(history['events'][0]['before'][self.m.ACTOR], 'kt')
+        self.assertEqual(history['events'][0]['after'][self.m.ACTOR], '')
+        self.assertEqual(history['events'][0]['by'], 'kt')
+        with self.assertRaises(ValueError):
+            self.m.validate(self.doc(old, **{self.m.HISTORY: '{}'}))
+
+    def test_chan_xoa_ca_tap_da_thay_va_phieu_da_huy(self):
+        self.f.get_meta = lambda dt: types.SimpleNamespace(has_field=lambda f: True)
+        self.f.db.exists.return_value = False
+        self.f.db.sql.return_value = [('DN-CU',)]
+        with self.assertRaises(ValueError):
+            self.m.protect_file(types.SimpleNamespace(file_url='/private/files/cu.pdf'))
+        query, params = self.f.db.sql.call_args.args
+        self.assertIn('JSON_CONTAINS', query)
+        self.assertEqual(params, ('"/private/files/cu.pdf"',))
+        self.assertNotIn('docstatus', query)
+        with self.assertRaises(ValueError):
+            self.m.prevent_delete(self.doc(docstatus=2, kh_aph_ban_ky='/private/files/cu.pdf'))
 
     def test_moc_thoi_gian_json_va_db_la_cung_gia_tri(self):
         from datetime import datetime

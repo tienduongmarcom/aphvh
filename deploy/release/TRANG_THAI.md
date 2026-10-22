@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Giữ phiên bản ảnh ký cũ và dấu đối chiếu trước khi thay
+
+Hồ sơ DN có lịch sử JSON do server ghi trên chính phiếu, không sổ nhiệm vụ/DocType mới. Mỗi lần chọn/gỡ/thay tệp, ghi chú, đối chiếu hoặc nhận gốc giữ trước/sau, user/time; tệp cũ vẫn riêng tư và không bị xóa/công khai/đổi nguồn, kể cả phiếu hủy. Chặn sửa lịch sử bằng form/API và xóa phiếu đã có bằng chứng/gốc. Mục Hồ sơ giao nhận có Lịch sử bản ký để mở các tệp cũ; thay ảnh vẫn bỏ dấu đối chiếu hiện tại để kiểm lại. Đã nối các ô giấy gốc vào đúng cụm hồ sơ.
+
+Cục bộ552ca không bỏ qua đạt, JS/cú pháp/diff đạt. Mở rộng ca HTTP_014_HO_SO_BAN_KY kiểm thay tệp/giữ blob cũ/chặn xóa và giả lịch sử, không tăng số ca: bộ014 vẫn133PASS kỳ vọng cùng phần chuẩn bị chuyển kho. Chưa có bằng chứng native của lịch sử mới. UAT39711917331 mãedb3c67 đang chạy, không chứa chuyển kho/lịch sử sau đó. PR38 vẫn nháp, production0.16.4/28cờ không đổi. Bằng chứng khách cuối riêng và giảm/trả theo dòng vẫn cần hoàn thiện; không tuyên bố cả phạm vi xong.
+
 ## 22/10/2026 — Chuẩn bị và in phiếu chuyển kho trước khi thực giao
 
 Đã thêm lựa chọn chuẩn bị nháp vào dịch vụ Stock Entry chuyển kho hiện có. Màn Chuyển hàng đi mặc định Chuẩn bị phiếu & In: kho nhận cuối dự kiến, người/xe chở, phiếu nháp không ghi kho/GL/nợ. Bấm lại cùng lượt mở phiếu cũ, cả sau khi phiếu đã ghi, không tự xác nhận nháp. Người dùng kiểm lượng thực giao trên phiếu chuẩn rồi xác nhận; nhận về kho vẫn dùng Stock Entry nhận từ Transit, có thể nhận từng phần. Kho dự kiến được điền sẵn, đổi kho thực nhận cần lý do. Không chuyển khác Company, không lấy Transit làm kho nguồn. Cho bỏ bản chuẩn bị chưa ghi bằng xóa native; phiếu đã ghi/hủy giữ lịch sử như cũ.

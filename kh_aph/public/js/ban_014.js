@@ -26,6 +26,28 @@
 			for (const field of ["kh_aph_ho_so_giao_nhan", "kh_aph_ban_ky", "kh_aph_ghi_chu_ban_ky", "kh_aph_doi_chieu_boi", "kh_aph_doi_chieu_luc"]) {
 				frm.toggle_display(field, !!bat() && frm.doc.docstatus === 1 && !frm.doc.is_return);
 			}
+            if (bat() && frm.doc.kh_aph_lich_su_ban_ky && !frm.doc.is_return) {
+                frm.add_custom_button("Lịch sử bản ký", () => {
+                    const e = frappe.utils.escape_html;
+                    const link = url => typeof url === "string" && url.startsWith("/private/files/")
+                        ? `<a href="${e(url)}" target="_blank" rel="noopener">Mở bản ký</a>` : "Chưa có";
+                    let history;
+                    try { history = JSON.parse(frm.doc.kh_aph_lich_su_ban_ky); }
+                    catch (_) { return frappe.msgprint("Lịch sử cần quản trị kiểm tra."); }
+                    const rows = (history.events || []).map(x => {
+                        const a = x.before || {}, b = x.after || {};
+                        return `<tr><td>${e(x.at || "")}</td><td>${e(x.by || "")}</td><td>
+                            ${link(a.kh_aph_ban_ky)} → ${link(b.kh_aph_ban_ky)}<br>
+                            Ghi chú: ${e(a.kh_aph_ghi_chu_ban_ky || "")} → ${e(b.kh_aph_ghi_chu_ban_ky || "")}<br>
+                            Đối chiếu: ${e(a.kh_aph_doi_chieu_boi || "Chưa đối chiếu")} → ${e(b.kh_aph_doi_chieu_boi || "Chưa đối chiếu")}<br>
+                            Giấy gốc: ${e(a.kh_aph_vi_tri_goc || "Chưa nhận")} → ${e(b.kh_aph_vi_tri_goc || "Chưa nhận")}</td></tr>`;
+                    }).join("");
+                    const dialog = new frappe.ui.Dialog({title: "Lịch sử bản ký", size: "extra-large", fields: [
+                        {fieldtype: "HTML", options: `<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Thời điểm</th><th>Người thao tác</th><th>Trước → Sau</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+                    ]});
+                    dialog.show();
+                }, "Hồ sơ giao nhận");
+            }
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
             if (!frm.doc.kh_aph_nhan_goc_boi && frm.perm.some(p => p.write)) {
                 frm.add_custom_button("Nhận giấy gốc", () => {
