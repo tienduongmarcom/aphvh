@@ -10,6 +10,8 @@ Cổng239772314861 đúngfb6ab9c SUCCESS, đã đọc log570ca image và53mục 
 
 Đã đẩy mã sửa helper c21a799; UAT39775206078 đang chạy lại135ca. Lượt mới chưa có kết quả.
 
+Cổng339771761224 đúng6868cff đã SUCCESS; tải/đọc artifact cong-3-bang-chung: schema1151/1151 (bỏ qua6/6 theo phép thử), quay lui1105/1105 lệch0; sau cố ý nâng sai, chi_tiet khớp. Chỉ chứng minh6868cff, không thay UAT mới/cổng trên mã phát hành cuối.
+
 ## 22/10/2026 — UAT135 xanh nhưng QA phát hiện phần ký A5 tràn trang
 
 Đã tải/đọc candidate-image-evidence UAT39766960041 đúng98c37e39ad2fb3ee032ea0ac4a40b153c581a258: bộ014135PASS gồm RESTORE; inventory33, funds20, cost16, dispatch48, b0111=15, b0112=13, b0113=13, b0114=8, b012=9, b013=10, native16511=4 đềuPASS. Các ca mới gom kho chuẩn bị/in→xuất→nhận, hồ sơ khách ký riêng, lịch sử ảnh, đối soát bất biến/quyền và ngoại tệ đã nativePASS. Chrome kế toán thật mất phản hồi sau200/bấm lại chỉ một biên bảnPASS. Chưa suy sang thay đổi Chốt ngày sau đó.
