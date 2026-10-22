@@ -539,3 +539,12 @@ for _event in ("validate", "before_cancel", "before_update_after_submit"):
 
 # Frappe16.52 tìm biến thể báo cáo khi mở Query Report; hồ sơ ẩn vốn chỉ nhận [].
 override_whitelisted_methods["frappe.desk.reportview.get_list"] = "kh_aph.report_discovery.get_list"
+
+# Giấy tay chỉ là bằng chứng cho chứng từ chuẩn nhập bổ sung; không có sổ offline.
+for _dt in ("Delivery Note", "Payment Entry", "Stock Entry"):
+    for _event in ("validate", "before_submit", "before_cancel", "before_update_after_submit"):
+        _old = doc_events.setdefault(_dt, {}).get(_event, [])
+        _old = [_old] if isinstance(_old, str) else list(_old)
+        doc_events[_dt][_event] = _old + ["kh_aph.paper_archive.validate"]
+extend_doctype_class["File"].append("kh_aph.paper_archive.PaperFileMixin")
+doc_events["File"]["before_validate"].append("kh_aph.paper_archive.protect_file_update")

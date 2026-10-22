@@ -74,6 +74,8 @@ def schema(cho_phep_du_lieu=False):
     trung_tam_ban.schema()
     from kh_aph import cash_custody
     cash_custody.schema()
+    from kh_aph import paper_archive
+    paper_archive.schema()
     from kh_aph import cash_closing
     cash_closing.schema()
     from kh_aph import cash_handover

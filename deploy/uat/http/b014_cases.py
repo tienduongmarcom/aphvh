@@ -332,3 +332,5 @@ def chay(admin, phien, f, emit, factory_feature):
         simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
     finally:
         factory_feature(False)
+    from b014_paper_archive import chay as paper_cases
+    paper_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)

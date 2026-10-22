@@ -1,5 +1,15 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — Thu gọn giấy tay thành thông tin lưu trên phiếu nhập bổ sung
+
+Chủ dự án làm rõ giấy viết tay chỉ lưu để nhập bổ sung khi mất mạng. Đã thu hẹp thiết kế: không hồ sơ/sổ/đồng bộ offline riêng. Trên phiếu xuất (DN), phiếu kho (SE), phiếu thu chi (PE) thêm phần thu gọn: số giấy theo điểm/quyển/tờ, thời điểm giao/thu thực tế, nơi giữ gốc và ảnh/PDF riêng tư tùy chọn. Nhập và ghi sổ native như thường, không bỏ kiểm tồn/giá/hạn mức/kỳ khóa hoặc tự đổi ngày hạch toán.
+
+Nguồn mới `paper_archive.py`: khóa duy nhất giấy theo Company/loại phiếu (cả nháp), giữ định danh sau ghi sổ, hủy giữ giấy và dùng Sửa đổi để nhập lại đúng lịch sử. Nháp sửa được trước ghi. Lưu ảnh sau và chuyển nơi giữ gốc không ghi kho/tiền/nợ lần hai; tệp đang là giấy nguồn không bị xóa/đổi thành công khai hoặc chuyển sang phiếu khác. Tái dùng cờ kho vận hành/người giữ tiền hiện có, schema qua bộ cài rõ ràng, vẫn28cờ; không DocType mới, không tự duyệt/giao/thu.
+
+Cục bộ525ca kh_aph (14 bỏ qua) đạt, có9ca ranh giới giấy mới. Bộ014 bổ sung HTTP_014_GIAY_TAY_NHAP_BO_SUNG, kỳ vọng128PASS: còn phải chạy native trên đúng mã mới, chưa tuyên bố đạt phần giấy tay. Bản b574457 trước mở rộng giấy đã đủ bốn cổng: UAT39631103596, Cổng239631068245, Cổng2b39632778370, Cổng339632783717 SUCCESS. Đã đọc Cổng3: schema1115/1115, rollback1105/1105 lệch0, dữ liệu và nhánh lỗi chủ động KHỚP; không suy kết quả này cho code giấy mới.
+
+PR38 vẫn nháp, production0.16.4 giữ nguyên, chưa tăng version/tag/triển khai. Tiếp theo đọc UAT128 đúng mã giấy mới, sửa lỗi thật rồi nối các phần còn thiếu: snapshot nợ/bộ giấy theo lượt, gom kho, giảm theo dòng/lượng và thao tác hoàn/chênh lệch gọn. Nghiệm thu người/hàng/máy in thật vẫn để cuối.
+
 ## 21/10/2026 — UAT kho/giao nhận đạt trên b574457; toàn phạm vi vẫn đang phát triển
 
 Đúng mã `b57445753daf9513a8448d24e92d926d1a9a4d9c`: [UAT39631103596](https://github.com/tienduongmarcom/aphvh/actions/runs/39631103596) SUCCESS. Đã tải và đọc artifact `candidate-image-evidence` id12360337173, đủ127PASS bộ014 và HTTP_UAT_RESTORE (khôi phục số bản ghi/series); các bộ kho/quỹ/giá vốn/giao hàng/hồi quy cũ của cùng lượt cũng đạt. Đã xem ảnh Chrome `kho-nha-xe-moi.png` và `kho-nhan-tra-kg.png`.
