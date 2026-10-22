@@ -1,5 +1,13 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — Mở phiếu hoàn đã có ngay từ phiếu nhận trả
+
+Bổ sung nút Mở phiếu hoàn tiền, tải lại phiếu nhận trả sau ghi để thấy liên kết nháp do hook chuẩn bị. API chỉ đọc DN/PE, kiểm quyền cả hai, cùng Company/khách, loại chi và chưa hủy; không lập/ghi tiền thêm. Chặn mọi lối form/API tự gán, xóa hoặc tráo ô chứng từ xử lý; các hook chuẩn bị nháp giữ đường ghi nội bộ hiện có. Sửa mô tả xử lý đổi hàng để đúng đơn hàng thay mã mới.
+
+Cục bộ529ca (14 bỏ qua) đạt, gồm kiểm quyền/nguồn/ô liên kết. Bộ014 kỳ vọng129PASS: thêm ca mở phiếu đã có/chặn tráo nguồn và mở bằng Chrome thật, giữ ảnh kho-phieu-hoan.png; CHƯA có kết quả native của phần mới. Lượt39702265051 mãe91d55d đang kiểm riêng giấy tay với128PASS kỳ vọng, không bao gồm nút hoàn và guard mới. Đặc tả bước kế tiếp snapshot nợ/bộ giấy theo lượt tại docs/dac-ta-doi-soat-theo-luot-20261022.md, chưa triển khai entity/API/PDF mới.
+
+Production0.16.4,28cờ và version/tag giữ nguyên; PR38 nháp. Bước tiếp đọc các lượt UAT đúng mã, sửa lỗi thật, tiếp tục snapshot/bộ giấy, gom kho và giảm theo dòng/lượng. Không coi127PASS củab574457 là bằng chứng cho các mở rộng sau đó.
+
 ## 22/10/2026 — Thu gọn giấy tay thành thông tin lưu trên phiếu nhập bổ sung
 
 Chủ dự án làm rõ giấy viết tay chỉ lưu để nhập bổ sung khi mất mạng. Đã thu hẹp thiết kế: không hồ sơ/sổ/đồng bộ offline riêng. Trên phiếu xuất (DN), phiếu kho (SE), phiếu thu chi (PE) thêm phần thu gọn: số giấy theo điểm/quyển/tờ, thời điểm giao/thu thực tế, nơi giữ gốc và ảnh/PDF riêng tư tùy chọn. Nhập và ghi sổ native như thường, không bỏ kiểm tồn/giá/hạn mức/kỳ khóa hoặc tự đổi ngày hạch toán.

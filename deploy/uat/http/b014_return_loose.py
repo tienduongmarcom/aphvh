@@ -109,6 +109,15 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert abs(get("Sales Invoice", original_invoice["name"], ktt)["outstanding_amount"]) < 1
     emit("HTTP_014_TRA_LE_THU_MOT_PHAN_HOAN_DUNG", "PASS", {"partial_refund": per_return - remaining_debt,
          "full_refund": per_return, "source_invoice_cleared": True, "no_second_credit_invoice": True})
+    opened_before = counts()
+    opened = rpc('kh_aph.sales_return.money_document', {'delivery_note': paid['name']}, ktt)
+    assert opened == {'doctype': 'Payment Entry', 'name': paid_refund['name'], 'docstatus': 1}
+    linked_return = get('Delivery Note', paid['name'], ktt)
+    denied(lambda: rpc('frappe.client.save', {'doc': json.dumps({**linked_return, 'kh_aph_chung_tu_xu_ly': ''})}, ktt))
+    denied(lambda: rpc('kh_aph.sales_return.money_document', {'delivery_note': unpaid['name']}, ktt))
+    assert counts() == opened_before
+    emit('HTTP_014_MO_PHIEU_HOAN', 'PASS', {'opens_existing_payment': True, 'source_link_protected': True,
+         'unpaid_no_refund_link': True, 'no_additional_posting': True})
 
     # Đổi mã khác: nhận lại lượng thực, rồi chọn mã mới trên đơn chuẩn, không sinh lại mã cũ.
     exchange = receive_return("Đổi hàng")
@@ -186,3 +195,4 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     assert abs(get("Sales Invoice", qinvoice["name"], ktt)["outstanding_amount"]) < 1
     emit("HTTP_014_TRA_SAU_GIAM_CHAT_LUONG", "PASS", {"old_quality_discount": 100000, "unpaid_no_refund": True,
          "full_physical_quantity": 25, "remaining_value_reviewed": True, "stale_discount_denied": True})
+    return {'refund_return': paid['name'], 'refund': paid_refund['name']}

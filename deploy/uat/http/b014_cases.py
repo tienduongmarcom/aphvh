@@ -324,12 +324,12 @@ def chay(admin, phien, f, emit, factory_feature):
 
     # Giữ các ca cũ độc lập với dữ liệu kho/đổi trả mới; mọi ca vẫn bắt buộc PASS.
     from b014_return_loose import chay as loose_return_cases
-    loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+    refund_evidence = loose_return_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
     from b014_simple_shipping import chay as simple_shipping_cases
     # Bảng Chốt ngày hiện dùng cờ này; bật đúng bộ cài của CI, không bỏ guard nghiệp vụ.
     factory_feature(True)
     try:
-        simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+        simple_shipping_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit, refund_evidence)
     finally:
         factory_feature(False)
     from b014_paper_archive import chay as paper_cases

@@ -548,3 +548,6 @@ for _dt in ("Delivery Note", "Payment Entry", "Stock Entry"):
         doc_events[_dt][_event] = _old + ["kh_aph.paper_archive.validate"]
 extend_doctype_class["File"].append("kh_aph.paper_archive.PaperFileMixin")
 doc_events["File"]["before_validate"].append("kh_aph.paper_archive.protect_file_update")
+
+for _event in ("validate", "before_update_after_submit", "before_cancel"):
+    doc_events["Delivery Note"].setdefault(_event, []).append("kh_aph.sales_p1.protect_processing_reference")

@@ -69,7 +69,13 @@ try {
         shot = await command('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync('kho-nhan-tra-kg.png',Buffer.from(shot.data,'base64'));
         await evaluate('cur_dialog.hide();true');
-        console.log(JSON.stringify({case:'NATIVE_DESK_KHO_GIAO_NHAN_GON',status:'PASS',detail:{new_carrier_typed:true,receipt_two_fields:true,return_kg_bags_separate:true,no_posting:true}}));
+        await command('Page.navigate', {url:base+'/desk/delivery-note/'+encodeURIComponent(payload.refund_return)});
+        await until('!!window.cur_frm && cur_frm.doc.name==='+JSON.stringify(payload.refund_return)+' && !!cur_frm.custom_buttons["Mở phiếu hoàn tiền"]');
+        await evaluate('cur_frm.custom_buttons["Mở phiếu hoàn tiền"].trigger("click");true');
+        await until('!!window.cur_frm && cur_frm.doctype==="Payment Entry" && cur_frm.doc.name==='+JSON.stringify(payload.refund));
+        shot = await command('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync('kho-phieu-hoan.png',Buffer.from(shot.data,'base64'));
+        console.log(JSON.stringify({case:'NATIVE_DESK_KHO_GIAO_NHAN_GON',status:'PASS',detail:{new_carrier_typed:true,receipt_two_fields:true,return_kg_bags_separate:true,opens_existing_refund:true,no_posting:true}}));
       } catch (error) {
         try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('kho-giao-nhan-loi.png',Buffer.from(shot.data,'base64'));} catch {}
         console.error('KHO_DESK_FAILURE:'+error.message+'; errors='+JSON.stringify(diagnostics.slice(-8)));

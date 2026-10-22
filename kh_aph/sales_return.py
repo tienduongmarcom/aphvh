@@ -201,6 +201,25 @@ def validate(doc, method=None):
             frappe.throw("Số bao nhận trả vượt số bao đã giao")
 
 
+@frappe.whitelist()
+def money_document(delivery_note):
+    """Mở phiếu hoàn đã được chuẩn bị; chỉ đọc, không lập hoặc chi tiền thêm."""
+    _guard()
+    doc = frappe.get_doc('Delivery Note', delivery_note)
+    doc.check_permission('read')
+    if doc.docstatus != 1 or not cint(doc.is_return) or not doc.get(REQUEST) or doc.get('kh_aph_xu_ly_tien') != 'Hoàn tiền':
+        frappe.throw('Chọn phiếu nhận trả đã ghi sổ và có xử lý hoàn tiền')
+    name = doc.get('kh_aph_chung_tu_xu_ly')
+    if not name:
+        frappe.throw('Chưa có phiếu hoàn tiền. Kiểm phần đã giảm nợ và số thực phải hoàn với kế toán')
+    payment = frappe.get_doc('Payment Entry', name)
+    payment.check_permission('read')
+    if (payment.company != doc.company or payment.party_type != 'Customer' or payment.party != doc.customer
+            or payment.payment_type != 'Pay' or payment.docstatus == 2):
+        frappe.throw('Chứng từ xử lý chưa khớp khoản hoàn; kế toán đối chiếu nguồn trước khi tiếp tục')
+    return {'doctype': 'Payment Entry', 'name': payment.name, 'docstatus': payment.docstatus}
+
+
 def validate_credit_limit(doc, original_invoice):
     """Gọi trước tạo SI giảm; cùng transaction với DN, không để giảm trùng sau chất lượng."""
     if not enabled() or not (doc.get(REQUEST) or any(cint(r.get(LOOSE)) for r in doc.items)):

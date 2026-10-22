@@ -32,7 +32,7 @@ FIELDS = {
          "description": "R025: Cách ly → hàng vào kho \"Hàng cách ly <địa điểm>\", không bán được."},
         {"fieldname": F_TIEN, "label": "Xử lý tiền", "fieldtype": "Select", "options": "\n" + "\n".join(B.XU_LY_TIEN),
          "insert_after": F_HANG, "depends_on": "eval:doc.is_return",
-         "description": "Bù trừ: hóa đơn giảm tự trừ công nợ. Hoàn tiền: phiếu chi nháp. Đổi hàng: phiếu giao nháp mới."},
+         "description": "Bù trừ: đối chiếu khoản nợ gốc. Hoàn tiền: kiểm phiếu chi nháp trước khi chi. Đổi hàng: nhận trả rồi chọn mã hàng thay."},
         {"fieldname": F_XU_LY, "label": "Chứng từ xử lý tiền / đổi hàng", "fieldtype": "Data", "insert_after": F_TIEN,
          "read_only": 1, "allow_on_submit": 1, "no_copy": 1}],
     "Sales Order": [
@@ -212,6 +212,14 @@ def sau_ghi_hoa_don_giam(doc, method=None):
 
 
 # ---------------------------------------------------------------- R026 giảm giá sau giao
+
+def protect_processing_reference(doc, method=None):
+    """Ô chứng từ xử lý chỉ do các hook chuẩn bị nháp ghi, không nhận dữ liệu tự gán."""
+    if not enabled():
+        return
+    old = doc.get_doc_before_save()
+    if (doc.get(F_XU_LY) or '') != ((old.get(F_XU_LY) if old else None) or ''):
+        frappe.throw('Không tự đổi chứng từ xử lý tiền / đổi hàng; mở phiếu đã được hệ thống liên kết')
 
 def _so_hieu_la(company):
     return set(frappe.get_all("Account", {"company": company, "is_group": 0, "account_number": ["is", "set"]},

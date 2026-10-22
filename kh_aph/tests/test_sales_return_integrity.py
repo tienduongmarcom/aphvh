@@ -66,3 +66,27 @@ class ReturnIntegrity(unittest.TestCase):
         self.f.db=Row(sql=Mock(side_effect=[[],[],[Row(credit_in_account_currency=100,debit_in_account_currency=0)]]))
         doc=self.doc();doc['grand_total']=-100
         with self.assertRaises(ValueError):self.api.validate_credit_limit(doc,'SI')
+
+    def money_docs(self, **payment_values):
+        note = Row(docstatus=1, is_return=1, company='CO', customer='KH', check_permission=Mock(),
+            kh_aph_ma_nhan_tra='REQUEST', kh_aph_xu_ly_tien='Hoàn tiền', kh_aph_chung_tu_xu_ly='PE')
+        payment = Row(name='PE', company='CO', party_type='Customer', party='KH', payment_type='Pay', docstatus=0,
+                      check_permission=Mock())
+        payment.update(payment_values)
+        self.f.get_doc = Mock(side_effect=[note, payment])
+        return note, payment
+
+    def test_open_refund_is_read_only_and_checks_both_documents(self):
+        note, payment = self.money_docs()
+        self.assertEqual(self.api.money_document('DN-TRA'), {'doctype': 'Payment Entry', 'name': 'PE', 'docstatus': 0})
+        note.check_permission.assert_called_once_with('read'); payment.check_permission.assert_called_once_with('read')
+
+    def test_open_refund_rejects_wrong_company_customer_direction_or_cancelled_payment(self):
+        for change in ({'company': 'CO2'}, {'party': 'KH2'}, {'payment_type': 'Receive'}, {'docstatus': 2}):
+            self.money_docs(**change)
+            with self.subTest(change=change), self.assertRaises(ValueError): self.api.money_document('DN-TRA')
+
+    def test_open_refund_cannot_bypass_payment_read_permission(self):
+        _, payment = self.money_docs()
+        payment.check_permission.side_effect = PermissionError('Không đọc được phiếu tiền')
+        with self.assertRaises(PermissionError): self.api.money_document('DN-TRA')

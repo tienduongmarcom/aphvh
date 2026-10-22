@@ -91,3 +91,11 @@ class ReturnRefundBoundary(unittest.TestCase):
         doc.set=lambda key,value:doc.__setitem__(key,value)
         self.api.protect_quality_source(doc)
         self.assertEqual(doc.get(self.api.F_JE_HD),'SI-GOC')
+
+    def test_processing_reference_cannot_be_injected_or_replaced(self):
+        for old, new in [(None, 'PE-GIA'), ('PE-GOC', ''), ('PE-GOC', 'PE-KHAC')]:
+            with self.subTest(old=old, new=new), self.assertRaises(ValueError):
+                self.api.protect_processing_reference(Row(**{self.api.F_XU_LY: new,
+                    'get_doc_before_save': lambda: Row(**{self.api.F_XU_LY: old}) if old else None}))
+        self.api.protect_processing_reference(Row(**{self.api.F_XU_LY: 'PE-GOC',
+            'get_doc_before_save': lambda: Row(**{self.api.F_XU_LY: 'PE-GOC'})}))

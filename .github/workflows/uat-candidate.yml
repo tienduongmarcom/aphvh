@@ -172,7 +172,7 @@ jobs:
           docker exec uat-redis redis-cli -p 16379 FLUSHDB
           curl --retry 20 --retry-connrefused --retry-delay 1 --fail -H 'Host: aphvh-web-uat' http://127.0.0.1:18091/api/method/ping
           sudo env HOME="$HOME" GITHUB_ACTIONS="$GITHUB_ACTIONS" python3 deploy/uat/http/b014.py | tee http-b014-evidence.txt
-          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 128
+          test "$(grep -c '"status": "PASS"' http-b014-evidence.txt)" = 129
           if grep -q '"status": "FAIL"' http-b014-evidence.txt; then echo "Có ca FAIL trong http-b014-evidence.txt"; exit 1; fi
       - name: Render four-company quantity slip to PDF
         run: |
@@ -214,6 +214,7 @@ jobs:
             base-versions-evidence.txt
             kho-nha-xe-moi.png
             kho-nhan-tra-kg.png
+            kho-phieu-hoan.png
             kho-giao-nhan-loi.png
             ban-nhanh-dialog.png
             in-lai-a5.png

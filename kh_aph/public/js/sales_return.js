@@ -1,5 +1,21 @@
 // Nhận trả theo phiếu gốc: dữ liệu nhập gọn, controller native vẫn sở hữu kho/nợ/tiền.
 frappe.provide("kh_aph.returns");
+frappe.ui.form.on("Delivery Note", {
+    refresh(frm) {
+        if (!frappe.boot?.kh_aph?.sales_p1 || !frappe.boot?.kh_aph?.sales_adjust || frm.doc.docstatus !== 1 ||
+            !frm.doc.is_return || !frm.doc.kh_aph_ma_nhan_tra || frm.doc.kh_aph_xu_ly_tien !== "Hoàn tiền" ||
+            !frm.doc.kh_aph_chung_tu_xu_ly) return;
+        frm.add_custom_button("Mở phiếu hoàn tiền", async () => {
+            const result = await frappe.call({method: "kh_aph.sales_return.money_document",
+                args: {delivery_note: frm.doc.name}, freeze: true});
+            frappe.set_route("Form", result.message.doctype, result.message.name);
+        }, "Đổi / Trả");
+    },
+    on_submit(frm) {
+        if (frappe.boot?.kh_aph?.sales_p1 && frm.doc.is_return && frm.doc.kh_aph_ma_nhan_tra &&
+            frm.doc.kh_aph_xu_ly_tien === "Hoàn tiền") frm.reload_doc();
+    },
+});
 kh_aph.returns.open = async function(name) {
     const result = await frappe.call({method: "kh_aph.sales_return.preview", args: {delivery_note: name}, freeze: true});
     const source = result.message, rows = source.rows.filter(r => r.remaining_qty > 0);

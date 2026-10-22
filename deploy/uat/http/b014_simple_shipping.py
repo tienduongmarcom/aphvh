@@ -3,7 +3,7 @@ import json
 import uuid
 
 
-def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
+def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit, refund_evidence):
     def order():
         root = submit(insert({"doctype": "APH Shared Sales Order", "customer": f["kh2"], "transaction_date": f["date"],
             "delivery_date": f["date"], "selling_price_list": f["pl"], "currency": "VND",
@@ -87,7 +87,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
         browser_made = rpc("kh_aph.ban_nhanh.create_and_dispatch", {**browser_order, "delivery": json.dumps(info)}, ktt)
         browser_before = counts()
         result = subprocess.run(["node", "--experimental-websocket", str(Path(__file__).with_name("ban-nhanh-desk.mjs")),
-            json.dumps({"order": fresh["shared_order"], "delivery": browser_made["delivery_notes"][0]["name"]}), "kho-giao-nhan"],
+            json.dumps({"order": fresh["shared_order"], "delivery": browser_made["delivery_notes"][0]["name"], **refund_evidence}), "kho-giao-nhan"],
             text=True, capture_output=True, timeout=180)
         assert result.returncode == 0, (result.stdout[-2000:], result.stderr[-2500:])
         evidence = json.loads(next(x for x in result.stdout.splitlines() if x.startswith('{"case":')))
