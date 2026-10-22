@@ -1,6 +1,8 @@
 """Đối soát theo lượt lưu bộ PDF; thử phạm vi, bản ký và ảnh hưởng sổ bằng HTTP thật."""
 import hashlib
 import json
+import os
+import subprocess
 from pathlib import Path
 import uuid
 from urllib.error import HTTPError
@@ -54,6 +56,18 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     pdf=ktt.binary_get(created['file_url'])
     assert pdf.startswith(b'%PDF') and len(pdf)>1000
     Path('doi-soat-bo-giay.pdf').write_bytes(pdf)
+    # Đọc bằng đúng thư viện trong image, không cài thêm lên runner.
+    assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Chỉ đọc PDF trên container UAT dùng một lần'
+    probe=subprocess.run(['docker','exec','-i','aphvh-p0-web-uat','/home/frappe/frappe-bench/env/bin/python','-c',
+        'import sys,json; from io import BytesIO; from pypdf import PdfReader; '
+        'r=PdfReader(BytesIO(sys.stdin.buffer.read())); '
+        'print(json.dumps([{"width":float(p.mediabox.width),"height":float(p.mediabox.height),"text":p.extract_text()} for p in r.pages]))'],
+        input=pdf,capture_output=True,check=True,timeout=30)
+    pages=json.loads(probe.stdout)
+    assert len(pages)==4, 'Bộ một dòng phải gồm đối soát A4, hai liên A5 và thu A4; không tách riêng phần ký'
+    for page in pages[1:3]:
+        assert abs(page['width']-595)<2 and abs(page['height']-420)<2, page
+        assert dn['name'] in page['text'] and 'Người nhận hàng' in page['text'] and 'Thủ kho' in page['text'], page
     digest=hashlib.sha256(pdf).hexdigest()
     assert rpc('kh_aph.debt_statement.create',args,ktt)['name']==statement['name']
     assert len(lst(dt,{'request_id':args['request_id']},['name'],ktt))==1

@@ -1,5 +1,13 @@
 # Bàn giao — trạng thái mới nhất
 
+## 22/10/2026 — UAT135 xanh nhưng QA phát hiện phần ký A5 tràn trang
+
+Đã tải/đọc candidate-image-evidence UAT39766960041 đúng98c37e39ad2fb3ee032ea0ac4a40b153c581a258: bộ014135PASS gồm RESTORE; inventory33, funds20, cost16, dispatch48, b0111=15, b0112=13, b0113=13, b0114=8, b012=9, b013=10, native16511=4 đềuPASS. Các ca mới gom kho chuẩn bị/in→xuất→nhận, hồ sơ khách ký riêng, lịch sử ảnh, đối soát bất biến/quyền và ngoại tệ đã nativePASS. Chrome kế toán thật mất phản hồi sau200/bấm lại chỉ một biên bảnPASS. Chưa suy sang thay đổi Chốt ngày sau đó.
+
+QA PDF phát hiện lỗi ngoài assertion cũ: bộ doi-soat-bo-giay.pdf có6trang, mỗi liên A5 bị tách bảng hàng/ô ký. Đã xem trang2/3 xác nhận. Nguồn Frappe16.52.0 prepare_header_footer đặt lại lề trên/dưới15mm khi không có header/footer, đè options6mm; HTML chưa có .print-format để read_options_from_html lấy lại lề. Đã thêm selector chính thức với6/7mm/A5Landscape, giữ chữ9pt và ô ký20mm; thời điểm in bỏ microsecond. Thêm assertion native bộ một dòng phải đúng4trang với2A5 có cả mã/ô ký, không nới để chấp nhận6trang. Chưa có kết quả native của bản sửa PDF. Lượt39766960041 vẫn xanh nghiệp vụ nhưng KHÔNG coi bố cục mẫu in đạt.
+
+PR38 vẫn nháp, production0.16.4 giữ nguyên. Cần chạy lại UAT trên mã sửa, xem đủ PDF và ảnh; các phần còn thiếu trong bảng đối chiếu tiếp tục mở.
+
 ## 22/10/2026 — Tách Chốt ngày cửa hàng khỏi cầu nối Nhà máy
 
 Chốt ngày dùng cờ chốt ca + bàn giao + người giữ tiền hiện có; giữ C.guard(manager=True), quyền Company và quyền nguồn, không cần bật quỹ/cầu nối Nhà máy. Mục chuyển tiếp nhà máy chỉ đọc khi cờ đó bật. Bộ cài schema chốt ca nạp báo cáo; lối tắt Thu chi và công nợ dùng các cờ cửa hàng. Không thêm cờ, quyền hoặc sổ. Cục bộ570ca không bỏ qua đạt; thêm2ca đơn vị và mở rộng ca native hiện có: tắt cầu nối nhà máy vẫn xem sao kê/Chốt ngày, nhân sự hạn chế vẫn bị chặn. Chưa có kết quả native của thay đổi này.
