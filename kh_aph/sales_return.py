@@ -193,6 +193,9 @@ def validate(doc, method=None):
         source, used = original[key], reserved.get(key) or {}
         if r.item_code != source.item_code or r.uom != source.uom or flt(r.conversion_factor) != flt(source.conversion_factor):
             frappe.throw("Mã hàng và đơn vị trả phải khớp dòng giao gốc")
+        if any((r.get(field) or '') != (source.get(field) or '')
+               for field in ('against_sales_order', 'so_detail', 'against_sales_invoice')):
+            frappe.throw("Liên kết đơn và hóa đơn của dòng trả phải giữ đúng dòng giao gốc")
         if flt(r.net_rate) < 0 or flt(r.net_rate) > flt(source.net_rate) + 0.000001:
             frappe.throw("Giá trả thuần không được vượt giá trên đúng dòng giao gốc")
         if flt(r.qty) >= 0 or abs(flt(r.qty)) + flt(used.get("qty")) > flt(source.qty) + 0.000001:

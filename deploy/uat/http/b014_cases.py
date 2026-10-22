@@ -339,3 +339,6 @@ def chay(admin, phien, f, emit, factory_feature):
 
     from b014_factory_transfer import chay_chuan_bi
     chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit)
+
+    from b014_customer_proof import chay as customer_proof_cases
+    customer_proof_cases(rpc, get, insert, submit, lst, denied, ktt, f, emit)

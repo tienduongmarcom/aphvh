@@ -1,5 +1,13 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Giấy tay native đạt; đang sửa PDF và kiểm hồ sơ khách ký riêng
+
+UAT39711917331 đúngedb3c67 FAIL tại lần tạo PDF đối soát đầu tiên (OSError), không phải ca giấy. Đã tải/đọc artifact /tmp/uat-kho-39711917331: HTTP_014_GIAY_TAY_NHAP_BO_SUNG PASS đủ nháp không ghi sổ, khóa trùng, tệp riêng, thời điểm thực tế, hủy/amend kế thừa và gắn giấy vào DN/PE đã ghi không ghi lại sổ. Bộ014 có129PASS kể cả restore, các bộ hồi quy khác cùng lượt không cóFAIL. Chưa coi snapshot/PDF đạt. Host trình duyệt UAT là aphvh-web-uat, chưa có DNS/port phục vụ PDF trong container; đã cấu hình host_name riêng CI thành http://aphvh-p0-web-uat:8000, thêm phép thử PDF native ngay bước chuẩn bị và giữ traceback HTTP để xác định nếu còn lỗi. Chưa có lượt xác nhận sửa PDF.
+
+Đã viết hồ sơ khách ký tại đích trên DN, độc lập bản giao nhà xe; chỉ hiện/cho nhập khi phiếu mới gửi vận chuyển và yêu cầuCó. Giấy gốc trước ảnh được, giữ người/thời điểm/vị trí; nhận hồ sơ khi đang giao dùng chính dấu Khách đã nhận hiện có trong cùng transaction, không ghi kho/nợ/tiền thêm. Người nhập kiểm và lưu cùng thao tác, không cấp duyệt mới. Bản khách ký vào lịch sử/tệp riêng tư và Chốt ngày, không thêm màn hình chính/cờ. Thêm ca native HTTP_014_KHACH_KY_TAI_DICH, bộ014 kỳ vọng134PASS; chưa có kết quả native của phần này hoặc phần chuẩn bị chuyển kho/lịch sử sau1725d3b.
+
+Bổ sung giữ đúng các link đơn/hóa đơn mà mapper trả hàng16.51.1 chép, chặn tráo nguồn; không áp si_detail vì native mapper không chép trường no_copy đó. Mẫu chuyển kho escape tên xe/ghi chú/kho cuối, kiểm ô thực giao trống khi nháp và tái sinh8JSON mốc09:10. Cục bộ561ca không bỏ qua đạt; JS/Python/diff đạt. PR38 nháp, production/tag0.16.4 và28cờ giữ nguyên. Còn phân bổ giảm theo dòng/lượng, trả một phần sau giảm và nối nhu cầu gom kho trực tiếp từ đơn; không tuyên bố hoàn tất toàn phạm vi.
+
 ## 22/10/2026 — Giữ phiên bản ảnh ký cũ và dấu đối chiếu trước khi thay
 
 Hồ sơ DN có lịch sử JSON do server ghi trên chính phiếu, không sổ nhiệm vụ/DocType mới. Mỗi lần chọn/gỡ/thay tệp, ghi chú, đối chiếu hoặc nhận gốc giữ trước/sau, user/time; tệp cũ vẫn riêng tư và không bị xóa/công khai/đổi nguồn, kể cả phiếu hủy. Chặn sửa lịch sử bằng form/API và xóa phiếu đã có bằng chứng/gốc. Mục Hồ sơ giao nhận có Lịch sử bản ký để mở các tệp cũ; thay ảnh vẫn bỏ dấu đối chiếu hiện tại để kiểm lại. Đã nối các ô giấy gốc vào đúng cụm hồ sơ.

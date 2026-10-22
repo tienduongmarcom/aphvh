@@ -201,7 +201,7 @@ except Exception as exc:
         for secret in (factory_password,token_secret,state.get('admin_password','')):
             if secret:body=body.replace(secret,'[REDACTED]')
         try:
-            data=json.loads(body);detail['http_error']={k:data.get(k) for k in ('exc_type','exception','_server_messages')}
+            data=json.loads(body);detail['http_error']={k:data.get(k) for k in ('exc_type','exception','exc','_server_messages')}
         except ValueError:detail['http_error']=body[:1000]
     import traceback
     detail["trace"]=traceback.format_exc()[-6000:]

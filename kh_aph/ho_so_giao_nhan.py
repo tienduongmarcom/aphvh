@@ -20,6 +20,7 @@ def enabled():
 
 
 def fields():
+    from kh_aph.customer_delivery_proof import fields as customer_fields
     condition = "eval:doc.docstatus==1 && !doc.is_return"
     return [
         {"fieldname": "kh_aph_ho_so_giao_nhan", "label": "Hồ sơ giao nhận", "fieldtype": "HTML", "options": "<strong>Hồ sơ giao nhận</strong>",
@@ -43,11 +44,11 @@ def fields():
          "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
         {"insert_after": ORIGINAL_AT, "fieldname": ORIGINAL_LOCATION, "label": "Vị trí lưu giấy gốc", "fieldtype": "Data",
          "allow_on_submit": 1, "read_only": 1, "no_copy": 1, "depends_on": condition},
-    ]
+    ] + customer_fields()
 
 
-def _file(doc):
-    url = doc.get(FILE)
+def _file(doc, field=FILE):
+    url = doc.get(field)
     if not url:
         frappe.throw("Cần tải bản phiếu đã ký trước khi đối chiếu")
     # URL công khai, URL ngoài hoặc tệp của phiếu khác không phải hồ sơ hợp lệ.
@@ -78,13 +79,16 @@ def validate(doc, method=None):
         # Thay tệp hoặc ghi chú làm mất xác nhận trước, không giữ dấu đối chiếu cũ.
         doc.set(ACTOR, None)
         doc.set(TIME, None)
+    from kh_aph.customer_delivery_proof import validate as validate_customer
+    validate_customer(doc, old)
     _record_history(doc, old)
 
 
 def _record_history(doc, old):
     if not doc.meta.has_field(HISTORY):
         return
-    keys = (FILE, NOTE, ACTOR, TIME, *ORIGINAL_FIELDS)
+    from kh_aph.customer_delivery_proof import KEYS, FILE as CUSTOMER_FILE
+    keys = (FILE, NOTE, ACTOR, TIME, *ORIGINAL_FIELDS, *KEYS)
     def state(source):
         return {key: str((source.get(key) if source else None) or '') for key in keys}
     before, after = state(old), state(doc)
@@ -95,7 +99,7 @@ def _record_history(doc, old):
     if not isinstance(history, dict) or set(history) != {'files', 'events'}:
         frappe.throw('Lịch sử bản ký cần quản trị kiểm tra, không tự ghi đè')
     files = history['files']
-    for value in (before[FILE], after[FILE]):
+    for value in (before[FILE], after[FILE], before[CUSTOMER_FILE], after[CUSTOMER_FILE]):
         if value and value not in files:
             files.append(value)
     history['events'].append({'by': frappe.session.user, 'at': str(now_datetime()), 'before': before, 'after': after})
@@ -104,7 +108,10 @@ def _record_history(doc, old):
 
 def _file_in_use(url):
     # Giữ cả bản trên phiếu đã hủy và phiên bản đã thay; không xóa blob rồi trông vào rollback DB.
+    from kh_aph.customer_delivery_proof import FILE as CUSTOMER_FILE
     if frappe.db.exists('Delivery Note', {FILE: url}):
+        return True
+    if frappe.get_meta('Delivery Note').has_field(CUSTOMER_FILE) and frappe.db.exists('Delivery Note', {CUSTOMER_FILE: url}):
         return True
     if not frappe.get_meta('Delivery Note').has_field(HISTORY):
         return False

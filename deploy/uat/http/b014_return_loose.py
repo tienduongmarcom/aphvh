@@ -42,6 +42,11 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     denied(lambda: rpc("kh_aph.sales_return.create_draft", {**payload, "request_id": uuid.uuid4().hex,
         "selections": json.dumps([{"source_row": row["source_row"], "qty": 21, "bags": 0}])}, ktt))
     assert rpc("kh_aph.sales_return.preview", {"delivery_note": dn["name"]}, ktt)["rows"][0]["remaining_qty"] == 20
+    moved = json.loads(json.dumps(draft))
+    assert moved['items'][0].get('against_sales_order') and moved['items'][0].get('so_detail')
+    moved['items'][0]['against_sales_order'] = None
+    moved['items'][0]['so_detail'] = None
+    denied(lambda: rpc('frappe.client.save', {'doc': json.dumps(moved)}, ktt))
     posted = submit(draft, ktt)
     wh = posted["items"][0]["warehouse"]
     assert get("Warehouse", wh, ktt)["kh_aph_loai_kho"] == "Cách ly"

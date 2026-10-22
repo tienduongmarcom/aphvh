@@ -40,7 +40,10 @@
                             ${link(a.kh_aph_ban_ky)} → ${link(b.kh_aph_ban_ky)}<br>
                             Ghi chú: ${e(a.kh_aph_ghi_chu_ban_ky || "")} → ${e(b.kh_aph_ghi_chu_ban_ky || "")}<br>
                             Đối chiếu: ${e(a.kh_aph_doi_chieu_boi || "Chưa đối chiếu")} → ${e(b.kh_aph_doi_chieu_boi || "Chưa đối chiếu")}<br>
-                            Giấy gốc: ${e(a.kh_aph_vi_tri_goc || "Chưa nhận")} → ${e(b.kh_aph_vi_tri_goc || "Chưa nhận")}</td></tr>`;
+                            Giấy gốc tại kho: ${e(a.kh_aph_vi_tri_goc || "Chưa nhận")} → ${e(b.kh_aph_vi_tri_goc || "Chưa nhận")}<br>
+                            Bản khách ký tại đích: ${link(a.kh_aph_ban_ky_khach)} → ${link(b.kh_aph_ban_ky_khach)}<br>
+                            Kiểm bản khách ký: ${e(a.kh_aph_kiem_ky_khach_boi || "Chưa kiểm")} → ${e(b.kh_aph_kiem_ky_khach_boi || "Chưa kiểm")}<br>
+                            Gốc khách ký: ${e(a.kh_aph_vi_tri_goc_khach || "Chưa nhận")} → ${e(b.kh_aph_vi_tri_goc_khach || "Chưa nhận")}</td></tr>`;
                     }).join("");
                     const dialog = new frappe.ui.Dialog({title: "Lịch sử bản ký", size: "extra-large", fields: [
                         {fieldtype: "HTML", options: `<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Thời điểm</th><th>Người thao tác</th><th>Trước → Sau</th></tr></thead><tbody>${rows}</tbody></table></div>`}
@@ -49,6 +52,31 @@
                 }, "Hồ sơ giao nhận");
             }
 			if (!bat() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
+            const needsCustomerProof = frm.doc.kh_aph_mau_giao_nhan === 1 && frm.doc.kh_aph_cach_giao === "Vận chuyển"
+                && frm.doc.kh_aph_can_ky_khach === "Có";
+            if (needsCustomerProof && frm.perm.some(p => p.write)) {
+                frm.add_custom_button("Nhận hồ sơ khách ký", () => {
+                    if (frm.is_dirty()) return frappe.msgprint("Lưu phiếu và tệp đã tải trước khi nhận hồ sơ khách ký.");
+                    const inTransit = frm.doc.kh_aph_delivery_state !== "Khách đã nhận";
+                    const dialog = new frappe.ui.Dialog({title: "Nhận hồ sơ khách ký tại đích", fields: [
+                        {fieldtype: "HTML", options: "<p>Kiểm bản khách ký riêng với bản giao nhà xe. Có thể nhận giấy gốc trước, tải ảnh sau; thao tác này không ghi thêm kho hoặc tiền.</p>"},
+                        {fieldname: "location", label: "Vị trí tập giấy gốc tại kế toán", fieldtype: "Data",
+                            default: frm.doc.kh_aph_vi_tri_goc_khach,
+                            reqd: !frm.doc.kh_aph_ban_ky_khach && !frm.doc.kh_aph_nhan_goc_khach_boi},
+                        {fieldname: "received_on", label: "Ngày khách đã nhận hàng", fieldtype: "Date", hidden: !inTransit,
+                            reqd: inTransit, default: frappe.datetime.get_today()}
+                    ], primary_action_label: "Xác nhận đã kiểm hồ sơ", async primary_action(v) {
+                        dialog.disable_primary_action();
+                        try {
+                            await frappe.call({method: "kh_aph.customer_delivery_proof.receive", args: {
+                                name: frm.doc.name, modified: frm.doc.modified, location: v.location || "",
+                                received_on: inTransit ? v.received_on : null}, freeze: true});
+                            dialog.hide(); await frm.reload_doc();
+                        } finally {dialog.enable_primary_action();}
+                    }});
+                    dialog.show();
+                }, "Hồ sơ giao nhận");
+            }
             if (!frm.doc.kh_aph_nhan_goc_boi && frm.perm.some(p => p.write)) {
                 frm.add_custom_button("Nhận giấy gốc", () => {
                     if (frm.is_dirty()) return frappe.msgprint("Lưu phiếu trước khi nhận giấy gốc.");

@@ -167,6 +167,25 @@ class TestBienBan0111(unittest.TestCase):
     """0.11.1 (cờ kh_aph_sales_adjust bật): mặc định không giá, cột thực nhận, số lượng bao + kg."""
 
     @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_prepared_transfer_prints_requested_quantity_and_escapes_carrier_note(self):
+        html = (ROOT / "phieu_kho" / "phieu_kho.html").read_text(encoding="utf-8")
+        row = Row(item_code="A", item_name="Hàng A", uom="Kg", qty=3, valuation_rate=20000, amount=60000,
+                  s_warehouse="Vệ tinh - APH", t_warehouse="Transit - APH")
+        doc = Row(doctype="Stock Entry", name="CHUAN-BI", company="APH", posting_date="2026-10-22",
+                  docstatus=0, purpose="Material Transfer", stock_entry_type="Material Transfer", owner="kt", items=[row],
+                  kh_aph_transfer_receiver="Xe <script>", kh_aph_transfer_note="Ghi chú <img src=x>",
+                  kh_aph_transfer_destination="Cửa hàng - APH")
+        draft = _env(True).from_string(html).render(doc=doc)
+        self.assertIn("CHƯA GHI SỔ", draft)
+        self.assertIn("Kho nhận cuối dự kiến: Cửa hàng", draft)
+        self.assertIn("Xe &lt;script&gt;", draft)
+        self.assertIn("Ghi chú &lt;img src=x&gt;", draft)
+        self.assertIn('<td class="r">3</td>\n      <td class="r"></td>', draft)
+        doc.docstatus = 1
+        posted = _env(True).from_string(html).render(doc=doc)
+        self.assertIn('<td class="r">3</td>\n      <td class="r">3</td>', posted)
+
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
     def test_khong_gia_thuc_nhan_bao(self):
         from kh_aph.sales_adjust_rules import hien_thi_sl
         html = (ROOT / "bien_ban_giao_nhan" / "bien_ban_giao_nhan.html").read_text(encoding="utf-8")

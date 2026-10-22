@@ -24,7 +24,7 @@
 | Chuẩn bị giao, in | Kế toán bán hàng theo quyền native | Đơn bán chung → Lập phiếu xuất & In | Dùng DN nháp hiện có; chưa có lịch sử PDF bất biến theo mỗi lần chuẩn bị |
 | Xác nhận giao | Người có quyền xác nhận DN | Kiểm lượng/người thực giao → Khách đến lấy hoặc Bàn giao vận chuyển | Kho vệ tinh không cần tài khoản; người nhập vẫn chịu trách nhiệm nội dung |
 | Xe khách đến lấy | Đầu mối cửa hàng | Chọn cách giao, người nhận và căn cứ khách chỉ định | Tính khách đã nhận tại kho; căn cứ này không cấp quyền ký nợ |
-| Ship | Đầu mối cửa hàng | Chọn/nhập tên và SĐT nhà xe; sau đó ghi nguồn báo và ngày nhận cuối | Không bắt khách chờ tải ảnh; bằng chứng khách cuối khi có yêu cầu riêng chưa có bộ kiểm soát hoàn chỉnh |
+| Ship | Đầu mối cửa hàng | Chọn/nhập tên và SĐT nhà xe; sau đó ghi nguồn báo và ngày nhận cuối | Không bắt khách chờ tải ảnh; đã viết hồ sơ khách ký riêng khi yêu cầuCó, gốc/ảnh và Chốt ngày, chờ UAT134 đúng mã mới |
 | Nhận trả | Người có quyền lập/xác nhận DN | Phiếu gốc hoặc Khách hàng → Nhận hàng trả lại → kiểm phiếu nháp → xác nhận | Nhập kg và bao riêng; chọn cách ly/bán lại được; chọn kho khác còn qua form chuẩn |
 | Đổi mã | Người có quyền lập đơn | Phiếu nhận trả đã ghi → Lập đơn hàng thay → chọn mã/lượng/giá trên form đơn chuẩn | Một đơn thay còn hiệu lực; chưa có màn tính và thu/hoàn chênh lệch trong một thao tác |
 | Hoàn tiền | Kế toán theo quyền tiền | Đối trừ khoản gốc bằng dịch vụ native, kiểm phiếu chi nháp rồi xác nhận thực chi | Thiếu quyền đối trừ thì giữ credit và chuyển kế toán xử lý; đã có nút Mở phiếu hoàn tiền (HTTP/ChromePASS trênc4b93fa); chưa nối hoàn/chênh lệch một lượt đầy đủ |
@@ -40,7 +40,7 @@
 | Thu một phần/đủ | Native giữ credit riêng khi cần; đối trừ đúng nguồn rồi chuẩn bị hoàn phần dư | Chưa có tổng quan thu/hoàn/chênh lệch trước khi bấm xác nhận trong một cửa sổ |
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
 | Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
-| Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | Cần nativePASS đủ ca hủy/amend, chặn sửa nguồn và gắn vào DN/PE; không xây sổ offline hoặc workflow riêng theo chỉ đạo22/10 |
+| Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | Đã nativePASS HTTP_014_GIAY_TAY_NHAP_BO_SUNG trênedb3c67/UAT39711917331, toàn lượt FAIL ở PDF đối soát sau đó; không xây sổ offline/workflow riêng |
 | Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Đã viết chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit; chờ UAT133 đúng mã mới. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
 
 ## 5. Dữ liệu và trạng thái

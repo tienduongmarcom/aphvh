@@ -43,6 +43,16 @@ class ReturnIntegrity(unittest.TestCase):
         with self.assertRaises(ValueError):self.api.validate(self.doc(50))
         self.api.validate(self.doc(20));self.api.validate(self.doc(10))
 
+    def test_cannot_move_return_to_another_order_or_invoice_line(self):
+        self.cheap.update(against_sales_order='SO-GOC', so_detail='SO-DONG-GOC',
+                          against_sales_invoice='SI-GOC', si_detail='SI-DONG-GOC')
+        original = {key: self.cheap[key] for key in ('against_sales_order', 'so_detail', 'against_sales_invoice')}
+        doc = self.doc(); doc['items'][0].update(original)
+        self.api.validate(doc)
+        for field in original:
+            bad = self.doc(); bad['items'][0].update(original); bad['items'][0][field] = 'KHAC'
+            with self.subTest(field=field), self.assertRaises(ValueError): self.api.validate(bad)
+
     def test_request_and_signature_cannot_be_cleared_or_replaced(self):
         for key,value in [(self.api.REQUEST,None),(self.api.REQUEST,'KHAC'),(self.api.SIGNATURE,'KHAC')]:
             with self.subTest(field=key),self.assertRaises(ValueError):
