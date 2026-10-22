@@ -41,7 +41,10 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     old = get('Stock Entry', posted['name'], ktt)
     assert old['docstatus'] == 2 and not old.get('kh_aph_khoa_giay_tay') and old[file] == proof['file_url']
     denied(lambda: insert(payload, ktt))
-    amended = {**payload, 'amended_from': old['name']}
+    # Như Sửa đổi native: các ô no_copy không lấy từ bản payload đã cũ;
+    # controller kế thừa giấy/vị trí hiện tại từ phiếu đã hủy.
+    amended = {key: value for key, value in payload.items() if key not in paper}
+    amended['amended_from'] = old['name']
     amended = insert(amended, ktt)
     assert amended['amended_from'] == old['name'] and amended[number] == old[number] and amended[file] == old[file]
     assert amended.get('kh_aph_khoa_giay_tay')

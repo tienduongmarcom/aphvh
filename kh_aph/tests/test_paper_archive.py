@@ -80,6 +80,18 @@ class PaperArchive(unittest.TestCase):
         self.f.db.exists.return_value = True
         with self.assertRaises(ValueError): self.api.validate(self.doc())
 
+    def test_amendment_inherits_current_source_when_no_copy_fields_are_empty(self):
+        original = self.doc(docstatus=2); self.api.validate(original)
+        original['check_permission'] = Mock()
+        original[self.api.LOCATION] = 'Tập kế toán cửa hàng'
+        self.f.get_doc.side_effect = lambda dt, name: original if dt == 'Delivery Note' else Row(check_permission=Mock())
+        doc = self.doc(amended_from='DN-CU', **{self.api.FLAG: 0, self.api.NUMBER: None,
+            self.api.ACTUAL: None, self.api.LOCATION: None})
+        self.api.validate(doc)
+        self.assertEqual(doc[self.api.NUMBER], original[self.api.NUMBER])
+        self.assertEqual(doc[self.api.LOCATION], original[self.api.LOCATION])
+        self.assertTrue(doc[self.api.KEY])
+
     def test_public_or_unrelated_file_is_rejected(self):
         for value in ['/files/paper.pdf', 'https://example.invalid/paper.pdf', '/private/files/other.pdf']:
             with self.subTest(url=value), self.assertRaises(ValueError): self.api.validate(self.doc(**{self.api.FILE: value}))

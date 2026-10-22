@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Sửa dữ liệu kiểm sửa đổi giấy tay, giữ nguyên chặn đổi nguồn
+
+UAT39708719665 đúng7efd4b1 dừng ở ca sửa đổi giấy tay: kịch bản gửi lại số giấy/vị trí cũ sau khi giấy gốc đã chuyển về cửa hàng. Guard từ chối đúng việc đổi nguồn. Đã sửa fixture để mô phỏng các ô no_copy trống của thao tác Sửa đổi native, kế thừa đúng số và vị trí hiện tại; thêm ca đơn vị kiểm kế thừa. Không nới kiểm của sản phẩm. Cục bộ546ca đạt, không bỏ qua. Cổng239708673680 và Cổng339708723517 đúng7efd4b1 SUCCESS; chưa suy cho mã sửa kiểm kế tiếp. Cần chạy lại UAT132; snapshot/PDF mới chưa có bằng chứng native. PR38 nháp, production0.16.4 không đổi.
+
 ## 22/10/2026 — ĐANG KIỂM bản đối soát theo lượt và bộ PDF đã cấp
 
 Đã viết entity bằng chứng `Bien ban doi soat no` (Biên bản đối soát theo lượt), không thêm màn hình chính hay sổ tài chính. Từ DN/PE/Khách chọn chứng từ đã ghi: chụp nợ theo Company, tăng/giảm của lượt và khoản khác tại cùng mốc; tách phải thu/dư có, cọc và tiền chưa phân bổ, không tự cấn chéo. Bản Customer theo ngày cũ cũng đã giới hạn Company/Customer/vai trò và ghi rõ phạm vi. Snapshot dùng cờ quản trị hiện có, yêu cầu cơ chế khóa sổ tiền đang bật để chụp đồng thời; cả hai đã có trong28cờ, không cờ mới.
