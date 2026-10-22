@@ -172,6 +172,12 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit,feature):
         denied(lambda:rpc('kh_aph.day_close.review',{'company':f['vh'],'day':f['date']},phien(f['scope_co'])),('PermissionError',))
         assert counts()==before
         emit('HTTP_2B_FACTORY_DAY_CLOSE','PASS',{'own_money_last_count':575,'native_unidentified_bank':True,'goods_and_debt':True,'restricted_and_company_scope':True,'read_only':True})
+        # Cửa hàng vẫn chốt ngày khi tắt riêng cầu nối Nhà máy.
+        feature(False)
+        store_review=rpc('kh_aph.day_close.review',{'company':f['aph'],'day':f['date']},ktt)
+        assert not any(r['group']=='Chuyển tiếp nhà máy' for r in store_review['rows'])
+        assert any(r.get('document')==insert_bank['name'] for r in store_review['rows'])
+        denied(lambda:rpc('kh_aph.day_close.review',{'company':f['aph'],'day':f['date']},dung),('PermissionError',))
         browser('chot-ngay',{'company':f['aph'],'day':f['date'],'user':f['ktt']},f['ktt'])
         assert counts()==before
     finally:

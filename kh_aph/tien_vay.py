@@ -110,7 +110,7 @@ def workspace_links():
                     ("Bàn giao tiền chờ nhận", "DocType", "APH Ban giao tien", {"docstatus": 1, "status": "Chờ nhận"}),
                     ("Bàn giao tiền cần xử lý", "DocType", "APH Ban giao tien", {"docstatus": ["in", [1, 2]], "issue_state": "Chờ xử lý"}),
                     ("Đối chiếu lệch tiền", "DocType", "APH Doi chieu lech tien", {})]
-    if cint(frappe.conf.get("kh_aph_factory_handover")):
+    if all(cint(frappe.conf.get(flag)) for flag in ("kh_aph_cash_custody", "kh_aph_cash_closing", "kh_aph_cash_handover")):
         loi_vao.append(("Chốt ngày và cần xử lý", "Report", "Chot ngay va can xu ly", None))
     return loi_vao
 

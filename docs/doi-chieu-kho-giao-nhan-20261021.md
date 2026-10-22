@@ -92,7 +92,7 @@ API mới kiểm quyền native trên nguồn và Company/Customer/Warehouse li�
 
 Cục bộ: 516 ca kh_aph, 14 ca bỏ qua; 108 ca lõi đạt. Bộ014 đã đọc đủ 127 PASS trên đúng `b574457`, gồm khôi phục dữ liệu/series. Đây là dữ liệu giả, không phải nghiệm thu nhân sự/hàng tồn/máy in thật. Bốn ca trả lẻ/chưa thu/thu một phần/đổi mã và xe khách chỉ định trong bảng trên cũng được kiểm lại đạt ở lượt mới, không chỉ dựa lượt cũ. Giữ mọi lượt FAIL làm bằng chứng. Các yêu cầu còn thiếu không được tự đổi thành PASS từ kết quả phần đã triển khai.
 
-Bảng Chốt ngày hiện phụ thuộc cờ `kh_aph_factory_handover`; ca CI giấy gốc bật đúng schema rồi khôi phục cờ. Cần tách phụ thuộc này khi chuẩn hóa cấu hình Nhà máy độc lập.
+Đã tách Chốt ngày khỏi cờ `kh_aph_factory_handover`: dùng các cờ chốt ca, bàn giao và người giữ tiền cửa hàng; giữ quyền quản lý/phạm vi nguồn. Mục chuyển tiếp nhà máy chỉ đọc khi cầu nối bật. Cục bộ570ca đạt; ca native tắt Nhà máy đã bổ sung, chưa có kết quả trên mã mới.
 
 ## 9. Triển khai và khôi phục
 

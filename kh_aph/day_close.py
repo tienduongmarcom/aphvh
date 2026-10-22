@@ -86,8 +86,8 @@ def _cash_work(company):
             result.append(_row('Ca lệch / việc tồn', 'Chờ xử lý', account=value.account, holder=value.holder,
                 counted=value.counted_amount, difference=value.difference, assignee=value.assignee, due_date=value.due_date,
                 doctype=C.SHIFT, document=value.name))
-    for value in rows('APH Phieu quy nha may', {'company': company, 'docstatus': 1, 'loai': 'Bàn giao tiền'},
-            ['name','trang_thai','ban_giao_tien','tong_tien','kh_aph_nguoi_giu_tien']):
+    for value in (rows('APH Phieu quy nha may', {'company': company, 'docstatus': 1, 'loai': 'Bàn giao tiền'},
+            ['name','trang_thai','ban_giao_tien','tong_tien','kh_aph_nguoi_giu_tien']) if F.enabled() else []):
         if not value.ban_giao_tien and value.trang_thai == 'Chờ nhận':
             result.append(_row('Chuyển tiếp nhà máy', 'Người giữ cần chuyển tiếp và giữ chỗ', holder=value.kh_aph_nguoi_giu_tien,
                 amount=value.tong_tien, doctype='APH Phieu quy nha may', document=value.name))
@@ -210,10 +210,9 @@ def _exceptions(company, day):
 
 @frappe.whitelist()
 def review(company, day):
-    if not F.enabled():
-        frappe.throw('Bảng chốt ngày chưa được bật')
+    if not C.enabled() or not H.enabled():
+        frappe.throw('Cần bật chốt ca và bàn giao tiền để xem bảng chốt ngày')
     C.guard(manager=True)
-    F.guard()
     frappe.get_doc('Company', company).check_permission('read')
     day = str(getdate(day))
     if getdate(day) > getdate():

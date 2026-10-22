@@ -342,5 +342,6 @@ def schema():
         return
     if not custody.enabled():
         frappe.throw("Chốt ca cần bật kh_aph_cash_custody")
+    frappe.reload_doc("kh_aph", "report", "chot_ngay_va_can_xu_ly")
     for dt in ("APH Phan bo quy", OPENING, SHIFT):
         frappe.reload_doc("kh_aph", "doctype", frappe.scrub(dt))

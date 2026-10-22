@@ -19,8 +19,8 @@ class DayClose(unittest.TestCase):
         self.f=types.ModuleType('frappe');self.f.whitelist=lambda **kw:lambda fn:fn;self.f.ValidationError=ValueError
         self.f.throw=lambda msg,*a:(_ for _ in ()).throw(ValueError(msg));self.f.get_doc=Mock(return_value=Row(check_permission=Mock()))
         self.f.get_list=Mock(return_value=[])
-        self.c=types.ModuleType('kh_aph.cash_closing');self.c.guard=Mock()
-        self.h=types.ModuleType('kh_aph.cash_handover')
+        self.c=types.ModuleType('kh_aph.cash_closing');self.c.guard=Mock();self.c.enabled=lambda:True
+        self.h=types.ModuleType('kh_aph.cash_handover');self.h.enabled=lambda:True
         self.factory=types.ModuleType('kh_aph.factory_handover');self.factory.enabled=lambda:True;self.factory.guard=Mock()
         self.u=types.ModuleType('frappe.utils');self.u.cint=lambda value:int(value or 0);self.u.now_datetime=lambda:'now';self.u.getdate=lambda v=None:date.fromisoformat(str(v)) if v else date(2026,10,19)
         mapping={'frappe':self.f,'frappe.utils':self.u}
@@ -34,12 +34,29 @@ class DayClose(unittest.TestCase):
             else:setattr(self.package,n,v)
         self.patch.stop()
     def test_role_flag_and_company_precede_financial_reads(self):
-        self.factory.enabled=lambda:False
+        self.h.enabled=lambda:False
         with self.assertRaises(ValueError):self.m.review('APH','2026-10-19')
         self.f.get_doc.assert_not_called();self.f.get_list.assert_not_called()
-        self.factory.enabled=lambda:True;self.c.guard.side_effect=PermissionError
+        self.h.enabled=lambda:True;self.c.guard.side_effect=PermissionError
         with self.assertRaises(PermissionError):self.m.review('APH','2026-10-19')
         self.f.get_list.assert_not_called();self.c.guard.assert_called_with(manager=True)
+    def test_store_review_works_without_factory_and_preserves_manager_guard(self):
+        self.factory.enabled=lambda:False
+        names=('_cash','_cash_work','_bank','_debt','_goods','_statements','_exceptions')
+        with patch.multiple(self.m, **{name:Mock(return_value=[]) for name in names}):
+            self.assertEqual(self.m.review('APH','2026-10-19')['rows'],[])
+        self.c.guard.assert_called_once_with(manager=True)
+        self.factory.guard.assert_not_called()
+        self.f.get_doc.return_value.check_permission.assert_called_once_with('read')
+
+    def test_store_cash_work_never_reads_factory_sources_when_disabled(self):
+        self.factory.enabled=lambda:False
+        self.h.DT='HANDOVER';self.h.PENDING=()
+        self.c.SHIFT='SHIFT'
+        self.m.rows=Mock(return_value=[])
+        self.assertEqual(self.m._cash_work('APH'),[])
+        self.assertEqual([call.args[0] for call in self.m.rows.call_args_list],['HANDOVER','SHIFT'])
+
     def test_limit_is_error_never_truncated_success(self):
         self.f.get_list.return_value=[{}]*(self.m.LIMIT+1)
         with self.assertRaisesRegex(ValueError,'không cắt'):self.m.rows('Account',{},['name'])

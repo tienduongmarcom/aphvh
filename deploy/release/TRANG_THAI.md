@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Tách Chốt ngày cửa hàng khỏi cầu nối Nhà máy
+
+Chốt ngày dùng cờ chốt ca + bàn giao + người giữ tiền hiện có; giữ C.guard(manager=True), quyền Company và quyền nguồn, không cần bật quỹ/cầu nối Nhà máy. Mục chuyển tiếp nhà máy chỉ đọc khi cờ đó bật. Bộ cài schema chốt ca nạp báo cáo; lối tắt Thu chi và công nợ dùng các cờ cửa hàng. Không thêm cờ, quyền hoặc sổ. Cục bộ570ca không bỏ qua đạt; thêm2ca đơn vị và mở rộng ca native hiện có: tắt cầu nối nhà máy vẫn xem sao kê/Chốt ngày, nhân sự hạn chế vẫn bị chặn. Chưa có kết quả native của thay đổi này.
+
+Đã tải/đọc artifact cong-3-bang-chung của Cổng339764128191 đúng9a99835ab74dea33a05e7bdf35be09933a279fcf SUCCESS: quay lui schema1105/1105 lệch0; bước cố tình nâng cấu hìnhZZ sai rồi tự khôi phục có chi_tiet khớp, GL/PLE/SLE không lệch. Đây là diễn tập CI dữ liệu giả, không bản sao production thật và không chứng minh mã sau9a99835. UAT39766960041 đúng98c37e3 đang chạy nghiệp vụ135ca, chưa chứa thay đổi Chốt ngày này. PR38 nháp; production0.16.4/28cờ giữ nguyên. Còn phân bổ giảm theo dòng/lượng, nối gom kho từ đơn, cửa sổ đổi mã và nguồn cọc trong bộ giấy; không tuyên bố toàn phạm vi hoàn tất.
+
 ## 22/10/2026 — PDF native tạo được; sửa ca kiểm tệp403HTML
 
 Đã đọc artifact UAT39763635543 đúng3c9f34c: NATIVE_PDF_BOOT PASS, bộ đối soát được tạo/tải và lưu doi-soat-bo-giay.pdf; đã đọc3trang/PDF và xem trang biên bản native, bảng/ô ký không bị cắt. Bản này gồm biên bảnA4 + phiếu xuất chuẩnA4 + phiếu thuA4 vì fixture dùng payload thế hệ cũ. Chưa coi nhánh ghép A5 mới đã kiểm.
