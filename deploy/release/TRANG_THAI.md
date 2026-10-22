@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 22/10/2026 — Tách việc thiếu ảnh/gốc và quy đổi tiền chưa phân bổ
+
+Chốt ngày giữ riêng việc thiếu ảnh và thiếu giấy gốc của bản khách ký tại đích và biên bản đối soát. Nhận gốc trước ảnh vẫn lưu được và không giữ khách lại; việc thiếu ảnh còn hiện đến khi bổ sung. Nguồn là DN/biên bản hiện có, không tạo bảng việc hoặc ghi sổ. Biên bản dùng get_list và quyền/phạm vi native, chỉ trả nguồn trong Company đang xem.
+
+Đã đối chiếu nguồn Payment Entry16.51.1: unallocated_amount tính theo tiền tài khoản khách, Receive quy đổi source_exchange_rate, Pay dùng target_exchange_rate. Snapshot hiện quy đổi về VND trước cộng, không đổi tỷ giá hoặc sửa PE/PLE. Thêm2ca đơn vị và HTTP_014_DOI_SOAT_TIEN_CHUA_PHAN_BO_NGOAI_TE với khách/tài khoảnUSD giả,10USD×25.000=250.000VND, không đổi sổ lúc chụp. Cục bộ566ca không bỏ qua đạt; bộ014 kỳ vọng135PASS. Native135 chưa chạy; UAT39763635543 mã3c9f34c vẫn đang kiểm134ca trước các mở rộng này. Cổng339764128191 mã9a99835 đang chạy. PR38 nháp, production0.16.4 và28cờ giữ nguyên. Còn phân bổ giảm/trả theo dòng và nối nhu cầu gom kho từ đơn; không tự coi các phần chưa kiểm đã đạt.
+
 ## 22/10/2026 — Giữ đúng chuyến, cho sửa người chở khi còn chuẩn bị
 
 Đã bổ sung guard phiếu chuyển có mã lượt: không đổi Company, purpose, stock_entry_type, cờ qua Transit hoặc phiếu chuyển gốc; không xóa kho nhận dự kiến của bản chuẩn bị. Người/xe và ghi chú được sửa trên nháp chuẩn bị, sau xuất bất biến; lượng thực tế vẫn sửa/ghi trên phiếu native. Không thêm cờ/quyền hoặc sổ. Thêm ca đơn vị và mở rộng ca HTTP chuẩn bị chuyển (đổi xe trước xuất, chặn tráo Company). Cục bộ563ca không bỏ qua đạt, chưa có native kết quả của guard mới. UAT39763635543 đúng3c9f34c đang chạy134ca, chưa bao gồm guard này; giữ các lượtFAIL và giấy tay nativePASS đã đọc ở các mục trước. PR38 nháp, production0.16.4 không đổi.

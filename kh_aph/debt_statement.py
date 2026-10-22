@@ -8,7 +8,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, getdate, now_datetime, today
 from kh_aph.constants import ROLE_NO_COST
-from kh_aph.debt_statement_rules import amount, snapshot
+from kh_aph.debt_statement_rules import amount, snapshot, base_unallocated
 
 DT = 'Bien ban doi soat no'
 FLAG = 'kh_aph_quan_tri'
@@ -214,13 +214,18 @@ def _figures(customer, companies, selected, documents):
         state = position(receipt.amount, history)
         funds[receipt.company]['reserved'] += state['reserved']
         funds[receipt.company]['available'] += state['available']
-    payments = frappe.db.sql('''SELECT company, payment_type, unallocated_amount FROM `tabPayment Entry`
+    payments = frappe.db.sql('''SELECT company, payment_type, unallocated_amount, source_exchange_rate, target_exchange_rate FROM `tabPayment Entry`
         WHERE party_type='Customer' AND party=%s AND company IN %s AND docstatus=1 AND posting_date<=%s
         AND unallocated_amount>0 ORDER BY name FOR UPDATE''', (customer, tuple(companies), today()), as_dict=True)
     for payment in payments:
         if payment.payment_type in ('Receive', 'Pay'):
             key = 'unallocated_received' if payment.payment_type == 'Receive' else 'unallocated_paid'
-            funds[payment.company][key] += amount(payment.unallocated_amount)
+            try:
+                converted = base_unallocated(payment.payment_type, payment.unallocated_amount,
+                    payment.source_exchange_rate, payment.target_exchange_rate)
+            except ValueError as exc:
+                frappe.throw(str(exc))
+            funds[payment.company][key] += converted
     result['funds'] = [{key: str(value) if key != 'company' else value for key, value in row.items()}
                        for row in funds.values()]
     return result, documents

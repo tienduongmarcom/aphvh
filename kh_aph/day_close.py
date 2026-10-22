@@ -156,7 +156,7 @@ def _goods(company, day):
     for value in values:
         pending = value.get(I.STATE) in ('Cần xử lý', 'Đang xử lý')
         missing_original = originals and value.get('kh_aph_mau_giao_nhan') == 1 and not value.get(S.ORIGINAL_AT)
-        missing_customer = customer_proof and P.required(value) and (not value.get(P.ACTOR) or not value.get(P.ORIGINAL_AT))
+        missing_customer = customer_proof and P.required(value) and (not value.get(P.FILE) or not value.get(P.ACTOR) or not value.get(P.ORIGINAL_AT))
         missing = not value.get(S.FILE) or not value.get(S.ACTOR) or missing_original or missing_customer
         if getdate(value.posting_date) != getdate(day) and not pending and not (missing and value.docstatus == 1 and not value.is_return):
             continue
@@ -166,7 +166,7 @@ def _goods(company, day):
             if originals and value.get('kh_aph_mau_giao_nhan') == 1:
                 state += ' / ' + ('Thiếu giấy gốc' if missing_original else 'Đã nhận giấy gốc')
         if customer_proof and P.required(value) and value.docstatus == 1:
-            state += ' / ' + ('Khách ký: chưa kiểm hồ sơ' if not value.get(P.ACTOR) else 'Khách ký: thiếu giấy gốc' if not value.get(P.ORIGINAL_AT) else 'Khách ký: đã nhận gốc')
+            state += ' / ' + ('Khách ký: thiếu ảnh bản ký' if not value.get(P.FILE) else 'Khách ký: chưa kiểm hồ sơ' if not value.get(P.ACTOR) else 'Khách ký: thiếu giấy gốc' if not value.get(P.ORIGINAL_AT) else 'Khách ký: đã nhận gốc')
         if pending:
             state += ' / ' + value.get(I.STATE)
         doc = frappe.get_doc('Delivery Note', value.name)
@@ -177,6 +177,23 @@ def _goods(company, day):
             result.append(_row('Hàng / hồ sơ', state, doctype='Delivery Note', document=value.name,
                 item_code=item.item_code, warehouse=item.warehouse, quantity=item.stock_qty, uom=item.stock_uom,
                 bags=item.get('kh_aph_bags'), assignee=value.get(I.ASSIGNEE), due_date=value.get(I.DUE)))
+    return result
+
+
+def _statements(company, day):
+    import json
+    from kh_aph.debt_statement import DT, enabled
+    if not enabled() or not frappe.db.exists('DocType', DT):
+        return []
+    result = []
+    for value in rows(DT, {'snapshot_at': ['<=', str(day) + ' 23:59:59']},
+            ['name', 'customer', 'scope', 'signed_by', 'signed_file', 'original_at']):
+        if company not in json.loads(value.scope):
+            continue
+        state = ('Chờ khách có quyền ký nợ' if not value.signed_by else 'Thiếu ảnh bản ký' if not value.signed_file
+                 else 'Thiếu giấy gốc' if not value.original_at else None)
+        if state:
+            result.append(_row('Hồ sơ đối soát nợ', state, party=value.customer, doctype=DT, document=value.name))
     return result
 
 
@@ -201,7 +218,7 @@ def review(company, day):
     day = str(getdate(day))
     if getdate(day) > getdate():
         frappe.throw('Không chốt ngày trong tương lai')
-    result = _cash(company) + _cash_work(company) + _bank(company, day) + _debt(company, day) + _goods(company, day) + _exceptions(company, day)
+    result = _cash(company) + _cash_work(company) + _bank(company, day) + _debt(company, day) + _goods(company, day) + _statements(company, day) + _exceptions(company, day)
     if len(result) > LIMIT:
         frappe.throw('Bảng vượt5.000 dòng; không trả kết quả thiếu')
     for value in result:

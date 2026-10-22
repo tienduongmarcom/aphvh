@@ -1,6 +1,6 @@
 """Bản ký ròng0 vẫn hiện tăng/giảm; không dùng tín dụng Company khác để giảm tổng phải thu."""
 import unittest
-from kh_aph.debt_statement_rules import snapshot
+from kh_aph.debt_statement_rules import snapshot, base_unallocated
 
 
 class StatementRules(unittest.TestCase):
@@ -39,3 +39,15 @@ class StatementRules(unittest.TestCase):
     def test_nonfinite_or_foreign_scope_cannot_enter_statement(self):
         for entry in [self.entry('CO', 'Sales Invoice', 'SI', 'NaN'), self.entry('KHAC', 'Sales Invoice', 'SI', 1)]:
             with self.assertRaises(ValueError): snapshot(['CO'], [entry], set())
+
+    def test_foreign_unallocated_uses_party_side_exchange_rate_in_base_currency(self):
+        self.assertEqual(base_unallocated('Receive',10,25000,1),250000)
+        self.assertEqual(base_unallocated('Pay',10,1,25000),250000)
+        self.assertEqual(base_unallocated('Receive',250000,1,25000),250000)
+        self.assertEqual(base_unallocated('Pay',250000,25000,1),250000)
+
+    def test_unallocated_conversion_is_finite_positive_rate_and_rounds_each_voucher(self):
+        from decimal import Decimal
+        self.assertEqual(base_unallocated('Receive','1.005',1,1),Decimal('1.01'))
+        for kind,value,source,target in [('Receive',10,0,1),('Pay',10,1,None),('Pay',-1,1,1),('Receive','NaN',1,1)]:
+            with self.subTest(kind=kind), self.assertRaises(ValueError): base_unallocated(kind,value,source,target)

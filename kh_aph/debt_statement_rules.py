@@ -1,5 +1,5 @@
 """Số liệu chụp tại mốc đối chiếu; không suy số dư lịch sử hoặc cấn chéo đơn vị."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 
 def amount(value):
@@ -44,3 +44,14 @@ def snapshot(companies, entries, selected):
             'movements': [{'company': co, 'doctype': dt, 'name': name, 'amount': str(value)}
                           for (co, dt, name), value in sorted(movements.items())],
             'receivable': str(receivable), 'credit': str(credit)}
+
+
+def base_unallocated(payment_type, value, source_rate, target_rate):
+    """Như Payment Entry16.51.1: thu dùng tỷ giá phía khách (source), chi dùng target."""
+    if payment_type not in ('Receive', 'Pay'):
+        raise ValueError('Chỉ quy đổi khoản thu hoặc chi khách hàng')
+    rate = amount(source_rate if payment_type == 'Receive' else target_rate)
+    value = amount(value)
+    if rate <= 0 or value < 0:
+        raise ValueError('Kiểm tỷ giá và khoản tiền chưa phân bổ trên phiếu gốc')
+    return (value * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)

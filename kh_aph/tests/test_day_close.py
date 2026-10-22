@@ -102,10 +102,27 @@ class DayClose(unittest.TestCase):
         self.m.rows=Mock(return_value=[value])
         self.f.get_doc.return_value=types.SimpleNamespace(items=[Row(warehouse='WH',item_code='A',stock_qty=1,stock_uom='Kg')],check_permission=Mock())
         with patch.object(self.package,'delivery_issue',issue,create=True),patch.object(self.package,'ho_so_giao_nhan',paper,create=True):
+            value['kh_aph_ban_ky_khach']='KHACH'
             self.assertIn('Khách ký: chưa kiểm hồ sơ',self.m._goods('CO','2026-10-19')[0]['status'])
             value['kh_aph_kiem_ky_khach_boi']='kt'
             self.assertIn('Khách ký: thiếu giấy gốc',self.m._goods('CO','2026-10-19')[0]['status'])
             value['kh_aph_nhan_goc_khach_luc']='2026-10-19'
+            value['kh_aph_ban_ky_khach']=None
+            self.assertIn('Khách ký: thiếu ảnh bản ký',self.m._goods('CO','2026-10-19')[0]['status'])
+            value['kh_aph_ban_ky_khach']='KHACH'
             self.assertEqual(self.m._goods('CO','2026-10-19'),[])
             value['kh_aph_can_ky_khach']='Không';value['kh_aph_kiem_ky_khach_boi']=None;value['kh_aph_nhan_goc_khach_luc']=None
             self.assertEqual(self.m._goods('CO','2026-10-19'),[])
+
+    def test_statement_original_and_photo_have_independent_pending_work(self):
+        module=types.SimpleNamespace(DT='Bien ban doi soat no',enabled=lambda:True)
+        self.f.db=Row(exists=lambda *args:True)
+        value=Row(name='BB',customer='KH',scope='["CO"]',signed_by='kt',signed_file=None,original_at='now')
+        self.m.rows=Mock(return_value=[value])
+        with patch.dict(sys.modules,{'kh_aph.debt_statement':module}):
+            self.assertEqual(self.m._statements('KHAC','2026-10-19'),[])
+            self.assertEqual(self.m._statements('CO','2026-10-19')[0]['status'],'Thiếu ảnh bản ký')
+            value['signed_file']='PRIVATE';value['original_at']=None
+            self.assertEqual(self.m._statements('CO','2026-10-19')[0]['status'],'Thiếu giấy gốc')
+            value['original_at']='now'
+            self.assertEqual(self.m._statements('CO','2026-10-19'),[])

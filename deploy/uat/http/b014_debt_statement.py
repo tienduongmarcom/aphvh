@@ -111,3 +111,29 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
         copies=lst(dt,{'request_id':evidence['detail']['requestId']},['name'],ktt)
         assert len(copies)==1 and copies[0]['name']==evidence['detail']['name']
         emit(evidence['case'],'PASS',evidence['detail'])
+
+
+def chay_ngoai_te(rpc, get, insert, submit, lst, ktt, f, emit):
+    """Nợ ròng lấy PLE theo tiền cơ sở; unallocated lấy đúng tỷ giá phía khách trên PE."""
+    receivable=get('Company',f['aph'],ktt)['default_receivable_account']
+    parent=get('Account',receivable,ktt)['parent_account']
+    account=insert({'doctype':'Account','account_name':f['p']+'-PhaiThuUSD','company':f['aph'],
+        'parent_account':parent,'account_type':'Receivable','account_currency':'USD','is_group':0},ktt)
+    source=get('Customer',f['kh2'],ktt)
+    customer=insert({'doctype':'Customer','customer_name':f['p']+'-KhachUSD','customer_type':'Company',
+        'customer_group':source['customer_group'],'territory':source['territory'],'default_currency':'USD',
+        'accounts':[{'company':f['aph'],'account':account['name']}]},ktt)
+    payment=submit(insert({'doctype':'Payment Entry','payment_type':'Receive','party_type':'Customer',
+        'party':customer['name'],'company':f['aph'],'posting_date':f['date'],'paid_from':account['name'],
+        'paid_to':f['acc']['tien'],'paid_amount':10,'received_amount':250000,'source_exchange_rate':25000,
+        'target_exchange_rate':1,'kh_aph_nguoi_giu_tien':f['ktbh']},ktt),ktt)
+    assert payment['unallocated_amount']==10
+    before={dt:len(lst(dt,{},['name'],ktt)) for dt in ('GL Entry','Payment Entry','Payment Ledger Entry')}
+    result=rpc('kh_aph.debt_statement.create',{'customer':customer['name'],'companies':json.dumps([f['aph']]),
+        'vouchers':json.dumps([{'doctype':'Payment Entry','name':payment['name']}]),'request_id':uuid.uuid4().hex},ktt)
+    data=json.loads(get('Bien ban doi soat no',result['name'],ktt)['payload'])
+    assert abs(float(data['positions'][0]['current'])+250000)<.01
+    assert abs(float(data['funds'][0]['unallocated_received'])-250000)<.01
+    assert before=={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
+    emit('HTTP_014_DOI_SOAT_TIEN_CHUA_PHAN_BO_NGOAI_TE','PASS',{'party_currency':'USD','unallocated':10,
+        'rate':25000,'base_unallocated_vnd':250000,'no_financial_mutation':True})
