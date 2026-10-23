@@ -174,7 +174,7 @@ def chay_ngoai_te(rpc, get, insert, submit, lst, ktt, f, emit):
         'rate':25000,'base_unallocated_vnd':250000,'no_financial_mutation':True})
 
 
-def chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, emit):
+def chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     """Tiền giữ/cọc có nguồn riêng trên bản ký, không tính thành giảm nợ lần hai."""
     base=get('Customer',f['kh2'],ktt)
     customer=insert({'doctype':'Customer','customer_name':f['p']+'-CocTheoDon','customer_type':'Company',
@@ -220,6 +220,14 @@ def chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, emit):
     content=ktt.binary_get(result['file_url'])
     assert content.startswith(b'%PDF')
     Path('doi-soat-coc-theo-don.pdf').write_bytes(content)
+    from io import BytesIO
+    from pypdf import PdfReader
+    pages=PdfReader(BytesIO(content)).pages
+    assert len(pages)>=2 and any('PHIẾU THU' in (page.extract_text() or '') for page in pages)
+    receipt_print=rpc('kh_aph.funds_print.print_receipt',{'receipt':receipt['name']},ktt)['html']
+    assert receipt['name'] in receipt_print and 'PHIẾU THU' in receipt_print
+    assert counts()==before
+
     submit(insert({'doctype':'APH Funds Action','receipt':receipt['name'],'action_type':'Giải phóng cọc',
         'posting_date':f['date'],'source_reservation':reserve['name'],'amount':10000,'reason':'UAT đổi sau mốc'},ktt),ktt)
     assert ktt.binary_get(result['file_url'])==content

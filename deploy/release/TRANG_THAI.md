@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Ghép phiếu thu khoản thực nhận, không tạo PE mới
+
+Đã viết funds_print.receipt_html/print_receipt: nguồn FundsReceipt đã ghi và JE gốc phải khớp Company/link/số nhận/đối ứng, tài khoảnVND và quyền đọc/in trên nguồn/Company/Account/JE/Customer. Dữ liệu trình bày giữ số khoản nhận, không giả lập hoặc chènPE; Nợ/Có đọc JE gốc. Dùng lại PrintFormat Phiếu thu chi đang dùng theo công ty, tự phân biệtCash/Bank; không phát minh mẫu hay đổi chế độ kế toán. Nút In phiếu thu trên khoản nhận đã ghi; bộPDF tự ghép khi chọn FundsReceipt, không in lại phiếu nhận cũ chỉ vì chọn action. In không ghiGL/PLE/PE hoặc thu tiền lần nữa. Actor hạn chế bịfunds.require chặn trước đọc nguồn.
+
+Cục bộ621ca không bỏ qua đạt, JS/Pyflakes/diff đạt. Ca nativecọc140 được mở rộng kiểmPDF có phiếu thu, APIin không ghi sổ và NoCost bị chặn; chưa có kết quả của phần in. UAT39897679945/Cổng339897682847 đang kiểm8f97806 trước phần in; không chứa bước này. Bằng chứng139/UAT39895504031 đúng8e61a68 đã tải/đọc đủ139PASS, các bộ hồi quy; ảnh phần trả không popup, PDF4trang đúngA4+2A5+A4. Cổng339893222080 đúngd54522d đã tải/đọc1154/1154 vàrollback1105/1105 lệch0, sau cố ý nâng sai khớp chi tiết. Không suy sang mã mới. Còn thu/hoàn chênh lệch đổi mã một cửa và phân quyền nhân sự thật; PR38nháp/production0.16.4 giữ nguyên.
+
 ## 23/10/2026 — Nối tiền/cọc vào đối soát theo nguồn; chờ native140
 
 Đã mở nguồn chọn APH Funds Receipt/Action trên cùng Dialog đối soát và nút từ form tiền/cọc; kiểm nguồn đúng khách/đơn vị/mốc, action phải có khoản thực nhận hợp lệ. Chỉ chọn JE liên quan có đúng đối tượng khách để tính phát sinh công nợ; khoản giữ tiền không có đối tượng khách không tự thành giảm nợ. Không in toàn bộ JE nội bộ cho khách. Payload/bản in có chứng từ tiền/cọc chọn và cọc còn giữ theo receipt/reservation/đơn/nguồn Company. Tính lại từ cùng funds_rules.position, không FIFO hoặc trừ cọc vào nợ lần nữa; receipts/actions sau ngày mốc không cộng vào số hiện tại. Nguồn Company/đơn ngoài quyền bị chặn; bản đã cấp giữ số/PDF cũ sau khi giải phóng tiếp.

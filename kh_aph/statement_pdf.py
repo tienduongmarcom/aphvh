@@ -26,6 +26,9 @@ def make_bundle(statement, documents):
             data = frappe.get_print(doctype, name, print_format='Phiếu xuất kho bán hàng', as_pdf=True)
         elif doctype == 'Payment Entry':
             data = frappe.get_print(doctype, name, print_format='Phiếu thu chi', as_pdf=True)
+        elif doctype == 'APH Funds Receipt':
+            from kh_aph.funds_print import receipt_html
+            data = get_pdf(receipt_html(source))
         elif doctype == 'Sales Invoice':
             # Khi đã chọn DN, không in thêm hóa đơn vận hành của chính phiếu đó.
             if source.items and all(('Delivery Note', row.delivery_note) in documents for row in source.items):

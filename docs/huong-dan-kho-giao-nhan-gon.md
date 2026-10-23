@@ -92,3 +92,6 @@ Giấy gốc: kế toán cửa hàng xếp theo loại giấy/ngày hoặc tập
 ## Bổ sung đang phát triển: cọc theo nguồn trong đối soát
 
 Từ Tiền thực nhận hoặc Xử lý tiền cọc/phân bổ đã ghi, khách đã xác minh, mở Đối soát & In bộ giấy. Chọn đủ đơn vị liên quan và đúng chứng từ của lượt. Biên bản trình bày khoản tiền/cọc chọn, cọc còn giữ theo khoản nhận/đơn/nguồn và phần khả dụng riêng; không trừ cọc vào công nợ lần nữa. Bản cấp rồi giữ nguyên số/PDF khi có phát sinh sau đó, cần đối chiếu mới thì lập bản bổ sung. Cọc chung có nhãn riêng, không tự gán cho nguồn của đơn vị thực nhận. Phần này mới kiểm cục bộ, chờ HTTP/PDF native140; bản in riêng phiếu thu cọc chưa tự ghép như phiếu thu PE.
+
+
+Bổ sung tiếp đang kiểm: khoản Tiền thực nhận đã ghi có nút In phiếu thu, dùng số khoản nhận và bút toán đã ghi. Chọn khoản thực nhận trong bộ đối soát sẽ ghép bản thu này; chỉ chọn thao tác giữ/chuyển/giải phóng/cấn không in lại phiếu nhận cũ. Mẫu dùng lại cách phân biệt tiền mặt/ngân hàng theo công ty hiện có. Không phát sinh PE/JE mới khi in. Phần này mới621ca cục bộ, chờ native140 và xemPDF trước phát hành.

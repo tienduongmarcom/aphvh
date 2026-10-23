@@ -95,3 +95,18 @@ frappe.ui.form.on("Bien ban doi soat no", {refresh(frm) {
         dialog.show();
     });
 }});
+
+
+frappe.ui.form.on("APH Funds Receipt", {refresh(frm) {
+    if (!frappe.boot?.kh_aph?.quan_tri || frm.doc.docstatus !== 1 ||
+        !frappe.model.can_print(null, frm)) return;
+    frm.add_custom_button("In phiếu thu", () => {
+        const preview=window.open("about:blank","_blank");
+        frappe.call({method:"kh_aph.funds_print.print_receipt",args:{receipt:frm.doc.name},freeze:true})
+            .then(response => {
+                if (!preview) return frappe.msgprint("Cho phép mở cửa sổ in rồi thử lại.");
+                preview.document.open();preview.document.write(response.message.html);preview.document.close();
+                preview.focus();
+            }).fail(() => preview?.close());
+    });
+}});
