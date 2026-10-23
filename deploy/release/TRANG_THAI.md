@@ -1,5 +1,15 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Bổ sung phân loại khoản giảm cũ; chờ native139
+
+Đã viết classify_quality: kế toán có quyền ghi JE chọn dòng/kg/tiền giảm cho JE đã ghi có nguồn SI. Khóa quỹ→SI→JE, giữ modified và retry cùng phân loại; đối chiếu đúng tổng tiền, thuế, tài khoản và cost center trước lưu. Chỉ ghi JSON phân loại và Comment căn cứ; không đổi kỳ/đơn vị/accounts, không tạo khoản giảm/chi mới. allow_on_submit chỉ cho ô metadata; bảo vệ ContextVar theo đúng object, không cho API/form tự sửa/xóa hoặc phân loại lại. Có kiểm tài chính trước/sau, không bật cờ bỏ repost/permission. Phân loại cũ chưa rõ nguồn hoặc đã có trả chưa phân loại vẫn dừng để kế toán đối chiếu, không tự đoán.
+
+Đã nối nút Bổ sung phần hàng đã giảm trên JE và cùng Dialog chọn lượng/tiền. Return facade chỉ đọc phần giá bán đã được duyệt theo DN có quyền nhận trả và phạm vi native của SI/JE, không cấp quyền đọc GL/JE chung cho kế toán bán hàng; thêm ca KTBH lập/ghi trả sau giảm. Handler đăng ký một lần trong phiên Desk, tránh lặp khi qua nhiều DocType. Giữ28cờ, bộ cài tường minh; trước schema mới đọc cũ không truy cột thiếu, thao tác mới phải báo chưa cài.
+
+Cục bộ596ca không bỏ qua đạt; JS/Pyflakes/diff đạt. UAT39885705681 đúng5bff6e6 FAIL được giữ: đã đọc artifact136PASS gồm RESTORE và NATIVE_DESK_GIAM_THEO_PHAN PASS (đúng20kg chưa giảm/5kg đã giảm, không ghi sổ khi kiểm màn). Hai phiên giữ cùng3kg chỉ một nháp được tạo; lượt dừng ở helper rpc đòi message sau xóa nháp thành công. Đã sửa dùng phản hồi native rỗng, vẫn bắt buộc phiếu không còn và lượng nhả đúng. Ảnh mới chưa có trong artifact lượt này do thiếu đường upload, đã thêm cả ảnh thành công/lỗi vào workflow kế tiếp.
+
+Bộ014 kế tiếp139PASS kỳ vọng (thêm retro so với138); chưa có kết quả hoàn/tổng giảm/giảm100% hoặc bổ sung khoản cũ trên mã mới. PR38 nháp, production0.16.4 không đổi. Nền c21a799/UAT39775206078 đã135PASS/PDF4trang; không suy cho phần mới. Còn gom từ đơn, chênh lệch đổi mã và nguồn cọc trong bộ giấy.
+
 ## 23/10/2026 — ĐANG NỐI giảm/nhận trả theo phần hàng
 
 Chủ dự án chốt phân biệt phần đã giảm và chưa giảm, đã ghi docs/quyet-dinh-nghiep-vu.md. Đã viết quality_parts.py (số thập phân, lượng riêng theo thỏa thuận, không FIFO/bình quân cả mã); quality_allocation.py nối JSON phân bổ trên JE chuẩn và JSON chi tiết phần trả trên dòng DN chuẩn. Không DocType/sổ/cờ mới. Đường mới chọn dòng, kg và tiền giảm gồm thuế; lưu phân bổ net/thuế theo quy tắc hiện có. Phần đã giảm và chưa giảm còn lượng riêng; nhập trả trộn hai phần giữ chi tiết, chỉ quy đổi đơn giá dòng native trên chính lượng thực trả, không đổi giá phần giữ lại. Giữ tổng trần khoản gốc và cơ chế đối trừ/hoàn chuẩn; hàng đã giảm hết giá trị vẫn nhận kho, không tạo chi0/hoàn lần nữa.

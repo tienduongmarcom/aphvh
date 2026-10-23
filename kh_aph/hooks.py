@@ -522,7 +522,7 @@ doctype_js["Delivery Note"].append("public/js/ux_delivery_layout.js")
 # Nhận trả một phần bao: kiểm nguồn và tổng lượng ở mọi lối lưu/ghi native.
 doc_events["Delivery Note"].setdefault("validate", []).append("kh_aph.sales_return.validate")
 doc_events["Delivery Note"].setdefault("before_submit", []).append("kh_aph.sales_return.validate")
-for _dt in ("Delivery Note", "Customer", "Sales Invoice"):
+for _dt in ("Delivery Note", "Customer", "Sales Invoice", "Journal Entry"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/sales_return.js"]

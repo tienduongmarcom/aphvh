@@ -1,5 +1,7 @@
 // Nhận trả theo phiếu gốc: dữ liệu nhập gọn, controller native vẫn sở hữu kho/nợ/tiền.
 frappe.provide("kh_aph.returns");
+if (!kh_aph.returns.registered) {
+kh_aph.returns.registered = true;
 frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         if (!frappe.boot?.kh_aph?.sales_p1 || !frappe.boot?.kh_aph?.sales_adjust || frm.doc.docstatus !== 1 ||
@@ -29,7 +31,7 @@ kh_aph.returns.open = async function(name) {
         {fieldname: "reason", label: "Lý do trả", fieldtype: "Small Text", reqd: 1},
         {fieldname: "rows", label: "Hàng thực nhận trả", fieldtype: "Table", cannot_add_rows: true, cannot_delete_rows: true, in_place_edit: true,
             data: rows.flatMap(r => r.parts ? r.parts.filter(p => Number(p.remaining)>0).map(p => ({...r,
-                part_key:p.key, has_parts:1, quality_label:p.key ? `Đã giảm: ${p.key}` : "Chưa giảm",
+                part_key:p.key, has_parts:1, quality_label:`${p.key ? "Đã giảm" : "Chưa giảm"}: ${new Intl.NumberFormat("vi-VN",{maximumFractionDigits:2}).format(Number(p.net_rate))} đ/kg${p.key ? " · "+p.key : ""}`,
                 remaining_qty:Number(p.remaining), qty:0, bags:0})) : [{...r,qty:0,bags:0}]), fields: [
                 {fieldname: "source_row", fieldtype: "Data", hidden: 1},
                 {fieldname: "part_key", fieldtype: "Data", hidden: 1},
@@ -84,10 +86,10 @@ frappe.ui.form.on("Customer", {refresh(frm) {
 }});
 
 frappe.provide("kh_aph.quality");
-kh_aph.quality.open = async function(sales_invoice) {
-    const response=await frappe.call({method:"kh_aph.sales_p1.preview_quality",args:{sales_invoice},freeze:true});
-    const dialog=new frappe.ui.Dialog({title:"Giảm giá theo phần hàng",size:"extra-large",fields:[
-        {fieldtype:"HTML",options:"<p>Chỉ nhập lượng thuộc thỏa thuận giảm. Phần hàng còn lại giữ nguyên giá; tiền giảm gồm thuế nếu có.</p>"},
+kh_aph.quality.open = async function(sales_invoice, journal_entry=null) {
+    const response=await frappe.call({method:"kh_aph.sales_p1.preview_quality",args:{sales_invoice,journal_entry},freeze:true});
+    const dialog=new frappe.ui.Dialog({title:journal_entry ? "Phân loại khoản giảm đã ghi" : "Giảm giá theo phần hàng",size:"extra-large",fields:[
+        {fieldtype:"HTML",options:journal_entry ? `<p>Bút toán ${frappe.utils.escape_html(journal_entry)} đã ghi giảm ${frappe.format(response.message.existing_amount,{fieldtype:"Currency"})}. Chỉ bổ sung phân loại lượng, không ghi giảm thêm. Chi tiết phải khớp tiền hàng và thuế đã ghi.</p>` : "<p>Chỉ nhập lượng thuộc thỏa thuận giảm. Phần hàng còn lại giữ nguyên giá; tiền giảm gồm thuế nếu có.</p>"},
         {fieldname:"reason",label:"Lý do / thỏa thuận chất lượng",fieldtype:"Small Text",reqd:1},
         {fieldname:"rows",label:"Phần hàng được giảm",fieldtype:"Table",cannot_add_rows:true,cannot_delete_rows:true,in_place_edit:true,
             data:response.message.rows.filter(r=>r.remaining_qty>0).map(r=>({...r,qty:0,amount:0})),fields:[
@@ -98,7 +100,7 @@ kh_aph.quality.open = async function(sales_invoice) {
                 {fieldname:"qty",label:"Lượng được giảm (kg)",fieldtype:"Float",in_list_view:1,columns:2},
                 {fieldname:"amount",label:"Tiền giảm phần này",fieldtype:"Currency",in_list_view:1,columns:2},
             ]},
-    ],primary_action_label:"Lập đề nghị giảm",async primary_action(values){
+    ],primary_action_label:journal_entry ? "Lưu phân loại" : "Lập đề nghị giảm",async primary_action(values){
         if(values.rows.some(r=>!Number.isFinite(Number(r.qty||0)) || !Number.isFinite(Number(r.amount||0)) ||
             Number(r.qty||0)<0 || Number(r.amount||0)<0 || (!Number(r.qty||0) && Number(r.amount||0)>0) ||
             (Number(r.qty||0)>0 && Number(r.amount||0)<=0))) return frappe.msgprint("Mỗi phần cần lượng và tiền giảm dương, không nhập thiếu một trong hai.");
@@ -106,9 +108,12 @@ kh_aph.quality.open = async function(sales_invoice) {
         if(!selections.length) return frappe.msgprint("Nhập lượng và tiền giảm của ít nhất một phần hàng.");
         dialog.disable_primary_action();
         try {
-            const made=await frappe.call({method:"kh_aph.sales_p1.giam_gia_sau_giao",args:{sales_invoice,
-                so_tien:selections.reduce((sum,r)=>sum+Number(r.amount),0),ly_do:values.reason,selections:JSON.stringify(selections)},freeze:true});
-            dialog.hide();frappe.set_route("Form","Journal Entry",made.message.but_toan);
+            const made=await frappe.call({method:journal_entry ? "kh_aph.sales_p1.classify_quality" : "kh_aph.sales_p1.giam_gia_sau_giao",
+                args:journal_entry ? {journal_entry,selections:JSON.stringify(selections),reason:values.reason,modified:response.message.modified} :
+                    {sales_invoice,so_tien:selections.reduce((sum,r)=>sum+Number(r.amount),0),ly_do:values.reason,selections:JSON.stringify(selections)},freeze:true});
+            dialog.hide();
+            if(window.cur_frm?.doctype==="Journal Entry" && cur_frm.doc.name===made.message.but_toan) await cur_frm.reload_doc();
+            else frappe.set_route("Form","Journal Entry",made.message.but_toan);
         } finally {dialog.enable_primary_action();}
     }});
     dialog.show();
@@ -125,3 +130,11 @@ frappe.ui.form.on("Delivery Note", {refresh(frm) {
         frappe.new_doc("APH Shared Sales Order", result.message.defaults);
     }, "Đổi / Trả");
 }});
+
+frappe.ui.form.on("Journal Entry",{refresh(frm){
+    if(!frappe.boot?.kh_aph?.sales_p1 || frm.doc.docstatus!==1 || !frm.doc.kh_aph_giam_gia_hd ||
+        frm.doc.kh_aph_phan_bo_giam || !frappe.model.can_write("Journal Entry")) return;
+    frm.add_custom_button("Bổ sung phần hàng đã giảm",()=>kh_aph.quality.open(frm.doc.kh_aph_giam_gia_hd,frm.doc.name));
+}});
+
+} // Đăng ký một lần khi đi qua nhiều loại chứng từ trong cùng phiên Desk.

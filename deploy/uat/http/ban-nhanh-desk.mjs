@@ -38,6 +38,7 @@ try {
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
     if (mode === 'giam-theo-phan') {
+      try {
       const payload=JSON.parse(source);
       await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});
       await command('Page.navigate',{url:base+'/desk/sales-invoice/'+encodeURIComponent(payload.invoice)});
@@ -60,6 +61,10 @@ try {
       await until('!document.querySelector("#freeze")');
       const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('nhan-tra-tung-phan.png',Buffer.from(shot.data,'base64'));
       console.log(JSON.stringify({case:'NATIVE_DESK_GIAM_THEO_PHAN',status:'PASS',detail:{manager_principal:true,discount_qty_input:true,twenty_original_five_discounted:true,no_posting:true}}));
+      } catch(error) {
+        try {const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('giam-phan-loi.png',Buffer.from(shot.data,'base64'));} catch {}
+        throw error;
+      }
     } else if (mode === 'doi-soat') {
       try {
         const payload=JSON.parse(source);

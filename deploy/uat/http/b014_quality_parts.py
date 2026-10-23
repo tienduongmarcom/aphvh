@@ -15,9 +15,9 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
         'stock_uom':'Kg','is_stock_item':1,'valuation_method':'Moving Average','kh_aph_kg_per_bag':25,
         'taxes':[{'item_tax_template':t['item_tax_template']} for t in old['taxes']]},ktt)
     submit(insert({'doctype':'Stock Entry','stock_entry_type':'Material Receipt','company':f['aph'],
-        'posting_date':f['date'],'items':[{'item_code':item,'t_warehouse':f['kho'],'qty':100,'basic_rate':20000,
-        'kh_aph_bags':4,'kh_aph_kg_per_bag':25,'expense_account':f['acc']['cp']}]},ktt),ktt)
-    def make(amount=55000):
+        'posting_date':f['date'],'items':[{'item_code':item,'t_warehouse':f['kho'],'qty':150,'basic_rate':20000,
+        'kh_aph_bags':6,'kh_aph_kg_per_bag':25,'expense_account':f['acc']['cp']}]},ktt),ktt)
+    def make(amount=55000,legacy=False):
         order=submit(insert({'doctype':'APH Shared Sales Order','customer':f['kh2'],'transaction_date':f['date'],
             'delivery_date':f['date'],'selling_price_list':f['pl'],'currency':'VND','kh_aph_xuat_hoa_don':'Không',
             'items':[{'item_code':item,'warehouse':f['kho'],'qty':25,'rate':35000,'kh_aph_bags':1,'kh_aph_kg_per_bag':25}]},ktt),ktt)
@@ -30,11 +30,12 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
         si=next(doc for doc in invoices if any(r.get('delivery_note')==dn['name'] for r in doc['items']))
         assert si['grand_total']==962500, si['grand_total']
         result=rpc('kh_aph.sales_p1.giam_gia_sau_giao',{'sales_invoice':si['name'],'so_tien':amount,
-            'ly_do':'Chỉ giảm5kg hàng có vấn đề,20kg giữ giá','selections':json.dumps([
-                {'invoice_row':si['items'][0]['name'],'qty':5,'amount':amount}])},ktt)
+            'ly_do':'Chỉ giảm5kg hàng có vấn đề,20kg giữ giá',**({} if legacy else {'selections':json.dumps([
+                {'invoice_row':si['items'][0]['name'],'qty':5,'amount':amount}])})},ktt)
         je=get('Journal Entry',result['but_toan'],ktt)
-        rows=json.loads(je['kh_aph_phan_bo_giam'])
-        assert float(rows[0]['qty'])==5 and rows[0]['invoice_row']==si['items'][0]['name']
+        if not legacy:
+            rows=json.loads(je['kh_aph_phan_bo_giam'])
+            assert float(rows[0]['qty'])==5 and rows[0]['invoice_row']==si['items'][0]['name']
         denied(lambda:rpc('frappe.client.save',{'doc':json.dumps({**je,'kh_aph_phan_bo_giam':'[]'})},ktt))
         submit(je,ktt)
         return dn,si,je['name']
@@ -55,7 +56,8 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     assert evidence['status']=='PASS'
     assert before=={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
     emit(evidence['case'],'PASS',evidence['detail'])
-    view=rpc('kh_aph.sales_return.preview',{'delivery_note':dn['name']},ktt)['rows'][0]
+    sales=phien(f['ktbh'])
+    view=rpc('kh_aph.sales_return.preview',{'delivery_note':dn['name']},sales)['rows'][0]
     parts={p['key']:p for p in view['parts']}
     assert float(parts[key]['remaining'])==5 and float(parts[key]['net_rate'])==25000
     assert float(parts['']['remaining'])==20 and float(parts['']['net_rate'])==35000
@@ -70,21 +72,23 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
         outcomes=list(pool.map(race,[phien(f['ktt']),phien(f['ktt'])]))
     winners=[name for name in outcomes if name]
     assert len(winners)==1,outcomes
-    rpc('frappe.client.delete',{'doctype':'Delivery Note','name':winners[0]},ktt)
+    ktt('/api/method/frappe.client.delete',{'doctype':'Delivery Note','name':winners[0]})
+    assert not lst('Delivery Note',{'name':winners[0]},['name'],ktt)
+
     assert {p['key']:float(p['remaining']) for p in rpc('kh_aph.sales_return.preview',{'delivery_note':dn['name']},ktt)['rows'][0]['parts']}=={key:5,'':20}
-    made=draft(dn,[(key,3),('',2)])
+    made=draft(dn,[(key,3),('',2)],caller=sales)
     ret=get('Delivery Note',made['name'],ktt)
     assert ret['items'][0]['qty']==-5 and ret['items'][0]['rate']==29000 and ret['grand_total']==-159500
     denied(lambda:draft(dn,[(key,3)]))  # Đã giữ3kg, chỉ còn2kg ở đúng phần giảm.
     denied(lambda:rpc('frappe.client.cancel',{'doctype':'Journal Entry','name':key},ktt))
     bad=get('Delivery Note',made['name'],ktt);bad['items'][0]['rate']=35000
     denied(lambda:rpc('frappe.client.save',{'doc':json.dumps(bad)},ktt))
-    submit(get('Delivery Note',made['name'],ktt),ktt)
+    submit(get('Delivery Note',made['name'],sales),sales)
     assert abs(get('Sales Invoice',si['name'],ktt)['outstanding_amount']-748000)<1
     left=rpc('kh_aph.sales_return.preview',{'delivery_note':dn['name']},ktt)['rows'][0]['parts']
     assert {p['key']:float(p['remaining']) for p in left}=={key:2,'':18}
     emit('HTTP_014_GIAM_THEO_PHAN_HANG','PASS',{'five_discounted_twenty_original':True,'mixed_return':159500,
-        'draft_reserves_own_part':True,'concurrent_single_reservation':True,'tampered_price_and_cancel_denied':True,'remaining_debt':748000})
+        'draft_reserves_own_part':True,'concurrent_single_reservation':True,'tampered_price_and_cancel_denied':True,'remaining_debt':748000,'sales_clerk_without_general_journal_permission':True})
 
     dn,si,key=make()
     pe=rpc('erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry',
@@ -105,3 +109,25 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     assert len(lst('Payment Entry',{},['name'],ktt))==before
     emit('HTTP_014_HOAN_DUNG_PHAN_DA_GIAM','PASS',{'discounted_five_refund':137500,
         'native_payment_cleared':True,'fully_reduced_stock_return_no_second_refund':True})
+
+    old_dn,old_si,old_key=make(legacy=True)
+    source=get('Journal Entry',old_key,ktt)
+    before={dt:len(lst(dt,{},['name'],ktt)) for dt in ('Journal Entry','GL Entry','Payment Ledger Entry','Stock Ledger Entry','Payment Entry')}
+    before_debt=get('Sales Invoice',old_si['name'],ktt)['outstanding_amount']
+    classify={'journal_entry':old_key,'modified':source['modified'],'reason':'Đối chiếu giấy thỏa thuận cũ, đúng5kg',
+        'selections':json.dumps([{'invoice_row':old_si['items'][0]['name'],'qty':5,'amount':55000}])}
+    denied(lambda:rpc('kh_aph.sales_p1.classify_quality',classify,phien(f['dung'])),('PermissionError',))
+    result=rpc('kh_aph.sales_p1.classify_quality',classify,ktt)
+    assert result=={'but_toan':old_key,'da_co':False}
+    assert get('Journal Entry',old_key,ktt)['docstatus']==1
+    assert get('Sales Invoice',old_si['name'],ktt)['outstanding_amount']==before_debt
+    assert before=={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
+    assert rpc('kh_aph.sales_p1.classify_quality',classify,ktt)=={'but_toan':old_key,'da_co':True}
+    denied(lambda:rpc('kh_aph.sales_p1.classify_quality',{**classify,'selections':json.dumps([
+        {'invoice_row':old_si['items'][0]['name'],'qty':6,'amount':55000}])},ktt))
+    made=draft(old_dn,[(old_key,3)])
+    submit(get('Delivery Note',made['name'],ktt),ktt)
+    assert abs(get('Sales Invoice',old_si['name'],ktt)['outstanding_amount']-(before_debt-82500))<1
+    assert rpc('kh_aph.sales_p1.classify_quality',classify,ktt)['da_co'] is True
+    emit('HTTP_014_PHAN_LOAI_GIAM_CU','PASS',{'posted_journal_unchanged':True,'debt_gl_cash_unchanged':True,
+        'source_scope_and_retry':True,'return_after_explicit_classification':82500})

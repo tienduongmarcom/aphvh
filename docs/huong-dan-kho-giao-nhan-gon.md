@@ -81,4 +81,6 @@ Giấy gốc: kế toán cửa hàng xếp theo loại giấy/ngày hoặc tập
 - Trả5kg từ bao25kg: nhập5kg và số bao/vỏ thực nhận0hoặc1, không nhập0,2bao. Hàng hỏng vào cách ly theo lựa chọn.
 - Chưa trả tiền: giảm khoản còn nợ. Đã thu tiền: chỉ chuẩn bị hoàn phần thực phải hoàn sau đối trừ. Mở phiếu hoàn tiền từ phiếu nhận trả; nháp không có nghĩa đã chi.
 - Giảm giá do chất lượng của đơn cũ xử lý theo đúng khoản gốc, không giấu vào giá của đơn mới. Đề nghị nháp chưa làm giảm nợ.
-- **Chưa hoàn thiện tự động:** phân bổ giảm theo từng dòng/lượng và trả một phần sau giảm; nối nhu cầu gom kho trực tiếp từ đơn; thu/hoàn chênh lệch đổi mã trong một cửa sổ. Các điểm này còn trong phạm vi phát triển, không coi hướng dẫn là bằng chứng đã hỗ trợ đầy đủ.
+- Đường giảm theo phần hàng đang kiểm thử: chọn đúng khoản cũ, ghi dòng/kg và tiền giảm của phần đó; phần còn lại giữ giá gốc. Khi nhận trả chọn rõ phần đã giảm hoặc chưa giảm, không lấy giá bình quân cả mã.
+- Khoản giảm cũ chưa ghi lượng: từ JE có nguồn khoản phải thu → Bổ sung phần hàng đã giảm. Phải đối chiếu giấy thỏa thuận và đúng tiền hàng/thuế đã ghi; thao tác chỉ bổ sung phân loại, không ghi giảm nợ thêm. Chưa xác minh được hoặc đã có trả cũ chưa phân loại thì kế toán đối chiếu bằng chứng trước.
+- **Chưa hoàn thiện/kiểm đủ:** đường phân loại và hoàn sau giảm mới chưa nativePASS toàn bộ; nối nhu cầu gom kho trực tiếp từ đơn; thu/hoàn chênh lệch đổi mã trong một cửa sổ. Các điểm này còn trong phạm vi phát triển, không coi hướng dẫn là bằng chứng đã hỗ trợ đầy đủ.

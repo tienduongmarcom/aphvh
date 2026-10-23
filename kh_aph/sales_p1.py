@@ -43,7 +43,7 @@ FIELDS = {
          "insert_after": F_HAN, "read_only": 1, "allow_on_submit": 1, "no_copy": 1}],
     "Journal Entry": [
         {"fieldname": "kh_aph_phan_bo_giam", "label": "Phân bổ giảm theo phần hàng", "fieldtype": "Long Text",
-         "read_only": 1, "no_copy": 1, "hidden": 1},
+         "read_only": 1, "no_copy": 1, "hidden": 1, "allow_on_submit": 1},
         {"fieldname": F_JE_HD, "label": "Giảm giá sau giao cho hóa đơn", "fieldtype": "Link", "options": "Sales Invoice",
          "insert_after": "voucher_type", "read_only": 1, "no_copy": 1}],
 }
@@ -554,19 +554,70 @@ def protect_quality_source(doc, method=None):
 
 
 @frappe.whitelist()
-def preview_quality(sales_invoice):
+def preview_quality(sales_invoice, journal_entry=None):
     _can_ke_toan()
     si = frappe.get_doc('Sales Invoice', sales_invoice)
     si.check_permission('read')
     if si.docstatus != 1 or cint(si.is_return) or si.currency != 'VND':
         frappe.throw('Chọn khoản bán gốc VND đã ghi sổ')
     from kh_aph.quality_allocation import agreements, parse
-    prior = agreements(si.name)
-    if any(not row.allocation for row in prior):
+    existing = None
+    if journal_entry:
+        existing = frappe.get_doc('Journal Entry',journal_entry)
+        existing.check_permission('read')
+        if existing.docstatus!=1 or existing.get(F_JE_HD)!=si.name or existing.company!=si.company:
+            frappe.throw('Chọn khoản giảm đã ghi của đúng khoản gốc')
+    prior = [row for row in agreements(si.name) if row.name != journal_entry]
+    for entry in prior:
+        frappe.get_doc('Journal Entry',entry.name).check_permission('read')
+    if not journal_entry and any(not row.allocation for row in prior):
         frappe.throw('Đã có đề nghị giảm chưa phân loại lượng; kế toán đối chiếu trước khi lập thêm')
     rows = []
     for row in si.items:
-        allocated = sum(flt(p['qty']) for je in prior for p in parse(je.allocation) if p['invoice_row']==row.name)
+        allocated = sum(flt(p['qty']) for je in prior if je.allocation for p in parse(je.allocation) if p['invoice_row']==row.name)
         rows.append({'invoice_row':row.name, 'item_code':row.item_code, 'item_name':row.item_name,
                      'remaining_qty':max(0,flt(row.qty)-allocated)})
-    return {'name':si.name,'rows':rows}
+    return {'name':si.name,'rows':rows,'modified':existing.modified if existing else None,
+            'existing_amount':sum(flt(r.credit_in_account_currency)-flt(r.debit_in_account_currency) for r in existing.accounts
+                if r.reference_type=='Sales Invoice' and r.reference_name==si.name and r.party_type=='Customer'
+                and r.party==si.customer and r.account==si.debit_to) if existing else None}
+
+
+@frappe.whitelist(methods=['POST'])
+def classify_quality(journal_entry, selections, reason, modified):
+    """Bổ sung phân loại cho JE đã ghi, không thay giá trị/kỳ/công ty hoặc ghi sổ mới."""
+    _can_ke_toan()
+    if not isinstance(reason,str) or not reason.strip() or len(reason.strip())>1000:
+        frappe.throw('Ghi căn cứ đối chiếu phân loại, tối đa1.000 ký tự')
+    from kh_aph.quality_allocation import ALLOCATION, prepare, parse, same_selection, check_posted_debits, save_existing
+    from kh_aph.cash_closing import lock_ledger
+    preliminary=frappe.get_doc('Journal Entry',journal_entry)
+    preliminary.check_permission('read')
+    preliminary.check_permission('write')
+    if not preliminary.get(F_JE_HD):
+        frappe.throw('Khoản giảm cũ chưa có khoản phải thu gốc; đối chiếu nguồn trước')
+    lock_ledger(preliminary)
+    source=frappe.get_doc('Sales Invoice',preliminary.get(F_JE_HD),for_update=True)
+    source.check_permission('read')
+    je=frappe.get_doc('Journal Entry',journal_entry,for_update=True)
+    je.check_permission('read')
+    je.check_permission('write')
+    if (je.docstatus!=1 or source.docstatus!=1 or cint(source.is_return) or je.company!=source.company
+            or je.get(F_JE_HD)!=source.name):
+        frappe.throw('Khoản giảm/nguồn vừa đổi trạng thái; tải lại để đối chiếu')
+    if je.get(ALLOCATION):
+        if not same_selection(parse(je.get(ALLOCATION)),selections):
+            frappe.throw('Khoản đã phân loại; không đổi lượng sau khi lưu')
+        return {'but_toan':je.name,'da_co':True}
+    amount=sum(flt(r.credit_in_account_currency)-flt(r.debit_in_account_currency) for r in je.accounts
+        if r.reference_type=='Sales Invoice' and r.reference_name==source.name and r.party_type=='Customer'
+        and r.party==source.customer and r.account==source.debit_to)
+    try:
+        allocation,_=prepare(source,selections,amount,exclude=je.name,allow_unclassified=True)
+    except (ValueError,KeyError,TypeError) as exc:
+        frappe.throw(str(exc))
+    if str(je.modified)!=str(modified):
+        frappe.throw('Khoản giảm vừa được cập nhật; tải lại trước khi phân loại')
+    check_posted_debits(je,source,allocation)
+    save_existing(je,allocation,reason.strip())
+    return {'but_toan':je.name,'da_co':False}
