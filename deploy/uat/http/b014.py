@@ -35,6 +35,8 @@ def user(ten, roles):
                         "user_type": "System User", "send_welcome_email": 0, "roles": [{"role": r} for r in roles]})
     u.flags.no_welcome_mail = True; u.insert(); update_password(u.name, payload["password"]); return u.name
 ktt = user("ktt", ["Accounts Manager", "Accounts User", "Sales User", "Sales Manager", "Stock Manager", "Stock User", "System Manager", "Item Manager"])
+cash_recipient = user("cash-recipient", ["Nhận bàn giao tiền"])
+cash_other = user("cash-other", ["Nhận bàn giao tiền"])
 ktt2 = user("ktt2", ["Accounts User", "Sales User", "Stock User"])
 ktbh = user("ktbh", ["Kế toán bán hàng", "Sales User", "Stock User"])
 ktbh_no_submit = user("ktbh-no-submit", ["Kế toán bán hàng", "Accounts User"])
@@ -71,7 +73,7 @@ nv = frappe.get_doc({"doctype": "Employee", "first_name": p + " Giám đốc", "
 frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
-    "ktt": ktt, "ktt2": ktt2, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
+    "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
     "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),

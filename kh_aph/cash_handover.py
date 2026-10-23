@@ -21,20 +21,43 @@ def _factory():
     return factory_handover
 
 
+def _receiver():
+    from kh_aph import cash_receiver
+    return cash_receiver
+
+
+def _personal_sender():
+    roles = C.roles_for()
+    return 'Kế toán bán hàng' in roles and not roles & (C.MANAGERS | {'Accounts User'})
+
+
 def _permission(doc, permission='read'):
     if _factory().active():
         _factory().check(doc, permission)
+    elif _receiver().active():
+        _receiver().check(doc, permission)
     else:
         doc.check_permission(permission)
 
 
 def _cash_scope(company, account):
+    if _receiver().active():
+        return _receiver().cash_scope(company, account)
+    if _personal_sender() and not _factory().active():
+        from kh_aph import personal_cash
+        return personal_cash._scope(company, account)
     return _factory().cash_scope(company, account) if _factory().active() else C.scope(company, account)
 
 
 def _state(company, account, holder):
     if _factory().active():
         return C._state(company, account, holder, ledger_reader=_factory().ledger_reader())
+    if _receiver().active():
+        return C._state(company, account, holder, ledger_reader=_receiver().ledger)
+    if _personal_sender():
+        from kh_aph import personal_cash
+        personal_cash._scope(company, account)
+        return C._state(company, account, holder, ledger_reader=personal_cash._ledger)
     return C._state(company, account, holder)
 
 
@@ -55,11 +78,19 @@ def guard():
         frappe.throw("Bàn giao tiền chưa được bật")
     if _factory().active():
         _factory().guard()
+    elif _receiver().active():
+        _receiver().guard()
+    elif _personal_sender():
+        from kh_aph import personal_cash
+        if C.roles_for() & personal_cash.RESTRICTED or not C.enabled() or not custody.enabled():
+            frappe.throw("Chưa có quyền bàn giao tiền bán hàng", frappe.PermissionError)
     else:
         C.guard()
 
 
 def target(company, account):
+    if _receiver().active():
+        return _receiver().target(company, account)
     doc = frappe.get_doc("Account", account)
     _permission(doc, "read")
     if doc.company != company or doc.is_group or doc.disabled or doc.account_currency != "VND" or doc.account_type not in ("Cash", "Bank"):
@@ -71,6 +102,8 @@ def _scope(doc):
     _factory().validate_origin(doc)
     if _factory().active():
         return _factory().scope(doc)
+    if _receiver().active():
+        return _receiver().scope(doc)
     guard()
     if custody.cash(doc.from_account):
         _cash_scope(doc.company, doc.from_account)
@@ -179,7 +212,7 @@ def validate(doc):
     for user in (doc.from_holder, doc.to_holder):
         custody._person(user, doc.company)
         roles = C.roles_for(user)
-        if not _factory().active() and (roles & {"APH Không xem giá vốn", "Kế toán nhà máy"} or not roles & (C.MANAGERS | {"Accounts User"})):
+        if not _factory().active() and (roles & {"APH Không xem giá vốn", "Kế toán nhà máy"} or not roles & (C.MANAGERS | {"Accounts User", "Kế toán bán hàng"} | ({_receiver().ROLE} if user == doc.to_holder else set()))):
             frappe.throw("Người giao/nhận chưa có quyền dùng luồng bàn giao này", frappe.PermissionError)
     old = doc.get_doc_before_save()
     if old and old.docstatus == 1:
@@ -308,6 +341,9 @@ def _journal(doc, amount):
     if _factory().active():
         _factory().scope(doc)
         journal.flags.ignore_permissions = True
+    elif _receiver().active():
+        _receiver().scope(doc)
+        journal.flags.ignore_permissions = True
     with _updating(doc):
         journal.insert()
         journal.submit()
@@ -316,6 +352,7 @@ def _journal(doc, amount):
 
 @frappe.whitelist(methods=["POST"])
 @retry_rpc
+@_receiver().route
 @_factory_route
 def receive(name, amount, reason=None, assignee=None, due_date=None):
     doc = _locked(name)
@@ -428,7 +465,8 @@ def has_permission(doc, user=None, permission_type=None):
     roles = C.roles_for(user)
     if not enabled() or roles & {"APH Không xem giá vốn", "Kế toán nhà máy"}:
         return False
-    return bool(roles & C.MANAGERS or ("Accounts User" in roles and user in (doc.from_holder, doc.to_holder)))
+    return bool(roles & C.MANAGERS or (bool(roles & {"Accounts User", "Kế toán bán hàng"}) and user in (doc.from_holder, doc.to_holder))
+                or (_receiver().ROLE in roles and user == doc.to_holder and permission_type in (None, "read", "select")))
 
 
 def query_conditions(user=None):
@@ -439,6 +477,8 @@ def query_conditions(user=None):
     if roles & C.MANAGERS:
         return ""
     escaped = frappe.db.escape(user)
+    if _receiver().ROLE in roles and not roles & {"Accounts User", "Kế toán bán hàng"}:
+        return f"`tab{DT}`.to_holder={escaped}"
     return f"(`tab{DT}`.from_holder={escaped} or `tab{DT}`.to_holder={escaped})"
 
 

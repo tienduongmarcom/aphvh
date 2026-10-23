@@ -37,6 +37,7 @@ _LAM = {
         ('Yêu cầu chuyển kho chờ xử lý', 'DocType', 'Material Request', {'docstatus': 1, 'material_request_type': 'Material Transfer', 'status': ['not in', ['Transferred', 'Stopped']]}, 'List'),
     ],
     'tien': [
+        ('Bàn giao tiền chờ nhận', 'DocType', 'APH Ban giao tien', {'docstatus': 1, 'status': 'Chờ nhận'}, 'List'),
         ('Hóa đơn còn nợ', 'DocType', 'Sales Invoice', {'docstatus': 1, 'outstanding_amount': ['>', 0]}, 'List'),
         ('Hóa đơn quá hạn', 'DocType', 'Sales Invoice', {'docstatus': 1, 'status': 'Overdue'}, 'List'),
         ('Phiếu thu chờ xác nhận', 'DocType', 'Payment Entry', {'docstatus': 0, 'payment_type': 'Receive'}, 'List'),
@@ -64,14 +65,16 @@ _TRA = {
                  ('Phiếu giao hàng', 'DocType', 'Delivery Note', None, 'List'), ('Đơn quá hạn giao', 'Report', 'Don qua han giao', None, '')],
     'kho': [('Phiếu kho', 'DocType', 'Stock Entry', None, 'List'), ('Chênh lệch kiểm kê chờ xử lý', 'Report', 'Chenh lech kiem ke cho xu ly', None, ''),
             ('Đề nghị bổ sung hàng', 'Report', 'De nghi bo sung hang', None, '')],
-    'tien': [('Sổ quỹ và tiền gửi', 'Report', 'So quy va tien gui', None, ''), ('Tiền thu hộ chưa xử lý', 'Report', 'Tien thu ho chua xu ly', None, ''),
+    'tien': [('Lãi gộp quản trị', 'Report', 'Lai gop quan tri', None, ''),
+             ('Dòng tiền 7/30 ngày', 'Report', 'Dong tien 7 30 ngay', None, ''),
+             ('Sổ quỹ và tiền gửi', 'Report', 'So quy va tien gui', None, ''), ('Tiền thu hộ chưa xử lý', 'Report', 'Tien thu ho chua xu ly', None, ''),
              ('Khách chưa xác nhận công nợ', 'Report', 'Khach chua xac nhan cong no', None, '')],
     'nha_may': [('Phiếu kho', 'DocType', 'Stock Entry', None, 'List'), ('Tiêu hao so với định mức', 'Report', 'Tieu hao so voi dinh muc', None, '')],
 }
 VAI_TRO = {
     'ban_hang': ('Kế toán bán hàng', 'Sales User', 'Sales Manager', 'Accounts User', 'Accounts Manager', 'System Manager'),
     'kho': ('Thủ kho bán hàng', 'Stock User', 'Stock Manager', 'Kế toán nhà máy', 'Accounts User', 'Accounts Manager', 'System Manager'),
-    'tien': ('Accounts User', 'Accounts Manager', 'Kế toán bán hàng', 'Kế toán nhà máy', 'System Manager'),
+    'tien': ('Accounts User', 'Accounts Manager', 'Kế toán bán hàng', 'Kế toán nhà máy', 'System Manager', 'Nhận bàn giao tiền', 'Xem báo cáo điều hành'),
     'nha_may': ('Kế toán nhà máy', 'Stock Manager', 'Accounts Manager', 'System Manager'),
 }
 

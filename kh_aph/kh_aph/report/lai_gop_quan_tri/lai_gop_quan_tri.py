@@ -11,7 +11,8 @@ LINK = {"company": "Company", "warehouse": "Warehouse", "item_code": "Item", "cu
 def execute(filters=None):
     from kh_aph import quan_tri as K
     filters = frappe._dict(filters or {})
-    K.can_quyen()
+    from kh_aph.executive_access import guard
+    guard()
     tu, den = K.tu_ngay_den_ngay(filters)
     theo = THEO.get(filters.theo or "Công ty", "company")
     cty = K.cac_cong_ty()

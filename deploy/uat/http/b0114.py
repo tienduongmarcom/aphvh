@@ -40,6 +40,8 @@ def user(ten, roles):
                         "user_type": "System User", "send_welcome_email": 0, "roles": [{"role": r} for r in roles]})
     u.flags.no_welcome_mail = True; u.insert(); update_password(u.name, payload["password"]); return u.name
 ktt = user("ktt", ["Accounts Manager", "Accounts User", "Sales User", "Sales Manager", "Stock Manager", "Stock User"])
+ceo = user("ceo", ["Xem báo cáo điều hành"])
+ceo_cost_denied = user("ceo-no-cost", ["Xem báo cáo điều hành", ROLE_NO_COST])
 ktt2 = user("ktt2", ["Accounts User", "Sales User", "Stock User"])
 ban = user("ban", ["Nhân viên bán hàng", "Sales User"])
 dung_u = user("dung", [ROLE_FACTORY, ROLE_NO_COST, "Sales User"])
@@ -50,12 +52,12 @@ frappe.db.commit()
 cp = acc("6421", aph) or frappe.db.get_value("Account", {"company": aph, "root_type": "Expense", "is_group": 0}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "vh": vh, "kh0": kh0, "kh1": kh1, "kh2": kh2, "noi_bo": noi_bo,
     "A": A, "t_aph": t_aph, "t_vh": t_vh, "kho": kho, "khov": khov, "pl": pl, "scope_aph": scope_aph, "ktt": ktt, "ktt2": ktt2, "ban": ban,
-    "dung": dung_u, "date": today(), "acc": {"cp": cp, "tien": acc("1111", aph)}}, ensure_ascii=False, default=str))
+    "dung": dung_u, "ceo": ceo, "ceo_cost_denied": ceo_cost_denied, "date": today(), "acc": {"cp": cp, "tien": acc("1111", aph)}}, ensure_ascii=False, default=str))
 frappe.destroy()
 """
 
 """Ca HTTP bản 0.11.4 trên site UAT dùng một lần, bắt buộc khôi phục CSDL sau khi chạy (cùng khung với bộ 0.11.1)."""
-import json, os, secrets, subprocess, uuid, time
+import json, os, secrets, subprocess, uuid
 import http.cookiejar, urllib.request, urllib.parse, urllib.error
 from pathlib import Path
 WEB="aphvh-p0-web-uat"

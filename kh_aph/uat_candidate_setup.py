@@ -121,6 +121,10 @@ def schema(cho_phep_du_lieu=False):
             frappe.throw("Thiếu field candidate: " + dt)
     from kh_aph import credit_release
     credit_release.schema()
+    from kh_aph import executive_access
+    executive_access.schema()
+    from kh_aph import cash_receiver
+    cash_receiver.schema()
     ux_task.schema()  # Cuối cùng: chỉ ẩn lối cũ sau khi schema và danh mục nguồn đầy đủ.
     frappe.db.commit()
     frappe.clear_cache()

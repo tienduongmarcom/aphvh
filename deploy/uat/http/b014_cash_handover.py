@@ -123,6 +123,44 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
     denied(lambda:rpc('kh_aph.cash_handover.send',{'name':first['name']},phien(f['dung'])),('PermissionError',))
     denied(lambda:insert({'doctype':DT,'company':f['vh'],'from_account':source2,'to_account':dest,'from_holder':f['scope_co'],'to_holder':f['ktt2'],'requested_amount':1,'reason':'ngoài phạm vi'},phien(f['scope_co'])),('PermissionError',))
     emit('HTTP_2B_HANDOVER_OVER_SOURCE','PASS',{'count_saved_without_transfer':True,'money_not_invented':True,'scope_and_no_cost':True})
+    # Chủ nhận tiền không có GL/JE: đúng người, retry, chuyển native một lần.
+    owner=phien(f['cash_recipient']);other_owner=phien(f['cash_other'])
+    owner_source=account('owner-source');owner_target=account('owner-target')
+    journal(owner_source,100,f['ktt']);verify(owner_source,100);verify(owner_target)
+    owner_doc=send(owner_source,owner_target,60,f['cash_recipient'])
+    before_owner=counts()
+    denied(lambda:call('receive',{'name':owner_doc['name'],'amount':60},other_owner),('PermissionError',))
+    assert counts()==before_owner
+    owner_result=call('receive',{'name':owner_doc['name'],'amount':60},owner)
+    assert owner_result['status']=='Đã nhận' and 'journal_entry' not in owner_result
+    after_owner=counts()
+    assert after_owner['Journal Entry']==before_owner['Journal Entry']+1
+    assert after_owner['GL Entry']==before_owner['GL Entry']+2
+    assert after_owner['Payment Ledger Entry']==before_owner['Payment Ledger Entry']
+    assert after_owner['Payment Entry']==before_owner['Payment Entry']
+    assert call('receive',{'name':owner_doc['name'],'amount':60},owner)==owner_result and counts()==after_owner
+    denied(lambda:call('receive',{'name':owner_doc['name'],'amount':61},owner))
+    own_rows=lst(DT,{},['name','to_holder'],owner)
+    assert own_rows and all(row['to_holder']==f['cash_recipient'] for row in own_rows)
+    denied(lambda:lst('GL Entry',{},['name'],owner),('PermissionError',))
+    denied(lambda:insert({'doctype':'Journal Entry','company':f['aph']},owner),('PermissionError',))
+    denied(lambda:rpc('frappe.client.set_value',{'doctype':DT,'name':owner_doc['name'],'fieldname':'requested_amount','value':99},owner),('PermissionError',))
+    assert counts()==after_owner
+    same_owner=send(owner_source,owner_source,20,f['cash_recipient'])
+    before_same=counts()
+    assert call('receive',{'name':same_owner['name'],'amount':20},owner)['status']=='Đã nhận'
+    assert counts()==before_same
+    # Bán hàng gửi từ tiền của mình mà không cần Accounts User/GL.
+    sales_sender=phien(f['ktbh']);sales_source=account('sales-source')
+    journal(sales_source,30,f['ktbh'])
+    submit(insert({'doctype':'APH Xac minh quy','company':f['aph'],'account':sales_source,'reason':'UAT tiền của bán hàng',
+        'allocations':[{'holder':f['ktbh'],'amount':30}],'unverified_amount':0},ktt),ktt)
+    sales_doc=insert({'doctype':DT,'company':f['aph'],'from_account':sales_source,'to_account':owner_target,
+        'from_holder':f['ktbh'],'to_holder':f['cash_recipient'],'requested_amount':30,'reason':'Bán hàng gửi cho chủ'},sales_sender)
+    call('send',{'name':sales_doc['name']},sales_sender)
+    assert call('receive',{'name':sales_doc['name'],'amount':30},owner)['status']=='Đã nhận'
+    denied(lambda:lst('GL Entry',{},['name'],sales_sender),('PermissionError',))
+    emit('HTTP_014_NHAN_TIEN_QUYEN_HEP','PASS',{'only_assigned_receiver':True,'no_gl_or_je_permission':True,'one_native_transfer':True,'retry_no_second_posting':True,'same_account_no_journal':True})
     if os.environ.get('GITHUB_ACTIONS'):
         import subprocess
         from pathlib import Path

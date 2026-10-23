@@ -1,5 +1,16 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — ĐANG KIỂM: quyền điều hành và nhận tiền hẹp
+
+Đã viết executive_access: vai trò Xem báo cáo điều hành, quyền đọc/report trên nguồn, chỉ mở hai báo cáo lãi gộp và dòng tiền; không mở guard khóa kỳ/sửa chứng từ. Giới hạn Company vẫn qua native; hồ sơ có dimension chi tiết khác bị chặn tổng hợp. Có quyền Report tùy chỉnh riêng không tự ghi đè. Bộ cài tạo role trước rồi thêm vào đúng hai Report, giữ vai trò cũ; context in_import chỉ quanh save Report chuẩn, khôi phục ngay.
+
+Đã viết cash_receiver capability theo actor/tuple nguồn đã khóa: người chỉ có Nhận bàn giao tiền đọc đúng hồ sơ gửi cho mình, xác nhận qua canonical receive; nội bộ đọc đủ Cash để kiểm nguồn, không trả snapshot hay cấp GL/JE. Khác quỹ tạo đúng JE liên kết một lần, cùng quỹ chỉ chuyển trách nhiệm; retry giữ hash. Từ chối tự nhận/nhận thay/sửa nguồn; NoCost không cộng role để vượt chặn; nhà máy giữ adapter cũ. Kế toán bán hàng được tạo/gửi/hủy bàn giao của mình qua số tiền cá nhân và native H, không thêm Accounts User/GL; nhận cũng dùng capability. UI dùng form cũ, ẩn nút hoàn nếu không có quyền tạo; Workspace tiền thêm đường bàn giao chờ nhận và hai báo cáo, không thêm màn.
+
+Đã thêm ca HTTP_014_NHAN_TIEN_QUYEN_HEP; bộ014 tăng141, giữ toàn bộ140ca cũ. Ca mới kiểm sai người, readonly GL/JE, đúng người nhận60/100, khác quỹ ghi1JE2GL khôngPE/PLE, retry, cùng quỹ khôngJE, KTBH gửi30cho chủ không cầnGL. Bộ0114 mở rộng ca hiện có: CEO xem đúng giá vốn/lãi, mở dòng tiền, không sửa SI/khóa kỳ; cộngNoCost bị chặn.637ca cục bộ không bỏ qua đạt trước đổi lối tắt; JS/Pyflakes đạt. Chưa có bằng chứng native mã mới, chưa tạo/cấp quyền người thật.
+
+UAT39915893234 vẫn kiểm9a150f8 (phiếu thu cọc), không chứa quyền mới; Cổng2b39916449799/Cổng339916449912 kiểm0d6e866 cũ, không suy sang phần này. Bắt buộc đọc/giữ kết quả rồi chạy đủ cổng trên mã cuối. Còn đối chiếu phạm vi kho Hạnh/Dũng, bộ áp tài khoản và thu/hoàn đổi mã một cửa. PR38nháp; production0.16.4 không đổi.
+
+
 ## 23/10/2026 — Tách quyền duyệt khách rủi ro, chưa áp nhân sự
 
 Thêm vai trò Duyệt khách rủi ro qua bộ cài schema rõ ràng dưới cờ high_risk_credit_guard hiện có. Chỉ cấp đọc Company/Customer/DN và đọc/tạo/ghi phiếu duyệt bất biến; không cấp JE/GL, sửa Customer, ghi kho hoặc tài chính. validate_release/approve/revoke nhận vai trò riêng hoặc Accounts Manager; chỉnh dấu rủi ro/hạn mức trên Customer vẫn chỉ Accounts Manager. ROLE_NO_COST chặn cả khi cộng vai trò duyệt/Accounts Manager. Không gán vai trò vào tài khoản thật. Không thay quy tắc hạn mức: global_credit đang cảnh báo, high-risk mới chặn giao và dùng dấu duyệt. Không gọi phần này là đã duyệt vượt mọi hạn mức.

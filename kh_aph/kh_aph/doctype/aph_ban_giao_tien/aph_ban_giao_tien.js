@@ -19,7 +19,7 @@ frappe.ui.form.on("APH Ban giao tien", {
       frm.add_custom_button(__("Đối chiếu lệch tiền"), () => frappe.new_doc("APH Doi chieu lech tien", {source_type: frm.doctype, source_name: frm.doc.name}));
     }
     if (frm.doc.reversal_doc) frm.add_custom_button(__("Mở phiếu hoàn"), () => frappe.set_route("Form", frm.doctype, frm.doc.reversal_doc));
-    if (frm.doc.docstatus === 1 && ["Đã nhận", "Có chênh lệch"].includes(frm.doc.status) && !frm.doc.reversal_of && frm.doc.received_amount > 0 && frm.doc.to_holder === frappe.session.user && frm.doc.issue_state !== "Chờ xử lý") {
+    if (frappe.model.can_create("APH Ban giao tien") && frm.doc.docstatus === 1 && ["Đã nhận", "Có chênh lệch"].includes(frm.doc.status) && !frm.doc.reversal_of && frm.doc.received_amount > 0 && frm.doc.to_holder === frappe.session.user && frm.doc.issue_state !== "Chờ xử lý") {
       frm.add_custom_button(__("Lập phiếu hoàn"), () => {
         const request_id = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, "0")).join("");
         const dialog = new frappe.ui.Dialog({title: __("Trả lại toàn bộ tiền đã nhận"), fields: [

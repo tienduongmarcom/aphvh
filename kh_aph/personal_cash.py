@@ -11,7 +11,7 @@ from kh_aph import cash_closing as C, cash_custody as custody, cash_handover as 
 from kh_aph.cash_closing_rules import money
 from kh_aph.cash_transaction import retry_rpc
 
-ROLES = C.MANAGERS | {"Accounts User", "Kế toán bán hàng", "Kế toán nhà máy"}
+ROLES = C.MANAGERS | {"Accounts User", "Kế toán bán hàng", "Kế toán nhà máy", "Nhận bàn giao tiền"}
 RESTRICTED = {"APH Không xem giá vốn", "Kế toán nhà máy"}
 
 

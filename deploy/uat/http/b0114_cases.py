@@ -96,6 +96,15 @@ def chay(admin, phien, f, emit):
     don = lai_gop("Đơn")[so_a["name"]]
     near(don["cp"], 10000)
     near(don["lg"], 80000)
+    ceo = phien(f["ceo"])
+    ceo_report = bao_cao("Lai gop quan tri", {"tu_ngay": d, "den_ngay": d, "theo": "Khách"}, ceo)
+    ceo_row = next(row for row in ceo_report["result"] if isinstance(row, dict) and row.get("khoa") == f["kh0"])
+    near(ceo_row["APH_gv"], 160000)
+    near(ceo_row["lai_sau_cp"], 170000)
+    bao_cao("Dong tien 7 30 ngay", {"ngay": d}, ceo)
+    denied(lambda: rpc("kh_aph.quan_tri.khoa_ky", {"company": f["aph"], "thang": thang_truoc, "ly_do": "CEO chỉ xem"}, ceo), ("PermissionError",))
+    denied(lambda: raw("frappe.client.set_value", {"doctype":"Sales Invoice", "name":_hd_a["name"], "fieldname":"remarks", "value":"Không có quyền sửa"}, ceo), ("PermissionError",))
+    denied(lambda: bao_cao("Lai gop quan tri", {"tu_ngay": d, "den_ngay": d}, phien(f["ceo_cost_denied"])), ("PermissionError",))
     a = kh
     emit("HTTP_0114_LAI_GOP_CONG_NGANG", "PASS", {"APH": kh["APH_lg"], "VH": kh["VH_lg"], "cong_ngang": kh["lg"],
                                                   "lai_sau_cp": kh["lai_sau_cp"]})

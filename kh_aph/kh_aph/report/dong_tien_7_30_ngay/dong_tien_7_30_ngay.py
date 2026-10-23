@@ -13,7 +13,8 @@ NHAN = {"so_du": "Tiền + ngân hàng hiện có", "thu_7": "Dự thu 7 ngày",
 def execute(filters=None):
     from kh_aph import quan_tri as K
     filters = frappe._dict(filters or {})
-    K.can_quyen()
+    from kh_aph.executive_access import guard
+    guard()
     ngay = getdate(filters.ngay or nowdate())
     cols = [{"fieldname": "don_vi", "label": "Đơn vị", "fieldtype": "Data", "width": 220}] + \
         [{"fieldname": k, "label": NHAN[k], "fieldtype": "Currency", "width": 140} for k in KHOA]
