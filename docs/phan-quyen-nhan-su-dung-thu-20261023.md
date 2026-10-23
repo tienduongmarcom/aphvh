@@ -100,3 +100,8 @@ Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm
 ### Tiến độ quyền điều hành và nhận tiền
 
 Đã viết vai trò Xem báo cáo điều hành và Nhận bàn giao tiền, chưa cấp vào nhân sự thật. CEO mở riêng hai báo cáo, không kèm khóa kỳ/sửa sổ; người nhận chỉ thấy bàn giao được chỉ định, không mở GL/JE. KTBH gửi/nhận bằng số tiền cá nhân và dịch vụ bàn giao chuẩn, tránh cấp Accounts User để chữa lỗi. Bổ sung ca native, đang chờ chạy. Vai trò nhận tiền không mặc định có quyền hoàn/gửi tiền mới; khi cần nghiệp vụ ngoài phạm vi phải giao đúng người thực hiện, không dùng quyền quản trị thay.
+
+
+### Phạm vi công nợ khi Hạnh bị giới hạn kho
+
+Đã viết quyền đánh dấu Đối soát công nợ toàn khách: chỉ bản tài chính summary_only, không kéo theo bản in phiếu nguồn. Hồ sơ kho chỉ thấy/tải các bản summary này; packet cũ có phiếu nguồn vẫn bị chặn cả API/list/file. Warehouse User Permission phải áp riêng vào chứng từ kho/bán/mua đã liệt kê; không nới hạn chế tài khoản/bộ phận/Company. Phiếu hàng/thu in riêng theo quyền native. Chưa áp người thật, chưa native chứng minh; danh sách kho thực tế vẫn cần đối chiếu trước áp.

@@ -56,6 +56,7 @@ B = frappe.get_doc({"doctype": "Item", "item_code": p + "-B", "item_name": p + "
     "stock_uom": "Kg", "is_stock_item": 1, "valuation_method": "Moving Average",
     "taxes": [{"item_tax_template": t_vh}]}).insert().name
 scope_co = user("scope-co", ["Kế toán bán hàng", "Sales User", "Stock User", "Accounts Manager", "Accounts User"])
+scope_ar = user("scope-ar", ["Kế toán bán hàng", "Sales User", "Stock User", "Đối soát công nợ toàn khách"])
 scope_wh = user("scope-wh", ["Kế toán bán hàng", "Sales User", "Stock User"])
 frappe.get_doc({"doctype": "User Permission", "user": scope_co, "allow": "Company", "for_value": aph,
                 "apply_to_all_doctypes": 1}).insert()
@@ -63,6 +64,9 @@ frappe.get_doc({"doctype": "User Permission", "user": scope_co, "allow": "Compan
 # Giới hạn kho trên đúng các DocType cần xử lý; không cấp thêm kho ngoài phạm vi.
 for target in ("Warehouse", "Sales Order", "Delivery Note", "APH Shared Sales Order"):
     frappe.get_doc({"doctype": "User Permission", "user": scope_wh, "allow": "Warehouse", "for_value": kho,
+                    "apply_to_all_doctypes": 0, "applicable_for": target}).insert()
+for target in ("Warehouse", "Sales Order", "Delivery Note", "APH Shared Sales Order"):
+    frappe.get_doc({"doctype": "User Permission", "user": scope_ar, "allow": "Warehouse", "for_value": kho,
                     "apply_to_all_doctypes": 0, "applicable_for": target}).insert()
 ss = frappe.get_doc("Selling Settings")
 ss.set("kh_aph_nguoi_duyet_gia_san", [{"user": tp, "muc": 0, "tu_duyet": 0}])
@@ -74,7 +78,7 @@ frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
     "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
-    "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh,
+    "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh, "scope_ar": scope_ar,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),
     "bank_vh": frappe.db.get_value("Account", {"company": vh, "account_name": "MB 3333"}, "name"),

@@ -10,6 +10,8 @@ from frappe.utils import cint, getdate, now_datetime, today
 from kh_aph.constants import ROLE_NO_COST, ROLE_FACTORY, PRICE_ROLES
 from kh_aph.debt_statement_rules import amount, snapshot, base_unallocated, deposit_snapshot
 
+from kh_aph.staff_scope import FULL_CUSTOMER_DEBT_ROLE, financial_summary_only
+
 DT = 'Bien ban doi soat no'
 FLAG = 'kh_aph_quan_tri'
 ROLES = {'Kế toán bán hàng', 'Accounts User', 'Accounts Manager', 'System Manager'}
@@ -32,6 +34,12 @@ def _allowed(user=None):
     return bool(not price_restricted and roles & ROLES)
 
 
+def _summary_only(user=None):
+    from frappe.permissions import get_user_permissions
+    user = user or frappe.session.user
+    return financial_summary_only(set(frappe.get_roles(user)), get_user_permissions(user))
+
+
 def _limited_dimensions(user=None):
     # API được giao quyền tổng hợp nợ theo Company/Customer, không mở dữ liệu tài chính
     # ngoài phạm vi tài khoản/trung tâm chi phí/dimension riêng của một người dùng.
@@ -49,6 +57,8 @@ def _limited_dimensions(user=None):
                           if field.fieldtype == 'Link' and field.options and not field.get('ignore_user_permissions'))
     dimensions.update(frappe.get_all('Accounting Dimension', pluck='document_type'))
     dimensions -= {'Company', 'Customer'}
+    if financial_summary_only(set(frappe.get_roles(user or frappe.session.user)), restrictions):
+        dimensions.discard('Warehouse')
     return any(key in dimensions and values for key, values in restrictions.items())
 
 
@@ -65,6 +75,12 @@ def has_permission(doc=None, user=None, permission_type=None, ptype=None, **kwar
         return False
     if not doc or doc.is_new():
         return True
+    if _summary_only(user):
+        try:
+            if json.loads(doc.payload).get('summary_only') is not True:
+                return False
+        except (ValueError, TypeError, AttributeError):
+            return False
     try:
         companies = json.loads(doc.scope)
     except (ValueError, TypeError):
@@ -83,7 +99,10 @@ def query_conditions(user=None):
     if not companies:
         return '1=0'
     allowed = frappe.db.escape(json.dumps(companies))
-    return f'JSON_VALID(`tab{DT}`.`scope`) AND JSON_CONTAINS({allowed}, `tab{DT}`.`scope`)'
+    condition = f'JSON_VALID(`tab{DT}`.`scope`) AND JSON_CONTAINS({allowed}, `tab{DT}`.`scope`)'
+    if _summary_only(user):
+        condition += f" AND JSON_VALID(`tab{DT}`.`payload`) AND JSON_UNQUOTE(JSON_EXTRACT(`tab{DT}`.`payload`, '$.summary_only'))='true'"
+    return condition
 
 
 class Statement(Document):
@@ -101,6 +120,8 @@ class Statement(Document):
 def schema():
     if not enabled():
         return
+    if not frappe.db.exists('Role', FULL_CUSTOMER_DEBT_ROLE):
+        frappe.get_doc({'doctype':'Role','role_name':FULL_CUSTOMER_DEBT_ROLE,'desk_access':1}).insert()
     frappe.reload_doc('kh_aph', 'doctype', 'bien_ban_doi_soat_no')
     frappe.reload_doc('kh_aph', 'print_format', 'doi_soat_theo_luot')
     from frappe.custom.doctype.property_setter.property_setter import make_property_setter
@@ -302,7 +323,7 @@ def create(customer, companies, vouchers, request_id, supersedes=None):
         doc.check_permission('read')
         if existing.request_hash != signature:
             frappe.throw('Mã lượt đã dùng cho nội dung khác; mở lại thao tác')
-        return {'name': doc.name, 'file_url': doc.bundle_file, 'reused': True}
+        return {'name': doc.name, 'file_url': doc.bundle_file, 'reused': True, 'summary_only': json.loads(doc.payload or '{}').get('summary_only', False)}
     selected, sources = _sources(customer, scope, keys)
     if supersedes:
         previous = frappe.get_doc(DT, supersedes)
@@ -313,7 +334,8 @@ def create(customer, companies, vouchers, request_id, supersedes=None):
     from kh_aph.customer_identity import details
     identity = details([customer_doc])[customer]
     figures['company_labels'] = {company: frappe.get_doc('Company', company).get('abbr') or company for company in scope}
-    figures.update(customer_name=customer_doc.customer_name, customer=customer,
+    summary_only = _summary_only()
+    figures.update(summary_only=summary_only, customer_name=customer_doc.customer_name, customer=customer,
                    prepared_by=frappe.utils.get_fullname(frappe.session.user),
                    tax_id=customer_doc.tax_id or '',
                    phone=identity['mobile_no'] if not identity['mobile_no'].startswith('Không có quyền') else '',
@@ -326,11 +348,11 @@ def create(customer, companies, vouchers, request_id, supersedes=None):
     try:
         doc.insert()
         from kh_aph.statement_pdf import make_bundle
-        doc.bundle_file = make_bundle(doc, sources)
+        doc.bundle_file = make_bundle(doc, {} if summary_only else sources)
         doc.save()
     finally:
         _INTERNAL.reset(token)
-    return {'name': doc.name, 'file_url': doc.bundle_file, 'reused': False}
+    return {'name': doc.name, 'file_url': doc.bundle_file, 'reused': False, 'summary_only': summary_only}
 
 
 def print_data(doc):

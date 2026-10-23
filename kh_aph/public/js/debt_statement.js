@@ -28,6 +28,7 @@ kh_aph.statement.open = async function(frm) {
                 customer, companies: JSON.stringify(values.companies),
                 vouchers: JSON.stringify(values.sources.map(r => ({doctype: r.voucher_type, name: r.voucher}))),
                 request_id, supersedes: values.supersedes || null}, freeze: true});
+            if (result.message.summary_only) frappe.msgprint(__("Bản này đối soát toàn bộ công nợ của khách. Phiếu xuất/thu in riêng theo quyền trên từng chứng từ; không ghép phiếu ngoài phạm vi kho."));
             if (preview) preview.location.href = result.message.file_url;
             dialog.hide();
             frappe.set_route("Form", "Bien ban doi soat no", result.message.name);

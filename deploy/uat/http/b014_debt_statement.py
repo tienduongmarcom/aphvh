@@ -93,6 +93,18 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},warehouse_scoped),('PermissionError',))
     denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},scoped),('PermissionError',))
     denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},no_cost),('PermissionError',))
+    ar_scoped=phien(f['scope_ar'])
+    # Không đọc bản cũ chứa bộ phiếu, kể cả cùng khách/công ty.
+    denied(lambda:get(dt,statement['name'],ar_scoped),('PermissionError',))
+    private_denied(ar_scoped,created['file_url'])
+    summary=rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex},ar_scoped)
+    assert summary['summary_only'] is True
+    summary_doc=get(dt,summary['name'],ar_scoped)
+    summary_data=json.loads(summary_doc['payload'])
+    assert summary_data['summary_only'] is True and summary_data['positions']==data['positions']
+    assert len(_pdf_pages(ar_scoped.binary_get(summary['file_url'])))==1
+    visible=lst(dt,{},['name','payload'],ar_scoped)
+    assert visible and all(json.loads(row['payload']).get('summary_only') is True for row in visible)
     partial=rpc('kh_aph.debt_statement.create',{**args,'companies':json.dumps([f['aph']]),'request_id':uuid.uuid4().hex},scoped)
     assert json.loads(get(dt,partial['name'],scoped)['scope'])==[f['aph']]
     assert scoped.binary_get(partial['file_url']).startswith(b'%PDF')

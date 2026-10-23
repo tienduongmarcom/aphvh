@@ -47,11 +47,12 @@ jobs:
       - name: Record versions and verified source hashes
         run: |
           expected_hook_sha=$(sha256sum kh_aph/hooks.py | cut -d" " -f1)
-          docker run --rm -e EXPECTED_SOURCE_HOOK_SHA="$expected_hook_sha" --entrypoint bash aphvh-uat:verification -ec '
+          expected_credit_sha=$(sha256sum kh_aph/credit_release.py | cut -d" " -f1)
+          docker run --rm -e EXPECTED_SOURCE_HOOK_SHA="$expected_hook_sha" -e EXPECTED_CREDIT_SHA="$expected_credit_sha" --entrypoint bash aphvh-uat:verification -ec '
             cd /home/frappe/frappe-bench
             bench version
             sha256sum apps/kh_aph/kh_aph/credit_release.py apps/kh_aph/kh_aph/hooks.py
-            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "0edbc70369bac6d6e9d26e6d4c7f3c086ecd8a253e207e5d221e3032b1f0d758"
+            test "$(sha256sum apps/kh_aph/kh_aph/credit_release.py | cut -d" " -f1)" = "$EXPECTED_CREDIT_SHA"
             test "$(sha256sum apps/kh_aph/kh_aph/hooks.py | cut -d" " -f1)" = "$EXPECTED_SOURCE_HOOK_SHA"
           ' > candidate-image-evidence.txt
           cat candidate-image-evidence.txt

@@ -1,5 +1,12 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Tách công nợ tài chính khỏi bộ phiếu có giới hạn kho
+
+Thêm vai trò đánh dấu Đối soát công nợ toàn khách, không tự cấp quyền chứng từ. Chỉ khi đã có quyền kế toán và mọi giới hạn Warehouse đều áp riêng vào chứng từ kho/bán/mua được liệt kê, mới được lập bản TỔNG HỢP công nợ theo Company/Customer. Các giới hạn Account/CostCenter/Project/dimension khác vẫn chặn; Warehouse toàn hệ thống hoặc applicable_for trống vẫn chặn. Bản này đóng băng summary_only=true và chỉ chứa biên bản tài chính, KHÔNG ghép phiếu nguồn. Native quyền từng nguồn vẫn kiểm lúc tạo; phiếu hàng/thu in riêng theo quyền. Hồ sơ có giới hạn kho chỉ đọc/list/tải PDF summary_only=true, không mở lại packet cũ có phiếu ngoài phạm vi; query SQL chặn luôn payload cũ. Không sửa hoặc public hóa PDF cũ. Đã thêm hồi quy API/list/file/Company và pure scope;640ca cục bộ không bỏ qua đạt. Native mới chưa chạy, chưa cấp role Hạnh.
+
+UAT39918413501 đúng4f75492 FAIL sớm ở kiểm SHA credit_release.py: workflow còn ghim hash trước thay đổi quyền duyệt. Chưa chạy schema/UAT nghiệp vụ mã mới. Đã sửa so SHA tệp trong image với SHA của đúng checkout, giống kiểm hooks, không bỏ kiểm toàn vẹn. Cổng2b39916449799 đúng0d6e866 SUCCESS (chờ đọc log chi tiết); Cổng339916449912 cùngSHA còn chạy. Không suy sang CEO/cash receiver/công nợ mới. Tiếp theo dispatch141 trên mã sửa, đọc native assertions quyền và giữ mọi lượt FAIL.
+
+
 ## 23/10/2026 — Sửa bộ đọc PDF trên đúng container, giữ lượt lỗi
 
 UAT39915893234 đúng9a150f8 FAIL tại b014_debt_statement.chay_coc: ModuleNotFoundError pypdf trên runner. PDF đã được tạo nhưng chưa chạy xong assertion/nội dung/NoCost/khôi phục ca cọc, không coi đạt. Đã tải artifact, render và xem cả2trang doi-soat-coc-theo-don.pdf: đối soát đủ bảng/chữ ký, phiếu thu100.000 có Nợ1111/Có3388/số khoản nhận/ô ký, không cắt nội dung. Sửa helper dùng cùng pypdf trong container ERPNext như bộ giấy cũ, không cài runner hoặc bỏ assert. Lượt39918301530 vừa dispatch3984cec bị hủy sớm vì chưa chứa sửa helper, không tínhPASS/FAIL nghiệp vụ. Chạy lại141ca trên mã sửa tiếp theo. Quyền CEO/nhận tiền637unit đã viết, chưa có native chứng minh.

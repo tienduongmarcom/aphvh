@@ -150,3 +150,27 @@ class StatementBoundary(unittest.TestCase):
         self.assertEqual(len(documents),2)
         receipt['customer']='KHAC'
         with self.assertRaises(ValueError):self.api._sources('KH',['CO'],[('APH Funds Action','A')])
+
+    def test_stock_scoped_finance_only_reads_summary_not_attached_source_packet(self):
+        from kh_aph.staff_scope import FULL_CUSTOMER_DEBT_ROLE
+        self.f.get_roles.return_value=['Kế toán bán hàng',FULL_CUSTOMER_DEBT_ROLE]
+        self.permissions.get_user_permissions.return_value={'Warehouse':[{'doc':'WH','applicable_for':'Delivery Note'}]}
+        self.f.get_meta.return_value=Row(fields=[Row(fieldtype='Link',options='Warehouse')])
+        self.assertFalse(self.api._limited_dimensions())
+        doc=Row(scope='["CO"]',customer='KH',payload='{}',is_new=lambda:False)
+        self.assertFalse(self.api.has_permission(doc))
+        doc['payload']='{"summary_only":true}'
+        self.assertTrue(self.api.has_permission(doc))
+        self.permissions.get_user_permissions.return_value['Account']=[{'doc':'1111'}]
+        self.assertTrue(self.api._limited_dimensions())
+        self.assertFalse(self.api.has_permission(doc))
+
+    def test_stock_scoped_list_never_returns_old_packet_payload(self):
+        from kh_aph.staff_scope import FULL_CUSTOMER_DEBT_ROLE
+        self.f.get_roles.return_value=['Kế toán bán hàng',FULL_CUSTOMER_DEBT_ROLE]
+        self.permissions.get_user_permissions.return_value={'Warehouse':[{'doc':'WH','applicable_for':'Warehouse'}]}
+        self.f.get_list=Mock(return_value=['CO']);self.f.db.escape=lambda value:repr(value)
+        condition=self.api.query_conditions()
+        self.assertIn('JSON_CONTAINS',condition)
+        self.assertIn("$.summary_only",condition)
+        self.assertIn("='true'",condition)
