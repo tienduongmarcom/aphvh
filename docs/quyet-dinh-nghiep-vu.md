@@ -33,3 +33,7 @@ Giấy gốc có chữ ký được gom và lưu tập trung tại kế toán c�
 Không bắt khách/xe chờ phần mềm xác nhận xuất thành công khi mất mạng. Cho phép lập giấy tay mới do người phụ trách được giao quyền quyết định, kể cả lượt chưa chuẩn bị/kiểm ERP; ghi nhận hệ thống và đối chiếu sau có mạng, giữ đúng thực giao/thu và giấy gốc. Không suy mọi nhân viên được tự duyệt hoặc được bỏ kiểm sổ khi nhập bù.
 
 Khi thực thu tiền phải lập phiếu thu cho người nộp/khách ký. Khi có tăng hoặc giảm công nợ phải có biên bản đối soát ký và lưu, kể cả phát sinh tăng/giảm bù nhau, dư cuối0. Một bản theo khách trình bày riêng từng đơn vị, cọc và tiền chưa phân bổ; không tự cấn chéo. Lái xe có quyền nhận hàng chỉ ký công nợ khi khách giao thêm quyền ký nợ riêng. Ảnh và giấy gốc tiếp tục xử lý sau, kế toán cửa hàng lưu tập trung. Thiết kế cập nhật tại `bo-sung-kho-mat-mang-thu-tien-doi-soat-20261021.md`, chưa triển khai vào ERP.
+
+## Bổ sung23/10/2026 — trả hàng sau khi đã giảm giá một phần
+
+Chủ dự án chọn **phân biệt phần đã giảm và chưa giảm**, không lấy giá bình quân toàn mã hàng. Ví dụ một dòng25kg có5kg được giảm thì20kg còn lại giữ giá gốc; trả hàng chọn đúng phần/thoả thuận và kg thực nhận. Giữ số lượng còn được trả riêng từng phần, tính cả nháp đang giữ; không hoàn lại tiền đã giảm. Nhiều thoả thuận phải có nguồn riêng và không tự gán chồng cùng lượng. Khoản cũ chỉ có tổng giảm chưa rõ dòng/lượng phải đối chiếu trước, không suy đoán tự động. Việc chọn này không làm phát sinh sổ tiền/kho mới hoặc cấp duyệt mới.

@@ -522,7 +522,7 @@ doctype_js["Delivery Note"].append("public/js/ux_delivery_layout.js")
 # Nhận trả một phần bao: kiểm nguồn và tổng lượng ở mọi lối lưu/ghi native.
 doc_events["Delivery Note"].setdefault("validate", []).append("kh_aph.sales_return.validate")
 doc_events["Delivery Note"].setdefault("before_submit", []).append("kh_aph.sales_return.validate")
-for _dt in ("Delivery Note", "Customer"):
+for _dt in ("Delivery Note", "Customer", "Sales Invoice"):
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/sales_return.js"]
@@ -562,3 +562,6 @@ for _dt in ("Customer", "Delivery Note", "Payment Entry", "Bien ban doi soat no"
     _scripts = doctype_js.get(_dt, [])
     _scripts = [_scripts] if isinstance(_scripts, str) else list(_scripts)
     doctype_js[_dt] = _scripts + ["public/js/debt_statement.js"]
+
+# Không hủy nguồn giảm đã được dùng trong phần nhận trả.
+doc_events.setdefault("Journal Entry", {}).setdefault("before_cancel", []).append("kh_aph.quality_allocation.prevent_cancel")

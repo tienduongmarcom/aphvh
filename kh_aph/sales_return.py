@@ -28,6 +28,11 @@ def fields():
             {"fieldname": REASON, "label": "Lý do nhận trả", "fieldtype": "Small Text",
              "depends_on": "eval:doc.is_return", "no_copy": 1, "insert_after": "return_against"}],
         "Delivery Note Item": [
+            {"fieldname": "kh_aph_chi_tiet_phan_tra", "label": "Chi tiết phần hàng nhận trả", "fieldtype": "Small Text",
+             "read_only": 1, "no_copy": 1, "insert_after": "kh_aph_tra_le_kg",
+             "depends_on": "eval:doc.kh_aph_phan_nhan_tra"},
+            {"fieldname": "kh_aph_phan_nhan_tra", "label": "Phần hàng nhận trả", "fieldtype": "Long Text",
+             "read_only": 1, "no_copy": 1, "hidden": 1},
             {"fieldname": LOOSE, "label": "Trả lẻ theo kg", "fieldtype": "Check", "default": "0",
              "no_copy": 1, "insert_after": "kh_aph_bags",
              "description": "Hàng trả một phần bao: kg thực nhận và số bao vật lý độc lập. Chỉ dùng phiếu trả theo dòng gốc."}],
@@ -72,6 +77,8 @@ def preview(delivery_note):
         frappe.throw("Cần quyền lập phiếu nhận trả", frappe.PermissionError)
     dn = _source(delivery_note)
     reserved = {r.dn_detail: r for r in _reserved(dn, lock=False)}
+    from kh_aph.quality_allocation import parts_for_dn
+    quality = parts_for_dn(dn)
     rows = []
     for d in dn.items:
         frappe.get_doc("Warehouse", d.warehouse).check_permission("read")
@@ -80,7 +87,9 @@ def preview(delivery_note):
                      "uom": d.uom, "warehouse": d.warehouse, "delivered_qty": flt(d.qty),
                      "remaining_qty": max(0, flt(d.qty) - flt(used.get("qty"))),
                      "remaining_bags": max(0, flt(d.get("kh_aph_bags")) - flt(used.get("bags"))),
-                     "kg_per_bag": flt(d.get("kh_aph_kg_per_bag"))})
+                     "kg_per_bag": flt(d.get("kh_aph_kg_per_bag")),
+                     "parts": [{**p, 'qty':str(p['qty']), 'remaining':str(p['remaining']), 'net_rate':str(p['net_rate'])}
+                               for p in quality[d.name]] if quality is not None else None})
     return {"name": dn.name, "customer": dn.customer, "company": dn.company, "rows": rows}
 
 
@@ -104,6 +113,10 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
                              "bags": str(r.get("bags", 0))} for r in choices], key=lambda r: r["source_row"])
     except (KeyError, TypeError):
         frappe.throw("Dữ liệu nhận trả không hợp lệ")
+    # Giữ hash của payload cũ khi không có phần hàng; payload mới giữ cả lựa chọn cụ thể.
+    for target, choice in zip(canonical, sorted(choices, key=lambda r:r['source_row'])):
+        if 'parts' in choice:
+            target['parts'] = choice['parts']
     signature = hashlib.sha256(json.dumps({"rows": canonical, "reason": reason.strip(),
         "condition": condition, "settlement": settlement}, sort_keys=True).encode()).hexdigest()
     dn = _source(delivery_note, lock=True)
@@ -118,6 +131,8 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
         return {"name": found.name, "reused": True}
     if not frappe.has_permission("Delivery Note", "create"):
         frappe.throw("Cần quyền lập phiếu nhận trả", frappe.PermissionError)
+    from kh_aph.quality_allocation import parts_for_dn, price, encode, RETURN_PARTS
+    quality = parts_for_dn(dn, lock=True)
     sources = {r.name: r for r in dn.items}
     seen, planned = set(), {}
     reserved = {r.dn_detail: r for r in _reserved(dn)}
@@ -148,6 +163,13 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
         except ValueError as exc:
             frappe.throw(str(exc))
         frappe.get_doc("Warehouse", source.warehouse).check_permission("read")
+        if quality is not None:
+            priced, part_qty, rate = price(quality[key], choice.get('parts'))
+            if abs(float(q)-part_qty) > 0.000001:
+                frappe.throw('Tổng lượng các phần hàng chưa khớp lượng thực nhận')
+            result['quality_parts'], result['quality_rate'] = encode(priced), rate
+        elif choice.get('parts'):
+            frappe.throw('Phiếu gốc chưa có phân bổ giảm tương ứng; không tự gán phần hàng')
         planned[key] = result
     from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
     ret = make_sales_return(dn.name)
@@ -158,6 +180,10 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
         p = planned[r.dn_detail]
         r.qty, r.kh_aph_bags, r.kh_aph_kg_per_bag = map(float, (p["qty"], p["bags"], p["kg_per_bag"]))
         r.set(LOOSE, p["loose"])
+        if p.get('quality_parts'):
+            r.set(RETURN_PARTS, p['quality_parts'])
+            r.rate = p['quality_rate']
+            r.discount_percentage, r.discount_amount = 0, 0
     ret.set("kh_aph_loai_dieu_chinh", DC_TRA_HANG)
     ret.set(F_HANG, condition)
     ret.set(F_TIEN, settlement)
@@ -203,6 +229,9 @@ def validate(doc, method=None):
         if abs(flt(r.get("kh_aph_bags"))) + flt(used.get("bags")) > flt(source.get("kh_aph_bags")) + 0.000001:
             frappe.throw("Số bao nhận trả vượt số bao đã giao")
 
+    from kh_aph.quality_allocation import validate_return
+    validate_return(doc, dn)
+
 
 @frappe.whitelist()
 def money_document(delivery_note):
@@ -247,9 +276,13 @@ def validate_credit_limit(doc, original_invoice):
         AND a.reference_name=%s ORDER BY j.name, a.idx FOR UPDATE''',
         (original.name, original.company, original.debit_to, original.customer, original.name), as_dict=True)
     reduced = sum(flt(r.credit_in_account_currency) - flt(r.debit_in_account_currency) for r in reductions)
-    if reduced and (len(original.items) != 1 or len(doc.items) != 1
+    from kh_aph.quality_allocation import validate_return
+    classified = validate_return(doc, _source(doc.return_against))
+    if not classified and reduced and (len(original.items) != 1 or len(doc.items) != 1
                     or abs(abs(flt(doc.items[0].qty)) - abs(flt(original.items[0].qty))) > 0.000001):
         frappe.throw('Khoản đã giảm cần phân bổ vào đúng dòng và lượng thực trả; kế toán đối chiếu thỏa thuận và xử lý chứng từ chuẩn')
+    if classified and abs(flt(doc.grand_total)) < 0.000001:
+        return  # Hàng đã giảm hết giá trị vẫn nhập lại kho, không ghi khoản giảm/hoàn thứ hai.
     try:
         credit_budget(original.grand_total, sum(abs(flt(r.grand_total)) for r in returned), reduced, abs(flt(doc.grand_total)))
     except ValueError as exc:

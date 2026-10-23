@@ -37,11 +37,7 @@ frappe.ui.form.on("Sales Invoice", {
 		if (!kh_aph.b0113.on() || frm.doc.docstatus !== 1 || frm.doc.is_return) return;
 		if (frm.doc.outstanding_amount > 0) {
 			frm.add_custom_button(__("Giảm giá sau giao"), () =>
-				frappe.prompt([
-					{fieldname: "so_tien", label: __("Tổng tiền khách được giảm (gồm thuế nếu hóa đơn có thuế)"), fieldtype: "Currency", reqd: 1},
-					{fieldname: "ly_do", label: __("Lý do"), fieldtype: "Small Text", reqd: 1},
-				], (v) => frappe.call({method: "kh_aph.sales_p1.giam_gia_sau_giao", args: {sales_invoice: frm.doc.name, ...v}, freeze: true})
-					.then((r) => frappe.set_route("Form", "Journal Entry", r.message.but_toan)), __("Giảm giá sau giao")), __("Điều chỉnh"));
+                kh_aph.quality.open(frm.doc.name), __("Điều chỉnh"));
 		}
 		if (frm.doc.kh_aph_xuat_hoa_don === "Có" && !frm.doc.kh_aph_hd_so) {
 			frm.add_custom_button(__("Nhận xử lý hóa đơn MISA"), () =>

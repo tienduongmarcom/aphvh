@@ -24,7 +24,8 @@ class ReturnIntegrity(unittest.TestCase):
         closing=types.ModuleType('kh_aph.cash_closing');closing.lock_ledger=Mock()
         self.closing=closing
         p1=types.ModuleType('kh_aph.sales_p1');p1.F_JE_HD='kh_aph_giam_gia_hd'
-        context=patch.dict(sys.modules,{'frappe':f,'frappe.utils':utils,'kh_aph.cash_closing':closing,'kh_aph.sales_p1':p1})
+        quality=types.ModuleType('kh_aph.quality_allocation');quality.validate_return=Mock(return_value=False)
+        context=patch.dict(sys.modules,{'frappe':f,'frappe.utils':utils,'kh_aph.cash_closing':closing,'kh_aph.sales_p1':p1,'kh_aph.quality_allocation':quality})
         context.start();self.addCleanup(context.stop)
         path=pathlib.Path(__file__).resolve().parents[1]/'sales_return.py'
         spec=importlib.util.spec_from_file_location('test_return_integrity',path)

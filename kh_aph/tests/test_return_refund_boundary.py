@@ -28,7 +28,8 @@ class ReturnRefundBoundary(unittest.TestCase):
         utils.cint=lambda x:int(x or 0);utils.flt=lambda x,*a:float(x or 0)
         utils.getdate=Mock();utils.now_datetime=Mock()
         returns=types.ModuleType('kh_aph.sales_return');returns.REQUEST='kh_aph_ma_nhan_tra'
-        context=patch.dict(sys.modules,{'frappe':f,'frappe.utils':utils,'kh_aph.sales_return':returns})
+        quality=types.ModuleType('kh_aph.quality_allocation');quality.protect=Mock();quality.guard_credit=Mock()
+        context=patch.dict(sys.modules,{'frappe':f,'frappe.utils':utils,'kh_aph.sales_return':returns,'kh_aph.quality_allocation':quality})
         context.start();self.addCleanup(context.stop)
         path=pathlib.Path(__file__).resolve().parents[1]/'sales_p1.py'
         spec=importlib.util.spec_from_file_location('test_return_refund_boundary',path)

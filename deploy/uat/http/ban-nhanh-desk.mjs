@@ -11,7 +11,7 @@ const [source, mode] = process.argv.slice(2);
 if (!source) throw Error('Thiếu mã đơn chung UAT');
 const base = 'http://127.0.0.1:18091';
 let cookies;
-if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may','doi-soat'].includes(mode)) {
+if (['tien-ca-nhan','quy-nha-may','chot-ngay','nhan-hang-nha-may','nhan-cho-gia-nha-may','doi-soat','giam-theo-phan'].includes(mode)) {
     // Cookie phiên nhân sự giả chỉ qua stdin, không lưu hoặc đưa lên log/argv.
     cookies = JSON.parse(fs.readFileSync(0, 'utf8')).cookies;
     if (!Array.isArray(cookies) || !cookies.length || cookies.some(c => c.url !== base)) throw Error('Wrong disposable browser session');
@@ -37,7 +37,30 @@ try {
     const evaluate=async expression=>{const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
     const until=async expression=>{for(let i=0;i<180;i++){if(await evaluate(expression))return;await pause(350);}throw Error('Desk condition not met: '+expression+'; state='+JSON.stringify(await evaluate('({url:location.href,frappe:!!window.frappe,user:window.frappe?.session?.user,doctype:window.cur_frm?.doctype})'))+'; errors='+JSON.stringify(diagnostics.slice(-8)));};
     await command('Page.enable');await command('Runtime.enable');await command('Network.enable');await command('Network.setCookies',{cookies});
-    if (mode === 'doi-soat') {
+    if (mode === 'giam-theo-phan') {
+      const payload=JSON.parse(source);
+      await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});
+      await command('Page.navigate',{url:base+'/desk/sales-invoice/'+encodeURIComponent(payload.invoice)});
+      await until('!!window.cur_frm?.custom_buttons["Giảm giá sau giao"] && !!window.kh_aph?.quality?.open');
+      if(await evaluate("frappe.call('frappe.auth.get_logged_user').then(r=>r.message)")!==payload.user)throw Error('Wrong quality principal');
+      await evaluate('cur_frm.custom_buttons["Giảm giá sau giao"].trigger("click");true');
+      await until('!!window.cur_dialog?.fields_dict.rows && frappe.request.ajax_count===0');
+      const available=await evaluate('cur_dialog.get_value("rows")[0].remaining_qty');
+      if(Number(available)!==20)throw Error('Discount dialog did not keep original twenty kg');
+      await evaluate('cur_dialog.fields_dict.rows.df.data[0].qty=1;cur_dialog.fields_dict.rows.df.data[0].amount=11000;cur_dialog.fields_dict.rows.grid.refresh();cur_dialog.set_value("reason","UAT chỉ kiểm nhập phần hàng");true');
+      const entered=await evaluate('cur_dialog.get_values().rows[0]');
+      if(Number(entered.qty)!==1||Number(entered.amount)!==11000)throw Error('Cannot enter portion');
+      await evaluate('cur_dialog.hide();true');
+      await command('Page.navigate',{url:base+'/desk/delivery-note/'+encodeURIComponent(payload.delivery)});
+      await until('!!window.cur_frm?.custom_buttons["Nhận hàng trả lại"]');
+      await evaluate('cur_frm.custom_buttons["Nhận hàng trả lại"].trigger("click");true');
+      await until('!!window.cur_dialog?.fields_dict.rows && frappe.request.ajax_count===0');
+      const rows=await evaluate('cur_dialog.get_value("rows").map(r=>({key:r.part_key,remaining:Number(r.remaining_qty)}))');
+      if(rows.length!==2 || !rows.some(r=>r.key===payload.agreement&&r.remaining===5) || !rows.some(r=>!r.key&&r.remaining===20))throw Error('Return parts mixed: '+JSON.stringify(rows));
+      await until('!document.querySelector("#freeze")');
+      const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('nhan-tra-tung-phan.png',Buffer.from(shot.data,'base64'));
+      console.log(JSON.stringify({case:'NATIVE_DESK_GIAM_THEO_PHAN',status:'PASS',detail:{manager_principal:true,discount_qty_input:true,twenty_original_five_discounted:true,no_posting:true}}));
+    } else if (mode === 'doi-soat') {
       try {
         const payload=JSON.parse(source);
         await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});

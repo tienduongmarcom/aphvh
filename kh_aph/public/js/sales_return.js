@@ -28,16 +28,28 @@ kh_aph.returns.open = async function(name) {
             description: "Phiếu hoàn/đổi được chuẩn bị nháp. Kế toán kiểm số đã trả, số còn nợ và xác nhận riêng; chưa chi tiền lúc lập phiếu này."},
         {fieldname: "reason", label: "Lý do trả", fieldtype: "Small Text", reqd: 1},
         {fieldname: "rows", label: "Hàng thực nhận trả", fieldtype: "Table", cannot_add_rows: true, cannot_delete_rows: true, in_place_edit: true,
-            data: rows.map(r => ({...r, qty: 0, bags: 0})), fields: [
+            data: rows.flatMap(r => r.parts ? r.parts.filter(p => Number(p.remaining)>0).map(p => ({...r,
+                part_key:p.key, has_parts:1, quality_label:p.key ? `Đã giảm: ${p.key}` : "Chưa giảm",
+                remaining_qty:Number(p.remaining), qty:0, bags:0})) : [{...r,qty:0,bags:0}]), fields: [
                 {fieldname: "source_row", fieldtype: "Data", hidden: 1},
+                {fieldname: "part_key", fieldtype: "Data", hidden: 1},
+                {fieldname: "has_parts", fieldtype: "Check", hidden: 1},
+                {fieldname: "quality_label", label: "Phần hàng", fieldtype: "Data", read_only: 1, in_list_view: 1, columns: 2},
                 {fieldname: "item_code", label: "Mã hàng", fieldtype: "Data", read_only: 1, in_list_view: 1, columns: 1},
-                {fieldname: "item_name", label: "Tên hàng", fieldtype: "Data", read_only: 1, in_list_view: 1, columns: 3},
+                {fieldname: "item_name", label: "Tên hàng", fieldtype: "Data", read_only: 1, in_list_view: 1, columns: 2},
                 {fieldname: "remaining_qty", label: "Còn được trả (kg)", fieldtype: "Float", read_only: 1, in_list_view: 1, columns: 2},
                 {fieldname: "qty", label: "Nhận trả (kg)", fieldtype: "Float", in_list_view: 1, columns: 2},
-                {fieldname: "bags", label: "Số bao thực nhận", fieldtype: "Int", in_list_view: 1, columns: 2},
+                {fieldname: "bags", label: "Số bao thực nhận", fieldtype: "Int", in_list_view: 1, columns: 1},
             ]},
     ], primary_action_label: "Lập phiếu nhận trả", async primary_action(values) {
-        const selections = values.rows.filter(r => Number(r.qty) > 0).map(r => ({source_row: r.source_row, qty: r.qty, bags: r.bags || 0}));
+        const groups = new Map();
+        for (const r of values.rows.filter(r => Number(r.qty)>0)) {
+            if (!groups.has(r.source_row)) groups.set(r.source_row,{source_row:r.source_row,qty:0,bags:0,...(r.has_parts ? {parts:[]} : {})});
+            const group=groups.get(r.source_row);
+            group.qty+=Number(r.qty); group.bags+=Number(r.bags||0);
+            if (group.parts) group.parts.push({key:r.part_key||"",qty:r.qty});
+        }
+        const selections = [...groups.values()];
         if (!selections.length) return frappe.msgprint("Nhập lượng thực nhận trả cho ít nhất một dòng.");
         dialog.disable_primary_action();
         try {
@@ -68,14 +80,40 @@ frappe.ui.form.on("Customer", {refresh(frm) {
     frm.add_custom_button("Giảm giá đơn cũ", () => frappe.prompt([
         {fieldname: "sales_invoice", label: "Khoản phải thu của đơn cũ", fieldtype: "Link", options: "Sales Invoice", reqd: 1,
             get_query: () => ({filters: {customer: frm.doc.name, docstatus: 1, is_return: 0, outstanding_amount: [">", 0]}})},
-        {fieldname: "so_tien", label: "Tổng tiền đề nghị giảm (gồm thuế nếu có)", fieldtype: "Currency", reqd: 1},
-        {fieldname: "ly_do", label: "Lý do / thỏa thuận chất lượng", fieldtype: "Small Text", reqd: 1},
-    ], async values => {
-        const result = await frappe.call({method: "kh_aph.sales_p1.giam_gia_sau_giao", args: values, freeze: true});
-        frappe.show_alert({message: "Đã mở đề nghị giảm nháp. Chưa ghi giảm công nợ; kiểm thông tin rồi xác nhận theo quyền.", indicator: "blue"});
-        frappe.set_route("Form", "Journal Entry", result.message.but_toan);
-    }, "Giảm giá khoản nợ cũ", "Lập đề nghị"), "Đổi / Trả / Giảm giá");
+    ], values => kh_aph.quality.open(values.sales_invoice), "Chọn khoản nợ cũ", "Tiếp tục"), "Đổi / Trả / Giảm giá");
 }});
+
+frappe.provide("kh_aph.quality");
+kh_aph.quality.open = async function(sales_invoice) {
+    const response=await frappe.call({method:"kh_aph.sales_p1.preview_quality",args:{sales_invoice},freeze:true});
+    const dialog=new frappe.ui.Dialog({title:"Giảm giá theo phần hàng",size:"extra-large",fields:[
+        {fieldtype:"HTML",options:"<p>Chỉ nhập lượng thuộc thỏa thuận giảm. Phần hàng còn lại giữ nguyên giá; tiền giảm gồm thuế nếu có.</p>"},
+        {fieldname:"reason",label:"Lý do / thỏa thuận chất lượng",fieldtype:"Small Text",reqd:1},
+        {fieldname:"rows",label:"Phần hàng được giảm",fieldtype:"Table",cannot_add_rows:true,cannot_delete_rows:true,in_place_edit:true,
+            data:response.message.rows.filter(r=>r.remaining_qty>0).map(r=>({...r,qty:0,amount:0})),fields:[
+                {fieldname:"invoice_row",fieldtype:"Data",hidden:1},
+                {fieldname:"item_code",label:"Mã hàng",fieldtype:"Data",read_only:1,in_list_view:1,columns:1},
+                {fieldname:"item_name",label:"Tên hàng",fieldtype:"Data",read_only:1,in_list_view:1,columns:3},
+                {fieldname:"remaining_qty",label:"Còn chưa giảm (kg)",fieldtype:"Float",read_only:1,in_list_view:1,columns:2},
+                {fieldname:"qty",label:"Lượng được giảm (kg)",fieldtype:"Float",in_list_view:1,columns:2},
+                {fieldname:"amount",label:"Tiền giảm phần này",fieldtype:"Currency",in_list_view:1,columns:2},
+            ]},
+    ],primary_action_label:"Lập đề nghị giảm",async primary_action(values){
+        if(values.rows.some(r=>!Number.isFinite(Number(r.qty||0)) || !Number.isFinite(Number(r.amount||0)) ||
+            Number(r.qty||0)<0 || Number(r.amount||0)<0 || (!Number(r.qty||0) && Number(r.amount||0)>0) ||
+            (Number(r.qty||0)>0 && Number(r.amount||0)<=0))) return frappe.msgprint("Mỗi phần cần lượng và tiền giảm dương, không nhập thiếu một trong hai.");
+        const selections=values.rows.filter(r=>Number(r.qty)>0).map(r=>({invoice_row:r.invoice_row,qty:r.qty,amount:r.amount}));
+        if(!selections.length) return frappe.msgprint("Nhập lượng và tiền giảm của ít nhất một phần hàng.");
+        dialog.disable_primary_action();
+        try {
+            const made=await frappe.call({method:"kh_aph.sales_p1.giam_gia_sau_giao",args:{sales_invoice,
+                so_tien:selections.reduce((sum,r)=>sum+Number(r.amount),0),ly_do:values.reason,selections:JSON.stringify(selections)},freeze:true});
+            dialog.hide();frappe.set_route("Form","Journal Entry",made.message.but_toan);
+        } finally {dialog.enable_primary_action();}
+    }});
+    dialog.show();
+};
+
 
 frappe.ui.form.on("Delivery Note", {refresh(frm) {
     if (!frappe.boot?.kh_aph?.sales_adjust || !frappe.boot?.kh_aph?.sales_p1 || frm.doc.docstatus !== 1 ||

@@ -1,0 +1,218 @@
+"""Phân bổ giảm theo lượng trên JE chuẩn, nối phần trả trên DN chuẩn; không sổ riêng."""
+from contextvars import ContextVar
+import json
+import frappe
+from frappe.utils import flt
+from kh_aph.quantity_rules import number
+from kh_aph.quality_parts import balances, select
+
+ALLOCATION = 'kh_aph_phan_bo_giam'
+RETURN_PARTS = 'kh_aph_phan_nhan_tra'
+_BUILD = ContextVar('quality_allocation_build', default=None)
+
+
+def encode(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def parse(raw):
+    try:
+        rows = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(rows, list) or not rows or any(not isinstance(r, dict) for r in rows):
+            raise ValueError()
+        return rows
+    except (ValueError, TypeError):
+        frappe.throw('Phân bổ giảm/nhận trả chưa hợp lệ; đối chiếu lại chứng từ gốc')
+
+
+def agreements(invoice, lock=False):
+    from kh_aph.sales_p1 import F_JE_HD
+    return frappe.db.sql(f'''SELECT name, docstatus, {ALLOCATION} AS allocation FROM `tabJournal Entry`
+        WHERE {F_JE_HD}=%s AND docstatus<2 ORDER BY name''' + (' FOR UPDATE' if lock else ''), invoice, as_dict=True)
+
+
+def prepare(si, raw, total, exclude=None):
+    """Chỉ đường nhập mới có lựa chọn rõ lượng; API cũ chưa phân bổ giữ luồng cũ."""
+    if si.currency != 'VND' or si.party_account_currency != 'VND':
+        frappe.throw('Phân bổ giảm theo lượng hiện dùng cho khoản VND')
+    from kh_aph.sales_p1 import _thue_suat
+    from lab9x.ban_hang import chia_giam_gia
+    chosen, seen, output, chia = parse(raw), set(), [], []
+    prior = [row for row in agreements(si.name, lock=True) if row.name != exclude]
+    if any(not row.allocation for row in prior):
+        frappe.throw('Khoản cũ chưa có phân bổ lượng; kế toán đối chiếu trước khi lập phần giảm mới')
+    for choice in chosen:
+        key = choice.get('invoice_row')
+        if key in seen:
+            frappe.throw('Không chọn trùng dòng hóa đơn')
+        seen.add(key)
+        source = next((row for row in si.items if row.name == key), None)
+        if not source or source.uom != 'Kg' or flt(source.conversion_factor) != 1:
+            frappe.throw('Chọn đúng dòng hàng Kg của khoản gốc')
+        # Không đoán phần chưa giảm sau một phiếu trả cũ chưa phân loại.
+        if source.dn_detail and frappe.db.sql('''SELECT r.name FROM `tabDelivery Note Item` r
+            JOIN `tabDelivery Note` p ON p.name=r.parent WHERE r.dn_detail=%s AND p.is_return=1
+            AND p.docstatus<2 LIMIT 1''', source.dn_detail):
+            frappe.throw('Dòng đã có nhận trả; đối chiếu phần lượng trước khi lập giảm mới')
+        allocated = sum((number(row['qty']) for je in prior for row in parse(je.allocation)
+                         if row['invoice_row'] == key), number(0))
+        qty, amount = number(choice.get('qty')), number(choice.get('amount'))
+        if qty <= 0 or qty + allocated > number(source.qty):
+            frappe.throw('Lượng giảm chồng phần đã giảm/đang đề nghị hoặc vượt lượng gốc')
+        tax, _ = _thue_suat(si, source)
+        split = chia_giam_gia(float(amount), [(key, float(qty * number(source.net_rate)), tax)],
+                              precision=si.precision('base_grand_total') or 0)[0]
+        chia.append(split)
+        output.append({'invoice_row':key, 'qty':str(qty), 'net_discount':str(split[1]), 'tax_discount':str(split[2])})
+    if abs(sum(number(row['net_discount']) + number(row['tax_discount']) for row in output) - number(total)) > number('0.5'):
+        frappe.throw('Tổng tiền giảm phải khớp chi tiết từng phần hàng')
+    return output, chia
+
+
+def insert(je):
+    token = _BUILD.set(id(je))
+    try:
+        je.insert()
+    finally:
+        _BUILD.reset(token)
+
+
+def protect(doc, old):
+    current, previous = doc.get(ALLOCATION) or '', (old.get(ALLOCATION) if old else '') or ''
+    if not current and not previous and not doc.get('amended_from'):
+        return
+    if old and current != previous:
+        frappe.throw('Không sửa/xóa phân bổ lượng đã lưu; bỏ đề nghị nháp và lập lại nếu cần')
+    inherited = False
+    if not old and doc.get('amended_from') and _BUILD.get() != id(doc):
+        source = frappe.get_doc('Journal Entry', doc.amended_from)
+        source.check_permission('read')
+        if source.docstatus != 2:
+            frappe.throw('Chỉ sửa đổi từ đề nghị giảm đã hủy')
+        previous_source = source.get(ALLOCATION) or ''
+        if current and current != previous_source:
+            frappe.throw('Phân bổ của bản sửa đổi phải giữ đúng nguồn đã hủy')
+        if previous_source:
+            doc.set(ALLOCATION, previous_source)
+            current, inherited = previous_source, True
+    if not old and current and _BUILD.get() != id(doc) and not inherited:
+        frappe.throw('Dùng thao tác Giảm giá theo phần hàng để giữ đúng nguồn và lượng')
+    if current:
+        parse(current)
+
+
+def guard_credit(doc, amount, source):
+    raw = doc.get(ALLOCATION)
+    if raw:
+        expected = sum(number(r['net_discount']) + number(r['tax_discount']) for r in parse(raw))
+        if abs(expected - number(amount)) > number('0.5'):
+            frappe.throw('Số tiền bút toán không khớp phân bổ lượng; lập lại đề nghị nếu thỏa thuận đổi')
+        choices = [{'invoice_row':row['invoice_row'],'qty':row['qty'],
+                    'amount':str(number(row['net_discount'])+number(row['tax_discount']))} for row in parse(raw)]
+        prepare(source, choices, expected, exclude=doc.name)
+
+
+
+def parts_for_dn(dn, exclude=None, lock=False):
+    """Trả None cho luồng cũ; không suy phân bổ từ tổng tiền JE lịch sử."""
+    links = frappe.db.sql('''SELECT DISTINCT s.parent FROM `tabSales Invoice Item` s
+        JOIN `tabSales Invoice` p ON p.name=s.parent
+        WHERE s.delivery_note=%s AND p.docstatus=1 AND p.is_return=0''', dn.name, as_dict=True)
+    if len(links) != 1:
+        return None
+    invoice = links[0].parent
+    if lock:
+        frappe.db.sql('SELECT name FROM `tabSales Invoice` WHERE name=%s FOR UPDATE', invoice)
+    values = agreements(invoice, lock=lock)
+    if not any(row.allocation for row in values):
+        return None
+    si = frappe.get_doc('Sales Invoice', invoice, for_update=lock)
+    si.check_permission('read')
+    if si.docstatus != 1 or si.company != dn.company or si.customer != dn.customer:
+        frappe.throw('Khoản gốc vừa đổi trạng thái hoặc phạm vi; tải lại phiếu trước khi nhận trả')
+    if si.currency != 'VND' or any(not row.allocation for row in values):
+        frappe.throw('Khoản có phần giảm chưa phân loại; kế toán đối chiếu trước khi nhận trả')
+    # Đề nghị giảm nháp giữ lượng; chưa được dùng mức giá chưa xác nhận để hoàn.
+    if any(row.docstatus == 0 for row in values):
+        frappe.throw('Còn đề nghị giảm nháp; hoàn tất hoặc bỏ đề nghị trước khi nhận trả')
+    for row in values:
+        frappe.get_doc('Journal Entry', row.name).check_permission('read')
+    used = frappe.db.sql(f'''SELECT r.dn_detail, r.{RETURN_PARTS} AS parts FROM `tabDelivery Note Item` r
+        JOIN `tabDelivery Note` p ON p.name=r.parent WHERE p.return_against=%s AND p.is_return=1
+        AND p.docstatus<2 AND p.name!=%s ORDER BY p.name, r.idx''' + (' FOR UPDATE' if lock else ''),
+        (dn.name, exclude or ''), as_dict=True)
+    result = {}
+    for source in dn.items:
+        si_rows = [row for row in si.items if row.dn_detail == source.name]
+        if len(si_rows) != 1:
+            frappe.throw('Chưa xác định duy nhất dòng giá gốc cho phần nhận trả')
+        original = si_rows[0]
+        if abs(flt(original.qty)-flt(source.qty)) > 0.000001 or abs(flt(original.net_rate)-flt(source.net_rate)) > 0.000001:
+            frappe.throw('Giá/lượng hóa đơn và phiếu giao khác nhau; kế toán đối chiếu trước khi chia phần trả')
+        portions = [{'key':je.name, 'qty':row['qty'], 'net_discount':row['net_discount']}
+                    for je in values for row in parse(je.allocation) if row['invoice_row']==original.name]
+        reservations = []
+        for returned in used:
+            if returned.dn_detail == source.name:
+                if not returned.parts:
+                    frappe.throw('Có phiếu trả cũ chưa phân loại phần hàng; kế toán đối chiếu trước khi tiếp tục')
+                reservations.extend(parse(returned.parts))
+        try:
+            result[source.name] = balances(source.qty, source.net_rate, portions, reservations)
+        except (ValueError, KeyError) as exc:
+            frappe.throw(str(exc))
+    return result
+
+
+def price(parts, choices):
+    try:
+        result = select(parts, choices)
+        total = sum(row['net_amount'] for row in result)
+        qty = sum(row['qty'] for row in result)
+    except (ValueError, KeyError, TypeError) as exc:
+        frappe.throw(str(exc))
+    return result, float(qty), float(total / qty)
+
+
+def prevent_cancel(doc):
+    """Không đổi ý nghĩa tiền đã nhận trả bằng cách hủy thỏa thuận làm nguồn."""
+    from kh_aph.sales_p1 import enabled
+    if not enabled() or not doc.get(ALLOCATION):
+        return
+    sources = [row['invoice_row'] for row in parse(doc.get(ALLOCATION))]
+    rows = frappe.db.sql(f'''SELECT r.{RETURN_PARTS} AS parts FROM `tabDelivery Note Item` r
+        JOIN `tabDelivery Note` p ON p.name=r.parent
+        JOIN `tabSales Invoice Item` s ON s.dn_detail=r.dn_detail
+        WHERE s.parent=%s AND s.name IN %s AND p.docstatus<2 AND p.is_return=1''',
+        (doc.kh_aph_giam_gia_hd, tuple(sources)), as_dict=True)
+    if any(row.parts for row in rows):
+        frappe.throw('Phần giảm đã được dùng trong phiếu nhận trả; xử lý phiếu trả trước khi hủy giảm')
+
+
+def validate_return(doc, dn):
+    parts = parts_for_dn(dn, exclude=doc.name, lock=True)
+    if parts is None:
+        if any(row.get(RETURN_PARTS) for row in doc.items):
+            frappe.throw('Chưa có nguồn giảm đã phân bổ cho phần nhận trả này')
+        return False
+    amended = None
+    if doc.get('amended_from'):
+        amended = frappe.get_doc('Delivery Note', doc.amended_from)
+        amended.check_permission('read')
+        if amended.docstatus != 2 or amended.return_against != dn.name:
+            frappe.throw('Bản sửa đổi phải theo đúng phiếu trả đã hủy và nguồn giao gốc')
+    for row in doc.items:
+        if not row.get(RETURN_PARTS) and amended:
+            previous = next((r for r in amended.items if r.dn_detail == row.dn_detail), None)
+            if previous:
+                row.set(RETURN_PARTS, previous.get(RETURN_PARTS))
+        chosen, qty, rate = price(parts[row.dn_detail], parse(row.get(RETURN_PARTS)))
+        if abs(abs(flt(row.qty))-qty)>0.000001 or abs(flt(row.net_rate)-rate)>0.000001:
+            frappe.throw('Giá/lượng nhận trả phải khớp từng phần đã giảm hoặc chưa giảm')
+        if getattr(row, 'set', None):
+            detail = []
+            for piece in chosen:
+                label = 'Đã giảm (' + piece['key'] + ')' if piece['key'] else 'Chưa giảm'
+                detail.append(label + ': ' + format(piece['qty'], 'f') + ' kg × ' + format(piece['net_rate'], 'f') + ' VND/kg (chưa thuế)')
+            row.set('kh_aph_chi_tiet_phan_tra', '\n'.join(detail))
+    return True

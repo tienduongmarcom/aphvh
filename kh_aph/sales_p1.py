@@ -42,6 +42,8 @@ FIELDS = {
         {"fieldname": F_LS, "label": "Lịch sử gia hạn", "fieldtype": "Table", "options": "APH Lich su gia han",
          "insert_after": F_HAN, "read_only": 1, "allow_on_submit": 1, "no_copy": 1}],
     "Journal Entry": [
+        {"fieldname": "kh_aph_phan_bo_giam", "label": "Phân bổ giảm theo phần hàng", "fieldtype": "Long Text",
+         "read_only": 1, "no_copy": 1, "hidden": 1},
         {"fieldname": F_JE_HD, "label": "Giảm giá sau giao cho hóa đơn", "fieldtype": "Link", "options": "Sales Invoice",
          "insert_after": "voucher_type", "read_only": 1, "no_copy": 1}],
 }
@@ -143,6 +145,8 @@ def sau_ghi_hoa_don_giam(doc, method=None):
     # Giữ chuẩn bị nháp của phiếu lịch sử. Phiếu mới phải đối chiếu số dư
     # native thực tế: ERPNext có thể giữ hóa đơn giảm riêng khi giá trị trả vượt khoản còn nợ.
     so_tien = abs(flt(doc.base_rounded_total or doc.base_grand_total))
+    if not so_tien:
+        return  # Nhận lại hàng đã giảm hết giá trị: không tạo phiếu chi0 hoặc hoàn lần nữa.
     references = []
     if modern:
         # Phiếu trả mới đã ghi giảm vào đúng hóa đơn gốc. Chỉ phần số dư có
@@ -239,7 +243,7 @@ def _thue_suat(si, d):
 
 
 @frappe.whitelist(methods=["POST"])
-def giam_gia_sau_giao(sales_invoice, so_tien, ly_do):
+def giam_gia_sau_giao(sales_invoice, so_tien, ly_do, selections=None):
     """Bút toán NHÁP giảm giá sau giao cho một hóa đơn đã ghi sổ. Chạy lại khi còn nháp trả bút toán cũ."""
     _can_ke_toan()
     # Cùng khóa hóa đơn để hai người không lập hai đề nghị giảm nháp đồng thời.
@@ -259,6 +263,10 @@ def giam_gia_sau_giao(sales_invoice, so_tien, ly_do):
         existing = frappe.get_doc("Journal Entry", pending[0].name)
         existing.check_permission("read")
         return {"but_toan": existing.name, "da_co": True}
+    if selections is None:
+        from kh_aph.quality_allocation import agreements
+        if any(row.allocation for row in agreements(si.name, lock=True)):
+            frappe.throw('Khoản đã tách phần hàng; chọn rõ lượng và tiền giảm, không nhập giảm tổng không phân loại')
     so_tien = flt(so_tien)
     if so_tien > flt(si.outstanding_amount) + 0.5:
         frappe.throw(f"Số tiền giảm lớn hơn phần khách còn nợ của hóa đơn ({flt(si.outstanding_amount):,.0f})")
@@ -274,6 +282,13 @@ def giam_gia_sau_giao(sales_invoice, so_tien, ly_do):
         chia = B.chia_giam_gia(so_tien, dong, precision=si.precision("base_grand_total") or 0)
     except ValueError as e:
         frappe.throw(str(e))
+    allocation = None
+    if selections is not None:
+        from kh_aph.quality_allocation import prepare
+        try:
+            allocation, chia = prepare(si, selections, so_tien)
+        except (ValueError, KeyError, TypeError) as exc:
+            frappe.throw(str(exc))
     no = {}
     for ten, chua, thue in chia:
         tk, cc, tk_thue = thong_tin[ten]
@@ -291,7 +306,12 @@ def giam_gia_sau_giao(sales_invoice, so_tien, ly_do):
                         "credit_in_account_currency": flt(tong), "reference_type": "Sales Invoice",
                         "reference_name": si.name, "cost_center": si.items[0].cost_center}],
     })
-    je.insert()  # quyền tạo bút toán chuẩn của kế toán
+    if allocation is not None:
+        from kh_aph.quality_allocation import ALLOCATION, encode, insert
+        je.set(ALLOCATION, encode(allocation))
+        insert(je)
+    else:
+        je.insert()  # quyền tạo bút toán chuẩn của kế toán
     return {"but_toan": je.name, "chia": chia, "tk_giam_tru": tk_521 or "TK doanh thu của dòng"}
 
 
@@ -513,6 +533,8 @@ def guard_quality_credit(doc, method=None):
            or r.account != source.debit_to for r in references):
         frappe.throw('Đề nghị giảm chỉ phân bổ vào đúng khoản gốc và khách đã chọn')
     amount = sum(flt(r.credit_in_account_currency) - flt(r.debit_in_account_currency) for r in references)
+    from kh_aph.quality_allocation import guard_credit
+    guard_credit(doc, amount, source)
     if amount <= 0 or amount > flt(source.outstanding_amount) + 0.5:
         frappe.throw('Khoản còn nợ đã thay đổi; đối chiếu và sửa đề nghị giảm trước khi xác nhận')
 
@@ -521,9 +543,30 @@ def protect_quality_source(doc, method=None):
     if not enabled():
         return
     old = doc.get_doc_before_save()
+    from kh_aph.quality_allocation import protect
+    protect(doc, old)
     if old and old.get(F_JE_HD) and old.get(F_JE_HD) != doc.get(F_JE_HD):
         frappe.throw('Không đổi hoặc xóa khoản gốc của đề nghị giảm đã lưu')
     if not doc.get(F_JE_HD) and doc.get('amended_from'):
         source = frappe.db.get_value('Journal Entry', doc.amended_from, F_JE_HD)
         if source:
             doc.set(F_JE_HD, source)
+
+
+@frappe.whitelist()
+def preview_quality(sales_invoice):
+    _can_ke_toan()
+    si = frappe.get_doc('Sales Invoice', sales_invoice)
+    si.check_permission('read')
+    if si.docstatus != 1 or cint(si.is_return) or si.currency != 'VND':
+        frappe.throw('Chọn khoản bán gốc VND đã ghi sổ')
+    from kh_aph.quality_allocation import agreements, parse
+    prior = agreements(si.name)
+    if any(not row.allocation for row in prior):
+        frappe.throw('Đã có đề nghị giảm chưa phân loại lượng; kế toán đối chiếu trước khi lập thêm')
+    rows = []
+    for row in si.items:
+        allocated = sum(flt(p['qty']) for je in prior for p in parse(je.allocation) if p['invoice_row']==row.name)
+        rows.append({'invoice_row':row.name, 'item_code':row.item_code, 'item_name':row.item_name,
+                     'remaining_qty':max(0,flt(row.qty)-allocated)})
+    return {'name':si.name,'rows':rows}

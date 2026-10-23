@@ -1,5 +1,13 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — ĐANG NỐI giảm/nhận trả theo phần hàng
+
+Chủ dự án chốt phân biệt phần đã giảm và chưa giảm, đã ghi docs/quyet-dinh-nghiep-vu.md. Đã viết quality_parts.py (số thập phân, lượng riêng theo thỏa thuận, không FIFO/bình quân cả mã); quality_allocation.py nối JSON phân bổ trên JE chuẩn và JSON chi tiết phần trả trên dòng DN chuẩn. Không DocType/sổ/cờ mới. Đường mới chọn dòng, kg và tiền giảm gồm thuế; lưu phân bổ net/thuế theo quy tắc hiện có. Phần đã giảm và chưa giảm còn lượng riêng; nhập trả trộn hai phần giữ chi tiết, chỉ quy đổi đơn giá dòng native trên chính lượng thực trả, không đổi giá phần giữ lại. Giữ tổng trần khoản gốc và cơ chế đối trừ/hoàn chuẩn; hàng đã giảm hết giá trị vẫn nhận kho, không tạo chi0/hoàn lần nữa.
+
+Đã nối Dialog trên Customer/SI và phần chọn hàng trả, khóa sửa phân bổ, kiểm lại lúc ghi JE, chặn hủy nguồn khi có phiếu trả phân loại; nháp được tính giữ lượng. Cục bộ587ca không bỏ qua đạt, JS/Pyflakes/diff đạt. Thêm2HTTP+1Chrome (kỳ vọng138PASS bộ014):20kg giá gốc/5kg giảm, trả trộn,2phiên giữ cùng lượng, giá giả/hủy nguồn, hoàn đúng137.500 sau thu đủ và nhận hàng giảm100% không hoàn nữa. CHƯA có kết quả native mã mới. Khoản giảm lịch sử chưa có phân bổ còn cần cửa bổ sung có đối chiếu, đang làm; không coi luồng cũ đã hỗ trợ trả một phần sau giảm.
+
+Đã tải/đọc artifact UAT39775206078 đúngc21a799 SUCCESS:135PASS bộ014 gồm RESTORE, NATIVE_PDF_BOOT PASS; PDF4trang với2A5 đúng kích thước. Đây là bằng chứng nền trước phần giảm mới, không suy sang mã sau. Cổng2/2b/3 cũ giữ bằng chứng đúngSHA như mục trước. PR38 vẫn nháp, production0.16.4 không đổi. Còn gom từ nhu cầu đơn/thu hoàn đổi mã trong cùng cửa và nguồn cọc trong bộ giấy.
+
 ## 22/10/2026 — PDF native đúng4trang; Chốt ngày cửa hàng đã nativePASS
 
 UAT39772096251 đúngfb6ab9c FAIL do bộ kiểm mới: import os/subprocess bên trong chay khiến os trở thành biến cục bộ trước phép đọc PDF (UnboundLocalError), không phải lỗi sản phẩm. Đã bỏ import cục bộ trùng, giữ import module và assertion4trang, kiểm Pyflakes riêng tệp đạt. Cục bộ570ca không bỏ qua vẫn đạt. Cần chạy lại toàn lượt trên mã sửa helper; không lấy kết quả riêng để gọi cả lượtPASS.
