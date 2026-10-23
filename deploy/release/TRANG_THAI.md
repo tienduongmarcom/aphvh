@@ -1,5 +1,20 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Đủ bốn cổng: giao nhận và hồ sơ phân quyền nhân sự
+
+Mã ứng viên đã kiểm: `ae49241a14f3b47cb799d9654d99b9bcf40b6e3d`, PR38 vẫn nháp. Chưa tăng version, gắn tag, gộp hoặc triển khai; production vẫn0.16.4/digest1a8f0063 như hồ sơ phát hành. Chưa chạy bộ chuẩn bị9nhân sự lên production, chưa đặt mật khẩu/kích hoạt; toàn bộ thao tác nhân sự mới chỉ ở site UAT dùng một lần.
+
+- UAT [39929582119](https://github.com/tienduongmarcom/aphvh/actions/runs/39929582119) SUCCESS. Đã tải/đọc artifact:014=143PASS/0FAIL, inventory33,funds20,cost16,dispatch48,0111=15,0112=13,0113=13,0114=8,012=9,013=10,native4,prepare3. Có9User tạo disabled/reuse/không email; Module Profile và login bằng mã nội bộ; quyền CEO/nhận tiền hẹp; Hạnh công nợ tổng hợp độc lập kho; chuyển hai chiều Hạnh/Dũng, sai kho/native redirect bị chặn, retry một phiếu nhận, không công nợ. Không suy thành nghiệm thu nhân sự thật.
+- Cổng2 [39929658679](https://github.com/tienduongmarcom/aphvh/actions/runs/39929658679) SUCCESS: đã đọc log53mục/0lỗi.
+- Cổng2b [39929662938](https://github.com/tienduongmarcom/aphvh/actions/runs/39929662938) SUCCESS: đã đọc log108+650unit, dựng/nâng/quay lui đều53mục/0lỗi, giữ ca nâng sai và probe có hạn chót.
+- Cổng3 [39929667314](https://github.com/tienduongmarcom/aphvh/actions/runs/39929667314) SUCCESS: đã tải/đọc artifact, schema1189/1189 lệch0 (6/6mục bỏ qua theo danh sách tường minh), rollback1105/1105 lệch0; cố ý nâng sai→khôi phục, tổng/đếm/chi tiết KHỚP. Không chạm VM thật.
+- Cục bộ650unit app không bỏ qua và108lõi đạt; Pyflakes/diff đạt. PDF native đã kiểm số trang/kích thước: bộ giấy4trang A4+2A5+A4, phiếu nhanh2A5, đối soát cọc2A4. Bằng chứng in cọc không tạo thu lần hai đã PASS trong014; chưa máy in thật.
+
+Giữ FAIL39926823240 và nguyên nhân/cách sửa ở mục dưới; không bỏ ca hay giảm143. Các cổng263fe81 trước đó cũngSUCCESS, nhưng bằng chứng ứng viên ở trên là cùngae49241. Bản ghi sau mốc này chỉ cập nhật hồ sơ/PR, không thay mã đã kiểm.
+
+Tiếp theo còn: thu/hoàn chênh lệch đổi mã trong một cửa sổ theo phạm vi cũ; nghiệm thu dữ liệu/nhân sự/máy in/MISA thật để cuối theo chủ dự án. Trước bật nhân sự: phát hành đúng nguồn theo quy trình, quản trị xem kế hoạch `staff_accounts.chuan_bi` mặc định chỉ đọc, đối chiếu kho/tài khoản sẵn có, chuẩn bịdisabled rồi đặt mật khẩu riêng/bật username/kích hoạt. Không gửi mật khẩu hoặc reset link qua chat. Không tuyên bố toàn kế hoạch hoặc production đã hoàn tất.
+
+
 ## 23/10/2026 — Đối chiếu lại ca phạm vi kho nhận dự kiến
 
 UAT39926823240 đúngd198495 FAIL tại HTTP014 chuẩn bị gom kho: ca cũ đòi từ chối chỉ vì kho nhận dự kiến ngoài quyền Warehouse. Đã đọc log gốc; đây là điều kiện đã được thay bằng metadata nơi đến trong thiết kế hai đầu kho. Sửa ca thành đủ ba kiểm: vẫn từ chối mở Warehouse nơi đến, cho chuẩn bị nháp từ kho nguồn được giao, và từ chối chuẩn bị nếu dùng kho nguồn ngoài phạm vi. Không bỏ chặn xuất/nhận thực tế, không giảm số ca143. Lượt FAIL được giữ, chưa tới ca hai nhân sự nên chưa chứng minh143. Đã đọc Cổng339923900504 trên5bed91b: schema1189/1189 lệch0 (bỏ qua6/6 mục được khai tường minh), quay lui1105/1105 lệch0, phục hồi sau nâng sai KHỚP.

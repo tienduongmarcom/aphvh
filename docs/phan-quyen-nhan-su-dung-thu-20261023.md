@@ -49,7 +49,7 @@ Dung và Dũng là hai người khác nhau. Chỉ ánh xạ bằng tên đăng n
 - Trang có vai trò duyệt khách rủi ro và được chuẩn bị vào bảng người duyệt giá sàn theo từng Company, không tự duyệt. Hạn mức chung vẫn là cảnh báo hiện hành; không mô tả thành cơ chế chặn mới.
 - Hạnh có công nợ tài chính tổng hợp toàn khách nhưng không kéo theo bản in phiếu nguồn ở kho ngoài phạm vi. Hồ sơ cũ kèm phiếu nguồn vẫn bị chặn.
 
-Bốn cổng trên nguồn `5bed91b` đã SUCCESS; artifact UAT đã đọc142ca014, có các quyền hẹp trên và chuẩn bị9User disabled. Bổ sung sau mốc đó gồm chuyển hai đầu kho khác phạm vi, Module Profile và thử đăng nhập bằng mã nội bộ; phải có kết quả đúng nguồn cuối trước phát hành. Mục đầu hai hồ sơ bàn giao ghi lượt chạy mới nhất.
+Đã tải và đọc UAT39929582119 đúng `ae49241`:143ca014 PASS, tất cả hồi quy PASS. Có chuẩn bị9User disabled/retry/không email, Module Profile, đăng nhập bằng mã nội bộ và chuyển hai chiều bằng hồ sơ Hạnh/Dũng chỉ trong UAT. Cổng239929658679 và2b39929662938 cùng nguồn SUCCESS; cổng339929667314 cũng SUCCESS, schema1189/1189 và rollback1105/1105 lệch0, phục hồi nâng sai KHỚP. Mục đầu hai hồ sơ bàn giao ghi kết quả sau cùng. Chưa phát hành hoặc áp người thật.
 
 ## 4. Bộ dùng thử ngắn theo nhân sự
 
@@ -70,7 +70,7 @@ Chạy giao dịch giả trên site thử, hoặc chỉ giao dịch thật hợp
 
 ## 5. Trạng thái
 
-Chưa áp quyền lên production; production vẫn0.16.4. PR38 chứa giao nhận/nhận trả và chuẩn bị phân quyền. Có bằng chứng native142ca014 và bốn cổng trên `5bed91b`; kiểm chuyển hai đầu kho và các bổ sung sau đó đang chạy riêng. Không lấy PASS của nguồn trước thay cho nguồn cuối. Nghiệm thu với nhân sự, hàng/tồn thật và máy in thật để cuối theo chủ dự án. Phần thu/hoàn đổi mã trong một cửa sổ còn mở, không gọi toàn kế hoạch đã hoàn tất. Trạng thái tiếp nối ở `docs/ban-giao.md` và `deploy/release/TRANG_THAI.md`.
+Chưa áp quyền lên production; production vẫn0.16.4. PR38 chứa giao nhận/nhận trả và chuẩn bị phân quyền. Đã đọc native143ca014 trên `ae49241`, cài mới/diễn tập triển khai cùng nguồn đạt; diễn tập nâng cấp từ production cùng nguồn cũng đã đạt. Không lấy PASS của nguồn trước thay cho nguồn cuối. Nghiệm thu với nhân sự, hàng/tồn thật và máy in thật để cuối theo chủ dự án. Phần thu/hoàn đổi mã trong một cửa sổ còn mở, không gọi toàn kế hoạch đã hoàn tất. Trạng thái tiếp nối ở `docs/ban-giao.md` và `deploy/release/TRANG_THAI.md`.
 
 
 ## 6. Mã đăng nhập nội bộ đã chuẩn bị
@@ -127,4 +127,4 @@ Bộ chuẩn bị đã bao gồm allowlist Trang duyệt giá sàn từng Compan
 
 ### Chuyển nhà máy và cửa hàng
 
-Tên kho nhận dự kiến là metadata cùng đơn vị, không phải quyền thao tác tại kho đó. Người gửi xuất từ kho mình vào transit; người nhận dùng cửa sổ nhận chuyến để xem lượng đúng chuyến chỉ định đến kho mình. Không cấp đọc phiếu nguồn/Warehouse nguồn hoặc giá ngoài phạm vi; phiếu nhận native chỉ đi từ transit vào kho được giao. Chuyến lịch sử thiếu kho dự kiến cần kế toán đủ phạm vi xử lý trước khi áp hồ sơ hẹp, không mở toàn kho để chữa. Đã có142ca native trên5bed91b; ca chuyển hai hồ sơ143 đang bổ sung, chưa kết luận.
+Tên kho nhận dự kiến là metadata cùng đơn vị, không phải quyền thao tác tại kho đó. Người gửi xuất từ kho mình vào transit; người nhận dùng cửa sổ nhận chuyến để xem lượng đúng chuyến chỉ định đến kho mình. Không cấp đọc phiếu nguồn/Warehouse nguồn hoặc giá ngoài phạm vi; phiếu nhận native chỉ đi từ transit vào kho được giao. Chuyến lịch sử thiếu kho dự kiến cần kế toán đủ phạm vi xử lý trước khi áp hồ sơ hẹp, không mở toàn kho để chữa. Đã đọc143ca native trênae49241: chuyển nhà máy→cửa hàng và ngược lại bằng hai hồ sơ Hạnh/Dũng đạt, sai kho bị chặn, retry chỉ một phiếu nhận, không sinh công nợ; vẫn chặn đọc Warehouse/phiếu nguồn ngoài phạm vi. Đây là bản sao tài khoản trên site UAT, không phải nhân sự thật đã nghiệm thu.

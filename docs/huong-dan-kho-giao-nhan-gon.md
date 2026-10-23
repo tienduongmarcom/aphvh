@@ -44,7 +44,7 @@ Bản giao cho nhà xe và bản khách ký tại đích lưu riêng trên cùng
 
 ## 5. Gom kho vệ tinh về cửa hàng rồi giao khách
 
-Bản đang phát triển có nút **Gom hàng cho đơn** trên đơn chung đã xác nhận. Chọn nhóm đơn vị/kho nếu đơn có nhiều nơi giao; cửa sổ chuyển điền sẵn mã/tên/lượng còn chưa lập phiếu xuất và ghi số đơn trong ghi chú. Chọn kho thực lấy, kiểm lượng thực cần chuyển và người/xe, rồi Chuẩn bị phiếu & In. Lượng gợi ý chưa trừ tồn đã có hay các chuyến gom khác, không giữ chỗ. Muốn giao khách ở cửa hàng thì nguồn phần chưa giao trên đơn phải là kho cửa hàng trước. Nút này chưa có kết quả native lúc viết; vẫn dùng được đường chuyển kho chuẩn bên dưới theo bằng chứng cũ.
+Bản đang phát triển có nút **Gom hàng cho đơn** trên đơn chung đã xác nhận. Chọn nhóm đơn vị/kho nếu đơn có nhiều nơi giao; cửa sổ chuyển điền sẵn mã/tên/lượng còn chưa lập phiếu xuất và ghi số đơn trong ghi chú. Chọn kho thực lấy, kiểm lượng thực cần chuyển và người/xe, rồi Chuẩn bị phiếu & In. Lượng gợi ý chưa trừ tồn đã có hay các chuyến gom khác, không giữ chỗ. Muốn giao khách ở cửa hàng thì nguồn phần chưa giao trên đơn phải là kho cửa hàng trước. Nút này đã có ca native trên nguồn5bed91b; thao tác chỉ gợi ý lượng, không giữ chỗ hoặc ghi sổ.
 
 
 1. Nếu đã biết sẽ giao tại cửa hàng, dòng đơn bán chọn kho cửa hàng thuộc đúng đơn vị sở hữu. Việc chuyển nội bộ bổ sung hàng cho kho đó, chưa thực hiện giao khách.
@@ -84,14 +84,25 @@ Giấy gốc: kế toán cửa hàng xếp theo loại giấy/ngày hoặc tập
 - Trả5kg từ bao25kg: nhập5kg và số bao/vỏ thực nhận0hoặc1, không nhập0,2bao. Hàng hỏng vào cách ly theo lựa chọn.
 - Chưa trả tiền: giảm khoản còn nợ. Đã thu tiền: chỉ chuẩn bị hoàn phần thực phải hoàn sau đối trừ. Mở phiếu hoàn tiền từ phiếu nhận trả; nháp không có nghĩa đã chi.
 - Giảm giá do chất lượng của đơn cũ xử lý theo đúng khoản gốc, không giấu vào giá của đơn mới. Đề nghị nháp chưa làm giảm nợ.
-- Đường giảm theo phần hàng đang kiểm thử: chọn đúng khoản cũ, ghi dòng/kg và tiền giảm của phần đó; phần còn lại giữ giá gốc. Khi nhận trả chọn rõ phần đã giảm hoặc chưa giảm, không lấy giá bình quân cả mã.
+- Giảm theo phần hàng: chọn đúng khoản cũ, ghi dòng/kg và tiền giảm của phần đó; phần còn lại giữ giá gốc. Khi nhận trả chọn rõ phần đã giảm hoặc chưa giảm, không lấy giá bình quân cả mã.
 - Khoản giảm cũ chưa ghi lượng: từ JE có nguồn khoản phải thu → Bổ sung phần hàng đã giảm. Phải đối chiếu giấy thỏa thuận và đúng tiền hàng/thuế đã ghi; thao tác chỉ bổ sung phân loại, không ghi giảm nợ thêm. Chưa xác minh được hoặc đã có trả cũ chưa phân loại thì kế toán đối chiếu bằng chứng trước.
-- **Chưa hoàn thiện/kiểm đủ:** đường phân loại và hoàn sau giảm mới chưa nativePASS toàn bộ; nối nhu cầu gom kho trực tiếp từ đơn; thu/hoàn chênh lệch đổi mã trong một cửa sổ. Các điểm này còn trong phạm vi phát triển, không coi hướng dẫn là bằng chứng đã hỗ trợ đầy đủ.
+- **Còn mở:** thu/hoàn chênh lệch đổi mã trong một cửa sổ. Phân loại/hoàn sau giảm và gom theo đơn đã có ca native trên5bed91b; vẫn cần nghiệm thu dữ liệu thật. Không coi hướng dẫn là bằng chứng toàn bộ phạm vi đã hoàn tất.
 
 
-## Bổ sung đang phát triển: cọc theo nguồn trong đối soát
+## Cọc theo nguồn trong đối soát
 
-Từ Tiền thực nhận hoặc Xử lý tiền cọc/phân bổ đã ghi, khách đã xác minh, mở Đối soát & In bộ giấy. Chọn đủ đơn vị liên quan và đúng chứng từ của lượt. Biên bản trình bày khoản tiền/cọc chọn, cọc còn giữ theo khoản nhận/đơn/nguồn và phần khả dụng riêng; không trừ cọc vào công nợ lần nữa. Bản cấp rồi giữ nguyên số/PDF khi có phát sinh sau đó, cần đối chiếu mới thì lập bản bổ sung. Cọc chung có nhãn riêng, không tự gán cho nguồn của đơn vị thực nhận. Phần này mới kiểm cục bộ, chờ HTTP/PDF native140; bản in riêng phiếu thu cọc chưa tự ghép như phiếu thu PE.
+Từ Tiền thực nhận hoặc Xử lý tiền cọc/phân bổ đã ghi, khách đã xác minh, mở Đối soát & In bộ giấy. Chọn đủ đơn vị liên quan và đúng chứng từ của lượt. Biên bản trình bày khoản tiền/cọc chọn, cọc còn giữ theo khoản nhận/đơn/nguồn và phần khả dụng riêng; không trừ cọc vào công nợ lần nữa. Bản cấp rồi giữ nguyên số/PDF khi có phát sinh sau đó, cần đối chiếu mới thì lập bản bổ sung. Cọc chung có nhãn riêng, không tự gán cho nguồn của đơn vị thực nhận. Đã kiểm HTTP/PDF trong UAT142 trên5bed91b; cần nghiệm thu máy in thật sau phát hành.
 
 
-Bổ sung tiếp đang kiểm: khoản Tiền thực nhận đã ghi có nút In phiếu thu, dùng số khoản nhận và bút toán đã ghi. Chọn khoản thực nhận trong bộ đối soát sẽ ghép bản thu này; chỉ chọn thao tác giữ/chuyển/giải phóng/cấn không in lại phiếu nhận cũ. Mẫu dùng lại cách phân biệt tiền mặt/ngân hàng theo công ty hiện có. Không phát sinh PE/JE mới khi in. Phần này mới621ca cục bộ, chờ native140 và xemPDF trước phát hành.
+Khoản Tiền thực nhận đã ghi có nút In phiếu thu, dùng số khoản nhận và bút toán đã ghi. Chọn khoản thực nhận trong bộ đối soát sẽ ghép bản thu này; chỉ chọn thao tác giữ/chuyển/giải phóng/cấn không in lại phiếu nhận cũ. Mẫu dùng lại cách phân biệt tiền mặt/ngân hàng theo công ty hiện có. Không phát sinh PE/JE mới khi in. Đã kiểm native UAT142 trên5bed91b và xem PDF; nhánh vẫn đang kiểm bổ sung phân quyền trước phát hành.
+
+
+## Nhân sự và bàn giao tiền cuối ngày
+
+Hường dùng Bán hàng; Hạnh dùng Kho vận và các thao tác bán hàng được giao. Kho nhà máy do Dũng thao tác tại Nhà máy. Khi chuyển giữa nhà máy và cửa hàng, đầu gửi chọn kho nhận dự kiến; đầu nhận mở Nhận chuyến về kho, không cần đọc phiếu kho nguồn. Chỉ xác nhận lượng thực nhận vào kho mình; lượng chưa nhận còn đang vận chuyển. Chuyến lịch sử thiếu kho nhận dự kiến cần người đủ phạm vi đối chiếu trước khi hai đầu dùng hồ sơ hẹp.
+
+Tiền thu khách và tiền bàn giao cho chủ là hai việc riêng. Người giữ tiền mở tiền cá nhân, lập bàn giao đúng đơn vị, quỹ, người nhận và số tiền. Chọn đúng một người thực nhận: Ninh, Trang hoặc Ánh. Người đó kiểm đếm và xác nhận thực nhận bằng tài khoản riêng; có lệch thì giữ hồ sơ chênh lệch, không ghi thu khách lần nữa. Không tự xác nhận nhận tiền mình bàn giao.
+
+Dung xử lý ngoại lệ kế toán; Trang duyệt bán hàng theo quyền được giao; Ninh xem điều hành. Bị chặn thao tác thì giữ mã phiếu và thông báo để đối chiếu phân công; không dùng chung tài khoản quản trị. Quyền tháng đầu linh hoạt theo nhiệm vụ, vẫn giữ nhật ký, phạm vi kho và người chịu trách nhiệm.
+
+Các tài khoản mới chỉ được chuẩn bị disabled. Quản trị đặt mật khẩu riêng, bật đăng nhập bằng mã và kích hoạt sau khi bản được kiểm và phát hành; không gửi mật khẩu qua hồ sơ hoặc chat. Chuyển hai đầu bằng hồ sơ mới đã có UAT143 trênae49241; kết quả phát hành và diễn tập nâng cấp cuối ghi trong hai hồ sơ bàn giao. Nhân sự thật vẫn cần được hướng dẫn/nghiệm thu sau phát hành.
