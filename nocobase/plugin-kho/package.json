@@ -1,0 +1,14 @@
+{
+  "name": "@aphvh/plugin-kho",
+  "version": "0.1.0",
+  "displayName": "APH-VH: kho, bán hàng, thu tiền",
+  "description": "Sổ kho có khóa, đơn bán chọn đơn vị, thu tiền theo đơn, in A5",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}
