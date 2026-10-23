@@ -59,6 +59,8 @@ try {
       const rows=await evaluate('cur_dialog.get_value("rows").map(r=>({key:r.part_key,remaining:Number(r.remaining_qty)}))');
       if(rows.length!==2 || !rows.some(r=>r.key===payload.agreement&&r.remaining===5) || !rows.some(r=>!r.key&&r.remaining===20))throw Error('Return parts mixed: '+JSON.stringify(rows));
       await until('!document.querySelector("#freeze")');
+      const blocking=await evaluate('Array.from(document.querySelectorAll(".modal.show, .modal.in")).filter(el=>el.offsetParent!==null && !el.contains(cur_dialog.fields_dict.rows.$wrapper[0])).map(el=>el.innerText)');
+      if(blocking.length || diagnostics.some(x=>/Permission|Traceback|\b[45]\d\d /.test(x)))throw Error('Quality dialog obstructed: '+JSON.stringify({blocking,diagnostics}));
       const shot=await command('Page.captureScreenshot',{format:'png'});fs.writeFileSync('nhan-tra-tung-phan.png',Buffer.from(shot.data,'base64'));
       console.log(JSON.stringify({case:'NATIVE_DESK_GIAM_THEO_PHAN',status:'PASS',detail:{manager_principal:true,discount_qty_input:true,twenty_original_five_discounted:true,no_posting:true}}));
       } catch(error) {

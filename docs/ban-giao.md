@@ -1,5 +1,11 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — QA ảnh bắt popup quyền trên màn nhận trả
+
+Đã xem ảnh nhan-tra-tung-phan.png của UAT39888905491: đủ5kg đã giảm/20kg chưa giảm nhưng có popup Insufficient Permission for Sales Invoice Item che màn. Vì vậy Chrome PASS của lượt đó chưa đủ đạt giao diện. Đã đổi truy vấn nút thu cũ sang Sales Invoice cha có quyền chuẩn, lọc đúng phiếu giao/company/customer; tài khoản không có quyền SI chỉ dùng màn thu facade mới, tự chọn phân bổ rõ ràng. Không cấp quyền bảng con. Thêm assertion Chrome không có modal lỗi/HTTP lỗi trước chụp. JS/diff đạt. Cần chạy lại trên mã mới; giữ run lỗi và ảnh làm bằng chứng.
+
+Đã đọc Cổng239888993070 đúng2a3fefc:596unit/53mục không lỗi; Cổng339888909929 SUCCESS đã tải artifact, chưa suy cho mã sau. UAT139 mới chưa hoàn tất, production0.16.4 không đổi.
+
 ## 23/10/2026 — Sửa quyền phân loại khoản giảm cũ sau UAT139 thất bại
 
 UAT39888905491 đúng2a3fefc FAIL tại ca tài khoản nhà máy có ROLE_NO_COST cộng Accounts Manager vẫn gọi được classify_quality. Giữ nguyên assertion và lượt lỗi. Đã thêm guard riêng dùng chung preview/classify: hồ sơ hạn chế bị chặn trước đọc nguồn, không cấp hoặc bỏ quyền native. Đã bổ sung hồi quy tài khoản cộng vai trò,601ca cục bộ không bỏ qua đạt. Bản này cũng chứa rà giá thuần3520b3b chưa có native kết quả. Cần chạy lại139ca trên đúng mã sửa; không coi PR38 hoàn tất, không đổi production0.16.4.

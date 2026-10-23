@@ -85,11 +85,21 @@
 				setTimeout(() => w.print(), 600);
 			}), __("Quầy bán hàng"));
 			if (frm.doc.docstatus === 1) {
-				frappe.db.get_list("Sales Invoice Item", {filters: {delivery_note: frm.doc.name, docstatus: 1}, fields: ["parent"], limit: 20})
-					.then((rows) => {
-						const hd = [...new Set((rows || []).map((x) => x.parent))];
-						frm.add_custom_button(__("Thu tiền"), () => thu_tien(frm.doc.company, frm.doc.customer, hd), __("Quầy bán hàng"));
-					});
+				// Truy vấn chứng từ cha theo quyền chuẩn, không đọc trực tiếp bảng con.
+                // Màn thu mới tự tải khoản nợ theo phạm vi khách/đơn vị khi nhân viên bấm.
+                if (frappe.model.can_read("Sales Invoice")) {
+                    frappe.db.get_list("Sales Invoice", {filters: [
+                        ["Sales Invoice", "docstatus", "=", 1],
+                        ["Sales Invoice", "company", "=", frm.doc.company],
+                        ["Sales Invoice", "customer", "=", frm.doc.customer],
+                        ["Sales Invoice Item", "delivery_note", "=", frm.doc.name],
+                    ], fields: ["name"], limit: 20}).then((rows) => {
+                        const hd = [...new Set((rows || []).map((x) => x.name))];
+                        frm.add_custom_button(__("Thu tiền"), () => thu_tien(frm.doc.company, frm.doc.customer, hd), __("Quầy bán hàng"));
+                    });
+                } else if (frappe.boot?.kh_aph?.ux_task_first && kh_aph.ux?.thu_tien) {
+                    frm.add_custom_button(__("Thu tiền"), () => thu_tien(frm.doc.company, frm.doc.customer, []), __("Quầy bán hàng"));
+                }
 				frm.add_custom_button(__("In đối soát công nợ"), () => in_doi_soat(frm.doc.customer), __("Quầy bán hàng"));
 			}
 		},
