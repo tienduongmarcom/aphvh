@@ -1,5 +1,9 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Sửa quyền phân loại khoản giảm cũ sau UAT139 thất bại
+
+UAT39888905491 đúng2a3fefc FAIL tại ca tài khoản nhà máy có ROLE_NO_COST cộng Accounts Manager vẫn gọi được classify_quality. Giữ nguyên assertion và lượt lỗi. Đã thêm guard riêng dùng chung preview/classify: hồ sơ hạn chế bị chặn trước đọc nguồn, không cấp hoặc bỏ quyền native. Đã bổ sung hồi quy tài khoản cộng vai trò,601ca cục bộ không bỏ qua đạt. Bản này cũng chứa rà giá thuần3520b3b chưa có native kết quả. Cần chạy lại139ca trên đúng mã sửa; không coi PR38 hoàn tất, không đổi production0.16.4.
+
 ## 23/10/2026 — Rà giá thuần, làm tròn và nội dung kế toán nhìn thấy
 
 Đã thêm kiểm giá trả theo đúng độ chính xác native của net_rate, nhưng tiền thuần từng dòng không được lệch khỏi các phần đã chọn quá0,5VND; tổng trần khoản gốc giữ nguyên. Chặn nguồn thuế/chi phí phức hợp chưa hỗ trợ thay vì coi tất cả là một thuế suất. Khi lập trả theo phần, giá là giá thuần: bỏ discount header và cờ giá đã gồm thuế được mapper chép để không trừ/tách hai lần; thuế suất/tài khoản nguồn giữ nguyên. Không đổi precision toàn hệ thống hoặc bỏ kiểm tiền.

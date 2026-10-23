@@ -126,6 +126,18 @@ class MoneyBoundaries(unittest.TestCase):
         self.f.get_roles = lambda: ["Accounts Manager", "APH Không xem giá vốn"]
         with self.assertRaises(ValueError): m.can_quyen()
 
+    def test_phan_loai_giam_cu_chan_ho_so_han_che_truoc_khi_doc_nguon(self):
+        m = self.load("sales_p1")
+        self.f.conf = {m.FLAG: 1}
+        self.f.get_roles = lambda: ["Accounts Manager", "APH Không xem giá vốn"]
+        self.f.get_doc = Mock()
+        for action in (lambda: m.preview_quality("SI"),
+                       lambda: m.classify_quality("JE", "[]", "Đối chiếu", "mốc")):
+            with self.assertRaises(ValueError): action()
+        self.f.get_doc.assert_not_called()
+        self.f.get_roles = lambda: ["Accounts Manager"]
+        m._can_quality_parts()
+
     def test_ma_giao_dich_khoa_tai_khoan_va_doc_hien_tai(self):
         m = self.load("money_reference")
         bank = types.SimpleNamespace(ma_da_ghi=Mock(return_value="cu"))

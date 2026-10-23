@@ -554,9 +554,17 @@ def protect_quality_source(doc, method=None):
             doc.set(F_JE_HD, source)
 
 
+def _can_quality_parts():
+    """Quyền phân loại giảm nợ không được cộng qua hồ sơ nhà máy hạn chế."""
+    _can_ke_toan()
+    from kh_aph.constants import ROLE_NO_COST
+    if frappe.session.user != "Administrator" and ROLE_NO_COST in frappe.get_roles():
+        frappe.throw("Hồ sơ hạn chế không được phân loại khoản giảm công nợ", frappe.PermissionError)
+
+
 @frappe.whitelist()
 def preview_quality(sales_invoice, journal_entry=None):
-    _can_ke_toan()
+    _can_quality_parts()
     si = frappe.get_doc('Sales Invoice', sales_invoice)
     si.check_permission('read')
     if si.docstatus != 1 or cint(si.is_return) or si.currency != 'VND':
@@ -587,7 +595,7 @@ def preview_quality(sales_invoice, journal_entry=None):
 @frappe.whitelist(methods=['POST'])
 def classify_quality(journal_entry, selections, reason, modified):
     """Bổ sung phân loại cho JE đã ghi, không thay giá trị/kỳ/công ty hoặc ghi sổ mới."""
-    _can_ke_toan()
+    _can_quality_parts()
     if not isinstance(reason,str) or not reason.strip() or len(reason.strip())>1000:
         frappe.throw('Ghi căn cứ đối chiếu phân loại, tối đa1.000 ký tự')
     from kh_aph.quality_allocation import ALLOCATION, prepare, parse, same_selection, check_posted_debits, save_existing
