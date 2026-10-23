@@ -144,5 +144,29 @@ def chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit):
     assert not receipt.get('kh_aph_transfer_destination')
     assert get('Stock Entry', posted['name'], ktt)['per_transferred'] == 100
     assert counts()['Payment Ledger Entry'] == before['Payment Ledger Entry'], 'Chuyển nội bộ sinh công nợ khách'
+    shared = rpc('frappe.client.insert', {'doc': json.dumps({'doctype': 'APH Shared Sales Order',
+        'customer': f['kh1'], 'transaction_date': f['date'], 'delivery_date': f['date'],
+        'selling_price_list': f['pl'], 'currency': 'VND',
+        'items': [{'item_code': f['A'], 'warehouse': f['kho2'], 'qty': 5, 'rate': 35000}]})}, ktt)
+    shared = submit(shared, ktt)
+    before_plan = counts()
+    plan = rpc('kh_aph.order_transfer.preview', {'shared_order': shared['name']}, ktt)
+    assert counts() == before_plan and len(plan['groups']) == 1
+    group = plan['groups'][0]
+    assert group['company'] == f['aph'] and group['destination'] == f['kho2']
+    assert group['items'][0]['qty'] == 5 and group['items'][0]['item_code'] == f['A']
+    assert 'rate' not in group['items'][0] and 'valuation_rate' not in group['items'][0]
+    denied(lambda: rpc('kh_aph.order_transfer.preview', {'shared_order': shared['name']}, phien(f['scope_wh'])), ('PermissionError',))
+    order_args = {**args, 'request_id': f['p'] + '-gom-theo-don',
+        'note': 'Gom cho đơn ' + shared['name'], 'rows': json.dumps([{
+            'item_code': row['item_code'], 'warehouse': f['kho'], 'qty': row['qty'], 'bags': row['bags']
+        } for row in group['items']])}
+    planned = rpc('kh_aph.factory_transfer.send', order_args, ktt)
+    assert get('Stock Entry', planned['name'], ktt)['docstatus'] == 0
+    after_plan = counts()
+    assert after_plan == {**before_plan, 'Stock Entry': before_plan['Stock Entry'] + 1}
+    assert rpc('kh_aph.factory_transfer.send', order_args, ktt) == planned and counts() == after_plan
+    assert rpc('kh_aph.order_transfer.preview', {'shared_order': shared['name']}, ktt)['groups'][0]['items'][0]['qty'] == 5
     emit('HTTP_014_CHUAN_BI_GOM_KHO', 'PASS', {'draft_print_no_posting': True, 'repeat_one_entry': True,
-         'native_issue_transit_receive': True, 'planned_destination': True, 'warehouse_scope': True, 'no_customer_debt': True})
+         'native_issue_transit_receive': True, 'planned_destination': True, 'warehouse_scope': True,
+         'no_customer_debt': True, 'order_remaining_suggestion_no_reservation': True})

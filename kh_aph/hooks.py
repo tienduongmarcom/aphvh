@@ -565,3 +565,6 @@ for _dt in ("Customer", "Delivery Note", "Payment Entry", "Bien ban doi soat no"
 
 # Không hủy nguồn giảm đã được dùng trong phần nhận trả.
 doc_events.setdefault("Journal Entry", {}).setdefault("before_cancel", []).append("kh_aph.quality_allocation.prevent_cancel")
+
+# Gom theo lượng đơn chưa giao, dùng lại cửa sổ chuyển kho hiện có.
+doctype_js["APH Shared Sales Order"].append("public/js/factory_transfer.js")

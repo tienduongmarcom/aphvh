@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Thêm gom hàng trực tiếp từ đơn, đang chờ native
+
+Đã viết order_transfer.preview và nút Gom hàng cho đơn trên form đơn chung: lấy phần còn chưa giao/chưa lậpDNnháp bằng cùng nguồn ban_nhanh, gom cùng mã theo Company/kho giao khách, điền sẵn mã/tên/kg/bao vào cửa sổ chuyển kho hiện có. Người dùng chỉ chọn kho thực lấy, lượng cần chuyển và người/xe. Kho nhận theo đơn giữ readonly; đổi nơi giao phải dùng đổi nguồn phần chưa giao trước. Không thêm màn/sổ/CF/cờ; không tạo chứng từ từ preview, không trả giá vốn/giá bán. Server kiểm quyền chuyển/StockEntrycreate và toàn bộ nguồn đơn/Company/Item/Warehouse; không cấp quyền để vượt phạm vi. Cửa sổ dùng factory_transfer.send cũ để chuẩn bị nháp/in, ghi nguồn đơn vào ghi chú; xác nhận xuất/nhận vẫn native.
+
+Lượng là gợi ý nhu cầu chưa giao, KHÔNG phải thiếu tồn sau bù trừ, không giữ chỗ hoặc trừ các chuyến gom khác. Nhân viên kiểm lượng thực cần chuyển; hàng có quy cách lẻ không tự làm tròn kg/bao. Không coi đây là sổ phân bổ chuyển kho theo đơn hoặc tự chuyển nguồn đơn. Cục bộ608ca không bỏ qua đạt, JS/Pyflakes/diff đạt. Đã mở rộng HTTP_014_CHUAN_BI_GOM_KHO kiểm nguồn đơn/quyền/draft/retry/khôngghi sổ, chưa có kết quả native của phần này. UAT39895504031 kiểm8e61a68 cũ, chưa chứa gom theo đơn; chờ đọc kết quả trước lượt tiếp. PR38nháp/production0.16.4 giữ nguyên. Còn thu/hoàn chênh lệch đổi mã trong một cửa, nguồn cọc theo đơn trong bộ giấy và cấu hình quyền nhân sự thật.
+
 ## 23/10/2026 — Sửa helper chọn đúng kết quả Chrome; giữ139ca
 
 UAT39893134196 đúngd54522d FAIL tại b014_quality_parts.py đọc dòngJSON đầu tiên: CI_REALTIME_NOT_PROVISIONED/INFO thay vì NATIVE_DESK_GIAM_THEO_PHAN/PASS. Process Chrome đãexit0, assertion UI/giá chưa bị bỏ; không coi toàn lượt đạt. Đã sửa chọn chính xác tên ca, bắt đúng một kết quả và statusPASS; không bỏ INFO bằng cách nhận bất kỳ dòngPASS. Cần chạy lại trên mã sửa. Cổng239893214536 và2b39893218066 cùngd54522d SUCCESS; đã đọc log601+108unit/53mục dựng mới và53mục dựng/nâng/quay lui. Cổng339893222080 đang chạy lúc cập nhật, chưa kết luận mới.

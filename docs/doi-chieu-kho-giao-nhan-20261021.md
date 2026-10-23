@@ -46,7 +46,7 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
 | Giảm giá nợ đơn cũ | Đã viết chọn dòng/kg/tiền giảm và bổ sung phân loại cho JE cũ có căn cứ, không ghi sổ thêm. Tách lượng đã giảm/chưa giảm; trả trộn/hoàn đúng phần đã native PASS riêng tại2a3fefc | Cả lượt chưa đạt vì quyền; đang kiểm bản sửa. Giảm khi khoản gốc đã thu hết, giảm tiếp sau một phần đã trả hoặc lịch sử không phân loại còn cần xử lý; không tự bình quân |
 | Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | NativePASS HTTP_014_GIAY_TAY_NHAP_BO_SUNG, đã kiểm lại trong lượt xanh39766960041; không xây sổ offline/workflow riêng |
-| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit đã nativePASS UAT39766960041. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
+| Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit đã nativePASS UAT39766960041. Đã viết nút gợi ý gom theo phần đơn chưa giao;608ca cục bộ, chưa có native. Không giữ lượng hoặc tự bù tồn/chuyến khác |
 
 ## 5. Dữ liệu và trạng thái
 

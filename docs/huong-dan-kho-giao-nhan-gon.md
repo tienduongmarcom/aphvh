@@ -44,6 +44,9 @@ Bản giao cho nhà xe và bản khách ký tại đích lưu riêng trên cùng
 
 ## 5. Gom kho vệ tinh về cửa hàng rồi giao khách
 
+Bản đang phát triển có nút **Gom hàng cho đơn** trên đơn chung đã xác nhận. Chọn nhóm đơn vị/kho nếu đơn có nhiều nơi giao; cửa sổ chuyển điền sẵn mã/tên/lượng còn chưa lập phiếu xuất và ghi số đơn trong ghi chú. Chọn kho thực lấy, kiểm lượng thực cần chuyển và người/xe, rồi Chuẩn bị phiếu & In. Lượng gợi ý chưa trừ tồn đã có hay các chuyến gom khác, không giữ chỗ. Muốn giao khách ở cửa hàng thì nguồn phần chưa giao trên đơn phải là kho cửa hàng trước. Nút này chưa có kết quả native lúc viết; vẫn dùng được đường chuyển kho chuẩn bên dưới theo bằng chứng cũ.
+
+
 1. Nếu đã biết sẽ giao tại cửa hàng, dòng đơn bán chọn kho cửa hàng thuộc đúng đơn vị sở hữu. Việc chuyển nội bộ bổ sung hàng cho kho đó, chưa thực hiện giao khách.
 2. Mở Tồn kho số lượng, chọn đơn vị → Chuyển hàng đi. Chọn kho nhận dự kiến là cửa hàng, các kho nguồn vệ tinh, hàng/kg/bao và người/xe chở.
 3. Chuẩn bị phiếu & In tạo phiếu kho nháp. Người chở/ghi chú, lượng thực giao còn sửa được khi nháp; đơn vị và loại chuyến không đổi sang nghiệp vụ khác.

@@ -44,18 +44,21 @@ if (!kh_aph.transfer_in.open) {
             dialog.show();
         }});
     };
-    kh_aph.transfer_in.send = function(company) {
+    kh_aph.transfer_in.send = function(company, suggestion = null) {
         if (!company) return frappe.msgprint("Chọn đơn vị trước.");
         const request_id = frappe.utils.get_random(32);
         const dialog = new frappe.ui.Dialog({title: "Chuyển hàng đi (cùng đơn vị)", primary_action_label: "Chuẩn bị phiếu & In",
             fields: [
                 {fieldname: "sent_date", label: "Ngày chuyển", fieldtype: "Date", reqd: 1, default: frappe.datetime.get_today()},
-                {fieldname: "destination", label: "Kho nhận dự kiến", fieldtype: "Link", options: "Warehouse", reqd: 1,
+                {fieldtype: "HTML", options: suggestion ? `<p>Gom cho đơn ${frappe.utils.escape_html(suggestion.shared_order)}. Lượng gợi ý là phần chưa giao/chưa lập phiếu xuất, không phải lượng thiếu tồn hoặc giữ chỗ. Chọn kho thực lấy và kiểm lại lượng cần chuyển. Nếu đổi nơi giao khách, đổi nguồn phần chưa giao trên đơn trước.</p>` : ""},
+                {fieldname: "destination", label: "Kho nhận dự kiến", fieldtype: "Link", options: "Warehouse", reqd: 1, default: suggestion?.destination, read_only: !!suggestion,
                     get_query: () => ({filters: {company, is_group: 0, disabled: 0, warehouse_type: ["!=", "Transit"]}})},
                 {fieldname: "carrier", label: "Người / xe chở", fieldtype: "Data", reqd: 1},
-                {fieldname: "note", label: "Ghi chú (chuyển về kho nào…)", fieldtype: "Small Text"},
-                {fieldname: "items", label: "Hàng chuyển", fieldtype: "Table", fields: [
-                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Link", options: "Item", reqd: 1, in_list_view: 1},
+                {fieldname: "note", label: "Ghi chú (chuyển về kho nào…)", fieldtype: "Small Text", default: suggestion ? "Gom cho đơn " + suggestion.shared_order : ""},
+                {fieldname: "items", label: "Hàng chuyển", fieldtype: "Table", data: suggestion?.items || [], cannot_add_rows: !!suggestion, fields: [
+                    {fieldname: "item_code", label: "Mã hàng", fieldtype: "Link", options: "Item", reqd: 1, in_list_view: 1, read_only: !!suggestion},
+                    {fieldname: "item_name", label: "Tên hàng", fieldtype: "Data", read_only: 1, in_list_view: 1,
+                        fetch_from: "item_code.item_name"},
                     {fieldname: "warehouse", label: "Từ kho", fieldtype: "Link", options: "Warehouse", reqd: 1, in_list_view: 1,
                         get_query: () => ({filters: {company, is_group: 0, disabled: 0, warehouse_type: ["!=", "Transit"]}})},
                     {fieldname: "qty", label: "Kg", fieldtype: "Float", reqd: 1, in_list_view: 1},
@@ -98,5 +101,25 @@ if (frappe.ui.form?.on && !kh_aph.transfer_in.form_registered) {
         if (!(frappe.boot?.kh_aph?.factory_receiving || frappe.boot?.kh_aph?.warehouse_transfer) || d.docstatus !== 1 || d.purpose !== "Material Transfer"
             || !d.add_to_transit || d.outgoing_stock_entry || Number(d.per_transferred || 0) >= 100) return;
         frm.add_custom_button("Nhận chuyến về kho", () => kh_aph.transfer_in.open(d.name)).addClass("btn-primary");
+    }});
+}
+
+// Chỉ gợi ý từ đơn; phiếu chuyển vẫn dùng cùng API/native controller và quyền kho.
+if (frappe.ui.form?.on && !kh_aph.transfer_in.order_registered) {
+    kh_aph.transfer_in.order_registered = true;
+    frappe.ui.form.on("APH Shared Sales Order", {refresh(frm) {
+        if (!frappe.boot?.kh_aph?.warehouse_transfer || frm.doc.docstatus !== 1 ||
+            !frappe.model.can_create("Stock Entry")) return;
+        frm.add_custom_button("Gom hàng cho đơn", async () => {
+            const response = await frappe.call({method: "kh_aph.order_transfer.preview", args: {shared_order: frm.doc.name}, freeze: true});
+            const source = response.message;
+            if (!source.groups.length) return frappe.msgprint("Đơn đã giao hoặc đã lập phiếu xuất hết lượng.");
+            const open = index => kh_aph.transfer_in.send(source.groups[index].company,
+                {...source.groups[index], shared_order: source.shared_order});
+            if (source.groups.length === 1) return open(0);
+            frappe.prompt({fieldname: "group", label: "Đơn vị và kho giao khách", fieldtype: "Select", reqd: 1,
+                options: source.groups.map((g, i) => ({value: String(i), label: g.company + " · " + g.destination}))},
+                value => open(Number(value.group)), "Chọn nơi cần gom hàng", "Tiếp tục");
+        }, "Chuẩn bị giao");
     }});
 }
