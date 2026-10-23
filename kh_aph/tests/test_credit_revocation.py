@@ -71,3 +71,20 @@ class RevocationTests(TestCase):
   current={'kh_aph_credit_high_risk':1,'kh_aph_global_credit_limit':80000}
   doc=SimpleNamespace(get=current.get,get_doc_before_save=lambda:SimpleNamespace(get=previous.get))
   with self.assertRaises(PermissionError):self.m.validate_customer(doc)
+
+ def test_sales_approver_can_revoke_without_accounts_manager(self):
+  self.f.get_roles.return_value=[self.m.ROLE_APPROVER]
+  result=self.m.revoke('AUDIT','Duyệt lại số lượng')
+  self.assertEqual(result['revoked_by'],'chief@example.invalid')
+ def test_sales_approver_cannot_change_limit_master(self):
+  self.f.get_roles.return_value=[self.m.ROLE_APPROVER]
+  previous={'kh_aph_credit_high_risk':1,'kh_aph_global_credit_limit':70000}
+  current={'kh_aph_credit_high_risk':1,'kh_aph_global_credit_limit':80000}
+  doc=SimpleNamespace(get=current.get,get_doc_before_save=lambda:SimpleNamespace(get=previous.get))
+  with self.assertRaises(PermissionError):self.m.validate_customer(doc)
+ def test_no_cost_cannot_approve_even_with_manager_or_approver(self):
+  from kh_aph.constants import ROLE_NO_COST
+  self.f.get_roles.return_value=[ROLE_NO_COST,'Accounts Manager',self.m.ROLE_APPROVER]
+  with self.assertRaises(PermissionError):self.m.approve('DN','Không được vượt chặn')
+  with self.assertRaises(PermissionError):self.m.revoke('AUDIT','Không được vượt chặn')
+  self.f.get_doc.assert_not_called()

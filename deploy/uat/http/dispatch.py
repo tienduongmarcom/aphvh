@@ -226,7 +226,7 @@ try:
  c=frappe.get_doc("Customer",f["customer"])
  c.kh_aph_credit_high_risk=1;c.kh_aph_global_credit_limit=70000;c.save()
  names={}
- for label,role in (("accounts","Accounts User"),("chief","Accounts Manager")):
+ for label,role in (("accounts","Accounts User"),("chief","Accounts Manager"),("sales_approver","Duyệt khách rủi ro")):
   email=f["user"].replace("@","-"+label+"@")
   u=frappe.get_doc({"doctype":"User","email":email,"first_name":"CI "+label,"enabled":1,"user_type":"System User","send_welcome_email":0,"roles":[{"role":role}]}).insert()
   update_password(u.name,f["password"]);names[label]=u.name
@@ -242,6 +242,7 @@ finally:frappe.destroy()
     risk=json.loads(next(x[10:] for x in raw.splitlines() if x.startswith("RISK_JSON:")))
     accounts=session(risk["accounts"],factory_password)
     chief=session(risk["chief"],factory_password)
+    sales_approver=session(risk["sales_approver"],factory_password)
     def denied(call, method, args, expected=("PermissionError","ValidationError")):
         try:
             call(method,args)
@@ -290,6 +291,14 @@ finally:frappe.destroy()
     denied(accounts,"/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"unauthorized"})
     assert snapshot()==snap
     emit("HTTP_HIGH_RISK_UNAUTHORIZED_APPROVAL","PASS","No approval created")
+    # Vai trò duyệt riêng không có Accounts Manager: không sửa hạn mức, không tạo JE.
+    denied(sales_approver,"/api/method/frappe.client.set_value",{"doctype":"Customer","name":fixture["customer"],"fieldname":"kh_aph_global_credit_limit","value":80000},("PermissionError",))
+    denied(sales_approver,"/api/method/frappe.client.insert",{"doc":json.dumps({"doctype":"Journal Entry","voucher_type":"Journal Entry","company":fixture["company"]})},("PermissionError",))
+    before_approval=oracle()
+    narrow=sales_approver("/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"Giám đốc bán hàng duyệt đúng phiếu"})["message"]
+    assert narrow["approved_by"]==risk["sales_approver"] and oracle()==before_approval
+    sales_approver("/api/method/kh_aph.credit_release.revoke",{"approval":narrow["name"],"reason":"Kiểm quyền hẹp trước lượt duyệt kế toán"})
+    assert getdoc("APH Credit Release",narrow["name"])["revoked_by"]==risk["sales_approver"] and oracle()==before_approval
     def approve():
         return chief("/api/method/kh_aph.credit_release.approve",{"delivery_note":risk["dn"],"reason":"CI chief verified approval"})["message"]
     approval=approve()

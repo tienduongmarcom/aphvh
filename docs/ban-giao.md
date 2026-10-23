@@ -1,5 +1,12 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Tách quyền duyệt khách rủi ro, chưa áp nhân sự
+
+Thêm vai trò Duyệt khách rủi ro qua bộ cài schema rõ ràng dưới cờ high_risk_credit_guard hiện có. Chỉ cấp đọc Company/Customer/DN và đọc/tạo/ghi phiếu duyệt bất biến; không cấp JE/GL, sửa Customer, ghi kho hoặc tài chính. validate_release/approve/revoke nhận vai trò riêng hoặc Accounts Manager; chỉnh dấu rủi ro/hạn mức trên Customer vẫn chỉ Accounts Manager. ROLE_NO_COST chặn cả khi cộng vai trò duyệt/Accounts Manager. Không gán vai trò vào tài khoản thật. Không thay quy tắc hạn mức: global_credit đang cảnh báo, high-risk mới chặn giao và dùng dấu duyệt. Không gọi phần này là đã duyệt vượt mọi hạn mức.
+
+628ca cục bộ đủJinja2 không bỏ qua đạt. Mở rộng bộ dispatch48 hiện có bằng nhân sự giả chỉ có vai trò duyệt: phải duyệt/thu hồi đúng người, không sửa hạn mức hoặc tạo JE, sổ không đổi. Chưa có kết quả native trên mã này. UAT39915893234 đang chạy9a150f8 trước thay đổi quyền, không chứa vai trò mới; chưa dispatch lượt mới để tránh hủy lượt in đang hữu ích. Còn CEO chỉ đọc, nhận tiền hẹp, phạm vi kho Hạnh và thu/hoàn đổi mã. Production0.16.4 và PR38nháp giữ nguyên.
+
+
 ## 23/10/2026 — Đọc đủ140ca, chuẩn bị mã nhân sự nội bộ
 
 UAT39897679945 đúng8f97806440b6f8b0ff08f483585b8aa8880114b9 SUCCESS. Đã tải candidate-image-evidence và đọc140PASS bộ014; HTTP_014_CHUAN_BI_GOM_KHO xác nhận gợi ý theo đơn/không giữ chỗ/draft/retry/phạm vi; HTTP_014_DOI_SOAT_COC_THEO_NGUON xác nhận cọc50.000/khả dụng50.000, không giảm nợ hai lần, bản cũ bất biến sau nhả tiếp. Các bộ còn lại: inventory33,funds20,cost16,dispatch48,b0111=15,b0112=13,b0113=13,b0114=8,b012=9,b013=10,native4,prepare3 PASS. Đã render/xem PDF doi-soat-coc-theo-don.pdf một trang không cắt bảng/chữ ký. Cổng339897682847 cùng8f97806: đã tải/đọc schema1154/1154 lệch0, quay lui1105/1105 lệch0, phục hồi sau nâng sai KHỚP. Không suy sang phần in phiếu thu9a150f8.

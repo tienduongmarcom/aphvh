@@ -5,13 +5,35 @@ from kh_aph.global_credit import balance_for
 from kh_aph.credit_release_rules import credit_increase,shipment_fingerprint
 HIGH_RISK='kh_aph_credit_high_risk'
 APPROVAL='APH Credit Release'
+ROLE_APPROVER='Duyệt khách rủi ro'
 
 def _enabled():
     return cint(frappe.conf.get('kh_aph_high_risk_credit_guard'))
 
+def _authorize(roles):
+    from kh_aph.constants import ROLE_NO_COST
+    assigned=set(frappe.get_roles())
+    if frappe.session.user != 'Administrator' and (ROLE_NO_COST in assigned or not assigned & set(roles)):
+        frappe.throw('Chưa được cấp quyền thực hiện phê duyệt bán chịu',frappe.PermissionError)
+
 def _chief():
-    if frappe.session.user != 'Administrator' and 'Accounts Manager' not in frappe.get_roles():
-        frappe.throw('Chỉ Kế toán trưởng được duyệt bán chịu cho khách rủi ro cao',frappe.PermissionError)
+    _authorize({'Accounts Manager'})
+
+def _approver():
+    _authorize({'Accounts Manager', ROLE_APPROVER})
+
+def schema():
+    """Chỉ thêm vai trò và quyền duyệt, không gán vào nhân sự hoặc cấp quyền sổ."""
+    if not _enabled():
+        return
+    from frappe.permissions import add_permission, update_permission_property
+    if not frappe.db.exists('Role', ROLE_APPROVER):
+        frappe.get_doc({'doctype':'Role','role_name':ROLE_APPROVER,'desk_access':1}).insert()
+    for dt, allowed in {APPROVAL:('read','create','write'), 'Delivery Note':('read',),
+                        'Customer':('read',), 'Company':('read',)}.items():
+        add_permission(dt, ROLE_APPROVER, 0)
+        for permission in allowed:
+            update_permission_property(dt, ROLE_APPROVER, 0, permission, 1, validate=False)
 
 def validate_customer(doc,method=None):
     if not _enabled():return
@@ -21,7 +43,7 @@ def validate_customer(doc,method=None):
             _chief()
 
 def validate_release(doc,method=None):
-    _chief()
+    _approver()
     if not _enabled():frappe.throw('Phê duyệt rủi ro chưa được bật')
     if not doc.is_new():frappe.throw('Phiếu duyệt là dấu vết bất biến; tạo phiếu mới khi nội dung giao thay đổi')
     dn=frappe.get_doc('Delivery Note',doc.delivery_note);dn.check_permission('read')
@@ -33,7 +55,7 @@ def validate_release(doc,method=None):
 
 @frappe.whitelist(methods=['POST'])
 def approve(delivery_note,reason):
-    _chief()
+    _approver()
     if not _enabled():frappe.throw('Phê duyệt rủi ro chưa được bật')
     release=frappe.get_doc({'doctype':APPROVAL,'delivery_note':delivery_note,'reason':reason}).insert()
     return {'name':release.name,'approved_by':release.approved_by,'approved_at':release.approved_at,
@@ -51,12 +73,12 @@ def before_submit_delivery(doc,method=None):
           AND fingerprint=%s AND revoked_at IS NULL FOR UPDATE''',
         (doc.name,doc.customer,doc.company,fingerprint))
     if not matched:
-        frappe.throw('Khách rủi ro cao: cần Kế toán trưởng phê duyệt đúng nội dung phiếu giao trước khi bán chịu',title='Chặn bán chịu')
+        frappe.throw('Khách rủi ro cao: cần người có quyền phê duyệt đúng nội dung phiếu giao trước khi bán chịu',title='Chặn bán chịu')
 
 
 @frappe.whitelist(methods=['POST'])
 def revoke(approval, reason):
-    _chief()
+    _approver()
     if not _enabled():frappe.throw('Phê duyệt rủi ro chưa được bật')
     if not reason or not reason.strip():frappe.throw('Cần lý do thu hồi')
     release=frappe.get_doc(APPROVAL,approval);release.check_permission('read')

@@ -90,3 +90,8 @@ Chủ dự án chọn mã nội bộ ngày23/10. Đã đối chiếu màn User t
 `kh_aph.staff_accounts.xem_ke_hoach` là công cụ chỉ đọc cho quản trị, sau cờ UX hiện có; kiểm trùng username hoặc định danh User, không tìm theo họ tên, không tự nhận tài khoản trùng. Trường email kỹ thuật dự kiến `<mã>@nhansu.invalid` chỉ phục vụ trường bắt buộc của User, không phải hộp thư. Không gửi welcome email, không đặt mật khẩu chung, không ghi mật khẩu/reset link vào repo. Chưa có hàm tạo/kích hoạt/gán quyền tự động trong công cụ này. Người dùng đăng nhập bằng username sau khi tài khoản được tạo/kích hoạt và thiết lập mật khẩu đúng quy trình.
 
 Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm bộ đối soát công nợ tổng hợp chặn toàn bản; không nới chặn chỉ để qua thử, phải giải quyết đồng thời quyền kho và quyền in công nợ trước khi đánh dấu hồ sơ này đạt.
+
+
+### Tiến độ quyền duyệt khách rủi ro
+
+Đã viết vai trò Duyệt khách rủi ro và bộ cài tường minh: approve/revoke dùng quyền này, sửa hạn mức/dấu rủi ro Customer vẫn yêu cầu quản lý kế toán. NoCost luôn chặn khi cộng vai trò. Chưa kiểm native và chưa gán Trang. Quyền giá dưới sàn vẫn dùng bảng người duyệt hiện có. Hạn mức chung trong global_credit hiện là cảnh báo, không mô tả thành cơ chế chặn/duyệt vượt hạn mức đã hoàn thiện.

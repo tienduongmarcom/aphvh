@@ -119,6 +119,8 @@ def schema(cho_phep_du_lieu=False):
         meta = frappe.get_meta(dt)
         if any(not meta.has_field(field["fieldname"]) for field in fields):
             frappe.throw("Thiếu field candidate: " + dt)
+    from kh_aph import credit_release
+    credit_release.schema()
     ux_task.schema()  # Cuối cùng: chỉ ẩn lối cũ sau khi schema và danh mục nguồn đầy đủ.
     frappe.db.commit()
     frappe.clear_cache()
