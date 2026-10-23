@@ -37,7 +37,7 @@ class Transfer(unittest.TestCase):
         f.get_roles = lambda: ['Kế toán nhà máy', 'APH Không xem giá vốn']
         f.db = Mock(); f.db.get_value.return_value = 1; f.db.sql.return_value = []
         f.parse_json = lambda raw: json.loads(raw) if isinstance(raw, str) else raw
-        f.get_doc = Mock(); f.get_list = Mock()
+        f.get_doc = Mock(); f.get_list = Mock(); f.has_permission = Mock(return_value=True)
         f._dict = Row
         utils = types.ModuleType('frappe.utils')
         utils.cint = lambda v: int(v or 0)

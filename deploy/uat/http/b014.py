@@ -46,6 +46,10 @@ from kh_aph.kho_chuan import kho_tinh_trang
 status_wh=frappe.get_doc('Warehouse',kho_tinh_trang(store_doc.name))
 assert frappe.has_permission('Warehouse','read',doc=status_wh,user='hanh@nhansu.invalid')
 assert not frappe.has_permission('Warehouse','read',doc=status_wh,user='dungnm@nhansu.invalid')
+# Chỉ site UAT dùng một lần: bật hai bản sao hồ sơ để kiểm giao chéo địa điểm.
+for staff_name in ('hanh@nhansu.invalid','dungnm@nhansu.invalid'):
+    staff_user=frappe.get_doc('User',staff_name);staff_user.enabled=1;staff_user.save()
+    update_password(staff_name,payload['password'])
 from kh_aph import tien_vay
 cfg = {"khach_hang": "UAT", "cong_ty": [{"ten": "x", "abbr": a, "thong_tu": 99} for a in ("APH", "VH")],
        "ngan_hang": [{"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "1111"}, {"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "2222", "loai_tien": "USD"},
@@ -112,7 +116,7 @@ nv = frappe.get_doc({"doctype": "Employee", "first_name": p + " Giám đốc", "
 frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
-    "staff_prepared": {"disabled_users":9,"idempotent":True,"no_email_or_activation":True,"warehouse_scope_and_new_status_warehouse":True,"ceo_read_not_write":True}, "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
+    "staff_hanh":"hanh@nhansu.invalid", "staff_dung":"dungnm@nhansu.invalid", "staff_prepared": {"created_disabled_users":9,"idempotent":True,"no_email_or_activation":True,"warehouse_scope_and_new_status_warehouse":True,"ceo_read_not_write":True}, "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
     "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh, "scope_ar": scope_ar,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),

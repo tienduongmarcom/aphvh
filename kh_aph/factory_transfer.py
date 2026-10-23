@@ -40,7 +40,11 @@ _INTERNAL = ContextVar('factory_transfer', default=None)
 
 def _outgoing(name, lock=False):
     doc = frappe.get_doc('Stock Entry', name, for_update=lock)
-    doc.check_permission('read')
+    if frappe.has_permission('Stock Entry','read',doc=doc):
+        doc.check_permission('read')
+    else:
+        from kh_aph.transfer_access import expected_receiver
+        expected_receiver(doc)
     frappe.get_doc('Company', doc.company).check_permission('read')
     if (doc.docstatus != 1 or doc.purpose != 'Material Transfer' or not cint(doc.add_to_transit)
             or doc.get('outgoing_stock_entry')):
@@ -48,9 +52,14 @@ def _outgoing(name, lock=False):
     return doc
 
 
-def _destination(name, company, transit):
+def _destination(name, company, transit, planning=False):
     doc = frappe.get_doc('Warehouse', name)
-    doc.check_permission('read')
+    if planning:
+        frappe.get_doc('Company',company).check_permission('read')
+        if not frappe.has_permission('Stock Entry','create'):
+            frappe.throw('Cần quyền chuẩn bị chuyến chuyển',frappe.PermissionError)
+    else:
+        doc.check_permission('read')
     if (doc.company != company or doc.disabled or doc.is_group or doc.get('warehouse_type') == 'Transit'
             or name == transit):
         frappe.throw('Chọn kho nhận lá đang dùng, cùng đơn vị với phiếu chuyển, không phải kho đang vận chuyển')
@@ -90,6 +99,17 @@ def incoming(company):
         order_by='posting_date desc', limit_page_length=201)
     if len(rows) > 200:
         frappe.throw('Có hơn 200 chuyến đang trên đường; mở đúng phiếu chuyển để nhận')
+    rows=[row for row in rows if frappe.has_permission('Stock Entry','read',doc=frappe.get_doc('Stock Entry',row.name))]
+    # Ngoài phiếu nguồn được đọc native, đầu nhận chỉ thấy mã/ngày chuyến có
+    # kho dự kiến nằm trong phạm vi mình. Không lấy qty/giá hoặc trả doc nguồn.
+    allowed=frappe.get_list('Warehouse',filters={'company':company,'is_group':0,'disabled':0},pluck='name',limit_page_length=0)
+    if allowed and frappe.has_permission('Stock Entry','create') and frappe.has_permission('Stock Entry','submit'):
+        addressed=frappe.get_all('Stock Entry',filters={'company':company,'docstatus':1,'purpose':'Material Transfer',
+            'add_to_transit':1,'per_transferred':['<',100],DESTINATION:['in',allowed]},
+            fields=['name','posting_date'],order_by='posting_date desc',limit_page_length=201)
+        rows=list({row.name:row for row in list(rows)+list(addressed)}.values())
+    if len(rows)>200:frappe.throw('Có hơn200chuyến; mở đúng phiếu chuyển để nhận')
+    rows=sorted(rows,key=lambda row:(str(row.posting_date),row.name),reverse=True)
     return [{'name': r.name, 'posting_date': str(r.posting_date)} for r in rows]
 
 
@@ -183,7 +203,11 @@ def receive(stock_entry, request_id, rows, received_date, receiver, note=None):
         if len(note) > 2000:
             frappe.throw('Ghi chú đổi kho nhận quá dài')
     from erpnext.stock.doctype.stock_entry.stock_entry import make_stock_in_entry
-    entry = make_stock_in_entry(stock_entry)
+    if frappe.has_permission('Stock Entry','read',doc=doc):
+        entry = make_stock_in_entry(stock_entry)
+    else:
+        from kh_aph.transfer_access import make_incoming
+        entry = make_incoming(doc)
     entry.items = [r for r in entry.items if r.ste_detail in selected]
     if {r.ste_detail for r in entry.items} != set(selected):
         frappe.throw('Phiếu chuyển đã đổi; mở lại cửa sổ nhận chuyến')
@@ -261,7 +285,7 @@ def send(company, request_id, rows, sent_date, carrier, note=None, prepare_only=
             frappe.throw('Lượt chuyển đã có nội dung khác hoặc phiếu đã thay đổi; kiểm tra phiếu cũ')
         return {'name': entry.name, 'doctype': 'Stock Entry', 'docstatus': entry.docstatus}
     if destination:
-        _destination(destination, company, transit)
+        _destination(destination, company, transit, planning=True)
     items = []
     for r in clean:
         row = frappe._dict(item_code=r['item_code'], conversion_factor=1)
@@ -311,7 +335,7 @@ def protect(doc, method=None):
     if destination and cint(doc.docstatus) != 2:
         if doc.get('purpose') != 'Material Transfer' or not cint(doc.get('add_to_transit')) or doc.get('outgoing_stock_entry'):
             frappe.throw('Kho nhận dự kiến chỉ dùng trên phiếu chuyển đi qua kho đang vận chuyển')
-        _destination(destination, doc.company, None)
+        _destination(destination, doc.company, None, planning=True)
         if any(row.get('s_warehouse') == destination for row in doc.items):
             frappe.throw('Kho nhận dự kiến phải khác kho chuyển đi')
     if old and old.get(PREFIX + 'request') and any(str(old.get(field) or '') != str(doc.get(field) or '')
@@ -380,7 +404,24 @@ def schema():
         if field['fieldname'] in (PREFIX + 'receiver', PREFIX + 'note'):
             field.update(read_only=0, read_only_depends_on='eval:doc.docstatus!=0 || !doc.kh_aph_transfer_request || !doc.kh_aph_transfer_destination || !doc.add_to_transit || doc.outgoing_stock_entry')
     fields.append({'fieldname': DESTINATION, 'label': 'Kho nhận dự kiến', 'fieldtype': 'Link', 'options': 'Warehouse',
-                   'insert_after': 'add_to_transit', 'no_copy': 1,
+                   'insert_after': 'add_to_transit', 'no_copy': 1, 'ignore_user_permissions': 1,
                    'depends_on': 'eval:doc.add_to_transit && !doc.outgoing_stock_entry',
                    'read_only_depends_on': 'eval:doc.docstatus != 0'})
     create_custom_fields({'Stock Entry': fields})
+
+
+@frappe.whitelist()
+def destination_query(doctype,txt,searchfield,start,page_len,filters=None):
+    """Tên kho dự kiến cùng Company, không cấp xem tồn/phiếu ở kho ngoài quyền."""
+    guard()
+    filters=frappe.parse_json(filters) if isinstance(filters,str) else filters or {}
+    company=filters.get('company') if isinstance(filters,dict) else None
+    if doctype!='Warehouse' or not isinstance(company,str) or not company:
+        frappe.throw('Chọn đúng đơn vị trước khi tìm kho nhận')
+    frappe.get_doc('Company',company).check_permission('read')
+    if not frappe.has_permission('Stock Entry','create'):
+        frappe.throw('Cần quyền lập chuyến chuyển',frappe.PermissionError)
+    rows=frappe.get_all('Warehouse',filters={'company':company,'is_group':0,'disabled':0,
+        'warehouse_type':['!=','Transit'],'name':['like','%'+str(txt or '')[:140]+'%']},
+        fields=['name'],start=max(0,cint(start)),limit_page_length=min(30,max(1,cint(page_len))),order_by='name')
+    return [[row.name] for row in rows]

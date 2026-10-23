@@ -170,3 +170,56 @@ def chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit):
     emit('HTTP_014_CHUAN_BI_GOM_KHO', 'PASS', {'draft_print_no_posting': True, 'repeat_one_entry': True,
          'native_issue_transit_receive': True, 'planned_destination': True, 'warehouse_scope': True,
          'no_customer_debt': True, 'order_remaining_suggestion_no_reservation': True})
+
+
+def chay_phan_quyen(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
+    """Hai hồ sơ thật, UserPermission tách kho và NoCost; không mượn Accounts Manager."""
+    factory=phien(f['staff_dung']);store=phien(f['staff_hanh'])
+    origin='Kho nguyên liệu - APH';destination=f['kho']
+    seed=submit(insert({'doctype':'Stock Entry','stock_entry_type':'Material Receipt','purpose':'Material Receipt',
+        'company':f['aph'],'posting_date':f['date'],'items':[{'item_code':f['A'],'qty':3,'uom':'Kg','conversion_factor':1,
+        't_warehouse':origin,'basic_rate':37000,'expense_account':f['acc']['cp']}]},ktt),ktt)
+    args={'company':f['aph'],'request_id':f['p']+'-factory-store','rows':json.dumps([
+        {'item_code':f['A'],'warehouse':origin,'qty':2,'bags':0}]),'sent_date':f['date'],
+        'carrier':'Xe nội bộ','prepare_only':1,'destination':destination}
+    prepared=rpc('kh_aph.factory_transfer.send',args,factory)
+    source=get('Stock Entry',prepared['name'],factory)
+    assert source['docstatus']==0
+    submit(source,factory)
+    # Cửa hàng vẫn không được mở Warehouse/phiếu nguồn của nhà máy.
+    denied(lambda:get('Warehouse',origin,store),('PermissionError',))
+    denied(lambda:get('Stock Entry',prepared['name'],store),('PermissionError',))
+    assert prepared['name'] in {row['name'] for row in rpc('kh_aph.factory_transfer.incoming',{'company':f['aph']},store)}
+    view=rpc('kh_aph.factory_transfer.preview',{'stock_entry':prepared['name']},store)
+    assert len(view['items'])==1 and view['items'][0]['remaining']==2
+    assert not any(key in json.dumps(view) for key in ('rate','amount','valuation'))
+    receive={'stock_entry':prepared['name'],'request_id':f['p']+'-store-receive','rows':json.dumps([
+        {'source_row':view['items'][0]['source_row'],'warehouse':destination,'qty':2,'bags':0}]),
+        'received_date':f['date'],'receiver':'Kho cửa hàng nhận','note':'Đúng phiếu vận chuyển'}
+    before={dt:len(lst(dt,{},['name'],ktt)) for dt in ('Stock Entry','Stock Ledger Entry','GL Entry','Payment Ledger Entry')}
+    denied(lambda:rpc('kh_aph.factory_transfer.receive',{**receive,'request_id':f['p']+'-wrong-target-before',
+        'rows':json.dumps([{'source_row':view['items'][0]['source_row'],'warehouse':origin,'qty':1,'bags':0}])},store),('PermissionError',))
+    assert {dt:len(lst(dt,{},['name'],ktt)) for dt in before}==before
+    receipt=rpc('kh_aph.factory_transfer.receive',receive,store)
+    entry=get('Stock Entry',receipt['name'],ktt)
+    assert entry['docstatus']==1 and entry['outgoing_stock_entry']==prepared['name']
+    assert entry['items'][0]['s_warehouse']==TRANSIT and entry['items'][0]['t_warehouse']==destination
+    after={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
+    assert after['Stock Entry']==before['Stock Entry']+1 and after['Payment Ledger Entry']==before['Payment Ledger Entry']
+    assert rpc('kh_aph.factory_transfer.receive',receive,store)==receipt
+    assert {dt:len(lst(dt,{},['name'],ktt)) for dt in before}==after
+    denied(lambda:rpc('kh_aph.factory_transfer.receive',{**receive,'request_id':f['p']+'-wrong-target',
+        'rows':json.dumps([{'source_row':view['items'][0]['source_row'],'warehouse':origin,'qty':1,'bags':0}])},store))
+    # Chiều ngược lại: cửa hàng gửi, nhà máy chỉ nhận vào nhóm nhà máy mình.
+    back=rpc('kh_aph.factory_transfer.send',{'company':f['aph'],'request_id':f['p']+'-store-factory',
+        'rows':json.dumps([{'item_code':f['A'],'warehouse':destination,'qty':1,'bags':0}]),
+        'sent_date':f['date'],'carrier':'Xe quay lại','destination':origin},store)
+    back_view=rpc('kh_aph.factory_transfer.preview',{'stock_entry':back['name']},factory)
+    back_receipt=rpc('kh_aph.factory_transfer.receive',{'stock_entry':back['name'],'request_id':f['p']+'-factory-receive',
+        'rows':json.dumps([{'source_row':back_view['items'][0]['source_row'],'warehouse':origin,'qty':1,'bags':0}]),
+        'received_date':f['date'],'receiver':'Kho nhà máy nhận'},factory)
+    assert get('Stock Entry',back_receipt['name'],ktt)['items'][0]['t_warehouse']==origin
+    denied(lambda:get('Warehouse',destination,factory),('PermissionError',))
+    assert seed['docstatus']==1
+    emit('HTTP_014_CHUYEN_KHO_TACH_NHAN_SU','PASS',{'factory_sender_store_receiver':True,'quantity_projection_only':True,
+        'native_receipt_and_retry':True,'source_warehouse_and_document_still_denied':True,'no_customer_debt':True})

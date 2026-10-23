@@ -121,3 +121,8 @@ Hạnh được các kho cửa hàng/vệ tinh, Dũng các kho nhà máy theo c�
 Quyền kho dùng nhóm địa điểm đúng cấu hình, có hậu duệ, thay vì danh sách lá cố định. Kho cách ly/chờ xử lý mới sinh trong cửa hàng vẫn dùng được; không mở quyền sang nhóm nhà máy. Thay cây kho làm mới cache ngay và sau commit để không giữ phạm vi cũ. Kho ngoài địa điểm chưa xác định phải đối chiếu trước áp.
 
 Bộ chuẩn bị đã bao gồm allowlist Trang duyệt giá sàn từng Company, tự duyệt tắt; không ghi đè cấu hình khác nếu đã có. Tài khoản vẫn disabled và chưa có mật khẩu dùng chung, không email. Sau native đạt, quản trị đặt mật khẩu riêng, bật đăng nhập bằng username, rồi kích hoạt theo hồ sơ. Cần kiểm trực tiếp bằng nhân sự thật trước đánh dấu nghiệm thu vận hành.
+
+
+### Chuyển nhà máy và cửa hàng
+
+Tên kho nhận dự kiến là metadata cùng đơn vị, không phải quyền thao tác tại kho đó. Người gửi xuất từ kho mình vào transit; người nhận dùng cửa sổ nhận chuyến để xem lượng đúng chuyến chỉ định đến kho mình. Không cấp đọc phiếu nguồn/Warehouse nguồn hoặc giá ngoài phạm vi; phiếu nhận native chỉ đi từ transit vào kho được giao. Chuyến lịch sử thiếu kho dự kiến cần kế toán đủ phạm vi xử lý trước khi áp hồ sơ hẹp, không mở toàn kho để chữa. Đã có142ca native trên5bed91b; ca chuyển hai hồ sơ143 đang bổ sung, chưa kết luận.

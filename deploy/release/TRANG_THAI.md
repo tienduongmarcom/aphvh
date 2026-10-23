@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Đã đọc142PASS; bổ sung kiểm chuyển hai đầu khác phạm vi kho
+
+UAT39923012594 đúng5bed91bd9bf6c5a7d46b03d15e46c93aa75edea5 SUCCESS, đã tải/đọc142PASS014 và tất cả bộ hồi quy:0114=8,dispatch48,funds20,cost16,inventory33,0111=15,0112=13,0113=13,012=9,013=10,native4,prepare3. Bộ chuẩn bị9disabled/reuse, quỹ nhận hẹp/KTBH gửi khôngGL, CEO đọc giá vốn/dòng tiền và từ chối sửa/NoCost, công nợ tổng hợp không đọc packet ngoài kho đều đã qua native. Cổng239923899687 và2b39923899864 cùng5bed91b SUCCESS; Cổng339923900504 còn chạy lúc cập nhật, chưa suy kết quả cho mã sau.
+
+Rà thêm đầu nhà máy↔cửa hàng: quyền tách Warehouse đúng nhưng người gửi không được chọn tên kho nhận ngoài phạm vi, người nhận không được đọc phiếu nguồn có kho gửi ngoài phạm vi. Đã tách metadata kho dự kiến (chỉ tên lá cùng Company, không tồn/giá) khỏi quyền kho thao tác; CF kho dự kiến ignore_user_permissions, nguồn/đích thực vẫn native. Đầu nhận chỉ xem projection lượng của đúng chuyến đã gửi đến kho mình, có quyền StockEntrycreate/submit/Company/Item; không mở raw nguồn/Warehouse nguồn. Mapper chỉ bỏ đọc nguồn đã ràng buộc, target reset quyền rồi kiểm create/nativeinsert/submit như trước; không trả giá hoặc mở quyền sổ. Chuyến không chỉ định kho nhận vẫn cần đọc nguồn native như cũ. List không lộ tên phiếu không được đọc/không gửi đến kho mình.
+
+Thêm HTTP_014_CHUYEN_KHO_TACH_NHAN_SU, tổng143giữ142cũ: hai bản sao hồ sơ Hạnh/Dũng được bật mật khẩu ngẫu nhiên CHỈ trong UAT dùng một lần, sau khi đã chứng minh bộ chuẩn bị tạo9disabled/khôngemail. Kiểm gửi/nhận cả hai chiều, chuẩn bị/in/submit, không đọc Warehouse/phiếu nguồn ngoài phạm vi, sai kho bị chặn trước nhận, native receipt/retry/không nợ.650unit không bỏ qua, JS/Pyflakes/diff đạt; chưa native mã mới. Không bật ai trên production;0.16.4 giữ nguyên. Còn thu/hoàn đổi mã một cửa và nghiệm thu thật theo kế hoạch.
+
+
 ## 23/10/2026 — Quyền theo nhóm địa điểm, giá sàn và sửa khai báo khế ước
 
 Rà vận hành phát hiện cấp theo lá sẽ chặn Hạnh khi hệ thống sinh kho cách ly/chờ xử lý mới. Đã đổi kế hoạch User Permission sang NHÓM địa điểm cấu hình + transit chuẩn, bao gồm hậu duệ; không cấp gốc toànCompany. Hạnh chỉ nhóm cửa hàng/vệ tinh, Dũng chỉ nhóm nhà máy (và Company tương ứng). Kho mới trong địa điểm được giao theo quyền nhóm; kho ngoài địa điểm cấu hình phải dừng đối chiếu. Hook Warehouse on_update/after_rename/on_trash bỏ cache của mọi người có giới hạn kho ngay và sau commit, tránh quyền cũ sau chuyển cây hoặc người khác tạo kho mới; không ghi UserPermission/role.

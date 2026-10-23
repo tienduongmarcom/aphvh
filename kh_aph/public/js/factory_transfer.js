@@ -52,7 +52,7 @@ if (!kh_aph.transfer_in.open) {
                 {fieldname: "sent_date", label: "Ngày chuyển", fieldtype: "Date", reqd: 1, default: frappe.datetime.get_today()},
                 {fieldtype: "HTML", options: suggestion ? `<p>Gom cho đơn ${frappe.utils.escape_html(suggestion.shared_order)}. Lượng gợi ý là phần chưa giao/chưa lập phiếu xuất, không phải lượng thiếu tồn hoặc giữ chỗ. Chọn kho thực lấy và kiểm lại lượng cần chuyển. Nếu đổi nơi giao khách, đổi nguồn phần chưa giao trên đơn trước.</p>` : ""},
                 {fieldname: "destination", label: "Kho nhận dự kiến", fieldtype: "Link", options: "Warehouse", reqd: 1, default: suggestion?.destination, read_only: !!suggestion,
-                    get_query: () => ({filters: {company, is_group: 0, disabled: 0, warehouse_type: ["!=", "Transit"]}})},
+                    get_query: () => ({query: "kh_aph.factory_transfer.destination_query", filters: {company}})},
                 {fieldname: "carrier", label: "Người / xe chở", fieldtype: "Data", reqd: 1},
                 {fieldname: "note", label: "Ghi chú (chuyển về kho nào…)", fieldtype: "Small Text", default: suggestion ? "Gom cho đơn " + suggestion.shared_order : ""},
                 {fieldname: "items", label: "Hàng chuyển", fieldtype: "Table", data: suggestion?.items || [], cannot_add_rows: !!suggestion, fields: [
