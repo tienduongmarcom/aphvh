@@ -372,7 +372,12 @@ def lock_outgoing(doc, method=None):
     frappe.db.sql('SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE', doc.outgoing_stock_entry)
     if method == 'before_cancel':
         return
-    left = remaining_rows(frappe.get_doc('Stock Entry', doc.outgoing_stock_entry))
+    source = _outgoing(doc.outgoing_stock_entry)
+    planned = source.get(DESTINATION)
+    if planned and any(row.get('t_warehouse') and row.t_warehouse != planned for row in doc.items):
+        if not doc.get(PREFIX+'request') or not doc.get(PREFIX+'note'):
+            frappe.throw('Nhận khác kho dự kiến: dùng cửa sổ nhận chuyến và ghi lý do, không bỏ qua trên phiếu kho chuẩn')
+    left = remaining_rows(source)
     asked = {}
     for row in doc.items:
         if row.get('against_stock_entry') == doc.outgoing_stock_entry and row.get('ste_detail'):

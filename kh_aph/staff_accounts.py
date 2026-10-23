@@ -99,6 +99,8 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
         missing=[role for role in profile['roles'] if not frappe.db.exists('Role',role)]
         if missing:frappe.throw('Chưa cài đủ vai trò: '+', '.join(missing))
         if not frappe.db.exists('Workspace',profile['workspace']):frappe.throw('Chưa có khu làm việc: '+profile['workspace'])
+        module_profile='9xLab - '+profile['workspace']
+        if not frappe.db.exists('Module Profile',module_profile):frappe.throw('Chưa có cấu hình màn hình: '+module_profile)
         whs=stock['pham_vi_'+profile['warehouses']] if profile.get('warehouses') else []
         if profile.get('warehouses') and not whs:frappe.throw('Chưa có phạm vi kho cho '+entry['username'])
         allowed_companies=sorted({by_name[name]['company'] for name in whs}) if entry['username']=='dungnm' else sorted(company_abbr)
@@ -115,12 +117,12 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
                 fields=['allow','for_value','apply_to_all_doctypes','applicable_for'])
             key=lambda row:(row['allow'],row['for_value'],int(row['apply_to_all_doctypes']),row.get('applicable_for') or '')
             if (not own_batch or user.enabled or user.username!=entry['username'] or user.first_name!=entry['full_name'] or
-                user.user_type!='System User' or current_roles!=set(profile['roles']) or user.default_workspace!=profile['workspace'] or
+                user.user_type!='System User' or current_roles!=set(profile['roles']) or user.default_workspace!=profile['workspace'] or user.module_profile!=module_profile or
                 sorted(map(key,current_permissions))!=sorted(map(key,permissions))):
                 frappe.throw('Tài khoản đã đổi hoặc không thuộc lượt chuẩn bị; giữ nguyên để đối chiếu: '+entry['username'])
             reuse=True
         prepared.append({**entry,'roles':sorted(profile['roles']),'workspace':profile['workspace'],
-                         'permissions':permissions,'enabled':0,'reused':reuse})
+                         'module_profile':module_profile,'permissions':permissions,'enabled':0,'reused':reuse})
     price_settings=frappe.get_doc('Selling Settings')
     approver='trang@nhansu.invalid'
     price_rows=[{'user':approver,'company':company,'muc':0,'tu_duyet':0} for company in sorted(company_abbr)]
@@ -138,7 +140,7 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
             if row['reused']:continue
             user=frappe.get_doc({'doctype':'User','email':row['email'],'username':row['username'],
                 'first_name':row['full_name'],'enabled':0,'user_type':'System User','send_welcome_email':0,
-                'language':'vi','default_workspace':row['workspace'],'roles':[{'role':role} for role in row['roles']]})
+                'language':'vi','default_workspace':row['workspace'],'module_profile':row['module_profile'],'roles':[{'role':role} for role in row['roles']]})
             user.flags.no_welcome_mail=True
             user.insert()
             if user.username!=row['username']:frappe.throw('Mã đăng nhập vừa bị trùng; hủy lượt chuẩn bị')

@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Giữ kiểm soát nhận chuyến cả trên phiếu native
+
+Bổ sung lock_outgoing kiểm quyền nguồn hoặc projection đúng kho dự kiến cả khi người dùng lập phiếu nhận native. Nhận khác kho dự kiến phải qua cửa sổ nhận có dấu/lý do, không bỏ qua bằng StockEntry thủ công. Đã thêm native thử raw redirect và vẫn giữ case hai chiều; chưa có kết quả. Bộ chuẩn bị gắn Module Profile có sẵn theo nhiệm vụ để bớt menu, không thay quyền. Native fixture bật đăng nhập username CHỈ trên UAT bằng SystemSettings.save rồi kiểm mã hanh trả đúng principal nội bộ; bộ chuẩn bị thật vẫn không đổi cấu hình login hoặc kích hoạt.650unit không bỏ qua đạt trước assert native mới; Pyflakes/JS/diff giữ nghiêm.
+
+UAT39926823240 đang kiểmd198495 trước ba bổ sung này, tổng143; không hủy lượt hữu ích. Cả4cổng5bed91b đãSUCCESS (UAT142/Cổng239923899687/2b39923899864/339923900504); UAT142 đã đọc artifact, cổng3 mới cần tải/đọc chi tiết cuối trước ghi mức schema. Không suy sang nguồn mới. Production vẫn0.16.4, chưa chuẩn bị hoặc bật nhân sự thật. Tiếp theo đọc143, sửa nếu lỗi, rồi chạy nguồn cuối có username/module/native guard. Còn thu/hoàn đổi mã một cửa theo phạm vi cũ, không gọi toàn kế hoạch đã hoàn tất.
+
+
 ## 23/10/2026 — Đã đọc142PASS; bổ sung kiểm chuyển hai đầu khác phạm vi kho
 
 UAT39923012594 đúng5bed91bd9bf6c5a7d46b03d15e46c93aa75edea5 SUCCESS, đã tải/đọc142PASS014 và tất cả bộ hồi quy:0114=8,dispatch48,funds20,cost16,inventory33,0111=15,0112=13,0113=13,012=9,013=10,native4,prepare3. Bộ chuẩn bị9disabled/reuse, quỹ nhận hẹp/KTBH gửi khôngGL, CEO đọc giá vốn/dòng tiền và từ chối sửa/NoCost, công nợ tổng hợp không đọc packet ngoài kho đều đã qua native. Cổng239923899687 và2b39923899864 cùng5bed91b SUCCESS; Cổng339923900504 còn chạy lúc cập nhật, chưa suy kết quả cho mã sau.

@@ -215,6 +215,11 @@ def chay_phan_quyen(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
         'rows':json.dumps([{'item_code':f['A'],'warehouse':destination,'qty':1,'bags':0}]),
         'sent_date':f['date'],'carrier':'Xe quay lại','destination':origin},store)
     back_view=rpc('kh_aph.factory_transfer.preview',{'stock_entry':back['name']},factory)
+    raw_redirect=insert({'doctype':'Stock Entry','stock_entry_type':'Material Transfer','purpose':'Material Transfer',
+        'company':f['aph'],'posting_date':f['date'],'outgoing_stock_entry':back['name'],'items':[
+            {'item_code':f['A'],'qty':1,'uom':'Kg','conversion_factor':1,'s_warehouse':TRANSIT,'t_warehouse':destination,
+             'against_stock_entry':back['name'],'ste_detail':back_view['items'][0]['source_row']}]},ktt)
+    denied(lambda:submit(raw_redirect,store),text='Nhận khác kho dự kiến')
     back_receipt=rpc('kh_aph.factory_transfer.receive',{'stock_entry':back['name'],'request_id':f['p']+'-factory-receive',
         'rows':json.dumps([{'source_row':back_view['items'][0]['source_row'],'warehouse':origin,'qty':1,'bags':0}]),
         'received_date':f['date'],'receiver':'Kho nhà máy nhận'},factory)

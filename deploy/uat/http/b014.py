@@ -25,6 +25,7 @@ assert all(row['reused'] and not row['enabled'] for row in staff_repeat['nhan_su
 for entry in staff_created['nhan_su']:
     staff_user=frappe.get_doc('User',entry['user'])
     assert staff_user.username==entry['username'] and not staff_user.enabled and not staff_user.send_welcome_email
+    assert staff_user.module_profile=='9xLab - '+profiles()[entry['username']]['workspace']
     assert {row.role for row in staff_user.roles}==set(profiles()[entry['username']]['roles'])
     assert 'System Manager' not in {row.role for row in staff_user.roles}
 assert frappe.db.count('Email Queue')==mail_before
@@ -50,6 +51,8 @@ assert not frappe.has_permission('Warehouse','read',doc=status_wh,user='dungnm@n
 for staff_name in ('hanh@nhansu.invalid','dungnm@nhansu.invalid'):
     staff_user=frappe.get_doc('User',staff_name);staff_user.enabled=1;staff_user.save()
     update_password(staff_name,payload['password'])
+login_settings=frappe.get_doc('System Settings')  # Chỉ UAT, không phải bộ chuẩn bị.
+login_settings.allow_login_using_user_name=1;login_settings.save()
 from kh_aph import tien_vay
 cfg = {"khach_hang": "UAT", "cong_ty": [{"ten": "x", "abbr": a, "thong_tu": 99} for a in ("APH", "VH")],
        "ngan_hang": [{"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "1111"}, {"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "2222", "loai_tien": "USD"},
@@ -162,7 +165,7 @@ finally:frappe.destroy()
 def snapshot():
     raw=inner(snapshot_code)
     return json.loads(next(x[9:] for x in raw.splitlines() if x.startswith("SNAPSHOT:")))
-def session(user,password):
+def session(user,password,expected_user=None):
     jar=http.cookiejar.CookieJar()
     op=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     def call(method,args=None):
@@ -181,7 +184,7 @@ def session(user,password):
         return value
     call.binary_get=binary_get
     call("/api/method/login",{"usr":user,"pwd":password})
-    assert call("/api/method/frappe.auth.get_logged_user")["message"]==user
+    assert call("/api/method/frappe.auth.get_logged_user")["message"]==(expected_user or user)
     # Cookie UAT chỉ truyền qua stdin cho Chrome, không đưa mật khẩu vào argv/log.
     call.browser_cookies=lambda:[{"name":c.name,"value":c.value,"url":"http://127.0.0.1:18091"} for c in jar]
     return call
@@ -238,6 +241,7 @@ try:
             except (urllib.error.URLError,TimeoutError,ConnectionError): pass
             time.sleep(0.25)
         else: raise RuntimeError("UAT web không sẵn sàng sau đổi cờ")
+    session("hanh",factory_password,fixture["staff_hanh"])
     emit("HTTP_014_CHUAN_BI_NHAN_SU","PASS",fixture["staff_prepared"])
     b014_cases.chay(admin,lambda user:session(user,factory_password),fixture,emit,factory_feature)
 except Exception as exc:
