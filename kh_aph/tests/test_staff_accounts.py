@@ -28,3 +28,17 @@ class StaffAccounts(unittest.TestCase):
     def test_never_match_by_display_name(self):
         rows = plan([{'name': 'someone@example.org', 'full_name': 'Dung'}])
         self.assertEqual(rows[2]['status'], 'chua_co')
+
+    def test_profiles_keep_owners_read_only_and_factory_no_cost(self):
+        from kh_aph.staff_accounts import profiles
+        from kh_aph.constants import ROLE_NO_COST
+        rows=profiles()
+        self.assertEqual(set(rows),{row['username'] for row in plan([])})
+        self.assertTrue(all('System Manager' not in row['roles'] for row in rows.values()))
+        self.assertEqual(rows['ninh']['roles'],['Xem báo cáo điều hành','Nhận bàn giao tiền'])
+        self.assertEqual(rows['anh']['roles'],['Nhận bàn giao tiền'])
+        self.assertIn(ROLE_NO_COST,rows['dungnm']['roles'])
+        self.assertNotIn('Accounts User',rows['hanh']['roles'])
+        self.assertNotIn('Sales Manager',rows['trang']['roles'])
+        self.assertEqual(rows['hanh']['warehouses'],'cua_hang')
+        self.assertEqual(rows['dungnm']['warehouses'],'nha_may')

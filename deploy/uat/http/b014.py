@@ -11,6 +11,24 @@ aph = frappe.db.get_value("Company", {"abbr": "APH"}, "name")
 def acc(n, c=None): return frappe.db.get_value("Account", {"company": c or aph, "account_number": n, "is_group": 0}, "name")
 from kh_aph.kho_chuan import dung
 dung("/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json", "aphvh-web-uat")
+from kh_aph.staff_accounts import chuan_bi, profiles
+staff_path="/home/frappe/frappe-bench/apps/kh_aph/khach/aph-vh/khach.json"
+mail_before=frappe.db.count('Email Queue')
+login_before=frappe.db.get_single_value('System Settings','allow_login_using_user_name')
+staff_preview=chuan_bi(staff_path)
+assert staff_preview['chay_thu'] and len(staff_preview['nhan_su'])==9
+assert all(not row['existing'] for row in staff_preview['nhan_su'])
+staff_created=chuan_bi(staff_path,'aphvh-web-uat',1)
+assert len(staff_created['nhan_su'])==9 and not staff_created['kich_hoat'] and not staff_created['dat_mat_khau']
+staff_repeat=chuan_bi(staff_path,'aphvh-web-uat',1)
+assert all(row['reused'] and not row['enabled'] for row in staff_repeat['nhan_su'])
+for entry in staff_created['nhan_su']:
+    staff_user=frappe.get_doc('User',entry['user'])
+    assert staff_user.username==entry['username'] and not staff_user.enabled and not staff_user.send_welcome_email
+    assert {row.role for row in staff_user.roles}==set(profiles()[entry['username']]['roles'])
+    assert 'System Manager' not in {row.role for row in staff_user.roles}
+assert frappe.db.count('Email Queue')==mail_before
+assert frappe.db.get_single_value('System Settings','allow_login_using_user_name')==login_before
 from kh_aph import tien_vay
 cfg = {"khach_hang": "UAT", "cong_ty": [{"ten": "x", "abbr": a, "thong_tu": 99} for a in ("APH", "VH")],
        "ngan_hang": [{"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "1111"}, {"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "2222", "loai_tien": "USD"},

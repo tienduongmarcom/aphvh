@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Bộ chuẩn bị9nhân sự, chưa kích hoạt
+
+staff_accounts.chuan_bi mặc định chỉ xem kế hoạch. Ghi thật yêu cầu Administrator và xác nhận đúng site, đủ vai trò/Workspace/Company/kho; tạo9User disabled, không mật khẩu/welcome email/đổi cấu hình đăng nhập. Không cấp System Manager; Hường/Hạnh/Trang không cần Accounts User/Sales Manager để chữa thao tác. Ninh chỉ viewer+receiver; Ánh chỉ receiver; Dũng factory+NoCost+StockUser. Lan/Hà Accounts User theo tổng hợp/thuế; không tự thành người nhận tiền hoặc quản trị. Trang có quyền khách rủi ro, người duyệt giá sàn còn cần cấu hình allowlist riêng trước kích hoạt.
+
+Phân kho bằng địa điểm loại nha_may/ban_hang trong khach.json và cây cha thực tế cùng Company; nhóm/lá tên tùy ý đều truy theo cha. Kho transit chuẩn có metadata Transit dùng chung chỉ trong Company có địa điểm tương ứng. Kho mới không xác định, vòng cha, saiCompany phải đối chiếu trước, không đoán theo tên. User Permission Warehouse áp riêng vào chứng từ kho/bán/mua; Company áp đúng4đơn vị hoặc Company có kho nhà máy của Dũng. Không sửa tài khoản cũ; chỉ reuse bản disabled đúng marker/lượt chuẩn bị, username/tên/vai trò/Workspace/toàn bộUserPermission còn khớp. Lỗi ghi rollback nguyên lượt.
+
+644ca cục bộ không bỏ qua đạt. Đã thêm native vào fixture014: preview9, tạo9disabled, chạy lại không trùng, vai trò đúng, khôngSystemManager, khôngemail hoặc thay chế độ login. Chưa chạy mã mới. UAT39919338739 kiểm81b58da trước bộ chuẩn bị, đang chạy; Cổng2b39916449799 vàCổng339916449912 đúng0d6e866 SUCCESS, không suy sang mã sau. Production0.16.4 không đổi. Sau native đạt còn cấu hình giá sàn, mật khẩu/kích hoạt bằng quản trị, kiểm thực tế theo nhân sự; không tự coi tài khoản disabled là đã đăng nhập dùng được. Còn thu/hoàn đổi mã một cửa.
+
+
 ## 23/10/2026 — Tách công nợ tài chính khỏi bộ phiếu có giới hạn kho
 
 Thêm vai trò đánh dấu Đối soát công nợ toàn khách, không tự cấp quyền chứng từ. Chỉ khi đã có quyền kế toán và mọi giới hạn Warehouse đều áp riêng vào chứng từ kho/bán/mua được liệt kê, mới được lập bản TỔNG HỢP công nợ theo Company/Customer. Các giới hạn Account/CostCenter/Project/dimension khác vẫn chặn; Warehouse toàn hệ thống hoặc applicable_for trống vẫn chặn. Bản này đóng băng summary_only=true và chỉ chứa biên bản tài chính, KHÔNG ghép phiếu nguồn. Native quyền từng nguồn vẫn kiểm lúc tạo; phiếu hàng/thu in riêng theo quyền. Hồ sơ có giới hạn kho chỉ đọc/list/tải PDF summary_only=true, không mở lại packet cũ có phiếu ngoài phạm vi; query SQL chặn luôn payload cũ. Không sửa hoặc public hóa PDF cũ. Đã thêm hồi quy API/list/file/Company và pure scope;640ca cục bộ không bỏ qua đạt. Native mới chưa chạy, chưa cấp role Hạnh.

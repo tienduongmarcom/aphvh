@@ -105,3 +105,12 @@ Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm
 ### Phạm vi công nợ khi Hạnh bị giới hạn kho
 
 Đã viết quyền đánh dấu Đối soát công nợ toàn khách: chỉ bản tài chính summary_only, không kéo theo bản in phiếu nguồn. Hồ sơ kho chỉ thấy/tải các bản summary này; packet cũ có phiếu nguồn vẫn bị chặn cả API/list/file. Warehouse User Permission phải áp riêng vào chứng từ kho/bán/mua đã liệt kê; không nới hạn chế tài khoản/bộ phận/Company. Phiếu hàng/thu in riêng theo quyền native. Chưa áp người thật, chưa native chứng minh; danh sách kho thực tế vẫn cần đối chiếu trước áp.
+
+
+## 7. Chuẩn bị và kích hoạt sau kiểm thử
+
+`staff_accounts.chuan_bi(duong_dan)` chỉ xem kế hoạch. Tham số `chay_that=1` và `xac_nhan_site` chính xác mới tạo tài khoản disabled theo hồ sơ, không mật khẩu/email, không thay tài khoản ngoài lượt. Bộ này chưa được chạy trên production. Phải đọc native trên mã có bộ chuẩn bị trước áp thật; toàn bộ quyền/Workspace/Company/kho phải đủ và không còn kho chưa phân loại.
+
+Sau khi bộ kiểm đạt và nâng cấp đúng nguồn: quản trị đối chiếu kế hoạch, chuẩn bị9tài khoản, đặt mật khẩu riêng bằng màn User, bật đăng nhập bằng username trong System Settings và kích hoạt từng người đã được kiểm. Không gửi mật khẩu/reset link qua chat hoặc commit vào repo. Không bật tài khoản khi còn thiếu kiểm quyền/phạm vi. Cấu hình Trang trong bảng người duyệt giá sàn theo Company, giữ tự duyệt tắt; phê duyệt khách rủi ro dùng vai trò riêng. Không tự thay cơ chế cảnh báo hạn mức chung thành chặn mới.
+
+Hạnh được các kho cửa hàng/vệ tinh, Dũng các kho nhà máy theo cây địa điểm; transit dùng chung cần cho giao nhận nhưng không mở thêm kho đích ngoài quyền. Công nợ Hạnh dùng biên bản tài chính tổng hợp; các phiếu hàng/thu in riêng trong phạm vi quyền. Nếu phát sinh kho mới, bộ chuẩn bị dừng để đối chiếu, không tự mở rộng quyền đang dùng.
