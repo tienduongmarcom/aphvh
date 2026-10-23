@@ -1,6 +1,6 @@
 # Nhân sự dùng thử và chuẩn bị phân quyền — 23/10/2026
 
-Chủ dự án yêu cầu chuẩn bị cho dùng thử ngày24/10 và phân quyền tối23/10. Danh sách/vị trí dưới đây do chủ dự án cung cấp. Quyền trong cột đề xuất chưa phải cấu hình đã áp; đã chốt dùng mã đăng nhập nội bộ; chưa áp tài khoản/quyền lên production. Không lấy tài khoản Administrator hoặc bộ vai trò rộng của fixture UAT gán cho nhân viên.
+Chủ dự án yêu cầu chuẩn bị cho dùng thử ngày24/10 và phân quyền tối23/10. Danh sách/vị trí dưới đây do chủ dự án cung cấp. Hồ sơ quyền dưới đây đã được viết trong bộ chuẩn bị, chưa áp lên production; đã chốt dùng mã đăng nhập nội bộ; chưa áp tài khoản/quyền lên production. Không lấy tài khoản Administrator hoặc bộ vai trò rộng của fixture UAT gán cho nhân viên.
 
 ## Chính sách tháng đầu đã chốt
 
@@ -42,12 +42,14 @@ Dung và Dũng là hai người khác nhau. Chỉ ánh xạ bằng tên đăng n
 - Tiền cá nhân có facade riêng, không cần mở toàn GL. Nhận bàn giao kiểm đúng người; cấm tự nhận vẫn giữ kể cả cộng vai trò quản lý.
 - Không bỏ28cờ trong bản chuẩn bị dùng thử này; không cài lại site hay thử chứng từ giả trên production.
 
-### Ba chỗ cần hoàn thiện quyền hẹp trước khi áp nhân sự thật
+### Quyền hẹp đã triển khai, cần kiểm đúng nguồn phát hành
 
-1. CEO xem báo cáo có giá vốn/lợi nhuận: cần quyền đọc riêng, không cấp Accounts Manager/System Manager chỉ để xem.
-2. Ninh/Trang/Ánh xác nhận nhận tiền cửa hàng: đường cash_handover.receive thường hiện dùng cash_closing.scope và quyền sổ/JE; capability nhà máy chỉ áp nguồn nhà máy. Không mặc định ba người đã nhận được chỉ vì có tài khoản. Cần đường nhận đúng nguồn/người với quyền hẹp hoặc chứng minh quyền native đã tách phù hợp; không cấp sửa JE/GL chung để chữa lỗi. Đây là phần phân quyền tiếp theo, chưa hoàn thiện trong PR38.
+- CEO có vai trò đọc riêng cho lãi gộp và dòng tiền; không cấp Accounts Manager, quyền sửa sổ hoặc khóa kỳ.
+- Ninh/Trang/Ánh chỉ nhận bàn giao được chỉ định cho mình. Kế toán bán hàng gửi tiền từ số đang giữ; dùng bút toán native của đúng lượt, không cấp đọc/ghi toàn GL/JE. Cấm tự nhận và kiểm gửi lại giữ nguyên.
+- Trang có vai trò duyệt khách rủi ro và được chuẩn bị vào bảng người duyệt giá sàn theo từng Company, không tự duyệt. Hạn mức chung vẫn là cảnh báo hiện hành; không mô tả thành cơ chế chặn mới.
+- Hạnh có công nợ tài chính tổng hợp toàn khách nhưng không kéo theo bản in phiếu nguồn ở kho ngoài phạm vi. Hồ sơ cũ kèm phiếu nguồn vẫn bị chặn.
 
-3. Trang duyệt vượt hạn mức: credit_release._chief hiện yêu cầu Accounts Manager. Cần quyền duyệt bán chịu riêng kèm quyền native trên phiếu/Company; không cấp toàn quyền kế toán cho giám đốc bán hàng. Giá dưới sàn đã có bảng người duyệt theo người/đơn vị/mức trong Selling Settings, cần cấu hình đúng người và kiểm cả đơn chung/lối tách đơn.
+Bốn cổng trên nguồn `5bed91b` đã SUCCESS; artifact UAT đã đọc142ca014, có các quyền hẹp trên và chuẩn bị9User disabled. Bổ sung sau mốc đó gồm chuyển hai đầu kho khác phạm vi, Module Profile và thử đăng nhập bằng mã nội bộ; phải có kết quả đúng nguồn cuối trước phát hành. Mục đầu hai hồ sơ bàn giao ghi lượt chạy mới nhất.
 
 ## 4. Bộ dùng thử ngắn theo nhân sự
 
@@ -68,7 +70,7 @@ Chạy giao dịch giả trên site thử, hoặc chỉ giao dịch thật hợp
 
 ## 5. Trạng thái
 
-Chưa áp quyền lên production. Nhánh PR38 đang kiểm sửa giao nhận/nhận trả, không coi toàn phạm vi hoàn tất. Bốn lượt cùng nguồn d54522d: UAT39893134196, Cổng239893214536, Cổng2b39893218066, Cổng339893222080 — đang chạy lúc lập hồ sơ, chưa kết luậnPASS. Trạng thái tiếp nối ở docs/ban-giao.md và deploy/release/TRANG_THAI.md.
+Chưa áp quyền lên production; production vẫn0.16.4. PR38 chứa giao nhận/nhận trả và chuẩn bị phân quyền. Có bằng chứng native142ca014 và bốn cổng trên `5bed91b`; kiểm chuyển hai đầu kho và các bổ sung sau đó đang chạy riêng. Không lấy PASS của nguồn trước thay cho nguồn cuối. Nghiệm thu với nhân sự, hàng/tồn thật và máy in thật để cuối theo chủ dự án. Phần thu/hoàn đổi mã trong một cửa sổ còn mở, không gọi toàn kế hoạch đã hoàn tất. Trạng thái tiếp nối ở `docs/ban-giao.md` và `deploy/release/TRANG_THAI.md`.
 
 
 ## 6. Mã đăng nhập nội bộ đã chuẩn bị
@@ -87,24 +89,24 @@ Chủ dự án chọn mã nội bộ ngày23/10. Đã đối chiếu màn User t
 | anh | Ánh | Nhận tiền |
 | dungnm | Dũng | Nhà máy, không xem giá vốn |
 
-`kh_aph.staff_accounts.xem_ke_hoach` là công cụ chỉ đọc cho quản trị, sau cờ UX hiện có; kiểm trùng username hoặc định danh User, không tìm theo họ tên, không tự nhận tài khoản trùng. Trường email kỹ thuật dự kiến `<mã>@nhansu.invalid` chỉ phục vụ trường bắt buộc của User, không phải hộp thư. Không gửi welcome email, không đặt mật khẩu chung, không ghi mật khẩu/reset link vào repo. Chưa có hàm tạo/kích hoạt/gán quyền tự động trong công cụ này. Người dùng đăng nhập bằng username sau khi tài khoản được tạo/kích hoạt và thiết lập mật khẩu đúng quy trình.
+`kh_aph.staff_accounts.xem_ke_hoach` là công cụ chỉ đọc cho quản trị, sau cờ UX hiện có; kiểm trùng username hoặc định danh User, không tìm theo họ tên, không tự nhận tài khoản trùng. Trường email kỹ thuật dự kiến `<mã>@nhansu.invalid` chỉ phục vụ trường bắt buộc của User, không phải hộp thư. Không gửi welcome email, không đặt mật khẩu chung, không ghi mật khẩu/reset link vào repo. `xem_ke_hoach` không ghi; `chuan_bi` là bước ghi tường minh, chỉ tạo User disabled và hồ sơ quyền, không kích hoạt hoặc đặt mật khẩu. Người dùng đăng nhập bằng username sau khi tài khoản được tạo/kích hoạt và thiết lập mật khẩu đúng quy trình.
 
-Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm bộ đối soát công nợ tổng hợp chặn toàn bản; không nới chặn chỉ để qua thử, phải giải quyết đồng thời quyền kho và quyền in công nợ trước khi đánh dấu hồ sơ này đạt.
+Đã kiểm native phạm vi Hạnh trên5bed91b: biên bản tài chính tổng hợp dùng được; phiếu nguồn ngoài kho, packet cũ và tệp tương ứng vẫn bị chặn.
 
 
 ### Tiến độ quyền duyệt khách rủi ro
 
-Đã viết vai trò Duyệt khách rủi ro và bộ cài tường minh: approve/revoke dùng quyền này, sửa hạn mức/dấu rủi ro Customer vẫn yêu cầu quản lý kế toán. NoCost luôn chặn khi cộng vai trò. Chưa kiểm native và chưa gán Trang. Quyền giá dưới sàn vẫn dùng bảng người duyệt hiện có. Hạn mức chung trong global_credit hiện là cảnh báo, không mô tả thành cơ chế chặn/duyệt vượt hạn mức đã hoàn thiện.
+Đã viết vai trò Duyệt khách rủi ro và bộ cài tường minh: approve/revoke dùng quyền này, sửa hạn mức/dấu rủi ro Customer vẫn yêu cầu quản lý kế toán. NoCost luôn chặn khi cộng vai trò. Đã kiểm native vai trò duyệt trong bộ dispatch48; chưa gán Trang trên production. Quyền giá dưới sàn vẫn dùng bảng người duyệt hiện có. Hạn mức chung trong global_credit hiện là cảnh báo, không mô tả thành cơ chế chặn/duyệt vượt hạn mức đã hoàn thiện.
 
 
 ### Tiến độ quyền điều hành và nhận tiền
 
-Đã viết vai trò Xem báo cáo điều hành và Nhận bàn giao tiền, chưa cấp vào nhân sự thật. CEO mở riêng hai báo cáo, không kèm khóa kỳ/sửa sổ; người nhận chỉ thấy bàn giao được chỉ định, không mở GL/JE. KTBH gửi/nhận bằng số tiền cá nhân và dịch vụ bàn giao chuẩn, tránh cấp Accounts User để chữa lỗi. Bổ sung ca native, đang chờ chạy. Vai trò nhận tiền không mặc định có quyền hoàn/gửi tiền mới; khi cần nghiệp vụ ngoài phạm vi phải giao đúng người thực hiện, không dùng quyền quản trị thay.
+Đã viết vai trò Xem báo cáo điều hành và Nhận bàn giao tiền, chưa cấp vào nhân sự thật. CEO mở riêng hai báo cáo, không kèm khóa kỳ/sửa sổ; người nhận chỉ thấy bàn giao được chỉ định, không mở GL/JE. KTBH gửi/nhận bằng số tiền cá nhân và dịch vụ bàn giao chuẩn, tránh cấp Accounts User để chữa lỗi. Đã kiểm native trên5bed91b; chưa áp tài khoản thật. Vai trò nhận tiền không mặc định có quyền hoàn/gửi tiền mới; khi cần nghiệp vụ ngoài phạm vi phải giao đúng người thực hiện, không dùng quyền quản trị thay.
 
 
 ### Phạm vi công nợ khi Hạnh bị giới hạn kho
 
-Đã viết quyền đánh dấu Đối soát công nợ toàn khách: chỉ bản tài chính summary_only, không kéo theo bản in phiếu nguồn. Hồ sơ kho chỉ thấy/tải các bản summary này; packet cũ có phiếu nguồn vẫn bị chặn cả API/list/file. Warehouse User Permission phải áp riêng vào chứng từ kho/bán/mua đã liệt kê; không nới hạn chế tài khoản/bộ phận/Company. Phiếu hàng/thu in riêng theo quyền native. Chưa áp người thật, chưa native chứng minh; danh sách kho thực tế vẫn cần đối chiếu trước áp.
+Đã viết quyền đánh dấu Đối soát công nợ toàn khách: chỉ bản tài chính summary_only, không kéo theo bản in phiếu nguồn. Hồ sơ kho chỉ thấy/tải các bản summary này; packet cũ có phiếu nguồn vẫn bị chặn cả API/list/file. Warehouse User Permission phải áp riêng vào chứng từ kho/bán/mua đã liệt kê; không nới hạn chế tài khoản/bộ phận/Company. Phiếu hàng/thu in riêng theo quyền native. Đã kiểm native trên5bed91b, chưa áp người thật; danh sách kho thực tế vẫn cần đối chiếu trước áp.
 
 
 ## 7. Chuẩn bị và kích hoạt sau kiểm thử
@@ -113,7 +115,7 @@ Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm
 
 Sau khi bộ kiểm đạt và nâng cấp đúng nguồn: quản trị đối chiếu kế hoạch, chuẩn bị9tài khoản, đặt mật khẩu riêng bằng màn User, bật đăng nhập bằng username trong System Settings và kích hoạt từng người đã được kiểm. Không gửi mật khẩu/reset link qua chat hoặc commit vào repo. Không bật tài khoản khi còn thiếu kiểm quyền/phạm vi. Cấu hình Trang trong bảng người duyệt giá sàn theo Company, giữ tự duyệt tắt; phê duyệt khách rủi ro dùng vai trò riêng. Không tự thay cơ chế cảnh báo hạn mức chung thành chặn mới.
 
-Hạnh được các kho cửa hàng/vệ tinh, Dũng các kho nhà máy theo cây địa điểm; transit dùng chung cần cho giao nhận nhưng không mở thêm kho đích ngoài quyền. Công nợ Hạnh dùng biên bản tài chính tổng hợp; các phiếu hàng/thu in riêng trong phạm vi quyền. Nếu phát sinh kho mới, bộ chuẩn bị dừng để đối chiếu, không tự mở rộng quyền đang dùng.
+Hạnh được các kho cửa hàng/vệ tinh, Dũng các kho nhà máy theo cây địa điểm; transit dùng chung cần cho giao nhận nhưng không mở thêm kho đích ngoài quyền. Công nợ Hạnh dùng biên bản tài chính tổng hợp; các phiếu hàng/thu in riêng trong phạm vi quyền. Kho mới trong nhóm địa điểm đã giao đi theo quyền hậu duệ; kho ngoài địa điểm cấu hình khiến bộ chuẩn bị dừng để đối chiếu.
 
 
 ### Bổ sung phạm vi nhóm địa điểm và giá sàn

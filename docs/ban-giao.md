@@ -1,5 +1,12 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Đối chiếu lại ca phạm vi kho nhận dự kiến
+
+UAT39926823240 đúngd198495 FAIL tại HTTP014 chuẩn bị gom kho: ca cũ đòi từ chối chỉ vì kho nhận dự kiến ngoài quyền Warehouse. Đã đọc log gốc; đây là điều kiện đã được thay bằng metadata nơi đến trong thiết kế hai đầu kho. Sửa ca thành đủ ba kiểm: vẫn từ chối mở Warehouse nơi đến, cho chuẩn bị nháp từ kho nguồn được giao, và từ chối chuẩn bị nếu dùng kho nguồn ngoài phạm vi. Không bỏ chặn xuất/nhận thực tế, không giảm số ca143. Lượt FAIL được giữ, chưa tới ca hai nhân sự nên chưa chứng minh143. Đã đọc Cổng339923900504 trên5bed91b: schema1189/1189 lệch0 (bỏ qua6/6 mục được khai tường minh), quay lui1105/1105 lệch0, phục hồi sau nâng sai KHỚP.
+
+Cổng239929259865/2b39929263786/339929267700 đang chạy263fe81 trước chỉnh ca này; cần ghi kết quả đúng nguồn. Bộ108unit lõi đạt;650unit app đang chạy lại. Hồ sơ nhân sự đã bỏ mô tả cũ còn nói các quyền hẹp chưa được viết. Production0.16.4, chưa bật/tạo nhân sự thật; còn thu/hoàn đổi mã một cửa và nghiệm thu thực tế.
+
+
 ## 23/10/2026 — Giữ kiểm soát nhận chuyến cả trên phiếu native
 
 Bổ sung lock_outgoing kiểm quyền nguồn hoặc projection đúng kho dự kiến cả khi người dùng lập phiếu nhận native. Nhận khác kho dự kiến phải qua cửa sổ nhận có dấu/lý do, không bỏ qua bằng StockEntry thủ công. Đã thêm native thử raw redirect và vẫn giữ case hai chiều; chưa có kết quả. Bộ chuẩn bị gắn Module Profile có sẵn theo nhiệm vụ để bớt menu, không thay quyền. Native fixture bật đăng nhập username CHỈ trên UAT bằng SystemSettings.save rồi kiểm mã hanh trả đúng principal nội bộ; bộ chuẩn bị thật vẫn không đổi cấu hình login hoặc kích hoạt.650unit không bỏ qua đạt trước assert native mới; Pyflakes/JS/diff giữ nghiêm.

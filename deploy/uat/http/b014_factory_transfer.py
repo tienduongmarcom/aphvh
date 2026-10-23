@@ -125,7 +125,13 @@ def chay_chuan_bi(rpc, get, submit, lst, denied, ktt, f, phien, emit):
     assert rpc('kh_aph.factory_transfer.send', args, ktt) == result and counts() == after
     html = rpc('frappe.www.printview.get_html_and_style', {'doc': json.dumps(doc), 'print_format': 'Phiếu kho'}, ktt)['html']
     assert 'CHƯA GHI SỔ' in html and 'Xe gom kho UAT' in html and 'Kho nhận cuối dự kiến' in html
-    denied(lambda: rpc('kh_aph.factory_transfer.send', {**args, 'request_id': f['p'] + '-chuan-bi-scope'}, phien(f['scope_wh'])), ('PermissionError',))
+    scoped=phien(f['scope_wh'])
+    # Kho nhận dự kiến chỉ là tên nơi đến; quyền thao tác kho nguồn vẫn bắt buộc.
+    denied(lambda:get('Warehouse',f['kho2'],scoped),('PermissionError',))
+    allowed=rpc('kh_aph.factory_transfer.send',{**args,'request_id':f['p']+'-chuan-bi-scope'},scoped)
+    assert get('Stock Entry',allowed['name'],ktt)['docstatus']==0
+    denied(lambda:rpc('kh_aph.factory_transfer.send',{**args,'request_id':f['p']+'-chuan-bi-nguon-sai',
+        'destination':f['kho'],'rows':json.dumps([{'item_code':f['A'],'warehouse':f['kho2'],'qty':1,'bags':0}])},scoped),('PermissionError',))
     doc['kh_aph_transfer_receiver'] = 'Xe gom kho thực tế'
     doc = rpc('frappe.client.save', {'doc': json.dumps(doc)}, ktt)
     assert doc['kh_aph_transfer_receiver'] == 'Xe gom kho thực tế'

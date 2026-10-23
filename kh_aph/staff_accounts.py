@@ -1,4 +1,4 @@
-"""Kế hoạch mã đăng nhập nội bộ; chỉ đối chiếu, không tạo User hoặc cấp quyền."""
+"""Đối chiếu mã nội bộ và chuẩn bị nhân sự vô hiệu; không tự kích hoạt đăng nhập."""
 
 ROSTER = (
     ('huong', 'Cô Hường', 'bán hàng'),
