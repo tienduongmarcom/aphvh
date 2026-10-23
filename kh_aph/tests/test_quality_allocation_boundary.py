@@ -18,7 +18,7 @@ class Boundary(unittest.TestCase):
     def setUp(self):
         self.f=types.ModuleType('frappe');self.f.throw=lambda msg,error=ValueError:(_ for _ in ()).throw(error(msg))
         self.f.get_doc=Mock();self.f.db=Row(sql=Mock(return_value=[]));self.f.get_meta=Mock(return_value=Row(has_field=lambda f:True))
-        utils=types.ModuleType('frappe.utils');utils.flt=lambda x:float(x or 0)
+        utils=types.ModuleType('frappe.utils');utils.flt=lambda x,precision=None:round(float(x or 0),precision) if precision is not None else float(x or 0)
         p1=types.ModuleType('kh_aph.sales_p1');p1.enabled=lambda:True;p1.F_JE_HD='invoice'
         p1._thue_suat=lambda *a:(10,'VAT')
         self.patch=patch.dict(sys.modules,{'frappe':self.f,'frappe.utils':utils,'kh_aph.sales_p1':p1});self.patch.start();self.addCleanup(self.patch.stop)
@@ -63,10 +63,10 @@ class Boundary(unittest.TestCase):
 
     def test_return_cannot_replace_untouched_price_with_discounted_price(self):
         self.q.parts_for_dn=Mock(return_value={'DONG':[{'key':'','remaining':20,'net_rate':35000}]})
-        doc=Row(name='TRA',items=[Row(dn_detail='DONG',qty=-5,net_rate=25000,
+        doc=Row(name='TRA',items=[Row(dn_detail='DONG',qty=-5,net_rate=25000,net_amount=-125000,
             **{self.q.RETURN_PARTS:'[{"key":"","qty":"5"}]'})])
         with self.assertRaises(ValueError):self.q.validate_return(doc,Row())
-        doc['items'][0]['net_rate']=35000
+        doc['items'][0]['net_rate']=35000;doc['items'][0]['net_amount']=-175000
         self.assertTrue(self.q.validate_return(doc,Row()))
 
     def posted(self):
@@ -154,3 +154,28 @@ class Boundary(unittest.TestCase):
             permissions.has_user_permission.return_value=False
             with self.assertRaises(PermissionError):self.q._read_return_basis(source,dn)
         dn.check_permission.assert_called_with('read')
+
+    def test_return_price_uses_native_precision_without_permitting_a_different_quote(self):
+        self.q.parts_for_dn=Mock(return_value={'DONG':[{'key':'JE','remaining':5,'net_rate':31363.636363}]})
+        row=Row(dn_detail='DONG',qty=-5,net_rate=31363.64,net_amount=-156818.2,precision=lambda f:2,
+                **{self.q.RETURN_PARTS:'[{"key":"JE","qty":"5"}]'})
+        self.assertTrue(self.q.validate_return(Row(name='TRA',items=[row]),Row()))
+        row['net_rate']=31363.65
+        with self.assertRaises(ValueError):self.q.validate_return(Row(name='TRA',items=[row]),Row())
+
+    def test_return_net_price_does_not_apply_original_header_discount_or_included_tax_again(self):
+        tax=types.SimpleNamespace(charge_type='On Net Total',included_in_print_rate=1)
+        doc=types.SimpleNamespace(discount_amount=-50000,additional_discount_percentage=10,get=lambda key:[tax])
+        self.q.prepare_return_prices(doc)
+        self.assertEqual((doc.discount_amount,doc.additional_discount_percentage,tax.included_in_print_rate),(0,0,0))
+
+    def test_complex_tax_source_is_not_silently_assumed_to_be_one_vat_rate(self):
+        doc=Row(taxes=[Row(charge_type='Actual')])
+        with self.assertRaises(ValueError):self.q.simple_taxes(doc)
+        with self.assertRaises(ValueError):self.q.simple_taxes(Row(taxes=[Row(charge_type='On Net Total')]*2))
+
+    def test_native_rounded_rate_cannot_expand_the_money_of_selected_parts(self):
+        self.q.parts_for_dn=Mock(return_value={'DONG':[{'key':'JE','remaining':1000,'net_rate':31363.636363}]})
+        row=Row(dn_detail='DONG',qty=-1000,net_rate=31363.64,net_amount=-31363640,precision=lambda f:2,
+            **{self.q.RETURN_PARTS:'[{"key":"JE","qty":"1000"}]'})
+        with self.assertRaises(ValueError):self.q.validate_return(Row(name='TRA',items=[row]),Row())

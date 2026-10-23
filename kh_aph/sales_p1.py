@@ -29,7 +29,7 @@ FIELDS = {
     "Delivery Note": [
         {"fieldname": F_HANG, "label": "Hàng trả về", "fieldtype": "Select", "options": "\n" + "\n".join(B.HANG_TRA_VE),
          "insert_after": "kh_aph_loai_dieu_chinh", "depends_on": "eval:doc.is_return",
-         "description": "R025: Cách ly → hàng vào kho \"Hàng cách ly <địa điểm>\", không bán được."},
+         "description": "Cách ly → hàng vào kho \"Hàng cách ly <địa điểm>\", không bán được."},
         {"fieldname": F_TIEN, "label": "Xử lý tiền", "fieldtype": "Select", "options": "\n" + "\n".join(B.XU_LY_TIEN),
          "insert_after": F_HANG, "depends_on": "eval:doc.is_return",
          "description": "Bù trừ: đối chiếu khoản nợ gốc. Hoàn tiền: kiểm phiếu chi nháp trước khi chi. Đổi hàng: nhận trả rồi chọn mã hàng thay."},
@@ -299,7 +299,7 @@ def giam_gia_sau_giao(sales_invoice, so_tien, ly_do, selections=None):
     je = frappe.get_doc({
         "doctype": "Journal Entry", "voucher_type": "Credit Note", "company": si.company, "posting_date": getdate(),
         F_JE_HD: si.name,
-        "user_remark": f"Giảm giá sau giao hóa đơn {si.name} (R026): {ly_do.strip()}. "
+        "user_remark": f"Giảm giá sau giao hóa đơn {si.name}: {ly_do.strip()}. "
                        + ("Ghi Nợ 521 (TT99)." if tk_521 else "Ghi giảm thẳng TK doanh thu (TT133 không dùng 521)."),
         "accounts": [{"account": tk, "cost_center": cc, "debit_in_account_currency": flt(v)} for (tk, cc), v in no.items()]
                     + [{"account": si.debit_to, "party_type": "Customer", "party": si.customer,
@@ -307,8 +307,9 @@ def giam_gia_sau_giao(sales_invoice, so_tien, ly_do, selections=None):
                         "reference_name": si.name, "cost_center": si.items[0].cost_center}],
     })
     if allocation is not None:
-        from kh_aph.quality_allocation import ALLOCATION, encode, insert
+        from kh_aph.quality_allocation import ALLOCATION, encode, insert, summary
         je.set(ALLOCATION, encode(allocation))
+        je.user_remark += '\n'+summary(si,allocation)
         insert(je)
     else:
         je.insert()  # quyền tạo bút toán chuẩn của kế toán
@@ -619,5 +620,5 @@ def classify_quality(journal_entry, selections, reason, modified):
     if str(je.modified)!=str(modified):
         frappe.throw('Khoản giảm vừa được cập nhật; tải lại trước khi phân loại')
     check_posted_debits(je,source,allocation)
-    save_existing(je,allocation,reason.strip())
+    save_existing(je,allocation,reason.strip(),source)
     return {'but_toan':je.name,'da_co':False}

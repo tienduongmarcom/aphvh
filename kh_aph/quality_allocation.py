@@ -33,10 +33,26 @@ def agreements(invoice, lock=False):
         WHERE {F_JE_HD}=%s AND docstatus<2 ORDER BY name''' + (' FOR UPDATE' if lock else ''), invoice, as_dict=True)
 
 
+def simple_taxes(doc):
+    taxes=doc.get('taxes') or []
+    if len(taxes)>1 or any(row.charge_type!='On Net Total' for row in taxes):
+        frappe.throw('Khoản có thuế/chi phí kiểu khác; kế toán đối chiếu chứng từ chuẩn trước khi chia phần hàng')
+
+
+def prepare_return_prices(doc):
+    # Giá phần hàng là giá thuần đã tính từ nguồn, không trừ chiết khấu cũ lần nữa.
+    simple_taxes(doc)
+    doc.discount_amount=0
+    doc.additional_discount_percentage=0
+    for tax in doc.get('taxes') or []:
+        tax.included_in_print_rate=0
+
+
 def prepare(si, raw, total, exclude=None, allow_unclassified=False):
     """Chỉ đường nhập mới có lựa chọn rõ lượng; API cũ chưa phân bổ giữ luồng cũ."""
     if not frappe.get_meta('Journal Entry').has_field(ALLOCATION):
         frappe.throw('Chưa cài phân bổ phần hàng; quản trị viên chạy bộ cài tính năng trước')
+    simple_taxes(si)
     if si.currency != 'VND' or si.party_account_currency != 'VND':
         frappe.throw('Phân bổ giảm theo lượng hiện dùng cho khoản VND')
     from kh_aph.sales_p1 import _thue_suat
@@ -154,6 +170,8 @@ def parts_for_dn(dn, exclude=None, lock=False):
         frappe.throw('Chưa cài phần nhận trả theo lượng; quản trị viên hoàn tất bộ cài trước')
     si = frappe.get_doc('Sales Invoice', invoice, for_update=lock)
     _read_return_basis(si,dn)
+    simple_taxes(si)
+    simple_taxes(dn)
     if si.docstatus != 1 or si.company != dn.company or si.customer != dn.customer:
         frappe.throw('Khoản gốc vừa đổi trạng thái hoặc phạm vi; tải lại phiếu trước khi nhận trả')
     if si.currency != 'VND' or any(not row.allocation for row in values):
@@ -233,13 +251,19 @@ def validate_return(doc, dn):
             if previous:
                 row.set(RETURN_PARTS, previous.get(RETURN_PARTS))
         chosen, qty, rate = price(parts[row.dn_detail], parse(row.get(RETURN_PARTS)))
-        if abs(abs(flt(row.qty))-qty)>0.000001 or abs(flt(row.net_rate)-rate)>0.000001:
+        precision = row.precision('net_rate') if callable(getattr(row,'precision',None)) else 6
+        expected_rate = flt(rate,precision)
+        expected_amount=sum(piece['net_amount'] for piece in chosen)
+        if abs(abs(flt(row.qty))-qty)>0.000001 or abs(flt(row.net_rate)-expected_rate)>0.000001:
             frappe.throw('Giá/lượng nhận trả phải khớp từng phần đã giảm hoặc chưa giảm')
+        if abs(abs(number(row.net_amount))-expected_amount)>number('0.5'):
+            frappe.throw('Sai lệch làm tròn tiền phần trả vượt0,5đ; kế toán đối chiếu cách ghi chứng từ chuẩn')
         if getattr(row, 'set', None):
+            from lab9x.vn_words import so_vn
             detail = []
             for piece in chosen:
                 label = 'Đã giảm (' + piece['key'] + ')' if piece['key'] else 'Chưa giảm'
-                detail.append(label + ': ' + format(piece['qty'], 'f') + ' kg × ' + format(piece['net_rate'], 'f') + ' VND/kg (chưa thuế)')
+                detail.append(label + ': ' + so_vn(piece['qty'],6) + ' kg × ' + so_vn(piece['net_rate'],2) + ' VND/kg (chưa thuế)')
             row.set('kh_aph_chi_tiet_phan_tra', '\n'.join(detail))
     return True
 
@@ -275,7 +299,20 @@ def check_posted_debits(je, source, allocation):
         frappe.throw('Phân bổ chưa khớp tiền hàng/thuế/tài khoản đã ghi; không sửa số bút toán cũ để vượt kiểm tra')
 
 
-def save_existing(je, allocation, reason):
+def summary(source, allocation):
+    from lab9x.vn_words import so_vn
+    items={row.name:row for row in source.items} if source else {}
+    lines=[]
+    for record in allocation:
+        row=items.get(record['invoice_row'])
+        label=(row.get('item_code') if row else None) or record['invoice_row']
+        gross=number(record['net_discount'])+number(record['tax_discount'])
+        lines.append(str(label)+': '+so_vn(record['qty'],6)+' kg; giảm '+so_vn(gross,2)+
+                     ' VND (thuế '+so_vn(record['tax_discount'],2)+' VND)')
+    return 'Phần hàng được giảm: '+ '; '.join(lines)
+
+
+def save_existing(je, allocation, reason, source=None):
     from html import escape
     before=encode({'company':je.company,'posting_date':str(je.posting_date),
                    'accounts':[{k:v for k,v in row.as_dict().items() if k not in ('modified','modified_by')} for row in je.accounts]})
@@ -289,7 +326,7 @@ def save_existing(je, allocation, reason):
                   'accounts':[{k:v for k,v in row.as_dict().items() if k not in ('modified','modified_by')} for row in je.accounts]})
     if before!=after:
         frappe.throw('Thông tin tài chính vừa đổi; chưa lưu phân loại, cần đối chiếu lại nguồn')
-    je.add_comment('Comment','Bổ sung phân loại phần hàng đã giảm; không ghi giảm thêm: '+escape(reason))
+    je.add_comment('Comment','Bổ sung phân loại phần hàng đã giảm; không ghi giảm thêm: '+escape(reason)+'<br>'+escape(summary(source,allocation)))
 
 
 def same_selection(allocation, raw):

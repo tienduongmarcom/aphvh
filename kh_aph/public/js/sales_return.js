@@ -46,7 +46,7 @@ kh_aph.returns.open = async function(name) {
     ], primary_action_label: "Lập phiếu nhận trả", async primary_action(values) {
         const groups = new Map();
         for (const r of values.rows.filter(r => Number(r.qty)>0)) {
-            if (!groups.has(r.source_row)) groups.set(r.source_row,{source_row:r.source_row,qty:0,bags:0,...(r.has_parts ? {parts:[]} : {})});
+            if (!groups.has(r.source_row)) groups.set(r.source_row,{source_row:r.source_row,qty:0,bags:0,...(Number(r.has_parts)===1 ? {parts:[]} : {})});
             const group=groups.get(r.source_row);
             group.qty+=Number(r.qty); group.bags+=Number(r.bags||0);
             if (group.parts) group.parts.push({key:r.part_key||"",qty:r.qty});
@@ -112,6 +112,7 @@ kh_aph.quality.open = async function(sales_invoice, journal_entry=null) {
                 args:journal_entry ? {journal_entry,selections:JSON.stringify(selections),reason:values.reason,modified:response.message.modified} :
                     {sales_invoice,so_tien:selections.reduce((sum,r)=>sum+Number(r.amount),0),ly_do:values.reason,selections:JSON.stringify(selections)},freeze:true});
             dialog.hide();
+            if(made.message.da_co) frappe.show_alert({message:journal_entry ? "Phân loại đã được lưu trước đó." : "Đã có đề nghị nháp trước; đang mở bản cũ để kiểm tra, chưa thay bằng dữ liệu vừa nhập.",indicator:"blue"});
             if(window.cur_frm?.doctype==="Journal Entry" && cur_frm.doc.name===made.message.but_toan) await cur_frm.reload_doc();
             else frappe.set_route("Form","Journal Entry",made.message.but_toan);
         } finally {dialog.enable_primary_action();}

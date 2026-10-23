@@ -184,6 +184,9 @@ def create_draft(delivery_note, selections, request_id, reason, condition, settl
             r.set(RETURN_PARTS, p['quality_parts'])
             r.rate = p['quality_rate']
             r.discount_percentage, r.discount_amount = 0, 0
+    if quality is not None:
+        from kh_aph.quality_allocation import prepare_return_prices
+        prepare_return_prices(ret)
     ret.set("kh_aph_loai_dieu_chinh", DC_TRA_HANG)
     ret.set(F_HANG, condition)
     ret.set(F_TIEN, settlement)

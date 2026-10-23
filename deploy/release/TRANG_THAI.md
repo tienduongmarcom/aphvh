@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Rà giá thuần, làm tròn và nội dung kế toán nhìn thấy
+
+Đã thêm kiểm giá trả theo đúng độ chính xác native của net_rate, nhưng tiền thuần từng dòng không được lệch khỏi các phần đã chọn quá0,5VND; tổng trần khoản gốc giữ nguyên. Chặn nguồn thuế/chi phí phức hợp chưa hỗ trợ thay vì coi tất cả là một thuế suất. Khi lập trả theo phần, giá là giá thuần: bỏ discount header và cờ giá đã gồm thuế được mapper chép để không trừ/tách hai lần; thuế suất/tài khoản nguồn giữ nguyên. Không đổi precision toàn hệ thống hoặc bỏ kiểm tiền.
+
+Đã ghi tóm tắt mã hàng/kg/tiền giảm/thuế vào nội dung đề nghị mới và Comment khi phân loại cũ, không thêm màn hình/ô nhập. Mở đề nghị nháp cũ có thông báo rõ chưa thay nội dung bằng dữ liệu vừa nhập. Cục bộ600ca không bỏ qua đạt; JS/Pyflakes/diff đạt. Chưa có native kết quả của thay đổi này. UAT39888905491/Cổng339888909929/Cổng239888993070 đang kiểm đúng2a3fefc, chưa chứa bản rà này. Không suy kết quả cũ cho mã sau; PR38 nháp, production0.16.4 không đổi.
+
 ## 23/10/2026 — Bổ sung phân loại khoản giảm cũ; chờ native139
 
 Đã viết classify_quality: kế toán có quyền ghi JE chọn dòng/kg/tiền giảm cho JE đã ghi có nguồn SI. Khóa quỹ→SI→JE, giữ modified và retry cùng phân loại; đối chiếu đúng tổng tiền, thuế, tài khoản và cost center trước lưu. Chỉ ghi JSON phân loại và Comment căn cứ; không đổi kỳ/đơn vị/accounts, không tạo khoản giảm/chi mới. allow_on_submit chỉ cho ô metadata; bảo vệ ContextVar theo đúng object, không cho API/form tự sửa/xóa hoặc phân loại lại. Có kiểm tài chính trước/sau, không bật cờ bỏ repost/permission. Phân loại cũ chưa rõ nguồn hoặc đã có trả chưa phân loại vẫn dừng để kế toán đối chiếu, không tự đoán.

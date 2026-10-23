@@ -47,9 +47,11 @@ def select(parts, selections):
     chosen, seen = [], set()
     for row in selections:
         key, qty = _key(row['key']), number(row['qty'])
-        if key in seen or key not in available or qty <= 0 or qty > available[key]['remaining']:
+        if key in seen or key not in available or qty <= 0 or qty > number(available[key]['remaining']):
             raise ValueError('Lượng trả vượt phần đã chọn hoặc phần nhận trả bị trùng')
         seen.add(key)
-        rate = available[key]['net_rate']
+        rate = number(available[key]['net_rate'])
+        if rate < 0:
+            raise ValueError('Giá của phần hàng không được âm')
         chosen.append({'key': key, 'qty': qty, 'net_rate': rate, 'net_amount': qty * rate})
     return chosen
