@@ -8,13 +8,13 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, getdate, now_datetime, today
 from kh_aph.constants import ROLE_NO_COST, ROLE_FACTORY, PRICE_ROLES
-from kh_aph.debt_statement_rules import amount, snapshot, base_unallocated
+from kh_aph.debt_statement_rules import amount, snapshot, base_unallocated, deposit_snapshot
 
 DT = 'Bien ban doi soat no'
 FLAG = 'kh_aph_quan_tri'
 ROLES = {'Kế toán bán hàng', 'Accounts User', 'Accounts Manager', 'System Manager'}
 _INTERNAL = ContextVar('debt_statement_internal', default=None)
-SOURCES = {'Delivery Note', 'Sales Invoice', 'Payment Entry', 'Journal Entry'}
+SOURCES = {'Delivery Note', 'Sales Invoice', 'Payment Entry', 'Journal Entry', 'APH Funds Receipt', 'APH Funds Action'}
 
 
 def enabled():
@@ -146,23 +146,49 @@ def _source_keys(raw):
     return sorted(keys)
 
 
+def _source_company(doc):
+    return doc.receiving_company if doc.doctype=='APH Funds Action' else doc.company
+
+
 def _sources(customer, companies, keys):
     selected, documents = set(), {}
     for key in keys:
         doc = frappe.get_doc(*key)
         doc.check_permission('read')
-        if doc.docstatus != 1 or doc.company not in companies or getdate(doc.posting_date) > getdate(today()):
+        if doc.docstatus != 1 or _source_company(doc) not in companies or getdate(doc.posting_date) > getdate(today()):
             frappe.throw('Chọn chứng từ đã ghi sổ, trong phạm vi và không ở ngày tương lai')
         if key[0] in ('Delivery Note', 'Sales Invoice'):
             valid_customer = doc.customer == customer
         elif key[0] == 'Payment Entry':
             valid_customer = doc.party_type == 'Customer' and doc.party == customer
+        elif key[0] in ('APH Funds Receipt', 'APH Funds Action'):
+            valid_customer = doc.customer == customer
         else:
             valid_customer = any(d.party_type == 'Customer' and d.party == customer for d in doc.accounts)
         if not valid_customer:
             frappe.throw('Mọi chứng từ của lượt phải đúng khách đang đối soát')
+        if key[0] == 'APH Funds Action':
+            receipt = frappe.get_doc('APH Funds Receipt', doc.receipt)
+            receipt.check_permission('read')
+            if (receipt.docstatus!=1 or receipt.customer!=customer or receipt.company!=doc.receiving_company
+                    or getdate(receipt.posting_date)>getdate(today())):
+                frappe.throw('Khoản thực nhận nguồn chưa phù hợp mốc/khách/đơn vị của thao tác cọc')
         documents[key] = doc
-        if key[0] != 'Delivery Note':
+        if key[0] in ('APH Funds Receipt', 'APH Funds Action'):
+            for field in ('journal_entry', 'owner_journal_entry'):
+                if not doc.get(field):
+                    continue
+                journal = frappe.get_doc('Journal Entry', doc.get(field))
+                journal.check_permission('read')
+                if journal.docstatus != 1 or journal.company not in companies or getdate(journal.posting_date)>getdate(today()):
+                    frappe.throw('Chọn đủ đơn vị của chứng từ tiền/cọc đã ghi trong cùng mốc')
+                parties = {r.party for r in journal.accounts if r.party_type=='Customer' and r.party}
+                if parties - {customer}:
+                    frappe.throw('Chứng từ tiền/cọc có khách khác; đối chiếu riêng trước khi cấp bộ giấy')
+                if customer in parties:
+                    selected.add(('Journal Entry', journal.name))
+                    documents[('Journal Entry', journal.name)] = journal
+        elif key[0] != 'Delivery Note':
             selected.add(key)
     delivery_notes = {name for dt, name in documents if dt == 'Delivery Note'}
     for name in sorted(delivery_notes):
@@ -185,10 +211,10 @@ def _lock_sources(customer, companies, selected, documents):
     for key in sorted(set(selected) | set(documents)):
         source = frappe.get_doc(*key, for_update=True)
         source.check_permission('read')
-        same_customer = (source.customer == customer if key[0] in ('Sales Invoice', 'Delivery Note') else
+        same_customer = (source.customer == customer if key[0] in ('Sales Invoice', 'Delivery Note', 'APH Funds Receipt', 'APH Funds Action') else
                          source.party_type == 'Customer' and source.party == customer if key[0] == 'Payment Entry' else
                          any(row.party_type == 'Customer' and row.party == customer for row in source.accounts))
-        if source.docstatus != 1 or source.company not in companies or not same_customer:
+        if source.docstatus != 1 or _source_company(source) not in companies or not same_customer:
             frappe.throw('Chứng từ nguồn vừa đổi hoặc hủy; tải lại lượt cần đối soát trước khi cấp bộ giấy')
         if key in documents:
             current[key] = source
@@ -210,19 +236,32 @@ def _figures(customer, companies, selected, documents):
     if len(rows) > 10000:
         frappe.throw('Khách vượt10.000 dòng sổ; cần đối chiếu tập đầy đủ, không cắt bớt số liệu')
     result = snapshot(companies, rows, selected)
-    from kh_aph.funds_rules import position
     funds = {co: {'company': co, 'reserved': amount(0), 'available': amount(0),
                   'unallocated_received': amount(0), 'unallocated_paid': amount(0)} for co in companies}
     receipts = frappe.db.sql('''SELECT name, company, amount FROM `tabAPH Funds Receipt`
-        WHERE customer=%s AND company IN %s AND docstatus=1 ORDER BY name LIMIT 1001 FOR UPDATE''',
-        (customer, tuple(companies)), as_dict=True)
+        WHERE customer=%s AND company IN %s AND docstatus=1 AND posting_date<=%s ORDER BY name LIMIT 1001 FOR UPDATE''',
+        (customer, tuple(companies), today()), as_dict=True)
     if len(receipts) > 1000:
         frappe.throw('Khách vượt1.000 khoản tiền giữ; cần đối chiếu tập đầy đủ')
+    deposit_details = []
     for receipt in receipts:
-        history = frappe.db.sql('''SELECT name, action_type, amount, source_reservation
-            FROM `tabAPH Funds Action` WHERE receipt=%s AND docstatus=1 ORDER BY name FOR UPDATE''',
-            receipt.name, as_dict=True)
-        state = position(receipt.amount, history)
+        history = frappe.db.sql('''SELECT name, action_type, amount, source_reservation, shared_order, source_company
+            FROM `tabAPH Funds Action` WHERE receipt=%s AND docstatus=1 AND posting_date<=%s ORDER BY name FOR UPDATE''',
+            (receipt.name, today()), as_dict=True)
+        try:
+            state, details = deposit_snapshot(receipt, history)
+        except ValueError as exc:
+            frappe.throw(str(exc))
+        for detail in details:
+            if detail['source_company']:
+                frappe.get_doc('Company', detail['source_company']).check_permission('read')
+                if detail['source_company'] not in companies:
+                    frappe.throw('Cọc có nguồn thuộc đơn vị khác; chọn đủ phạm vi để trình bày chi tiết')
+            order = frappe.get_doc('APH Shared Sales Order', detail['shared_order'])
+            order.check_permission('read')
+            if order.customer != customer:
+                frappe.throw('Cọc và đơn nguồn khác khách; cần đối chiếu trước khi cấp biên bản')
+        deposit_details.extend(details)
         funds[receipt.company]['reserved'] += state['reserved']
         funds[receipt.company]['available'] += state['available']
     payments = frappe.db.sql('''SELECT company, payment_type, unallocated_amount, source_exchange_rate, target_exchange_rate FROM `tabPayment Entry`
@@ -239,6 +278,12 @@ def _figures(customer, companies, selected, documents):
             funds[payment.company][key] += converted
     result['funds'] = [{key: str(value) if key != 'company' else value for key, value in row.items()}
                        for row in funds.values()]
+    result['deposit_details'] = deposit_details
+    result['funds_documents'] = [{'name': doc.name, 'company': _source_company(doc),
+        'kind': doc.get('action_type') or 'Tiền thực nhận', 'amount': str(amount(doc.amount)),
+        'posting_date': str(doc.posting_date), 'receipt': doc.get('receipt') or doc.name,
+        'shared_order': doc.get('shared_order') or ''}
+        for (dt, _name), doc in sorted(documents.items()) if dt in ('APH Funds Receipt', 'APH Funds Action')]
     return result, documents
 
 

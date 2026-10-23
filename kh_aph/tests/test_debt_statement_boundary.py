@@ -120,3 +120,33 @@ class StatementBoundary(unittest.TestCase):
         self.assertFalse(self.api._allowed('nhan-vien'))
         self.f.get_roles.return_value=['Kế toán bán hàng','Kế toán nhà máy','Accounts User']
         self.assertTrue(self.api._allowed('nhan-vien'))
+
+
+    def test_receipt_in_holding_account_does_not_invent_customer_debt(self):
+        self.api.getdate=lambda v:str(v);self.api.today=lambda:'2026-10-23'
+        receipt=Row(doctype='APH Funds Receipt',name='R',company='CO',customer='KH',posting_date='2026-10-23',
+            journal_entry='JE',docstatus=1,check_permission=Mock())
+        journal=Row(doctype='Journal Entry',name='JE',company='CO',docstatus=1,posting_date='2026-10-23',
+            accounts=[Row(party_type=None,party=None)],check_permission=Mock())
+        self.f.get_doc=Mock(side_effect=lambda dt,name,**kw:receipt if dt=='APH Funds Receipt' else journal)
+        selected, documents=self.api._sources('KH',['CO'],[('APH Funds Receipt','R')])
+        self.assertEqual(selected,set())
+        self.assertEqual(set(documents),{('APH Funds Receipt','R')})
+        receipt.check_permission.assert_called_with('read')
+        journal.check_permission.assert_called_with('read')
+
+    def test_funds_action_checks_origin_and_uses_only_its_native_customer_journal(self):
+        self.api.getdate=lambda v:str(v);self.api.today=lambda:'2026-10-23'
+        action=Row(doctype='APH Funds Action',name='A',receiving_company='CO',customer='KH',posting_date='2026-10-23',
+            receipt='R',journal_entry='JE',docstatus=1,check_permission=Mock())
+        receipt=Row(doctype='APH Funds Receipt',name='R',company='CO',customer='KH',posting_date='2026-10-23',
+            docstatus=1,check_permission=Mock())
+        journal=Row(doctype='Journal Entry',name='JE',company='CO',docstatus=1,posting_date='2026-10-23',
+            accounts=[Row(party_type='Customer',party='KH')],check_permission=Mock())
+        docs={'APH Funds Action':action,'APH Funds Receipt':receipt,'Journal Entry':journal}
+        self.f.get_doc=Mock(side_effect=lambda dt,name,**kw:docs[dt])
+        selected, documents=self.api._sources('KH',['CO'],[('APH Funds Action','A')])
+        self.assertEqual(selected,{('Journal Entry','JE')})
+        self.assertEqual(len(documents),2)
+        receipt['customer']='KHAC'
+        with self.assertRaises(ValueError):self.api._sources('KH',['CO'],[('APH Funds Action','A')])

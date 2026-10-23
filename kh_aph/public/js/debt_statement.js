@@ -13,7 +13,7 @@ kh_aph.statement.open = async function(frm) {
         {fieldname: "sources", label: "Chứng từ đã ghi của lượt này", fieldtype: "Table", in_place_edit: true, data: initial,
             fields: [
                 {fieldname: "voucher_type", label: "Loại chứng từ", fieldtype: "Link", options: "DocType", reqd: 1,
-                    in_list_view: 1, columns: 4, get_query: () => ({filters: {name: ["in", ["Delivery Note", "Sales Invoice", "Payment Entry", "Journal Entry"]]}})},
+                    in_list_view: 1, columns: 4, get_query: () => ({filters: {name: ["in", ["Delivery Note", "Sales Invoice", "Payment Entry", "Journal Entry", "APH Funds Receipt", "APH Funds Action"]]}})},
                 {fieldname: "voucher", label: "Số chứng từ", fieldtype: "Dynamic Link", options: "voucher_type", reqd: 1, in_list_view: 1, columns: 6},
             ]},
         {fieldname: "supersedes", label: "Bổ sung cho biên bản trước (nếu có)", fieldtype: "Link", options: "Bien ban doi soat no",
@@ -40,13 +40,14 @@ kh_aph.statement.open = async function(frm) {
     await dialog.set_value("companies", companies.map(c => c.name));
 };
 
-for (const doctype of ["Customer", "Delivery Note", "Payment Entry"]) {
+for (const doctype of ["Customer", "Delivery Note", "Payment Entry", "APH Funds Receipt", "APH Funds Action"]) {
     frappe.ui.form.on(doctype, {refresh(frm) {
         if (!frappe.boot?.kh_aph?.quan_tri || frm.is_new() ||
             (frappe.session.user !== "Administrator" && (frappe.boot?.kh_aph?.price_restricted ||
                 (frappe.user_roles || []).includes("APH Không xem giá vốn"))) ||
             (doctype !== "Customer" && frm.doc.docstatus !== 1) ||
             (doctype === "Payment Entry" && frm.doc.party_type !== "Customer") ||
+            (["APH Funds Receipt", "APH Funds Action"].includes(doctype) && !frm.doc.customer) ||
             !frappe.model.can_create("Bien ban doi soat no")) return;
         frm.add_custom_button("Đối soát & In bộ giấy", () => kh_aph.statement.open(frm));
         const customer = doctype === "Customer" ? frm.doc.name :

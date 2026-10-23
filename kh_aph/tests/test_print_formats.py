@@ -498,6 +498,24 @@ class TestJsonInSync(unittest.TestCase):
         self.assertIn('không tự cấn chéo', html)
         self.assertIn('SI', html); self.assertIn('PE', html)
 
+    @unittest.skipIf(jinja2 is None, "chưa có jinja2")
+    def test_deposit_source_details_are_escaped_and_separate_from_debt(self):
+        from kh_aph.debt_statement_rules import snapshot
+        data=snapshot(['CO'],[],set())
+        data.update(company_labels={'CO':'Đơn vị'},customer_name='Khách',customer='KH',prepared_by='KT',
+            tax_id='',address='',phone='',funds=[],deposit_details=[dict(company='CO',receipt='THU<script>',
+            reservation='COC',shared_order='DON<b>',source_company='',reserved='50000')],
+            funds_documents=[dict(company='CO',name='THU<script>',receipt='THU<script>',kind='Tiền thực nhận',
+                amount='100000',posting_date='2026-10-23',shared_order='')])
+        env=_env(False)
+        env.globals['kh_aph_doi_soat_da_luu']=lambda doc:data
+        html=env.from_string((ROOT/'doi_soat_theo_luot'/'doi_soat_theo_luot.html').read_text()).render(
+            doc=Row(name='BBDS',snapshot_at='2026-10-23 10:00:00',supersedes=None))
+        self.assertIn('THU&lt;script&gt;',html)
+        self.assertIn('DON&lt;b&gt;',html)
+        self.assertIn('Cọc chung',html)
+        self.assertIn('không cộng thêm vào công nợ',html)
+
     def test_json_in_sync(self):
         tools = _load_tools()
         for folder in tools.FORMATS:

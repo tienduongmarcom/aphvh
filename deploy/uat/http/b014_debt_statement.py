@@ -172,3 +172,61 @@ def chay_ngoai_te(rpc, get, insert, submit, lst, ktt, f, emit):
     assert before=={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
     emit('HTTP_014_DOI_SOAT_TIEN_CHUA_PHAN_BO_NGOAI_TE','PASS',{'party_currency':'USD','unallocated':10,
         'rate':25000,'base_unallocated_vnd':250000,'no_financial_mutation':True})
+
+
+def chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, emit):
+    """Tiền giữ/cọc có nguồn riêng trên bản ký, không tính thành giảm nợ lần hai."""
+    base=get('Customer',f['kh2'],ktt)
+    customer=insert({'doctype':'Customer','customer_name':f['p']+'-CocTheoDon','customer_type':'Company',
+        'customer_group':base['customer_group'],'territory':base['territory'],'kh_aph_xuat_hoa_don':'Có'},ktt)
+    order=submit(insert({'doctype':'APH Shared Sales Order','customer':customer['name'],
+        'transaction_date':f['date'],'delivery_date':f['date'],'selling_price_list':f['pl'],'currency':'VND',
+        'items':[{'item_code':f['A'],'warehouse':f['kho'],'qty':5,'rate':35000}]},ktt),ktt)
+    holding=lst('Account',{'company':f['aph'],'account_number':'3388','is_group':0},['name'],ktt)
+    assert len(holding)==1
+    route=submit(insert({'doctype':'APH Funds Route','receiving_company':f['aph'],
+        'holding_account':holding[0]['name'],'reason':'UAT tuyến cọc chung có đối soát'},ktt),ktt)
+    receipt=submit(insert({'doctype':'APH Funds Receipt','company':f['aph'],'posting_date':f['date'],
+        'bank_account':f['acc']['tien'],'route':route['name'],'amount':100000,
+        'external_reference':uuid.uuid4().hex,'customer':customer['name'],'reason':'UAT thực nhận giữ cọc',
+        'kh_aph_nguoi_giu_tien':f['ktbh']},ktt),ktt)
+    reserve=submit(insert({'doctype':'APH Funds Action','receipt':receipt['name'],'action_type':'Giữ cọc',
+        'posting_date':f['date'],'shared_order':order['name'],'source_company':f['aph'],'amount':70000,
+        'reason':'UAT giữ cho đúng đơn và nguồn'},ktt),ktt)
+    release=submit(insert({'doctype':'APH Funds Action','receipt':receipt['name'],'action_type':'Giải phóng cọc',
+        'posting_date':f['date'],'source_reservation':reserve['name'],'amount':20000,'reason':'UAT nhả một phần'},ktt),ktt)
+    def counts():
+        return {kind:len(lst(kind,{},['name'],ktt)) for kind in ('GL Entry','Stock Ledger Entry',
+            'Payment Ledger Entry','Journal Entry','Payment Entry','APH Funds Receipt','APH Funds Action')}
+    args={'customer':customer['name'],'companies':json.dumps([f['aph']]),'request_id':uuid.uuid4().hex,
+        'vouchers':json.dumps([{'doctype':'APH Funds Receipt','name':receipt['name']},
+            {'doctype':'APH Funds Action','name':reserve['name']},{'doctype':'APH Funds Action','name':release['name']}])}
+    before=counts()
+    result=rpc('kh_aph.debt_statement.create',args,ktt)
+    statement=get('Bien ban doi soat no',result['name'],ktt)
+    data=json.loads(statement['payload'])
+    assert data['positions'][0]['current']=='0' and data['movements']==[]
+    assert float(data['funds'][0]['reserved'])==50000 and float(data['funds'][0]['available'])==50000
+    assert len(data['deposit_details'])==1 and len(data['funds_documents'])==3
+    detail=data['deposit_details'][0]
+    assert detail['receipt']==receipt['name'] and detail['shared_order']==order['name']
+    assert detail['source_company']==f['aph'] and float(detail['reserved'])==50000
+    assert counts()==before
+    assert rpc('kh_aph.debt_statement.create',args,ktt)['name']==statement['name'] and counts()==before
+    denied(lambda:rpc('kh_aph.debt_statement.create',{**args,'customer':f['kh1'],'request_id':uuid.uuid4().hex},ktt))
+    html=rpc('frappe.www.printview.get_html_and_style',{'doc':json.dumps(statement),
+        'print_format':'Biên bản đối soát theo lượt'},ktt)['html']
+    assert order['name'] in html and receipt['name'] in html and 'Cọc còn giữ theo đơn và nguồn' in html
+    content=ktt.binary_get(result['file_url'])
+    assert content.startswith(b'%PDF')
+    Path('doi-soat-coc-theo-don.pdf').write_bytes(content)
+    submit(insert({'doctype':'APH Funds Action','receipt':receipt['name'],'action_type':'Giải phóng cọc',
+        'posting_date':f['date'],'source_reservation':reserve['name'],'amount':10000,'reason':'UAT đổi sau mốc'},ktt),ktt)
+    assert ktt.binary_get(result['file_url'])==content
+    assert json.loads(get('Bien ban doi soat no',statement['name'],ktt)['payload'])['deposit_details']==data['deposit_details']
+    next_result=rpc('kh_aph.debt_statement.create',{**args,'request_id':uuid.uuid4().hex,'supersedes':statement['name']},ktt)
+    next_data=json.loads(get('Bien ban doi soat no',next_result['name'],ktt)['payload'])
+    assert float(next_data['deposit_details'][0]['reserved'])==40000
+    emit('HTTP_014_DOI_SOAT_COC_THEO_NGUON','PASS',{'received':100000,'reserved_at_snapshot':50000,
+        'available':50000,'source_receipt_order_company':True,'no_second_debt':True,
+        'retry_no_posting':True,'wrong_customer_denied':True,'frozen_after_release':True})

@@ -87,3 +87,8 @@ Giấy gốc: kế toán cửa hàng xếp theo loại giấy/ngày hoặc tập
 - Đường giảm theo phần hàng đang kiểm thử: chọn đúng khoản cũ, ghi dòng/kg và tiền giảm của phần đó; phần còn lại giữ giá gốc. Khi nhận trả chọn rõ phần đã giảm hoặc chưa giảm, không lấy giá bình quân cả mã.
 - Khoản giảm cũ chưa ghi lượng: từ JE có nguồn khoản phải thu → Bổ sung phần hàng đã giảm. Phải đối chiếu giấy thỏa thuận và đúng tiền hàng/thuế đã ghi; thao tác chỉ bổ sung phân loại, không ghi giảm nợ thêm. Chưa xác minh được hoặc đã có trả cũ chưa phân loại thì kế toán đối chiếu bằng chứng trước.
 - **Chưa hoàn thiện/kiểm đủ:** đường phân loại và hoàn sau giảm mới chưa nativePASS toàn bộ; nối nhu cầu gom kho trực tiếp từ đơn; thu/hoàn chênh lệch đổi mã trong một cửa sổ. Các điểm này còn trong phạm vi phát triển, không coi hướng dẫn là bằng chứng đã hỗ trợ đầy đủ.
+
+
+## Bổ sung đang phát triển: cọc theo nguồn trong đối soát
+
+Từ Tiền thực nhận hoặc Xử lý tiền cọc/phân bổ đã ghi, khách đã xác minh, mở Đối soát & In bộ giấy. Chọn đủ đơn vị liên quan và đúng chứng từ của lượt. Biên bản trình bày khoản tiền/cọc chọn, cọc còn giữ theo khoản nhận/đơn/nguồn và phần khả dụng riêng; không trừ cọc vào công nợ lần nữa. Bản cấp rồi giữ nguyên số/PDF khi có phát sinh sau đó, cần đối chiếu mới thì lập bản bổ sung. Cọc chung có nhãn riêng, không tự gán cho nguồn của đơn vị thực nhận. Phần này mới kiểm cục bộ, chờ HTTP/PDF native140; bản in riêng phiếu thu cọc chưa tự ghép như phiếu thu PE.

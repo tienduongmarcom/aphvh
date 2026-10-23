@@ -55,3 +55,21 @@ def base_unallocated(payment_type, value, source_rate, target_rate):
     if rate <= 0 or value < 0:
         raise ValueError('Kiểm tỷ giá và khoản tiền chưa phân bổ trên phiếu gốc')
     return (value * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def deposit_snapshot(receipt, actions):
+    """Cọc còn giữ theo đúng nguồn, không bình quân/FIFO hoặc trừ vào nợ lần nữa."""
+    from kh_aph.funds_rules import position
+    state = position(receipt['amount'], actions)
+    by_name = {row['name']: row for row in actions}
+    details = []
+    for key, remaining in sorted(state['reservations'].items()):
+        if remaining <= 0:
+            continue
+        source = by_name[key]
+        if not source.get('shared_order'):
+            raise ValueError('Cọc đang giữ thiếu đơn nguồn; cần đối chiếu trước khi cấp biên bản')
+        details.append({'company': receipt['company'], 'receipt': receipt['name'], 'reservation': key,
+            'shared_order': source['shared_order'], 'source_company': source.get('source_company') or '',
+            'reserved': str(remaining)})
+    return state, details

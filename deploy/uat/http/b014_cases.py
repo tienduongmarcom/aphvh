@@ -346,5 +346,8 @@ def chay(admin, phien, f, emit, factory_feature):
     from b014_debt_statement import chay_ngoai_te
     chay_ngoai_te(rpc, get, insert, submit, lst, ktt, f, emit)
 
+    from b014_debt_statement import chay_coc
+    chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, emit)
+
     from b014_quality_parts import chay as quality_cases
     quality_cases(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit)

@@ -1,5 +1,13 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Nối tiền/cọc vào đối soát theo nguồn; chờ native140
+
+Đã mở nguồn chọn APH Funds Receipt/Action trên cùng Dialog đối soát và nút từ form tiền/cọc; kiểm nguồn đúng khách/đơn vị/mốc, action phải có khoản thực nhận hợp lệ. Chỉ chọn JE liên quan có đúng đối tượng khách để tính phát sinh công nợ; khoản giữ tiền không có đối tượng khách không tự thành giảm nợ. Không in toàn bộ JE nội bộ cho khách. Payload/bản in có chứng từ tiền/cọc chọn và cọc còn giữ theo receipt/reservation/đơn/nguồn Company. Tính lại từ cùng funds_rules.position, không FIFO hoặc trừ cọc vào nợ lần nữa; receipts/actions sau ngày mốc không cộng vào số hiện tại. Nguồn Company/đơn ngoài quyền bị chặn; bản đã cấp giữ số/PDF cũ sau khi giải phóng tiếp.
+
+Đã tăng MODIFIED và chạy generator cho mẫu in,615ca cục bộ không bỏ qua đạt, JS/Pyflakes/diff đạt. Thêm ca HTTP_014_DOI_SOAT_COC_THEO_NGUON: nhận100.000, giữ70.000, nhả20.000 còn50.000/khả dụng50.000, không tạo nợ; retry, sai khách, sau nhả tiếp vẫn giữ bản ký cũ. Kỳ vọng140PASS và artifact doi-soat-coc-theo-don.pdf; chưa có native mã mới. Bộ giấy từ FundsReceipt/Action trình bày trong biên bản, chưa có phiếu thu cọc riêng tự ghép như PE; không coi phần này đã đủ mọi mẫu thu. Còn thu/hoàn chênh lệch đổi mã một cửa và quyền nhân sự.
+
+UAT39895504031 đúng8e61a68 đãSUCCESS139ca theo workflow; đang tải/đọc artifact để chốt chi tiết/ảnh/PDF. Không chứa gom theo đơn ede9ee9 hoặc phần cọc mới. Cổng339893222080 đúngd54522d đãSUCCESS nhưng tải artifact lần đầu lỗi mạng, đang thử lại. Không suy các lượt này sang mã sau. PR38nháp, production0.16.4 không đổi.
+
 ## 23/10/2026 — Thêm gom hàng trực tiếp từ đơn, đang chờ native
 
 Đã viết order_transfer.preview và nút Gom hàng cho đơn trên form đơn chung: lấy phần còn chưa giao/chưa lậpDNnháp bằng cùng nguồn ban_nhanh, gom cùng mã theo Company/kho giao khách, điền sẵn mã/tên/kg/bao vào cửa sổ chuyển kho hiện có. Người dùng chỉ chọn kho thực lấy, lượng cần chuyển và người/xe. Kho nhận theo đơn giữ readonly; đổi nơi giao phải dùng đổi nguồn phần chưa giao trước. Không thêm màn/sổ/CF/cờ; không tạo chứng từ từ preview, không trả giá vốn/giá bán. Server kiểm quyền chuyển/StockEntrycreate và toàn bộ nguồn đơn/Company/Item/Warehouse; không cấp quyền để vượt phạm vi. Cửa sổ dùng factory_transfer.send cũ để chuẩn bị nháp/in, ghi nguồn đơn vào ghi chú; xác nhận xuất/nhận vẫn native.

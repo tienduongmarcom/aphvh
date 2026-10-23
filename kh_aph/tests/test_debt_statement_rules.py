@@ -1,6 +1,6 @@
 """Bản ký ròng0 vẫn hiện tăng/giảm; không dùng tín dụng Company khác để giảm tổng phải thu."""
 import unittest
-from kh_aph.debt_statement_rules import snapshot, base_unallocated
+from kh_aph.debt_statement_rules import snapshot, base_unallocated, deposit_snapshot
 
 
 class StatementRules(unittest.TestCase):
@@ -51,3 +51,31 @@ class StatementRules(unittest.TestCase):
         self.assertEqual(base_unallocated('Receive','1.005',1,1),Decimal('1.01'))
         for kind,value,source,target in [('Receive',10,0,1),('Pay',10,1,None),('Pay',-1,1,1),('Receive','NaN',1,1)]:
             with self.subTest(kind=kind), self.assertRaises(ValueError): base_unallocated(kind,value,source,target)
+
+
+class DepositDetails(unittest.TestCase):
+    def test_transfer_and_release_keep_exact_order_source(self):
+        actions=[{'name':'GIU','action_type':'Giữ cọc','amount':70,'shared_order':'DON1','source_company':'CO1'},
+            {'name':'CHUYEN','action_type':'Chuyển cọc','amount':20,'source_reservation':'GIU','shared_order':'DON2','source_company':'CO2'},
+            {'name':'NHA','action_type':'Giải phóng cọc','amount':10,'source_reservation':'GIU'}]
+        state, details=deposit_snapshot({'name':'THU','company':'CO1','amount':100},actions)
+        self.assertEqual(state['reserved'],60)
+        self.assertEqual(state['available'],40)
+        self.assertEqual({r['shared_order']:r['reserved'] for r in details},{'DON1':'40','DON2':'20'})
+        self.assertTrue(all(r['receipt']=='THU' and r['company']=='CO1' for r in details))
+
+    def test_fully_allocated_deposit_is_not_printed_as_still_held(self):
+        state, details=deposit_snapshot({'name':'THU','company':'CO','amount':50},[
+            {'name':'GIU','action_type':'Giữ cọc','amount':50,'shared_order':'DON'},
+            {'name':'CAN','action_type':'Cấn hóa đơn','amount':50,'source_reservation':'GIU'}])
+        self.assertEqual(state['reserved'],0)
+        self.assertEqual(details,[])
+
+    def test_missing_order_cannot_be_invented_from_customer_or_invoice(self):
+        with self.assertRaises(ValueError):deposit_snapshot({'name':'THU','company':'CO','amount':50},[
+            {'name':'GIU','action_type':'Giữ cọc','amount':50}])
+
+    def test_common_deposit_keeps_empty_source_company(self):
+        _, details=deposit_snapshot({'name':'THU','company':'CO','amount':50},[
+            {'name':'GIU','action_type':'Giữ cọc','amount':20,'shared_order':'DON'}])
+        self.assertEqual(details[0]['source_company'],'')

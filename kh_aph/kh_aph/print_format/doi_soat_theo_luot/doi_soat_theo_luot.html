@@ -44,6 +44,27 @@
  <tbody>{% for r in ds.funds %}<tr><td>{{ labels.get(r.company, r.company) | e }}</td><td class="r">{{ kh_aph_so(r.reserved, 2) }}</td>
   <td class="r">{{ kh_aph_so(r.available, 2) }}</td><td class="r">{{ kh_aph_so(r.unallocated_received, 2) }}</td><td class="r">{{ kh_aph_so(r.unallocated_paid, 2) }}</td></tr>{% endfor %}</tbody>
 </table>
+{% if ds.get('deposit_details') %}
+<div class="aph-info"><b>Cọc còn giữ theo đơn và nguồn</b> – chi tiết của số cọc ở bảng trên, không cộng thêm vào công nợ.</div>
+<table class="aph-tbl">
+ <colgroup><col style="width:18%"><col style="width:24%"><col style="width:25%"><col style="width:17%"><col style="width:16%"></colgroup>
+ <thead><tr><th>Đơn vị giữ</th><th>Khoản thực nhận / cọc</th><th>Đơn giữ cọc</th><th>Nguồn cọc</th><th>Còn giữ</th></tr></thead>
+ <tbody>{% for r in ds.deposit_details %}<tr><td>{{ labels.get(r.company, r.company) | e }}</td>
+ <td>{{ r.receipt | e }}<br>{{ r.reservation | e }}</td><td>{{ r.shared_order | e }}</td>
+ <td>{{ labels.get(r.source_company, r.source_company) | e if r.source_company else 'Cọc chung' }}</td>
+ <td class="r">{{ kh_aph_so(r.reserved, 2) }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+{% if ds.get('funds_documents') %}
+<div class="aph-info"><b>Chứng từ tiền/cọc được chọn của lượt</b> – giữ/cọc không tự làm giảm công nợ.</div>
+<table class="aph-tbl">
+ <colgroup><col style="width:18%"><col style="width:20%"><col style="width:23%"><col style="width:23%"><col style="width:16%"></colgroup>
+ <thead><tr><th>Đơn vị nhận</th><th>Ngày / thao tác</th><th>Số chứng từ / khoản thực nhận</th><th>Đơn giữ cọc</th><th>Số tiền thao tác</th></tr></thead>
+ <tbody>{% for r in ds.funds_documents %}<tr><td>{{ labels.get(r.company, r.company) | e }}</td>
+ <td>{{ r.posting_date | e }}<br>{{ r.kind | e }}</td><td>{{ r.name | e }}<br>{{ r.receipt | e }}</td>
+ <td>{{ r.shared_order | e }}</td><td class="r">{{ kh_aph_so(r.amount, 2) }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
 <div class="aph-info">Tiền/cọc giữ theo đơn vị thực nhận. Khoản thu đã nằm trong nợ ròng không trừ thêm lần nữa; phân bổ/cấn theo lựa chọn và đúng đơn vị.</div>
 <div class="aph-info">Hai bên đối chiếu các số và chứng từ trên tại mốc ghi trong biên bản. Phiếu chưa ghi sổ hoặc giấy tay chưa nhập được đối chiếu bổ sung riêng. Giao dịch về sau không thay số của bản này.</div>
 <div class="aph-statement-signature"><div class="aph-info">Xác nhận biên bản <b>{{ doc.name | e }}</b> · Khách: {{ ds.customer_name | e }} · Mốc: {{ moc | e }}</div>
