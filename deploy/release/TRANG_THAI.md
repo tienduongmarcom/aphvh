@@ -1,5 +1,11 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Sửa helper chọn đúng kết quả Chrome; giữ139ca
+
+UAT39893134196 đúngd54522d FAIL tại b014_quality_parts.py đọc dòngJSON đầu tiên: CI_REALTIME_NOT_PROVISIONED/INFO thay vì NATIVE_DESK_GIAM_THEO_PHAN/PASS. Process Chrome đãexit0, assertion UI/giá chưa bị bỏ; không coi toàn lượt đạt. Đã sửa chọn chính xác tên ca, bắt đúng một kết quả và statusPASS; không bỏ INFO bằng cách nhận bất kỳ dòngPASS. Cần chạy lại trên mã sửa. Cổng239893214536 và2b39893218066 cùngd54522d SUCCESS; đã đọc log601+108unit/53mục dựng mới và53mục dựng/nâng/quay lui. Cổng339893222080 đang chạy lúc cập nhật, chưa kết luận mới.
+
+Đã ghi phân công10người, người nhận tiềnNinh/Trang/Ánh và chính sách quyền linh hoạt tháng đầu tại docs/phan-quyen-nhan-su-dung-thu-20261023.md và docs/quyet-dinh-nghiep-vu.md. Tâm để sau theo chủ dự án. Chưa áp quyền production; không hỏi lại quyết định đã chốt. Cần ánh xạ tên đăng nhập và kiểm quyền CEOxem/Trangduyệt/người nhận tiền theo nguồn, không cấp System Manager đại trà. Toàn PR38 vẫn nháp, production0.16.4 không đổi.
+
 ## 23/10/2026 — Chuẩn bị dùng thử; sửa phân loại lỗi hạ tầng Chrome
 
 UAT39891158617 đúngfa8ce18 FAIL tại Chrome do assertion gom mọi HTTP lỗi, gồm404/socket.io của CI chạy bench web trực tiếp không có dịch vụ realtime. Trace cho biết blocking=[]: không còn popup quyền che Dialog; chưa coi cả lượt đạt. Đã giới hạn ngoại lệ đúng404 endpoint/socket.io cùngbase của bộ thử và in INFO riêng; mọi lỗi API/asset/runtime khác và modal che vẫn FAIL. Không bỏ ca quyền/giá/hoàn hoặc thay kỳ vọng139. Lượt lỗi giữ nguyên. Chủ dự án cần nhân sự dùng thử ngày24/10 và chuẩn bị phân quyền tối23/10: ưu tiên chốt bản đang dở, chưa trộn bỏ28cờ. Đang xin danh sách nhân sự/phạm vi để chuẩn bị cấu hình; không tự cấp quyền production.

@@ -1,0 +1,71 @@
+# Nhân sự dùng thử và chuẩn bị phân quyền — 23/10/2026
+
+Chủ dự án yêu cầu chuẩn bị cho dùng thử ngày24/10 và phân quyền tối23/10. Danh sách/vị trí dưới đây do chủ dự án cung cấp. Quyền trong cột đề xuất chưa phải cấu hình đã áp; chưa có tên đăng nhập/phạm vi cuối. Không lấy tài khoản Administrator hoặc bộ vai trò rộng của fixture UAT gán cho nhân viên.
+
+## Chính sách tháng đầu đã chốt
+
+Chủ dự án đồng ý linh hoạt trong tháng đầu rồi thu hẹp theo vận hành: quyền rộng trong công việc, không chia quá nhỏ ngay. Hường/Hạnh được theo dõi và thu hồi nợ; Hạnh thêm kho ngoài nhà máy. Dung xử lý kế toán/mua trong nước; Lan/Hà cùng tổng hợp/thuế trước khi chia rõ. Trang duyệt bán hàng; Ninh xem điều hành/giá vốn/lợi nhuận; Ninh/Trang/Ánh nhận tiền cuối ngày. Dũng giữ phạm vi nhà máy/ẩn giá vốn. Tâm để sau theo chỉ đạo riêng, không coi là thiếu tính năng đợt này.
+
+Giữ tài khoản riêng, nhật ký, cấm tự nhận tiền mình bàn giao, chống ghi trùng, phạm vi kho và đường sửa/hủy chứng từ đã ghi. Không cấp System Manager để chữa thao tác bị chặn. Tuần đầu ghi điểm vướng; cuối tháng rà lại quyền theo nhiệm vụ thực tế. Không có job tự siết quyền hoặc tự thay dữ liệu. Các quyền xem/nhận/duyệt hẹp bên dưới là cách tránh cấp quyền quản trị, không bổ sung cấp duyệt vào giao dịch thông thường.
+
+## 1. Danh sách và trách nhiệm
+
+| Nhân sự | Vị trí đã xác nhận | Phạm vi thao tác đề xuất để đối chiếu | Kiểm soát cần giữ |
+| --- | --- | --- | --- |
+| Cô Hường | Kế toán bán hàng | Đơn bán, chuẩn bị/in xuất, thu tại quầy theo nơi thực nhận; tiền cá nhân và theo dõi/thu hồi công nợ khách | Không tự tăng quyền giao kho, hủy sổ, duyệt ngoại lệ hoặc xem giá vốn |
+| Cô Hạnh | Kế toán bán hàng kiêm thủ kho | Như bán hàng và thu hồi công nợ; thêm xác nhận xuất/nhận tại các kho ngoài nhà máy và hồ sơ ký | Kiêm nhiệm được, nhưng không tự xác nhận nhận tiền bàn giao từ mình; chỉ kho ngoài nhà máy, phải lập danh sách Warehouse thực tế |
+| Dung | Kế toán trưởng, nhập hàng trong nước | Mua trong nước, kiểm kế toán, duyệt ngoại lệ theo phân công, xử lý lệch/chốt số | Không mặc định System Manager; giữ lịch sử duyệt/sửa/hủy và kỳ khóa |
+| Lan | Kế toán tổng hợp và kế toán thuế | Nghiệp vụ tổng hợp/thuế theo phân công; không mặc định nhận tiền cuối ngày hoặc làm đầu mối thu hồi nợ | Tiền cuối ngày giao cho chủ; Hường/Hạnh theo dõi thu hồi nợ. Phần ngân hàng còn chờ phân công |
+| Hà | Kế toán tổng hợp và kế toán thuế | Như Lan, tách người thực hiện và người kiểm tra theo phân công tổng hợp/thuế | Quyền mua/chi/tài sản chưa suy từ tên chức danh |
+| Trang | Giám đốc bán hàng | Chủ, giám đốc bán hàng; duyệt dưới sàn/vượt hạn mức và nhận tiền cuối ngày | Quyền xem giá vốn/lợi nhuận không tự suy từ chức danh |
+| Tâm | Nhập hàng quốc tế | Chỉ đặt hàng phòng nhập khẩu; chưa triển khai quyền của Tâm trong đợt dùng thử này | Không mở rộng sang nhận kho, chi tiền, sửa giá vốn hoặc mua trong nước |
+| Ninh | CEO | Báo cáo điều hành, xem giá vốn/lợi nhuận đã được chủ dự án cho phép; được nhận tiền cuối ngày cùng Trang/Ánh | Không cấp quyền sửa sổ/đổi quyền chỉ để xem báo cáo |
+| Ánh | Người được chỉ định nhận tiền cuối ngày | Nhận đúng bàn giao được gửi cho tài khoản mình, nhập số thực nhận | Không suy quyền quản trị/kế toán hoặc xem toàn sổ từ quyền nhận tiền |
+| Dũng | Kế toán nhà máy | Nhận/chuyển hàng, sản xuất, đóng gói, tiền cá nhân/quỹ nhà máy theo phân công đã có | Giữ hồ sơ không xem giá vốn; không cộng quyền kế toán quản lý để vượt chặn; chỉ các kho nhà máy; quỹ cụ thể phải đối chiếu cấu hình |
+
+Dung và Dũng là hai người khác nhau. Chỉ ánh xạ bằng tên đăng nhập đã đối chiếu, không tìm gần đúng theo tên hoặc bỏ dấu.
+
+## 2. Việc cần biết trước khi áp quyền
+
+- Tên đăng nhập chính xác của10người; không cần mật khẩu.
+- Đã chốt: tiền cuối ngày giao cho chủ, công nợ Hường/Hạnh theo dõi thu hồi. Đã chốt người nhận tiền cuối ngày: Ninh, Trang, Ánh; Trang/Ninh là chủ. Mỗi lượt chọn một người thực nhận, không tự động chia hoặc gán cả ba. Phần ngân hàng/tổng hợp/thuế Lan/Hà chưa chia chi tiết.
+- Đã chốt Hạnh các kho trừ nhà máy, Dũng các kho nhà máy: cần đối chiếu danh sách Warehouse thực tế và thuộc tính loại/địa điểm, không suy bằng chuỗi tên. Tâm để sau. Bán hàng nhiều đơn vị phải giữ đường chọn nguồn chung.
+- Trang được duyệt dưới sàn/vượt hạn mức; Ninh được xem giá vốn/lợi nhuận. Chưa suy quyền xem giá vốn cho Trang hoặc quyền sửa sổ cho Ninh từ quyết định này.
+- Nếu có quyền/Share/User Permission cũ, kiểm cả quyền hiện có trước khi cộng vai trò mới.
+
+## 3. Ràng buộc từ code hiện tại
+
+- ban_quay.QUYEN_KTBH cấp quyền ghi/submit Payment Entry và Sales Order, đọc/in DN/SI; không tự chứng minh có quyền xác nhận xuất. Hành vi thực tế còn phụ thuộc các vai trò và User Permission khác.
+- Bộ áp người dùng ux_task.ap_dung_nguoi_dung hiện chỉ đổi Workspace/Module Profile và thêm giới hạn Warehouse. Nó KHÔNG phải bộ gán đủ quyền nghiệp vụ; mặc định chay_that=0 để xem thay đổi.
+- Module Profile chỉ ẩn menu, không bảo vệ dữ liệu. Phải kiểm API, danh sách, in/báo cáo/tệp theo tài khoản thật trên môi trường thử.
+- Báo cáo quản trị quan_tri.can_quyen hiện yêu cầu Accounts Manager/System Manager. Nhu cầu CEO chỉ xem cần đường quyền đọc riêng đã kiểm; không cấp vai trò quản lý kế toán chỉ để mở báo cáo.
+- Tiền cá nhân có facade riêng, không cần mở toàn GL. Nhận bàn giao kiểm đúng người; cấm tự nhận vẫn giữ kể cả cộng vai trò quản lý.
+- Không bỏ28cờ trong bản chuẩn bị dùng thử này; không cài lại site hay thử chứng từ giả trên production.
+
+### Ba chỗ cần hoàn thiện quyền hẹp trước khi áp nhân sự thật
+
+1. CEO xem báo cáo có giá vốn/lợi nhuận: cần quyền đọc riêng, không cấp Accounts Manager/System Manager chỉ để xem.
+2. Ninh/Trang/Ánh xác nhận nhận tiền cửa hàng: đường cash_handover.receive thường hiện dùng cash_closing.scope và quyền sổ/JE; capability nhà máy chỉ áp nguồn nhà máy. Không mặc định ba người đã nhận được chỉ vì có tài khoản. Cần đường nhận đúng nguồn/người với quyền hẹp hoặc chứng minh quyền native đã tách phù hợp; không cấp sửa JE/GL chung để chữa lỗi. Đây là phần phân quyền tiếp theo, chưa hoàn thiện trong PR38.
+
+3. Trang duyệt vượt hạn mức: credit_release._chief hiện yêu cầu Accounts Manager. Cần quyền duyệt bán chịu riêng kèm quyền native trên phiếu/Company; không cấp toàn quyền kế toán cho giám đốc bán hàng. Giá dưới sàn đã có bảng người duyệt theo người/đơn vị/mức trong Selling Settings, cần cấu hình đúng người và kiểm cả đơn chung/lối tách đơn.
+
+## 4. Bộ dùng thử ngắn theo nhân sự
+
+Chạy giao dịch giả trên site thử, hoặc chỉ giao dịch thật hợp lệ trên production sau khi đủ điều kiện phát hành. Không nhập tồn/công nợ giả vào production để vượt chặn.
+
+| Người/nhóm | Thao tác cần kiểm | Kết quả cần thấy |
+| --- | --- | --- |
+| Hường | Chọn khách trùng tên, chọn mã hàng, lập/in phiếu và thu quầy | Có địa chỉ/SĐT/tên hàng đúng; in chưa ghi kho/nợ; thu đúng đơn vị/người giữ, không trùng khi bấm lại |
+| Hạnh | Thực giao tại kho ngoài nhà máy, hồ sơ ký; thử kho nhà máy | Đúng lượng thực giao; ảnh/giấy bổ sung sau; nguồn ngoài quyền bị chặn; không tự nhận tiền của mình |
+| Dung | Giảm giá đơn cũ theo5kg trong25kg; xử lý ngoại lệ |20kg giữ giá; khoản giảm có căn cứ, quyền đúng, không ghi giảm hai lần |
+| Ninh/Trang/Ánh nhận tiền; Lan/Hà kiểm theo phân công | Chủ nhận bàn giao cuối ngày; tổng hợp/thuế đối chiếu nguồn | Đúng người nhận đã chốt; phân biệt tăng/giảm từng đơn vị, cọc/chưa phân bổ; không tạo thu lần hai |
+| Trang | Duyệt dưới sàn/vượt hạn mức có lý do; xem đơn/báo cáo | Chỉ người được giao quyền duyệt, lưu lý do/dấu duyệt; không suy thêm quyền sửa sổ |
+| Tâm | Để sau đợt này theo chủ dự án | Chưa cấu hình/đánh dấu đã nghiệm thu nhập quốc tế |
+| Ninh | Mở báo cáo điều hành có giá vốn/lợi nhuận; thử sửa chứng từ | Được xem giá vốn/lợi nhuận; không suy quyền sửa/ghi/hủy từ quyền xem |
+| Dũng | Nhận hàng, nhập sản xuất, chuyển kho và tiền cá nhân | Lượng đúng, nhà máy độc lập cửa hàng; không lộ giá vốn/GL hoặc quỹ ngoài phạm vi qua API/in/báo cáo |
+
+Đầu vào tối thiểu: mã hàng/quy cách, tồn tại kho thử, khách và nguồn thu/quỹ đã xác minh. Khi thiếu dữ liệu thật, vẫn kiểm được quyền/màn hình trên dữ liệu giả; không lấy kết quả đó thay nghiệm thu số liệu thật.
+
+## 5. Trạng thái
+
+Chưa áp quyền lên production. Nhánh PR38 đang kiểm sửa giao nhận/nhận trả, không coi toàn phạm vi hoàn tất. Bốn lượt cùng nguồn d54522d: UAT39893134196, Cổng239893214536, Cổng2b39893218066, Cổng339893222080 — đang chạy lúc lập hồ sơ, chưa kết luậnPASS. Trạng thái tiếp nối ở docs/ban-giao.md và deploy/release/TRANG_THAI.md.

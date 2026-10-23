@@ -52,7 +52,10 @@ def chay(rpc,get,insert,submit,lst,denied,ktt,f,phien,emit):
         json.dumps({'invoice':si['name'],'delivery':dn['name'],'agreement':key,'user':f['ktt']}),'giam-theo-phan'],
         input=json.dumps({'cookies':browser.browser_cookies()}),text=True,capture_output=True,timeout=240)
     assert result.returncode==0,(result.stdout[-2000:],result.stderr[-2500:])
-    evidence=json.loads(next(line for line in result.stdout.splitlines() if line.startswith('{"case":')))
+    browser_events=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{"case":')]
+    expected=[event for event in browser_events if event.get('case')=='NATIVE_DESK_GIAM_THEO_PHAN']
+    assert len(expected)==1, browser_events
+    evidence=expected[0]
     assert evidence['status']=='PASS'
     assert before=={dt:len(lst(dt,{},['name'],ktt)) for dt in before}
     emit(evidence['case'],'PASS',evidence['detail'])

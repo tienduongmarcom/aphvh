@@ -37,3 +37,13 @@ Khi thực thu tiền phải lập phiếu thu cho người nộp/khách ký. Kh
 ## Bổ sung23/10/2026 — trả hàng sau khi đã giảm giá một phần
 
 Chủ dự án chọn **phân biệt phần đã giảm và chưa giảm**, không lấy giá bình quân toàn mã hàng. Ví dụ một dòng25kg có5kg được giảm thì20kg còn lại giữ giá gốc; trả hàng chọn đúng phần/thoả thuận và kg thực nhận. Giữ số lượng còn được trả riêng từng phần, tính cả nháp đang giữ; không hoàn lại tiền đã giảm. Nhiều thoả thuận phải có nguồn riêng và không tự gán chồng cùng lượng. Khoản cũ chỉ có tổng giảm chưa rõ dòng/lượng phải đối chiếu trước, không suy đoán tự động. Việc chọn này không làm phát sinh sổ tiền/kho mới hoặc cấp duyệt mới.
+
+## Bổ sung23/10/2026 — nhân sự dùng thử và phân công tiền/kho
+
+Chủ dự án cung cấp9người: Cô Hường kế toán bán hàng; Cô Hạnh kế toán bán hàng kiêm thủ kho; Dung kế toán trưởng và nhập trong nước; Lan/Hà tổng hợp và thuế; Trang giám đốc bán hàng; Tâm đặt hàng phòng nhập khẩu; Ninh CEO; Dũng kế toán nhà máy. Dung/Dũng là hai người khác nhau.
+
+Tiền cuối ngày bàn giao cho chủ; không mặc định Lan/Hà nhận. Hường/Hạnh theo dõi và thu hồi công nợ. Hạnh thao tác các kho trừ nhà máy, Dũng các kho nhà máy; phải đối chiếu Warehouse thực tế khi cấu hình. Trang được duyệt giá dưới sàn/vượt hạn mức. Ninh được xem giá vốn/lợi nhuận; không suy quyền sửa sổ từ quyền xem. Tâm chưa cần triển khai trong đợt này. Người nhận tiền cuối ngày là Ninh, Trang hoặc Ánh (Trang/Ninh là chủ); mỗi lượt chọn người thực nhận và người đó tự xác nhận, cấm tự nhận. Ánh không tự có quyền quản trị từ phân công này. Tên đăng nhập còn cần ánh xạ đúng; không cấp nhầm quyền theo tên gần giống. Hồ sơ làm việc: docs/phan-quyen-nhan-su-dung-thu-20261023.md. Chưa áp cấu hình production.
+
+## Bổ sung23/10/2026 — linh hoạt quyền trong tháng đầu
+
+Chủ dự án đồng ý dùng quyền rộng trong phạm vi công việc trong tháng đầu, rà vướng sau tuần đầu rồi thu hẹp dần theo vận hành. Lan/Hà cùng xử lý tổng hợp/thuế trước khi chia chi tiết; không mặc định nhận tiền hoặc thu hồi nợ thay Hường/Hạnh. Giữ tài khoản riêng, nhật ký, cấm tự nhận bàn giao, chống ghi trùng, giới hạn kho nhà máy/ngoài nhà máy và điều chỉnh/hủy chứng từ theo luồng. Không cần đợi bỏ28cờ mới dùng. Không tự động cấp System Manager hoặc tự tạo lịch thu hồi quyền. Quyết định này ưu tiên hơn đề xuất phân quá chi tiết trong bản nháp trước.
