@@ -5,7 +5,7 @@ from frappe.utils import cint
 ROLE = 'Xem báo cáo điều hành'
 REPORTS = ('Lai gop quan tri', 'Dong tien 7 30 ngay')
 READ_DOCTYPES = ('Company', 'Customer', 'Supplier', 'Item', 'Item Group', 'Warehouse',
-                 'Sales Order', 'Sales Invoice', 'Account', 'Cost Center', 'GL Entry')
+                 'Sales Order', 'Sales Invoice', 'Account', 'Cost Center', 'GL Entry', 'APH Khe uoc vay')
 
 
 def guard():

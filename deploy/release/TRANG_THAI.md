@@ -1,5 +1,12 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — QA quyền CEO bắt thiếu quyền đọc khoản vay
+
+UAT39919338739 đúng81b58da FAIL bộ0114: CEO mở được lãi gộp nhưng dòng tiền gọi get_list APH Khe uoc vay và bịPermissionError. Các bộ trước đó inventory33,funds20,cost16,dispatch48,b0111=15,b0112=13,b0113=13,native4,prepare3 PASS; chưa chạy014. Đã tải/đọc artifact và giữ lỗi. Sửa đúng một quyền đọc/report khế ước vay cho vai trò viewer, không cấp ghi/duyệt khoản vay hoặc vai trò kế toán. NoCost hook khế ước vẫn chặn. Bản mới cũng chứa bộ chuẩn bị tài khoản644ca chưa native, phải kiểm đủ trên nguồn sửa.
+
+Đã đọc Cổng2b39916449799 đúng0d6e866: dựng/nâng/quay lui53mục khônglỗi; Cổng339916449912 cùngSHA SUCCESS đã tải/đọc schema1161/1161 lệch0, rollback1105/1105 lệch0 và phục hồi sau nâng sai KHỚP. Các bằng chứng này chỉ tới quyền duyệt khách rủi ro trước viewer/receiver/công nợ mới, không thay kết quả native mã sau. Production0.16.4 không đổi.
+
+
 ## 23/10/2026 — Bộ chuẩn bị9nhân sự, chưa kích hoạt
 
 staff_accounts.chuan_bi mặc định chỉ xem kế hoạch. Ghi thật yêu cầu Administrator và xác nhận đúng site, đủ vai trò/Workspace/Company/kho; tạo9User disabled, không mật khẩu/welcome email/đổi cấu hình đăng nhập. Không cấp System Manager; Hường/Hạnh/Trang không cần Accounts User/Sales Manager để chữa thao tác. Ninh chỉ viewer+receiver; Ánh chỉ receiver; Dũng factory+NoCost+StockUser. Lan/Hà Accounts User theo tổng hợp/thuế; không tự thành người nhận tiền hoặc quản trị. Trang có quyền khách rủi ro, người duyệt giá sàn còn cần cấu hình allowlist riêng trước kích hoạt.
