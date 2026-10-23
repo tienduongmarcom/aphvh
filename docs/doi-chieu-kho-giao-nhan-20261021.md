@@ -10,6 +10,8 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 
 **Cập nhật22/10:** giấy tay chỉ lưu trên chứng từ nhập bổ sung. UAT39766960041 đúng98c37e3 đã đọc135PASS gồm khôi phục, các bộ hồi quy đều đạt. Gom kho chuẩn bị/in→xuất→nhận, hồ sơ khách ký riêng, lịch sử ảnh, snapshot/phân quyền/ngoại tệ và Chrome mất phản hồi khi tạo đối soát đã nativePASS. Tuy nhiên PDF bộ giấy bị tràn mỗi liên A5 thành2trang; đã xem đủ6trang, không coi bố cục đạt. Bản sửa lề và assertion4trang đang kiểm ở UAT39772096251 đúngfb6ab9c, cùng phần Chốt ngày tách Nhà máy. Cục bộ570ca không bỏ qua đạt. Toàn phạm vi vẫn chưa hoàn tất.
 
+**Cập nhật23/10 (ưu tiên hơn các mốc lịch sử bên dưới):** nền c21a799/UAT39775206078 đã đủ135PASS và PDF native4trang A4+2A5+A4; mẫu một dòng đã xem đủ, chưa máy in thật. Phần giảm theo lượng đang mở rộng: UAT39888905491 đúng2a3fefc có ca trả trộn, giữ lượng đồng thời, KTBH nhận trả, hoàn137.500 và hàng giảm100% PASS, nhưng cả lượt FAIL quyền phân loại khoản giảm cũ. Ảnh còn popup quyền bảng con nên chưa đạt giao diện. Đã sửa quyền server, truy vấn cha và siết Chrome; UAT39891158617 đang kiểmfa8ce18, chưa có kết luận. Cục bộ601ca đạt. Chi tiết phạm vi/dữ liệu/ngoại lệ và ca kiểm: [Giảm và trả theo phần hàng](dac-ta-phan-hang-giam-va-tra-20261023.md). Toàn PR38 vẫn nháp.
+
 ## 2. Hiện trạng và nguồn
 
 - Production: 0.16.4, tag `1dffa623dc28d239321b7c9cd249968def402123`, digest `sha256:1a8f00639516ff4843d408fca61695c6b7ca0cfe680cf6c1db28fb0f16d09f38`; người vận hành đã xác nhận nâng cấp đạt. Không ghi dữ liệu production trong lượt phát triển này.
@@ -42,7 +44,7 @@ Hướng dẫn thao tác theo nhân sự và tình huống: [Luồng kho – gia
 | Chưa thu tiền | Giảm khoản gốc, không tạo phiếu chi khống | Còn kiểm hồ sơ giảm giá trước đó |
 | Thu một phần/đủ | Native giữ credit riêng khi cần; đối trừ đúng nguồn rồi chuẩn bị hoàn phần dư | Chưa có tổng quan thu/hoàn/chênh lệch trước khi bấm xác nhận trong một cửa sổ |
 | Đổi sang mã khác | Nhập trả riêng, đơn thay riêng, không tự sinh lại mã cũ; giữ nguồn khi hủy/lập lại | Chưa tự nối phân bổ credit sang khoản mới hoặc hoàn chênh lệch trong một lượt |
-| Giảm giá nợ đơn cũ | Từ Khách hàng mở đề nghị JE nháp theo khoản còn nợ; khóa nguồn/chống nhiều nháp | Giảm theo dòng/lượng, giảm sau đã trả tiền còn thiếu; đã viết chặn trả vượt phần còn lại sau giảm cho khoản một dòng, khoản nhiều dòng hoặc trả một phần sau giảm dừng để kế toán phân bổ |
+| Giảm giá nợ đơn cũ | Đã viết chọn dòng/kg/tiền giảm và bổ sung phân loại cho JE cũ có căn cứ, không ghi sổ thêm. Tách lượng đã giảm/chưa giảm; trả trộn/hoàn đúng phần đã native PASS riêng tại2a3fefc | Cả lượt chưa đạt vì quyền; đang kiểm bản sửa. Giảm khi khoản gốc đã thu hết, giảm tiếp sau một phần đã trả hoặc lịch sử không phân loại còn cần xử lý; không tự bình quân |
 | Mất mạng lâu | Giấy lưu để nhập bổ sung qua DN/SE/PE, số duy nhất theo Company/loại phiếu, thời điểm thực tế và ảnh riêng tư; không đổi ngày hạch toán | NativePASS HTTP_014_GIAY_TAY_NHAP_BO_SUNG, đã kiểm lại trong lượt xanh39766960041; không xây sổ offline/workflow riêng |
 | Gom kho vệ tinh | Đã chặn dùng kho Vận chuyển làm nguồn bán | Chuẩn bị SE nháp/in trước xe đi, kho nhận dự kiến, xuất/nhận native qua Transit đã nativePASS UAT39766960041. Liên kết chọn nhu cầu trực tiếp từ đơn bán chưa có |
 

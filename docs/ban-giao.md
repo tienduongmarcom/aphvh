@@ -1,5 +1,9 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — ĐANG DỞ: chờ UAT bản sửa quyền và popup
+
+Mã nghiệp vụfa8ce18 đã đẩy; UAT39891158617 đang chạy đúngfa8ce18, kỳ vọng139ca bộ014. Lượt5eeaaad/39890844075 đã bị concurrency hủy khi chuyển sang bản sửa popup, không phảiPASS/FAIL nghiệp vụ. Chưa có kết quả mới. Bước tiếp theo: đọc kết quả/artifact mới; nếu lỗi giữ nguyên ca và sửa; nếu xanh vẫn xem ảnh nhan-tra-tung-phan.png không có modal che và PDF4trang, rồi cập nhật bằng chứng đúngSHA. Đã cập nhật đặc tả9nhóm và bảng đối chiếu, không đóng các mục còn thiếu. Cục bộ601ca đạt. Cổng3 trước đó2a3fefc đã đọc schema1154/1154, quay lui1105/1105 lệch0 và phục hồi sau nâng sai khớp chi tiết; không suy cho mã sau. Production0.16.4 và PR38nháp giữ nguyên.
+
 ## 23/10/2026 — QA ảnh bắt popup quyền trên màn nhận trả
 
 Đã xem ảnh nhan-tra-tung-phan.png của UAT39888905491: đủ5kg đã giảm/20kg chưa giảm nhưng có popup Insufficient Permission for Sales Invoice Item che màn. Vì vậy Chrome PASS của lượt đó chưa đủ đạt giao diện. Đã đổi truy vấn nút thu cũ sang Sales Invoice cha có quyền chuẩn, lọc đúng phiếu giao/company/customer; tài khoản không có quyền SI chỉ dùng màn thu facade mới, tự chọn phân bổ rõ ràng. Không cấp quyền bảng con. Thêm assertion Chrome không có modal lỗi/HTTP lỗi trước chụp. JS/diff đạt. Cần chạy lại trên mã mới; giữ run lỗi và ảnh làm bằng chứng.

@@ -70,7 +70,7 @@ Dữ liệu giả chuẩn:25kg ×35.000VND/kg, VAT10%; chỉ5kg được giảm5
 | Retry | Lưu lại cùng phân loại, kể cả đã có trả sau đó | Một phân loại, không ghi sổ hoặc thêm Comment lần hai |
 | Quyền | KTBH nhận trả; tài khoản ngoài phạm vi thử phân loại | KTBH không cần quyền đọc JE chung; nguồn ngoài quyền vẫn chặn |
 
-Cục bộ mới nhất600ca đạt. UAT39885705681 đúng5bff6e6 FAIL helper phản hồi rỗng sau xóa nháp;136PASS gồm Chrome chọn phần và restore, chưa đủ kết luận tiền/hoàn. Đã sửa helper và giữ assert xóa/nhả lượng. UAT39888905491 đúng2a3fefc đang kiểm139ca; chưa chứa bản rà làm tròn/giá thuần sau đó. Phải lấy mã/run mới nhất ở hai hồ sơ bàn giao; không đổi yêu cầu thành PASS dựa vào unit test.
+Cục bộ mới nhất601ca đạt. UAT39888905491 đúng2a3fefc đã tải/đọc138PASS gồm trả trộn, đồng thời, KTBH, hoàn137.500 và nhận hàng giảm100%; toàn lượt FAIL quyền tài khoản nhà máy cộng vai trò kế toán khi phân loại cũ. QA ảnh còn popup quyền bảng con che Dialog. Đã sửa guard server trước đọc nguồn, dùng truy vấn chứng từ cha có quyền và thêm assertion không có modal/HTTP lỗi. UAT39891158617 kiểmfa8ce18 gồm cả bản rà làm tròn/giá thuần; chưa có kết quả. Không thay yêu cầu thành PASS dựa vào unit test.
 
 ## 9. Triển khai và khôi phục
 
