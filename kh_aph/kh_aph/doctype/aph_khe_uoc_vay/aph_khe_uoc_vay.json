@@ -4,7 +4,7 @@
  "module": "Kh Aph",
  "engine": "InnoDB",
  "creation": "2026-10-15 12:00:00.000000",
- "modified": "2026-10-15 12:00:00.000000",
+ "modified": "2026-10-23 15:15:00.000000",
  "owner": "Administrator",
  "fields": [
   {
@@ -168,5 +168,6 @@
  "show_title_field_in_link": 1,
  "search_fields": "ben_cho_vay,company",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "allow_import": 1
 }

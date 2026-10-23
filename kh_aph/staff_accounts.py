@@ -99,7 +99,7 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
         missing=[role for role in profile['roles'] if not frappe.db.exists('Role',role)]
         if missing:frappe.throw('Chưa cài đủ vai trò: '+', '.join(missing))
         if not frappe.db.exists('Workspace',profile['workspace']):frappe.throw('Chưa có khu làm việc: '+profile['workspace'])
-        whs=stock[profile['warehouses']] if profile.get('warehouses') else []
+        whs=stock['pham_vi_'+profile['warehouses']] if profile.get('warehouses') else []
         if profile.get('warehouses') and not whs:frappe.throw('Chưa có phạm vi kho cho '+entry['username'])
         allowed_companies=sorted({by_name[name]['company'] for name in whs}) if entry['username']=='dungnm' else sorted(company_abbr)
         permissions=[{'allow':'Company','for_value':company,'apply_to_all_doctypes':1,'applicable_for':''} for company in allowed_companies]
@@ -121,8 +121,15 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
             reuse=True
         prepared.append({**entry,'roles':sorted(profile['roles']),'workspace':profile['workspace'],
                          'permissions':permissions,'enabled':0,'reused':reuse})
+    price_settings=frappe.get_doc('Selling Settings')
+    approver='trang@nhansu.invalid'
+    price_rows=[{'user':approver,'company':company,'muc':0,'tu_duyet':0} for company in sorted(company_abbr)]
+    current_price=[row for row in price_settings.get('kh_aph_nguoi_duyet_gia_san') or [] if row.user==approver]
+    price_key=lambda row:(row.get('company') or '',float(row.get('muc') or 0),int(row.get('tu_duyet') or 0))
+    if current_price and sorted(map(price_key,current_price))!=sorted(map(price_key,price_rows)):
+        frappe.throw('Cấu hình duyệt giá của Trang đã khác; giữ nguyên để đối chiếu')
     if not write:
-        return {'chay_thu':True,'nhan_su':prepared,'kho':stock,'dat_mat_khau':False,'kich_hoat':False,
+        return {'chay_thu':True,'nhan_su':prepared,'kho':stock,'dat_mat_khau':False,'kich_hoat':False,'duyet_gia_san':price_rows,
                 'dang_nhap_bang_ma_hien_tai':bool(cint(frappe.db.get_single_value('System Settings','allow_login_using_user_name')))}
     # Chuẩn bị cả lượt nguyên khối; lỗi không để lại một phần tài khoản/quyền.
     frappe.db.savepoint('chuan_bi_nhan_su')
@@ -138,6 +145,9 @@ def chuan_bi(duong_dan, xac_nhan_site=None, chay_that=0):
             user.add_comment('Comment',marker)
             for permission in row['permissions']:
                 frappe.get_doc({'doctype':'User Permission','user':user.name,**permission}).insert()
+        if not current_price:
+            for price_row in price_rows:price_settings.append('kh_aph_nguoi_duyet_gia_san',price_row)
+            price_settings.save()
         frappe.db.commit()
     except Exception:
         frappe.db.rollback(save_point='chuan_bi_nhan_su')

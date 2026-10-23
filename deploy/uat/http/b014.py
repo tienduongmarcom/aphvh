@@ -29,6 +29,23 @@ for entry in staff_created['nhan_su']:
     assert 'System Manager' not in {row.role for row in staff_user.roles}
 assert frappe.db.count('Email Queue')==mail_before
 assert frappe.db.get_single_value('System Settings','allow_login_using_user_name')==login_before
+assert len([row for row in frappe.get_doc('Selling Settings').kh_aph_nguoi_duyet_gia_san if row.user=='trang@nhansu.invalid' and not row.tu_duyet])==4
+store_doc=frappe.get_doc('Warehouse','Kho bán hàng Hà Nội - APH')
+factory_doc=frappe.get_doc('Warehouse','Kho nguyên liệu - APH')
+assert frappe.has_permission('Warehouse','read',doc=store_doc,user='hanh@nhansu.invalid')
+assert not frappe.has_permission('Warehouse','read',doc=factory_doc,user='hanh@nhansu.invalid')
+assert frappe.has_permission('Warehouse','read',doc=factory_doc,user='dungnm@nhansu.invalid')
+assert not frappe.has_permission('Warehouse','read',doc=store_doc,user='dungnm@nhansu.invalid')
+assert frappe.has_permission('GL Entry','read',user='ninh@nhansu.invalid')
+assert not frappe.has_permission('Journal Entry','create',user='ninh@nhansu.invalid')
+assert not frappe.has_permission('GL Entry','read',user='anh@nhansu.invalid')
+assert not frappe.has_permission('Journal Entry','create',user='anh@nhansu.invalid')
+from kh_aph.price_visibility import is_cost_restricted
+assert is_cost_restricted('hanh@nhansu.invalid') and is_cost_restricted('huong@nhansu.invalid')
+from kh_aph.kho_chuan import kho_tinh_trang
+status_wh=frappe.get_doc('Warehouse',kho_tinh_trang(store_doc.name))
+assert frappe.has_permission('Warehouse','read',doc=status_wh,user='hanh@nhansu.invalid')
+assert not frappe.has_permission('Warehouse','read',doc=status_wh,user='dungnm@nhansu.invalid')
 from kh_aph import tien_vay
 cfg = {"khach_hang": "UAT", "cong_ty": [{"ten": "x", "abbr": a, "thong_tu": 99} for a in ("APH", "VH")],
        "ngan_hang": [{"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "1111"}, {"don_vi": "APH", "ngan_hang": "ACB", "so_cuoi": "2222", "loai_tien": "USD"},
@@ -95,7 +112,7 @@ nv = frappe.get_doc({"doctype": "Employee", "first_name": p + " Giám đốc", "
 frappe.db.commit()
 bank = frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 1111"}, "name")
 print("FIXTURE_JSON:" + json.dumps({"p": p, "aph": aph, "kh1": kh1, "kh2": kh2, "ncc": ncc, "A": A, "kho": kho, "t_aph": t_aph, "pl": pl,
-    "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
+    "staff_prepared": {"disabled_users":9,"idempotent":True,"no_email_or_activation":True,"warehouse_scope_and_new_status_warehouse":True,"ceo_read_not_write":True}, "ktt": ktt, "ktt2": ktt2, "cash_recipient": cash_recipient, "cash_other": cash_other, "ktbh": ktbh, "ktbh_no_submit": ktbh_no_submit, "tp": tp, "nvbh": nvbh, "dung": dung_u, "nv": nv, "date": today(),
     "vh": vh, "B": B, "kho2": kho2, "kho_vh": kho_vh, "scope_co": scope_co, "scope_wh": scope_wh, "scope_ar": scope_ar,
     "nh": [nh1, nh2], "usd": frappe.db.get_value("Account", {"company": aph, "account_name": "ACB 2222 USD"}, ["name", "account_currency", "parent_account"]),
     "bank_account": frappe.db.get_value("Bank Account", {"account": bank}),
@@ -217,6 +234,7 @@ try:
             except (urllib.error.URLError,TimeoutError,ConnectionError): pass
             time.sleep(0.25)
         else: raise RuntimeError("UAT web không sẵn sàng sau đổi cờ")
+    emit("HTTP_014_CHUAN_BI_NHAN_SU","PASS",fixture["staff_prepared"])
     b014_cases.chay(admin,lambda user:session(user,factory_password),fixture,emit,factory_feature)
 except Exception as exc:
     detail={"type":type(exc).__name__,"error":str(exc)[-2500:]}

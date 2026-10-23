@@ -114,3 +114,10 @@ Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm
 Sau khi bộ kiểm đạt và nâng cấp đúng nguồn: quản trị đối chiếu kế hoạch, chuẩn bị9tài khoản, đặt mật khẩu riêng bằng màn User, bật đăng nhập bằng username trong System Settings và kích hoạt từng người đã được kiểm. Không gửi mật khẩu/reset link qua chat hoặc commit vào repo. Không bật tài khoản khi còn thiếu kiểm quyền/phạm vi. Cấu hình Trang trong bảng người duyệt giá sàn theo Company, giữ tự duyệt tắt; phê duyệt khách rủi ro dùng vai trò riêng. Không tự thay cơ chế cảnh báo hạn mức chung thành chặn mới.
 
 Hạnh được các kho cửa hàng/vệ tinh, Dũng các kho nhà máy theo cây địa điểm; transit dùng chung cần cho giao nhận nhưng không mở thêm kho đích ngoài quyền. Công nợ Hạnh dùng biên bản tài chính tổng hợp; các phiếu hàng/thu in riêng trong phạm vi quyền. Nếu phát sinh kho mới, bộ chuẩn bị dừng để đối chiếu, không tự mở rộng quyền đang dùng.
+
+
+### Bổ sung phạm vi nhóm địa điểm và giá sàn
+
+Quyền kho dùng nhóm địa điểm đúng cấu hình, có hậu duệ, thay vì danh sách lá cố định. Kho cách ly/chờ xử lý mới sinh trong cửa hàng vẫn dùng được; không mở quyền sang nhóm nhà máy. Thay cây kho làm mới cache ngay và sau commit để không giữ phạm vi cũ. Kho ngoài địa điểm chưa xác định phải đối chiếu trước áp.
+
+Bộ chuẩn bị đã bao gồm allowlist Trang duyệt giá sàn từng Company, tự duyệt tắt; không ghi đè cấu hình khác nếu đã có. Tài khoản vẫn disabled và chưa có mật khẩu dùng chung, không email. Sau native đạt, quản trị đặt mật khẩu riêng, bật đăng nhập bằng username, rồi kích hoạt theo hồ sơ. Cần kiểm trực tiếp bằng nhân sự thật trước đánh dấu nghiệm thu vận hành.

@@ -25,7 +25,11 @@ def warehouse_plan(config, rows):
             (factory_companies if category=='nha_may' else store_companies).add(abbr)
     rows=list(rows);by_name={row['name']:row for row in rows}
     if len(by_name)!=len(rows):raise ValueError('Trùng mã kho trong dữ liệu đối chiếu')
-    result={'nha_may':[],'cua_hang':[],'chua_phan_loai':[]}
+    result={'nha_may':[],'cua_hang':[],'pham_vi_nha_may':[],'pham_vi_cua_hang':[],'chua_phan_loai':[]}
+    for name,(abbr,category) in roots.items():
+        node=by_name.get(name)
+        if node and node.get('is_group') and not node.get('disabled') and node.get('company_abbr')==abbr:
+            result['pham_vi_'+category].append(name)
     for row in rows:
         if row.get('is_group') or row.get('disabled'):continue
         name=row['name'];abbr=row.get('company_abbr');categories=set()
@@ -43,5 +47,27 @@ def warehouse_plan(config, rows):
                     break
                 node=by_name.get(node.get('parent_warehouse'))
         if not categories:result['chua_phan_loai'].append(name)
+        if row.get('warehouse_type')=='Transit' and name==C.ten_kho(C.TEN_VAN_CHUYEN,abbr):
+            for category in categories:result['pham_vi_'+category].append(name)
         for category in categories:result[category].append(name)
     return {key:sorted(values) for key,values in result.items()}
+
+
+def invalidate_warehouse_permissions(doc, method=None):
+    """Cây kho đổi phải bỏ cache của mọi người có giới hạn kho, cả sau commit.
+
+    Native NestedSet chỉ bỏ cache của người vừa tạo; người khác có thể còn thấy
+    phạm vi cũ sau đổi cha hoặc chưa thấy kho cách ly vừa sinh trong địa điểm mình.
+    """
+    import frappe
+    from frappe.utils import cint
+    if not cint(frappe.conf.get('kh_aph_ux_task_first')):return
+    old=doc.get_doc_before_save()
+    if old and method!='after_rename' and all(old.get(key)==doc.get(key) for key in ('parent_warehouse','company','disabled','is_group')):
+        return
+    users=sorted(set(frappe.get_all('User Permission',filters={'allow':'Warehouse'},pluck='user')))
+    if not users:return
+    def clear():
+        for user in users:frappe.cache.hdel('user_permissions',user)
+    clear()  # Cả request hiện tại có thể đang nhận trả vào kho cách ly mới.
+    frappe.db.after_commit.add(clear)  # Không để worker khác cache lại cây chưa commit.

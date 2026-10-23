@@ -1,5 +1,14 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Quyền theo nhóm địa điểm, giá sàn và sửa khai báo khế ước
+
+Rà vận hành phát hiện cấp theo lá sẽ chặn Hạnh khi hệ thống sinh kho cách ly/chờ xử lý mới. Đã đổi kế hoạch User Permission sang NHÓM địa điểm cấu hình + transit chuẩn, bao gồm hậu duệ; không cấp gốc toànCompany. Hạnh chỉ nhóm cửa hàng/vệ tinh, Dũng chỉ nhóm nhà máy (và Company tương ứng). Kho mới trong địa điểm được giao theo quyền nhóm; kho ngoài địa điểm cấu hình phải dừng đối chiếu. Hook Warehouse on_update/after_rename/on_trash bỏ cache của mọi người có giới hạn kho ngay và sau commit, tránh quyền cũ sau chuyển cây hoặc người khác tạo kho mới; không ghi UserPermission/role.
+
+Bộ chuẩn bị bổ sung Trang vào allowlist giá dưới sàn theo đúng4Company, không tự duyệt; không ghi đè cấu hình khác đã có. Chưa kích hoạt User hoặc đổi cách login. Native mới có HTTP_014_CHUAN_BI_NHAN_SU (tổng142):9disabled/retry/khôngemail, phạm vi Warehouse thật, Ninh đọcGL không tạoJE, Ánh khôngGL/JE, Hường/Hạnh ẩn vốn, kho cách ly mới đúng nhóm.647unit không bỏ qua đạt trước sửa metadata khế ước.
+
+UAT39921214288 đúngcd62652 FAIL lúc cài: add_permission viewer khế ước kích hoạt validation, bắt bản khai APH Khe uoc vay đã có System Manager.import=1 nhưng allow_import chưa bật. Đã đọc fresh-site-evidence gốc (NameError kh_aph phía cuối chỉ là fallback bench). Sửa manifest bật allow_import cho khế ước để khớp quyền System Manager đã khai; không cấp import cho viewer/nhân sự, không nhập dữ liệu hoặc ghi sổ. Không bỏ validation. Cổng239921522178 cùngcd62652 SUCCESS,2b39921525877/339921529787 còn chạy; không suy sang sửa mới. Cần native142 đúng mã cuối. Production0.16.4 giữ nguyên, chưa chạy chuẩn bị người thật.
+
+
 ## 23/10/2026 — QA quyền CEO bắt thiếu quyền đọc khoản vay
 
 UAT39919338739 đúng81b58da FAIL bộ0114: CEO mở được lãi gộp nhưng dòng tiền gọi get_list APH Khe uoc vay và bịPermissionError. Các bộ trước đó inventory33,funds20,cost16,dispatch48,b0111=15,b0112=13,b0113=13,native4,prepare3 PASS; chưa chạy014. Đã tải/đọc artifact và giữ lỗi. Sửa đúng một quyền đọc/report khế ước vay cho vai trò viewer, không cấp ghi/duyệt khoản vay hoặc vai trò kế toán. NoCost hook khế ước vẫn chặn. Bản mới cũng chứa bộ chuẩn bị tài khoản644ca chưa native, phải kiểm đủ trên nguồn sửa.

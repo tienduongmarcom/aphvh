@@ -568,3 +568,11 @@ doc_events.setdefault("Journal Entry", {}).setdefault("before_cancel", []).appen
 
 # Gom theo lượng đơn chưa giao, dùng lại cửa sổ chuyển kho hiện có.
 doctype_js["APH Shared Sales Order"].append("public/js/factory_transfer.js")
+
+# Giới hạn địa điểm kho: bỏ cache phạm vi khi cây kho thay đổi, không cấp quyền mới.
+for _event in ('on_update', 'after_rename', 'on_trash'):
+    _handlers = doc_events.setdefault('Warehouse', {}).get(_event, [])
+    _handlers = [_handlers] if isinstance(_handlers, str) else list(_handlers)
+    if 'kh_aph.staff_scope.invalidate_warehouse_permissions' not in _handlers:
+        _handlers.append('kh_aph.staff_scope.invalidate_warehouse_permissions')
+    doc_events['Warehouse'][_event] = _handlers

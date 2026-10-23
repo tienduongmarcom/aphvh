@@ -53,3 +53,38 @@ class WarehousePlan(unittest.TestCase):
                       self.row('Kho cũ',disabled=1)]
         result=warehouse_plan(self.config,self.rows)
         self.assertEqual(result['chua_phan_loai'],['Kho mới','Vòng A','Vòng B'])
+
+    def test_permission_roots_include_descendants_but_not_company_root(self):
+        from kh_aph.staff_scope import warehouse_plan
+        result=warehouse_plan(self.config,self.rows)
+        self.assertEqual(result['pham_vi_cua_hang'],['Hà Nội - APH'])
+        self.assertIn('Nhà máy Phú Thọ - APH',result['pham_vi_nha_may'])
+        self.assertNotIn('Kho tên bất kỳ',result['pham_vi_nha_may'])
+
+
+class WarehouseCache(unittest.TestCase):
+    def test_clear_current_and_after_commit_without_changing_permissions(self):
+        import sys,types
+        from unittest.mock import Mock,patch
+        from kh_aph.staff_scope import invalidate_warehouse_permissions
+        frappe=types.ModuleType('frappe');frappe.conf={'kh_aph_ux_task_first':1}
+        frappe.cache=Mock();frappe.db=Mock();frappe.get_all=Mock(return_value=['hanh','dung','hanh'])
+        utils=types.ModuleType('frappe.utils');utils.cint=lambda value:int(value or 0)
+        doc=Mock();doc.get_doc_before_save.return_value=None
+        with patch.dict(sys.modules,{'frappe':frappe,'frappe.utils':utils}):
+            invalidate_warehouse_permissions(doc)
+            self.assertEqual(frappe.cache.hdel.call_count,2)
+            callback=frappe.db.after_commit.add.call_args.args[0]
+            callback()
+            self.assertEqual(frappe.cache.hdel.call_count,4)
+        frappe.db.set_value.assert_not_called()
+
+    def test_unchanged_tree_does_not_flush_cache(self):
+        import sys,types
+        from unittest.mock import Mock,patch
+        from kh_aph.staff_scope import invalidate_warehouse_permissions
+        frappe=types.ModuleType('frappe');frappe.conf={'kh_aph_ux_task_first':1};frappe.get_all=Mock()
+        utils=types.ModuleType('frappe.utils');utils.cint=lambda value:int(value or 0)
+        doc=Mock();doc.get.return_value='same';doc.get_doc_before_save.return_value=doc
+        with patch.dict(sys.modules,{'frappe':frappe,'frappe.utils':utils}):invalidate_warehouse_permissions(doc)
+        frappe.get_all.assert_not_called()
