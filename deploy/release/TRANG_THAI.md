@@ -1,5 +1,9 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Chuẩn bị dùng thử; sửa phân loại lỗi hạ tầng Chrome
+
+UAT39891158617 đúngfa8ce18 FAIL tại Chrome do assertion gom mọi HTTP lỗi, gồm404/socket.io của CI chạy bench web trực tiếp không có dịch vụ realtime. Trace cho biết blocking=[]: không còn popup quyền che Dialog; chưa coi cả lượt đạt. Đã giới hạn ngoại lệ đúng404 endpoint/socket.io cùngbase của bộ thử và in INFO riêng; mọi lỗi API/asset/runtime khác và modal che vẫn FAIL. Không bỏ ca quyền/giá/hoàn hoặc thay kỳ vọng139. Lượt lỗi giữ nguyên. Chủ dự án cần nhân sự dùng thử ngày24/10 và chuẩn bị phân quyền tối23/10: ưu tiên chốt bản đang dở, chưa trộn bỏ28cờ. Đang xin danh sách nhân sự/phạm vi để chuẩn bị cấu hình; không tự cấp quyền production.
+
 ## 23/10/2026 — ĐANG DỞ: chờ UAT bản sửa quyền và popup
 
 Mã nghiệp vụfa8ce18 đã đẩy; UAT39891158617 đang chạy đúngfa8ce18, kỳ vọng139ca bộ014. Lượt5eeaaad/39890844075 đã bị concurrency hủy khi chuyển sang bản sửa popup, không phảiPASS/FAIL nghiệp vụ. Chưa có kết quả mới. Bước tiếp theo: đọc kết quả/artifact mới; nếu lỗi giữ nguyên ca và sửa; nếu xanh vẫn xem ảnh nhan-tra-tung-phan.png không có modal che và PDF4trang, rồi cập nhật bằng chứng đúngSHA. Đã cập nhật đặc tả9nhóm và bảng đối chiếu, không đóng các mục còn thiếu. Cục bộ601ca đạt. Cổng3 trước đó2a3fefc đã đọc schema1154/1154, quay lui1105/1105 lệch0 và phục hồi sau nâng sai khớp chi tiết; không suy cho mã sau. Production0.16.4 và PR38nháp giữ nguyên.
