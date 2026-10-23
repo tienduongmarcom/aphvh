@@ -19,6 +19,16 @@ def private_denied(caller, url):
         raise AssertionError("Đã tải được bộ PDF ngoài phạm vi")
 
 
+def _pdf_pages(pdf):
+    assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Chỉ đọc PDF trên container UAT dùng một lần'
+    probe=subprocess.run(['docker','exec','-i','aphvh-p0-web-uat','/home/frappe/frappe-bench/env/bin/python','-c',
+        'import sys,json; from io import BytesIO; from pypdf import PdfReader; '
+        'r=PdfReader(BytesIO(sys.stdin.buffer.read())); '
+        'print(json.dumps([{"width":float(p.mediabox.width),"height":float(p.mediabox.height),"text":p.extract_text()} for p in r.pages]))'],
+        input=pdf,capture_output=True,check=True,timeout=30)
+    return json.loads(probe.stdout)
+
+
 def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     dt = 'Bien ban doi soat no'
     order = submit(insert({'doctype':'APH Shared Sales Order','customer':f['kh2'], 'transaction_date':f['date'],
@@ -57,13 +67,7 @@ def chay(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     assert pdf.startswith(b'%PDF') and len(pdf)>1000
     Path('doi-soat-bo-giay.pdf').write_bytes(pdf)
     # Đọc bằng đúng thư viện trong image, không cài thêm lên runner.
-    assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Chỉ đọc PDF trên container UAT dùng một lần'
-    probe=subprocess.run(['docker','exec','-i','aphvh-p0-web-uat','/home/frappe/frappe-bench/env/bin/python','-c',
-        'import sys,json; from io import BytesIO; from pypdf import PdfReader; '
-        'r=PdfReader(BytesIO(sys.stdin.buffer.read())); '
-        'print(json.dumps([{"width":float(p.mediabox.width),"height":float(p.mediabox.height),"text":p.extract_text()} for p in r.pages]))'],
-        input=pdf,capture_output=True,check=True,timeout=30)
-    pages=json.loads(probe.stdout)
+    pages=_pdf_pages(pdf)
     assert len(pages)==4, 'Bộ một dòng phải gồm đối soát A4, hai liên A5 và thu A4; không tách riêng phần ký'
     for page in pages[1:3]:
         assert abs(page['width']-595)<2 and abs(page['height']-420)<2, page
@@ -220,10 +224,8 @@ def chay_coc(rpc, get, insert, submit, lst, denied, ktt, f, phien, emit):
     content=ktt.binary_get(result['file_url'])
     assert content.startswith(b'%PDF')
     Path('doi-soat-coc-theo-don.pdf').write_bytes(content)
-    from io import BytesIO
-    from pypdf import PdfReader
-    pages=PdfReader(BytesIO(content)).pages
-    assert len(pages)>=2 and any('PHIẾU THU' in (page.extract_text() or '') for page in pages)
+    pages=_pdf_pages(content)
+    assert len(pages)>=2 and any('PHIẾU THU' in (page['text'] or '') for page in pages)
     receipt_print=rpc('kh_aph.funds_print.print_receipt',{'receipt':receipt['name']},ktt)['html']
     assert receipt['name'] in receipt_print and 'PHIẾU THU' in receipt_print
     assert counts()==before

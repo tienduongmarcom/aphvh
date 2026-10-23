@@ -1,5 +1,10 @@
 # Trạng thái phát hành APH-VH (một nơi duy nhất — cập nhật mỗi lần phát hành / triển khai)
 
+## 23/10/2026 — Sửa bộ đọc PDF trên đúng container, giữ lượt lỗi
+
+UAT39915893234 đúng9a150f8 FAIL tại b014_debt_statement.chay_coc: ModuleNotFoundError pypdf trên runner. PDF đã được tạo nhưng chưa chạy xong assertion/nội dung/NoCost/khôi phục ca cọc, không coi đạt. Đã tải artifact, render và xem cả2trang doi-soat-coc-theo-don.pdf: đối soát đủ bảng/chữ ký, phiếu thu100.000 có Nợ1111/Có3388/số khoản nhận/ô ký, không cắt nội dung. Sửa helper dùng cùng pypdf trong container ERPNext như bộ giấy cũ, không cài runner hoặc bỏ assert. Lượt39918301530 vừa dispatch3984cec bị hủy sớm vì chưa chứa sửa helper, không tínhPASS/FAIL nghiệp vụ. Chạy lại141ca trên mã sửa tiếp theo. Quyền CEO/nhận tiền637unit đã viết, chưa có native chứng minh.
+
+
 ## 23/10/2026 — ĐANG KIỂM: quyền điều hành và nhận tiền hẹp
 
 Đã viết executive_access: vai trò Xem báo cáo điều hành, quyền đọc/report trên nguồn, chỉ mở hai báo cáo lãi gộp và dòng tiền; không mở guard khóa kỳ/sửa chứng từ. Giới hạn Company vẫn qua native; hồ sơ có dimension chi tiết khác bị chặn tổng hợp. Có quyền Report tùy chỉnh riêng không tự ghi đè. Bộ cài tạo role trước rồi thêm vào đúng hai Report, giữ vai trò cũ; context in_import chỉ quanh save Report chuẩn, khôi phục ngay.
