@@ -1,5 +1,12 @@
 # Bàn giao — trạng thái mới nhất
 
+## 23/10/2026 — Đọc đủ140ca, chuẩn bị mã nhân sự nội bộ
+
+UAT39897679945 đúng8f97806440b6f8b0ff08f483585b8aa8880114b9 SUCCESS. Đã tải candidate-image-evidence và đọc140PASS bộ014; HTTP_014_CHUAN_BI_GOM_KHO xác nhận gợi ý theo đơn/không giữ chỗ/draft/retry/phạm vi; HTTP_014_DOI_SOAT_COC_THEO_NGUON xác nhận cọc50.000/khả dụng50.000, không giảm nợ hai lần, bản cũ bất biến sau nhả tiếp. Các bộ còn lại: inventory33,funds20,cost16,dispatch48,b0111=15,b0112=13,b0113=13,b0114=8,b012=9,b013=10,native4,prepare3 PASS. Đã render/xem PDF doi-soat-coc-theo-don.pdf một trang không cắt bảng/chữ ký. Cổng339897682847 cùng8f97806: đã tải/đọc schema1154/1154 lệch0, quay lui1105/1105 lệch0, phục hồi sau nâng sai KHỚP. Không suy sang phần in phiếu thu9a150f8.
+
+Đã dispatch UAT39915893234 đúng9a150f80b95d33b6f5d0b8f6bfdfefa9944b01a3 cho phiếu thu cọc/bộ giấy mới, đang chạy; chưa kết luận. Chủ dự án chọn mã nội bộ: huong,hanh,dungktt,lan,ha,trang,ninh,anh,dungnm; Tâm để sau. Thêm staff_accounts chỉ đọc kế hoạch/kiểm trùng username và định danh email kỹ thuật .invalid, không tạo User/gửi thư/đặt mật khẩu/cấp vai trò. Cục bộ625ca không bỏ qua đạt (chạy có Jinja2); lượt đầu thiếu Jinja2 bỏ17ca đã chạy lại đầy đủ. Production vẫn chỉ có Administrator/Guest theo màn User đã bỏ lọc, chưa áp quyền nhân sự. Còn quyền hẹp CEO/duyệt bán chịu/nhận tiền, xung đột giới hạn kho Hạnh với đối soát tổng khách, và thu/hoàn chênh lệch đổi mã một cửa. PR38nháp, production0.16.4 không đổi.
+
+
 ## 23/10/2026 — Ghép phiếu thu khoản thực nhận, không tạo PE mới
 
 Đã viết funds_print.receipt_html/print_receipt: nguồn FundsReceipt đã ghi và JE gốc phải khớp Company/link/số nhận/đối ứng, tài khoảnVND và quyền đọc/in trên nguồn/Company/Account/JE/Customer. Dữ liệu trình bày giữ số khoản nhận, không giả lập hoặc chènPE; Nợ/Có đọc JE gốc. Dùng lại PrintFormat Phiếu thu chi đang dùng theo công ty, tự phân biệtCash/Bank; không phát minh mẫu hay đổi chế độ kế toán. Nút In phiếu thu trên khoản nhận đã ghi; bộPDF tự ghép khi chọn FundsReceipt, không in lại phiếu nhận cũ chỉ vì chọn action. In không ghiGL/PLE/PE hoặc thu tiền lần nữa. Actor hạn chế bịfunds.require chặn trước đọc nguồn.

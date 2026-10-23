@@ -47,3 +47,8 @@ Tiền cuối ngày bàn giao cho chủ; không mặc định Lan/Hà nhận. H�
 ## Bổ sung23/10/2026 — linh hoạt quyền trong tháng đầu
 
 Chủ dự án đồng ý dùng quyền rộng trong phạm vi công việc trong tháng đầu, rà vướng sau tuần đầu rồi thu hẹp dần theo vận hành. Lan/Hà cùng xử lý tổng hợp/thuế trước khi chia chi tiết; không mặc định nhận tiền hoặc thu hồi nợ thay Hường/Hạnh. Giữ tài khoản riêng, nhật ký, cấm tự nhận bàn giao, chống ghi trùng, giới hạn kho nhà máy/ngoài nhà máy và điều chỉnh/hủy chứng từ theo luồng. Không cần đợi bỏ28cờ mới dùng. Không tự động cấp System Manager hoặc tự tạo lịch thu hồi quyền. Quyết định này ưu tiên hơn đề xuất phân quá chi tiết trong bản nháp trước.
+
+
+### 23/10/2026 — Tài khoản nhân sự bằng mã nội bộ
+
+Chủ dự án chọn mã đăng nhập nội bộ, không dùng email riêng và không gửi email tự động. Dung kế toán trưởng là dungktt, Dũng nhà máy là dungnm. Danh sách9người trong docs/phan-quyen-nhan-su-dung-thu-20261023.md; Tâm triển khai sau. Chưa tạo hoặc cấp quyền production. Không dùng mật khẩu chung hoặc lưu bí mật vào hồ sơ.

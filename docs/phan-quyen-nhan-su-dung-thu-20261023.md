@@ -1,6 +1,6 @@
 # Nhân sự dùng thử và chuẩn bị phân quyền — 23/10/2026
 
-Chủ dự án yêu cầu chuẩn bị cho dùng thử ngày24/10 và phân quyền tối23/10. Danh sách/vị trí dưới đây do chủ dự án cung cấp. Quyền trong cột đề xuất chưa phải cấu hình đã áp; chưa có tên đăng nhập/phạm vi cuối. Không lấy tài khoản Administrator hoặc bộ vai trò rộng của fixture UAT gán cho nhân viên.
+Chủ dự án yêu cầu chuẩn bị cho dùng thử ngày24/10 và phân quyền tối23/10. Danh sách/vị trí dưới đây do chủ dự án cung cấp. Quyền trong cột đề xuất chưa phải cấu hình đã áp; đã chốt dùng mã đăng nhập nội bộ; chưa áp tài khoản/quyền lên production. Không lấy tài khoản Administrator hoặc bộ vai trò rộng của fixture UAT gán cho nhân viên.
 
 ## Chính sách tháng đầu đã chốt
 
@@ -27,7 +27,7 @@ Dung và Dũng là hai người khác nhau. Chỉ ánh xạ bằng tên đăng n
 
 ## 2. Việc cần biết trước khi áp quyền
 
-- Tên đăng nhập chính xác của10người; không cần mật khẩu.
+- Đã chốt dùng mã đăng nhập nội bộ, không gửi thư tự động. Tâm để sau; chuẩn bị9tài khoản đợt này, bảng bên dưới. Không cần cung cấp mật khẩu trong chat.
 - Đã chốt: tiền cuối ngày giao cho chủ, công nợ Hường/Hạnh theo dõi thu hồi. Đã chốt người nhận tiền cuối ngày: Ninh, Trang, Ánh; Trang/Ninh là chủ. Mỗi lượt chọn một người thực nhận, không tự động chia hoặc gán cả ba. Phần ngân hàng/tổng hợp/thuế Lan/Hà chưa chia chi tiết.
 - Đã chốt Hạnh các kho trừ nhà máy, Dũng các kho nhà máy: cần đối chiếu danh sách Warehouse thực tế và thuộc tính loại/địa điểm, không suy bằng chuỗi tên. Tâm để sau. Bán hàng nhiều đơn vị phải giữ đường chọn nguồn chung.
 - Trang được duyệt dưới sàn/vượt hạn mức; Ninh được xem giá vốn/lợi nhuận. Chưa suy quyền xem giá vốn cho Trang hoặc quyền sửa sổ cho Ninh từ quyết định này.
@@ -69,3 +69,24 @@ Chạy giao dịch giả trên site thử, hoặc chỉ giao dịch thật hợp
 ## 5. Trạng thái
 
 Chưa áp quyền lên production. Nhánh PR38 đang kiểm sửa giao nhận/nhận trả, không coi toàn phạm vi hoàn tất. Bốn lượt cùng nguồn d54522d: UAT39893134196, Cổng239893214536, Cổng2b39893218066, Cổng339893222080 — đang chạy lúc lập hồ sơ, chưa kết luậnPASS. Trạng thái tiếp nối ở docs/ban-giao.md và deploy/release/TRANG_THAI.md.
+
+
+## 6. Mã đăng nhập nội bộ đã chuẩn bị
+
+Chủ dự án chọn mã nội bộ ngày23/10. Đã đối chiếu màn User trên production (bỏ bộ lọc danh sách): chỉ có Administrator và Guest, chưa có nhân sự. Không coi quan sát này thay việc kiểm trùng ngay trước tạo.
+
+| Mã đăng nhập | Người | Ghi chú |
+| --- | --- | --- |
+| huong | Cô Hường | Bán hàng, theo dõi thu hồi nợ |
+| hanh | Cô Hạnh | Bán hàng và kho ngoài nhà máy |
+| dungktt | Dung | Kế toán trưởng, mua trong nước |
+| lan | Lan | Tổng hợp, thuế |
+| ha | Hà | Tổng hợp, thuế |
+| trang | Trang | Duyệt bán hàng, nhận tiền |
+| ninh | Ninh | Xem điều hành/giá vốn/lợi nhuận, nhận tiền |
+| anh | Ánh | Nhận tiền |
+| dungnm | Dũng | Nhà máy, không xem giá vốn |
+
+`kh_aph.staff_accounts.xem_ke_hoach` là công cụ chỉ đọc cho quản trị, sau cờ UX hiện có; kiểm trùng username hoặc định danh User, không tìm theo họ tên, không tự nhận tài khoản trùng. Trường email kỹ thuật dự kiến `<mã>@nhansu.invalid` chỉ phục vụ trường bắt buộc của User, không phải hộp thư. Không gửi welcome email, không đặt mật khẩu chung, không ghi mật khẩu/reset link vào repo. Chưa có hàm tạo/kích hoạt/gán quyền tự động trong công cụ này. Người dùng đăng nhập bằng username sau khi tài khoản được tạo/kích hoạt và thiết lập mật khẩu đúng quy trình.
+
+Cần giữ kiểm thử phạm vi Hạnh: User Permission Warehouse hiện làm bộ đối soát công nợ tổng hợp chặn toàn bản; không nới chặn chỉ để qua thử, phải giải quyết đồng thời quyền kho và quyền in công nợ trước khi đánh dấu hồ sơ này đạt.
