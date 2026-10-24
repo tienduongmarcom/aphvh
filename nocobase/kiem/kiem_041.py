@@ -155,6 +155,9 @@ def main():
     s, r = kt.lam("sx_giai_trinh:duyet", g_am)
     ok("Duyệt giải trình chênh âm đưa số còn lại về 0", s == 200 and r["data"]["con_lai"] == 0, r)
 
+    # Mẻ chênh âm ở trên dùng 100 kg DO cùng kho: làm mới tồn gốc trước ca tiếp theo.
+    do0 = ton("NL", "DO")
+    tp0 = ton("TP", "DOTV")
     nhom("4. NVL 1.000 kg, sản lượng 970 kg → báo chênh 30, KHÔNG tự ghi hao hụt")
     rq1 = rid()
     v1 = {"request_id": rq1, "nvl": [{"mat_hang_id": M["DO"]["id"], "so_luong": 1000, "so_lo": "LO-NL-01"}],
