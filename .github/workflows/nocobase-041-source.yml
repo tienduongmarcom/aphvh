@@ -7,6 +7,7 @@ on:
       - "nocobase/schema/**"
       - "nocobase/kiem/**"
       - "nocobase/trien-khai/uat-mac-041.sh"
+      - "nocobase/trien-khai/cap-nhat-uat041-giao-dien.sh"
       - ".github/workflows/nocobase-041-source.yml"
   workflow_dispatch:
 jobs:
@@ -22,6 +23,7 @@ jobs:
           python3 -m py_compile nocobase/schema/tao_bang.py nocobase/schema/cai_dat.py nocobase/schema/nang_cap.py
           python3 -m py_compile nocobase/kiem/kiem_041.py nocobase/kiem/kiem_040.py
           bash -n nocobase/trien-khai/uat-mac-041.sh
+          bash -n nocobase/trien-khai/cap-nhat-uat041-giao-dien.sh
       - name: TypeScript server syntax + relative imports (esbuild, no DB)
         run: |
           npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/server/index.ts \
