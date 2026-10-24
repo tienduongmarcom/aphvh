@@ -23,11 +23,15 @@ fi
 
 echo "== 1. Lấy commit mới nhất của nhánh PR #46"
 git -C "$SOURCE" fetch origin "$BRANCH"
+SHA="$(git -C "$SOURCE" rev-parse "origin/$BRANCH")"
+echo "== 2. Chỉ tiếp tục khi gói UAT của ĐÚNG commit đã PASS"
+RUN_ID="$(gh run list -R "$REPO" --workflow nocobase-041-source.yml --branch "$BRANCH" --limit 15 \
+  --json databaseId,conclusion,headSha --jq "[.[] | select(.conclusion == \"success\" and .headSha == \"$SHA\")][0].databaseId // empty")"
+[ -n "$RUN_ID" ] || { echo "Chưa có workflow PASS của commit $SHA. Không tạo worktree."; exit 1; }
 git -C "$SOURCE" worktree add --detach "$UAT" "origin/$BRANCH"
-SHA="$(git -C "$UAT" rev-parse HEAD)"
 cd "$UAT/nocobase/trien-khai"
 
-echo "== 2. Tạo môi trường riêng (không dùng chung .env / pgdata / storage với app chính)"
+echo "== 3. Tạo môi trường riêng (không dùng chung .env / pgdata / storage với app chính)"
 cat > .env <<EOF
 APP_KEY=$(openssl rand -hex 32)
 DB_PASSWORD=$(openssl rand -hex 20)
@@ -39,10 +43,7 @@ EOF
 chmod 600 .env
 set -a; . ./.env; set +a
 
-echo "== 3. Tìm gói UAT ở GitHub Actions (BẮT BUỘC đã PASS)"
-RUN_ID="$(gh run list -R "$REPO" --workflow nocobase-041-source.yml --branch "$BRANCH" --limit 15 \
-  --json databaseId,conclusion,headSha --jq "[.[] | select(.conclusion == \"success\" and .headSha == \"$SHA\")][0].databaseId // empty")"
-[ -n "$RUN_ID" ] || { echo "Chưa có workflow PASS kèm gói UAT. Dừng."; exit 1; }
+echo "== 4. Tải gói thử từ workflow đã PASS"
 rm -f plugin-kho-0.4.1.tgz plugin-kho-0.4.1.tgz.sha256
 gh run download "$RUN_ID" -R "$REPO" -n nocobase-041-uat-package -D .
 [ -s plugin-kho-0.4.1.tgz ] && [ -s plugin-kho-0.4.1.tgz.sha256 ] || {
@@ -54,10 +55,10 @@ PKG_SHA="$(tar xOf plugin-kho-0.4.1.tgz ./BUILD_SOURCE_SHA 2>/dev/null || tar xO
 }
 echo "Gói UAT đúng commit: $SHA"
 
-echo "== 4. Cài mới trong Docker project $PROJECT, cổng $PORT"
+echo "== 5. Cài mới trong Docker project $PROJECT, cổng $PORT"
 bash cai-dat.sh
 
-echo "== 5. Chạy hồi quy trên dữ liệu giả trong UAT (KHÔNG chạy trên 13000)"
+echo "== 6. Chạy hồi quy trên dữ liệu giả trong UAT (KHÔNG chạy trên 13000)"
 mkdir -p sao-luu
 set +e
 (cd ../kiem && EMAIL="$ADMIN_EMAIL" MAT_KHAU="$ADMIN_PASSWORD" URL="http://localhost:$PORT" bash chay_tat_ca.sh) \
@@ -69,7 +70,7 @@ if [ "$STATUS" -ne 0 ]; then
   exit 1
 fi
 
-echo "== 6. Sao lưu sau test và thử KHÔI PHỤC vào database phụ, không đè DB UAT"
+echo "== 7. Sao lưu sau test và thử KHÔI PHỤC vào database phụ, không đè DB UAT"
 bash sao-luu.sh
 DUMP="$(ls -1t sao-luu/csdl-*.dump | sed -n '1p')"
 DB_CHECK="uat041_restorecheck"
