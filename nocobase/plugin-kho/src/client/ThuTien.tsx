@@ -1,8 +1,44 @@
 /** Thu chi và công nợ: ghi nhận khách trả tiền (trả đúng đơn được chọn, phần thừa chưa phân bổ), danh sách phiếu thu, công nợ tổng hợp. */
-import { Alert, App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Col, DatePicker, Form, Input, InputNumber, Modal, Radio, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChonDanhMuc, TRANG_THAI_PHIEU, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
+
+const CON_NO = ['dang_giao', 'da_giao', 'da_dong'];
+const LOAI_THU: Record<string, string> = { thu_no: 'Trả nợ', coc: 'Đặt cọc', chua_ro: 'Chưa rõ người nộp' };
+
+/** Phân bổ phần chưa phân bổ của một phiếu thu vào đơn (thường = cùng đơn vị; thu hộ = đơn vị khác, chỉ kế toán). */
+function PhanBo({ pt, thuHo, onClose }: any) {
+  const goi = useGoi();
+  const { message } = App.useApp();
+  const [don, setDon] = useState<any[]>([]);
+  const [tien, setTien] = useState<Record<string, number>>({});
+  const [ghiChu, setGhiChu] = useState('');
+  useEffect(() => {
+    goi('don_ban:list', { params: { filter: { khach_id: pt.khach_id, trang_thai: { $in: CON_NO }, con_no: { $gt: 0 },
+      don_vi_ban_id: thuHo ? { $ne: pt.don_vi_id } : pt.don_vi_id }, appends: ['don_vi_ban'], sort: ['ngay', 'id'], pageSize: 500 } }).then((r) => setDon(r.data || []));
+  }, []);
+  const tong = Object.values(tien).reduce((a, b) => a + Number(b || 0), 0);
+  return (
+    <Modal open width={760} title={`${thuHo ? 'Phân bổ thu hộ' : 'Phân bổ'} ${pt.so} — chưa phân bổ ${fmt(pt.chua_phan_bo)} đ`} okText="Ghi phân bổ" cancelText="Thôi"
+      onCancel={onClose} onOk={async () => {
+        const ds = Object.entries(tien).filter(([, v]) => Number(v) > 0).map(([k, v]) => ({ don_ban_id: Number(k), so_tien: v }));
+        if (!ds.length) return message.warning('Nhập số tiền cho ít nhất một đơn.');
+        await goi(thuHo ? 'phieu_thu:phanBoThuHo' : 'phieu_thu:phanBo', { params: { filterByTk: pt.id }, data: { phan_bo: ds, ghi_chu: ghiChu } });
+        message.success('Đã phân bổ'); onClose(true);
+      }}>
+      {thuHo && <Alert style={{ marginBottom: 12 }} type="warning" message={`Tiền vẫn nằm ở ${pt.don_vi?.ten}. Hệ thống ghi khoản đang giữ hộ đơn vị có đơn, chờ tất toán giữa hai đơn vị.`} />}
+      {thuHo && <Input.TextArea style={{ marginBottom: 12 }} placeholder="Căn cứ thu hộ (bắt buộc): vd. khách xác nhận chuyển nhầm tài khoản" value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} />}
+      <Table size="small" rowKey="id" pagination={false} dataSource={don} locale={{ emptyText: 'Không có đơn còn nợ phù hợp' }} columns={[
+        { title: 'Đơn', dataIndex: 'so' }, { title: 'Đơn vị', render: (_, d) => d.don_vi_ban?.ten }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN },
+        { title: 'Còn nợ', dataIndex: 'con_no', align: 'right', render: (v) => fmt(v) },
+        { title: 'Trả', width: 160, render: (_, d) => <InputNumber min={0} max={Number(d.con_no)} style={{ width: 150 }} value={tien[d.id]} formatter={(v) => fmt(v)}
+          parser={(v: any) => Number(String(v).replace(/\D/g, ''))} onChange={(v) => setTien({ ...tien, [d.id]: Number(v || 0) })} /> },
+      ]} />
+      <div style={{ marginTop: 8 }}>Tổng phân bổ: <b style={{ color: tong > Number(pt.chua_phan_bo) ? '#cf1322' : undefined }}>{fmt(tong)}</b> đ</div>
+    </Modal>
+  );
+}
 
 function GhiThu({ khachBanDau, xong }: any) {
   const goi = useGoi();
@@ -14,11 +50,13 @@ function GhiThu({ khachBanDau, xong }: any) {
   const donVi = Form.useWatch('don_vi_id', form);
   const soTien = Form.useWatch('so_tien', form) || 0;
   const hinhThuc = Form.useWatch('hinh_thuc', form);
+  const [loaiThu, setLoaiThu] = useState('thu_no');
   useEffect(() => { form.setFieldsValue({ ngay: dayjs(homNay()), hinh_thuc: 'tien_mat' }); }, []);
+  useEffect(() => { if (loaiThu !== 'thu_no') setChon([]); }, [loaiThu]);
   useEffect(() => {
     setChon([]);
     if (!khach) return setDon([]);
-    goi('don_ban:list', { params: { filter: { khach_id: khach, trang_thai: 'da_giao', con_no: { $gt: 0 } }, appends: ['don_vi_ban'], sort: ['ngay', 'id'], pageSize: 500 } })
+    goi('don_ban:list', { params: { filter: { khach_id: khach, trang_thai: { $in: CON_NO }, con_no: { $gt: 0 } }, appends: ['don_vi_ban'], sort: ['ngay', 'id'], pageSize: 500 } })
       .then((r) => setDon(r.data || []));
   }, [khach]);
   const theoDonVi = useMemo(() => {
@@ -37,13 +75,14 @@ function GhiThu({ khachBanDau, xong }: any) {
     const v = await form.validateFields();
     if (daPhanBo > v.so_tien) return message.error('Tổng tiền trả cho các đơn lớn hơn số tiền thực nhận.');
     if (chon.some((c) => !(c.so_tien > 0))) return message.error('Mỗi đơn được chọn phải có số tiền lớn hơn 0 (bỏ chọn nếu không trả).');
+    const maYc = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     modal.confirm({
       title: 'Ghi phiếu thu?', okText: 'Ghi & In phiếu thu', cancelText: 'Xem lại',
       content: <div>Thu <b>{fmt(v.so_tien)} đ</b> vào <b>{theoDonVi[donVi]?.ten || 'đơn vị đã chọn'}</b>. Trả cho {chon.length} đơn: {fmt(daPhanBo)} đ.
         Chưa phân bổ: <b>{fmt(v.so_tien - daPhanBo)} đ</b>.</div>,
       onOk: async () => {
         const r = await goi('phieu_thu:create', { params: { updateAssociationValues: ['phan_bo'] }, data: {
-          ...v, ngay: v.ngay.format('YYYY-MM-DD'), khach_id: khach, phan_bo: chon.map((c) => ({ don_ban_id: c.id, so_tien: c.so_tien })) } });
+          ...v, ngay: v.ngay.format('YYYY-MM-DD'), loai_thu: loaiThu, khach_id: loaiThu === 'chua_ro' ? null : khach, request_id: maYc, phan_bo: chon.map((c) => ({ don_ban_id: c.id, so_tien: c.so_tien })) } });
         await goi('phieu_thu:ghi', { params: { filterByTk: r.data.id }, data: {} });
         window.open(`/in/phieu_thu/${r.data.id}`, '_blank');
         message.success('Đã ghi phiếu thu');
@@ -53,9 +92,13 @@ function GhiThu({ khachBanDau, xong }: any) {
   };
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <div><b>1. Khách hàng</b><br />
-        <ChonDanhMuc bang="khach_hang" value={khach} onChange={setKhach} timTheo={['ma', 'ten', 'sdt', 'nhan']} placeholder="Gõ tên, mã hoặc SĐT" style={{ width: 420 }} /></div>
-      {khach && <Table size="small" pagination={false} rowKey="k" title={() => 'Công nợ theo đơn vị (mỗi đơn vị một số riêng, không cấn chéo)'}
+      <div><b>Loại tiền: </b>
+        <Radio.Group optionType="button" value={loaiThu} onChange={(e) => setLoaiThu(e.target.value)} options={[{ value: 'thu_no', label: 'Khách trả nợ / trả đơn' }, { value: 'coc', label: 'Đặt cọc' }, { value: 'chua_ro', label: 'Chưa rõ người nộp' }]} /></div>
+      {loaiThu === 'chua_ro' && <Alert type="warning" message="Tiền vào đúng quỹ / tài khoản, nằm ở 'chưa phân bổ'. Khi xác minh được khách, vào tab Phiếu thu → Nhận diện khách → Phân bổ." />}
+      {loaiThu === 'coc' && <Alert type="info" message="Tiền cọc không tự trừ nợ cũ. Khi giao hàng, vào tab Phiếu thu → Phân bổ cọc vào đơn." />}
+      {loaiThu !== 'chua_ro' && <div><b>1. Khách hàng</b><br />
+        <ChonDanhMuc bang="khach_hang" value={khach} onChange={setKhach} timTheo={['ma', 'ten', 'sdt', 'nhan']} placeholder="Gõ tên, mã hoặc SĐT" style={{ width: 420 }} /></div>}
+      {khach && loaiThu === 'thu_no' && <Table size="small" pagination={false} rowKey="k" title={() => 'Công nợ theo đơn vị (mỗi đơn vị một số riêng, không cấn chéo)'}
         dataSource={Object.entries(theoDonVi).map(([k, v]) => ({ k, ...v }))}
         columns={[{ title: 'Đơn vị', dataIndex: 'ten' }, { title: 'Còn phải thu', dataIndex: 'no', align: 'right', render: (v) => <b>{fmt(v)}</b> }]} />}
       <Form form={form} layout="vertical">
@@ -78,8 +121,9 @@ function GhiThu({ khachBanDau, xong }: any) {
           <Col span={8}><Form.Item name="nguoi_nop" label="Người nộp"><Input /></Form.Item></Col>
           <Col span={8}><Form.Item name="ghi_chu" label="Ghi chú"><Input /></Form.Item></Col>
         </Row>
+        {loaiThu === 'coc' && <Form.Item name="muc_dich_coc" label="Mục đích cọc" rules={[{ required: true, message: 'Ghi mục đích cọc' }]}><Input /></Form.Item>}
       </Form>
-      <b>3. Trả cho đơn nào (tích theo thứ tự muốn trả; không tích = chưa phân bổ)</b>
+      {loaiThu === 'thu_no' && <><b>3. Trả cho đơn nào (tích theo thứ tự muốn trả; không tích = chưa phân bổ)</b>
       {!donVi ? <Alert type="info" message="Chọn đơn vị nhận tiền để xem các đơn còn nợ của đơn vị đó." /> :
         <Table size="small" rowKey="id" pagination={false} dataSource={donCuaDonVi} locale={{ emptyText: 'Đơn vị này không có đơn còn nợ: toàn bộ tiền là chưa phân bổ.' }}
           columns={[
@@ -89,31 +133,73 @@ function GhiThu({ khachBanDau, xong }: any) {
             { title: 'Trả lần này', width: 170, render: (_, d) => { const c = chon.find((x) => x.id === d.id); return c ? <InputNumber min={0} max={Number(d.con_no)} value={c.so_tien} style={{ width: 150 }}
               formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))}
               onChange={(v) => setChon(chon.map((x) => (x.id === d.id ? { ...x, so_tien: Number(v || 0) } : x)))} /> : null; } },
-          ]} />}
+          ]} />}</>}
       <Alert type={daPhanBo > soTien ? 'error' : 'success'} message={<span>4. Xem trước: thực nhận <b>{fmt(soTien)}</b> — trả cho đơn <b>{fmt(daPhanBo)}</b> — chưa phân bổ <b>{fmt(soTien - daPhanBo)}</b> (kế toán phân bổ sau khi xác minh)</span>} />
-      <Button type="primary" size="large" disabled={!khach} onClick={ghi}>5. Ghi phiếu thu &amp; In</Button>
+      <Button type="primary" size="large" disabled={!khach && loaiThu !== 'chua_ro'} onClick={ghi}>5. Ghi phiếu thu &amp; In</Button>
     </Space>
   );
 }
 
 function DanhSachThu() {
   const goi = useGoi();
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
   const [ds, setDs] = useState<any[]>([]);
-  const tai = async () => setDs((await goi('phieu_thu:list', { params: { appends: ['khach', 'don_vi'], sort: ['-id'], pageSize: 100 } })).data || []);
+  const [chiChuaPb, setChiChuaPb] = useState(false);
+  const [mo, setMo] = useState<any>(null);
+  const tai = async () => setDs((await goi('phieu_thu:list', { params: { filter: chiChuaPb ? { trang_thai: 'da_ghi', chua_phan_bo: { $gt: 0 } } : {},
+    appends: ['khach', 'don_vi'], sort: ['-id'], pageSize: 200 } })).data || []);
+  useEffect(() => { tai(); }, [chiChuaPb]);
+  const nhanDien = (r: any) => {
+    let khach: any;
+    modal.confirm({ title: `Nhận diện người nộp ${r.so}`, okText: 'Ghi khách', cancelText: 'Thôi',
+      content: <ChonDanhMuc bang="khach_hang" timTheo={['ma', 'ten', 'sdt', 'nhan']} onChange={(v) => (khach = v)} style={{ width: '100%' }} />,
+      onOk: () => goi('phieu_thu:nhanDien', { params: { filterByTk: r.id }, data: { khach_id: khach } }).then(() => { message.success('Đã nhận diện — giờ phân bổ được'); tai(); }) });
+  };
+  return <>
+    <Checkbox style={{ marginBottom: 12 }} checked={chiChuaPb} onChange={(e) => setChiChuaPb(e.target.checked)}>Chỉ phiếu còn tiền chưa phân bổ (cọc, tiền thừa, chưa rõ người nộp)</Checkbox>
+    <Table size="small" rowKey="id" dataSource={ds} columns={[
+      { title: 'Số', dataIndex: 'so', render: (v, r) => <a href={`/in/phieu_thu/${r.id}`} target="_blank" rel="noreferrer">{v}</a> },
+      { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Loại', dataIndex: 'loai_thu', render: (v) => LOAI_THU[v] || v },
+      { title: 'Khách', render: (_, r) => r.khach?.ten || <Tag color="gold">Chưa rõ</Tag> }, { title: 'Đơn vị', render: (_, r) => r.don_vi?.ten },
+      { title: 'Hình thức', dataIndex: 'hinh_thuc', render: (v, r) => (v === 'chuyen_khoan' ? `CK ${r.ma_gd || ''}` : 'Tiền mặt') },
+      { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) },
+      { title: 'Chưa phân bổ', dataIndex: 'chua_phan_bo', align: 'right', render: (v) => (Number(v) ? <b>{fmt(v)}</b> : '') },
+      { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_PHIEU, v); return <Tag color={m}>{t}</Tag>; } },
+      { render: (_, r) => r.trang_thai === 'da_ghi' && <Space wrap>
+        {Number(r.chua_phan_bo) > 0 && !r.khach_id && <Button size="small" onClick={() => nhanDien(r)}>Nhận diện khách</Button>}
+        {Number(r.chua_phan_bo) > 0 && r.khach_id && <Button size="small" type="primary" onClick={() => setMo({ pt: r, thuHo: false })}>Phân bổ</Button>}
+        {Number(r.chua_phan_bo) > 0 && r.khach_id && <Button size="small" onClick={() => setMo({ pt: r, thuHo: true })}>Thu hộ (kế toán)</Button>}
+        <Button size="small" danger onClick={() => { let ly_do = ''; modal.confirm({
+          title: `Hủy phiếu thu ${r.so}?`, content: <Input.TextArea placeholder="Lý do (bắt buộc)" onChange={(e) => (ly_do = e.target.value)} />,
+          okText: 'Hủy phiếu', cancelText: 'Thôi', okButtonProps: { danger: true },
+          onOk: () => goi('phieu_thu:huy', { params: { filterByTk: r.id }, data: { ly_do } }).then(tai) }); }}>Hủy</Button></Space> },
+    ]} />
+    {mo && <PhanBo pt={mo.pt} thuHo={mo.thuHo} onClose={(x: any) => { setMo(null); if (x) tai(); }} />}
+  </>;
+}
+
+function ThuHo() {
+  const goi = useGoi();
+  const { modal } = App.useApp();
+  const [ds, setDs] = useState<any[] | null>(null);
+  const tai = () => goi('thu_ho:list', { params: { appends: ['phieu_thu', 'don_vi_nhan', 'don_vi_chu_no', 'don_ban'], sort: ['-id'], pageSize: 500 }, im: true })
+    .then((r) => setDs(r.data || [])).catch(() => setDs([]));
   useEffect(() => { tai(); }, []);
-  return <Table size="small" rowKey="id" dataSource={ds} columns={[
-    { title: 'Số', dataIndex: 'so', render: (v, r) => <a href={`/in/phieu_thu/${r.id}`} target="_blank" rel="noreferrer">{v}</a> },
-    { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Khách', render: (_, r) => r.khach?.ten }, { title: 'Đơn vị', render: (_, r) => r.don_vi?.ten },
-    { title: 'Hình thức', dataIndex: 'hinh_thuc', render: (v) => (v === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt') },
-    { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) },
-    { title: 'Chưa phân bổ', dataIndex: 'chua_phan_bo', align: 'right', render: (v) => fmt(v) },
-    { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_PHIEU, v); return <Tag color={m}>{t}</Tag>; } },
-    { render: (_, r) => r.trang_thai === 'da_ghi' && <Button size="small" danger onClick={() => { let ly_do = ''; modal.confirm({
-      title: `Hủy phiếu thu ${r.so}?`, content: <Input.TextArea placeholder="Lý do (bắt buộc)" onChange={(e) => (ly_do = e.target.value)} />,
-      okText: 'Hủy phiếu', cancelText: 'Thôi', okButtonProps: { danger: true },
-      onOk: () => goi('phieu_thu:huy', { params: { filterByTk: r.id }, data: { ly_do } }).then(tai) }); }}>Hủy</Button> },
-  ]} />;
+  return <>
+    <Typography.Paragraph type="secondary">Tiền một đơn vị nhận nhưng trả nợ đơn của đơn vị khác. Khoản này là đơn vị nhận tiền đang giữ hộ; tất toán khi hai đơn vị chuyển trả / bù trừ có chứng từ.</Typography.Paragraph>
+    <Table size="small" rowKey="id" loading={!ds} dataSource={ds || []} columns={[
+      { title: 'Phiếu thu', render: (_, r) => r.phieu_thu?.so }, { title: 'Đơn được trả', render: (_, r) => r.don_ban?.so },
+      { title: 'Đơn vị giữ tiền', render: (_, r) => r.don_vi_nhan?.ten }, { title: 'Giữ hộ cho', render: (_, r) => r.don_vi_chu_no?.ten },
+      { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => <b>{fmt(v)}</b> },
+      { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => <Tag color={({ dang_giu_ho: 'orange', da_tat_toan: 'green', da_huy: 'red' } as any)[v]}>
+        {({ dang_giu_ho: 'Đang giữ hộ', da_tat_toan: 'Đã tất toán', da_huy: 'Đã hủy' } as any)[v]}</Tag> },
+      { title: 'Ghi chú', dataIndex: 'ghi_chu' },
+      { render: (_, r) => r.trang_thai === 'dang_giu_ho' && <Button size="small" onClick={() => { let ghi_chu = ''; modal.confirm({
+        title: 'Tất toán khoản thu hộ?', okText: 'Tất toán', cancelText: 'Thôi',
+        content: <Input.TextArea placeholder="Căn cứ (số phiếu chi / UNC giữa hai đơn vị)" onChange={(e) => (ghi_chu = e.target.value)} />,
+        onOk: () => goi('thu_ho:tatToan', { params: { filterByTk: r.id }, data: { ghi_chu } }).then(tai) }); }}>Tất toán</Button> },
+    ]} />
+  </>;
 }
 
 function CongNo() {
@@ -122,7 +208,7 @@ function CongNo() {
   const [q, setQ] = useState('');
   useEffect(() => {
     Promise.all([
-      goi('don_ban:list', { params: { filter: { trang_thai: 'da_giao', con_no: { $ne: 0 } }, appends: ['khach', 'don_vi_ban'], pageSize: 5000 } }),
+      goi('don_ban:list', { params: { filter: { trang_thai: { $in: CON_NO }, con_no: { $ne: 0 } }, appends: ['khach', 'don_vi_ban'], pageSize: 5000 } }),
       goi('phieu_thu:list', { params: { filter: { trang_thai: 'da_ghi', chua_phan_bo: { $gt: 0 } }, appends: ['khach', 'don_vi'], pageSize: 5000 } }),
     ]).then(([a, b]) => {
       const m: Record<string, any> = {};
@@ -172,6 +258,8 @@ function PhieuChi() {
   const [form] = Form.useForm();
   const [ds, setDs] = useState<any[]>([]);
   const donVi = Form.useWatch('don_vi_id', form);
+  const loaiChi = Form.useWatch('loai_chi', form);
+  const ncc = Form.useWatch('nha_cung_cap_id', form);
   const tai = async () => setDs((await goi('phieu_chi:list', { params: { appends: ['don_vi', 'quy'], sort: ['-id'], pageSize: 200 } })).data || []);
   useEffect(() => { tai(); form.setFieldsValue({ ngay: dayjs(homNay()), loai_chi: 'khac' }); }, []);
   const ghi = async () => {
@@ -194,6 +282,13 @@ function PhieuChi() {
           <Col span={4}><Form.Item name="so_tien" label="Số tiền (đ)" rules={[{ required: true }]}><InputNumber min={1} style={{ width: '100%' }} {...tienVao} /></Form.Item></Col>
           <Col span={3}><Form.Item name="ngay" label="Ngày"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
         </Row>
+        {loaiChi === 'mua_hang' && <Row gutter={12}>
+          <Col span={8}><Form.Item name="nha_cung_cap_id" label="Nhà cung cấp" rules={[{ required: true, message: 'Chọn NCC' }]}>
+            <ChonDanhMuc bang="nha_cung_cap" timTheo={['ma', 'ten', 'sdt', 'nhan']} style={{ width: '100%' }} /></Form.Item></Col>
+          <Col span={8}><Form.Item name="phieu_kho_id" label="Trả cho phiếu nhập (trống = trả chung NCC)">
+            <ChonDanhMuc bang="phieu_kho" nhan="so" timTheo={['so', 'chung_tu_ncc']} style={{ width: '100%' }}
+              locThem={{ loai: 'nhap', trang_thai: 'da_ghi', nha_cung_cap_id: ncc || 0 }} /></Form.Item></Col>
+        </Row>}
         <Row gutter={12}>
           <Col span={6}><Form.Item name="nguoi_nhan" label="Người nhận tiền" rules={[{ required: true }]}><Input /></Form.Item></Col>
           <Col span={12}><Form.Item name="ly_do" label="Lý do chi" rules={[{ required: true }]}><Input /></Form.Item></Col>
@@ -321,6 +416,21 @@ function ChotCa() {
   );
 }
 
+function CongNoNcc() {
+  const goi = useGoi();
+  const [ds, setDs] = useState<any[] | null>(null);
+  useEffect(() => { goi('phieu_kho:list', { params: { filter: { loai: 'nhap', trang_thai: 'da_ghi' }, appends: ['nha_cung_cap', 'kho'], sort: ['-ngay'], pageSize: 2000 }, im: true })
+    .then((r) => setDs((r.data || []).filter((x: any) => x.phai_tra === undefined || Number(x.phai_tra || 0) - Number(x.da_tra || 0) !== 0))).catch(() => setDs([])); }, []);
+  const anGia = (ds || []).some((x) => x.phai_tra === undefined);
+  if (anGia) return <Typography.Text type="secondary">Chỉ kế toán / quản lý xem số phải trả nhà cung cấp.</Typography.Text>;
+  return <Table size="small" rowKey="id" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 50 }} columns={[
+    { title: 'Phiếu nhập', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'NCC', render: (_, r) => r.nha_cung_cap?.ten || '—' },
+    { title: 'Chứng từ NCC', dataIndex: 'chung_tu_ncc' }, { title: 'Phải trả', dataIndex: 'phai_tra', align: 'right', render: (v) => fmt(v) },
+    { title: 'Đã trả', dataIndex: 'da_tra', align: 'right', render: (v) => fmt(v) },
+    { title: 'Còn phải trả', align: 'right', render: (_, r) => <b>{fmt(Number(r.phai_tra || 0) - Number(r.da_tra || 0))}</b> },
+  ]} />;
+}
+
 export function ThuTien() {
   const [ban, setBan] = useState(0);
   return (
@@ -329,6 +439,8 @@ export function ThuTien() {
         { key: 'thu', label: 'Ghi nhận khách trả tiền', children: <GhiThu key={ban} xong={() => setBan(ban + 1)} /> },
         { key: 'ds', label: 'Phiếu thu', children: <DanhSachThu key={ban} /> },
         { key: 'cn', label: 'Công nợ khách', children: <CongNo key={ban} /> },
+        { key: 'th', label: 'Thu hộ giữa đơn vị', children: <ThuHo key={ban} /> },
+        { key: 'ncc', label: 'Công nợ NCC', children: <CongNoNcc /> },
         { key: 'chi', label: 'Phiếu chi', children: <PhieuChi /> },
         { key: 'ct', label: 'Bàn giao / nộp tiền', children: <ChuyenTien /> },
         { key: 'sq', label: 'Sổ quỹ', children: <SoQuy /> },

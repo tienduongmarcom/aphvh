@@ -9,8 +9,14 @@ export const ngayVN = (v?: string) => (v ? String(v).slice(0, 10).split('-').rev
 export const homNay = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 
 export const TRANG_THAI_DON: Record<string, [string, string]> = {
-  nhap: ['Nháp', 'default'], cho_duyet: ['Chờ duyệt giá', 'purple'], cho_xuat: ['Chờ xuất', 'orange'], da_giao: ['Đã giao', 'green'], da_huy: ['Đã hủy', 'red'],
+  nhap: ['Nháp', 'default'], cho_duyet: ['Chờ duyệt giá', 'purple'], cho_xuat: ['Đã chốt — chờ giao', 'orange'], dang_giao: ['Giao một phần', 'blue'],
+  da_giao: ['Đã giao đủ', 'green'], da_dong: ['Đã đóng (giao thiếu)', 'cyan'], da_huy: ['Đã hủy', 'red'],
 };
+export const TRANG_THAI_LUOT: Record<string, [string, string]> = {
+  cho_xuat: ['Chờ xuất (đang giữ hàng)', 'orange'], da_ban_giao_xe: ['Đã bàn giao xe', 'blue'], khach_da_nhan: ['Khách đã nhận', 'green'], da_huy: ['Đã hủy', 'red'],
+};
+export const DVT: Record<string, string> = { kg: 'kg', cai: 'cái', goi: 'gói', bao: 'bao', thung: 'thùng' };
+export const dvt = (mh: any) => DVT[mh?.dvt_ton || 'kg'] || 'kg';
 export const TRANG_THAI_PHIEU: Record<string, [string, string]> = {
   nhap: ['Nháp', 'default'], da_ghi: ['Đã ghi', 'green'], da_huy: ['Đã hủy', 'red'],
 };

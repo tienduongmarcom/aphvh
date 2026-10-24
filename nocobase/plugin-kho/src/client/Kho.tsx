@@ -2,7 +2,8 @@
 import { App, Button, Card, Col, DatePicker, Drawer, Form, Input, InputNumber, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
-import { ChonDanhMuc, LOAI_PHIEU_KHO, TRANG_THAI_PHIEU, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
+import { ChonDanhMuc, LOAI_PHIEU_KHO, TRANG_THAI_PHIEU, dvt, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
+import { LuotChoXuat } from './LuotGiao';
 
 function TonKho() {
   const goi = useGoi();
@@ -32,12 +33,16 @@ function TonKho() {
           { title: 'Kho', render: (_, r) => r.kho?.ten },
           { title: 'Mã hàng', render: (_, r) => <b>{r.mat_hang?.ma}</b> },
           { title: 'Tên hàng', render: (_, r) => r.mat_hang?.ten },
-          { title: 'Tồn (kg)', dataIndex: 'so_kg', align: 'right', render: (v) => <b style={{ color: v < 0 ? '#cf1322' : undefined }}>{fmt(v, 3)}</b> },
+          { title: 'ĐVT', render: (_, r) => dvt(r.mat_hang) },
+          { title: 'Tồn thực tế', dataIndex: 'so_kg', align: 'right', render: (v) => <b style={{ color: v < 0 ? '#cf1322' : undefined }}>{fmt(v, 3)}</b> },
+          { title: 'Đang giữ cho đơn', dataIndex: 'so_giu', align: 'right', render: (v) => (Number(v) ? fmt(v, 3) : '') },
+          { title: 'Chờ định giá', dataIndex: 'so_cho_gia', align: 'right', render: (v) => (Number(v) ? <Tag color="gold">{fmt(v, 3)}</Tag> : '') },
+          { title: 'Khả dụng bán', align: 'right', render: (_, r) => <b style={{ color: '#237804' }}>{fmt(Number(r.so_kg || 0) - Number(r.so_giu || 0) - Number(r.so_cho_gia || 0), 3)}</b> },
           { title: 'Tồn (bao)', dataIndex: 'so_bao', align: 'right', render: (v) => fmt(v, 2) },
         ]}
         summary={(rows) => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={3} align="right"><b>Cộng</b></Table.Summary.Cell>
-          <Table.Summary.Cell index={1} align="right"><b>{fmt(rows.reduce((s, r: any) => s + Number(r.so_kg || 0), 0), 3)}</b></Table.Summary.Cell>
-          <Table.Summary.Cell index={2} align="right"><b>{fmt(rows.reduce((s, r: any) => s + Number(r.so_bao || 0), 0), 2)}</b></Table.Summary.Cell></Table.Summary.Row>} />
+          <Table.Summary.Cell index={1} /><Table.Summary.Cell index={2} align="right"><b>{fmt(rows.reduce((s, r: any) => s + Number(r.so_kg || 0), 0), 3)}</b></Table.Summary.Cell>
+          <Table.Summary.Cell index={3} colSpan={4} /></Table.Summary.Row>} />
     </>
   );
 }
@@ -92,6 +97,13 @@ function PhieuKho({ id, xong }: any) {
           {sx && <Col span={7}><Form.Item name="kho_dich_id" label="Kho thành phẩm (trống = cùng kho)">
             <ChonDanhMuc bang="kho" style={{ width: '100%' }} /></Form.Item></Col>}
         </Row>
+        {loai === 'nhap' && <Row gutter={12}>
+          <Col span={10}><Form.Item name="nha_cung_cap_id" label="Nhà cung cấp"><ChonDanhMuc bang="nha_cung_cap" timTheo={['ma', 'ten', 'sdt', 'nhan']} style={{ width: '100%' }} /></Form.Item></Col>
+          <Col span={6}><Form.Item name="chung_tu_ncc" label="Số hóa đơn / phiếu NCC"><Input /></Form.Item></Col>
+          {pk?.phai_tra !== undefined && pk?.trang_thai === 'da_ghi' && <Col span={8}><div style={{ paddingTop: 30 }}>
+            Phải trả NCC <b>{fmt(pk.phai_tra)}</b> · Đã trả <b>{fmt(pk.da_tra)}</b></div></Col>}
+        </Row>}
+        {loai === 'nhap' && sua && <Typography.Paragraph type="secondary">Chưa biết giá thì để trống: hàng vào kho ở trạng thái <b>chờ định giá</b>, chưa bán được cho tới khi kế toán định giá. Thủ kho nhập thì luôn ở trạng thái chờ định giá.</Typography.Paragraph>}
         {sx && <Row gutter={12}>
           <Col span={8}><Form.Item name="xuong" label="Xưởng / tổ"><Input /></Form.Item></Col>
           <Col span={8}><Form.Item name="chi_phi_sx" label="Chi phí sản xuất lô này (nhân công, điện, bao bì…)">
@@ -110,16 +122,18 @@ function PhieuKho({ id, xong }: any) {
       {loai === 'kiem_ke' && sua && <Typography.Text type="secondary">Kiểm kê: nhập số kg CHÊNH LỆCH — số dương nếu thừa, số âm nếu thiếu.</Typography.Text>}
       <Table size="small" rowKey={(d: any, i: any) => d.id || `m${i}`} pagination={false} dataSource={dong} columns={[
         { title: 'Mã hàng', width: 280, render: (_, d, i) => (sua ? <ChonDanhMuc bang="mat_hang" value={d.mat_hang_id} style={{ width: 270 }}
-          onChange={(v, mh) => doi(i, { mat_hang_id: v, ten_hang: mh?.ten, kg_bao: mh?.kg_bao })} /> : <b>{d.mat_hang?.ma}</b>) },
+          onChange={(v, mh) => doi(i, { mat_hang_id: v, ten_hang: mh?.ten, kg_bao: mh?.kg_bao, mat_hang: mh })} /> : <b>{d.mat_hang?.ma}</b>) },
         { title: 'Tên hàng', render: (_, d) => d.ten_hang || d.mat_hang?.ten },
         { title: 'Số bao', width: 110, render: (_, d, i) => (sua ? <InputNumber value={d.so_bao} onChange={(v) => doi(i, { so_bao: v, so_kg: v && d.kg_bao ? Math.round(v * d.kg_bao * 1000) / 1000 : d.so_kg })} /> : fmt(d.so_bao, 2)) },
-        { title: 'Số kg', width: 130, render: (_, d, i) => (sua ? <InputNumber value={d.so_kg} onChange={(v) => doi(i, { so_kg: v })} /> : fmt(d.so_kg, 3)) },
+        { title: 'Số lượng', width: 150, render: (_, d, i) => (sua ? <Space size={4}><InputNumber value={d.so_kg} onChange={(v) => doi(i, { so_kg: v })} />{dvt(d.mat_hang)}</Space>
+          : `${fmt(d.so_kg, 3)} ${dvt(d.mat_hang)}`) },
         ...(sx ? [{ title: 'Vào / ra', width: 170, render: (_: any, d: any, i: number) => (sua ? <Select value={d.huong} style={{ width: 160 }} placeholder="Chọn"
           onChange={(v) => doi(i, { huong: v })} options={[{ value: 'vao', label: 'Nguyên liệu vào' }, { value: 'ra', label: 'Thành phẩm ra' }, { value: 'phu_pham', label: 'Phụ phẩm ra' }]} />
           : ({ vao: 'Nguyên liệu vào', ra: 'Thành phẩm ra', phu_pham: 'Phụ phẩm ra' } as any)[d.huong]) }] : []),
         ...(['nhap', 'dau_ky'].includes(loai) || sx ? [{ title: sx ? 'Đơn giá (phụ phẩm) / giá thành' : 'Giá nhập (đ/kg)', width: 150,
           render: (_: any, d: any, i: number) => (sua && (!sx || d.huong === 'phu_pham') ? <InputNumber min={0} value={d.don_gia} style={{ width: 140 }}
-            formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/[^\d]/g, ''))} onChange={(v) => doi(i, { don_gia: v })} /> : fmt(d.don_gia, 2)) }] : []),
+            formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/[^\d]/g, ''))} onChange={(v) => doi(i, { don_gia: v })} />
+            : d.trang_thai_gia === 'cho_gia' ? <Tag color="gold">Chờ định giá</Tag> : fmt(d.don_gia, 2)) }] : []),
         { title: 'Ghi chú', render: (_, d, i) => (sua ? <Input value={d.ghi_chu} onChange={(e) => doi(i, { ghi_chu: e.target.value })} /> : d.ghi_chu) },
         ...(sua ? [{ width: 60, render: (_: any, __: any, i: number) => <Button danger size="small" onClick={() => setDong(dong.filter((_, j) => j !== i))}>Xóa</Button> }] : []),
       ]} />
@@ -192,42 +206,34 @@ function SoKho() {
   );
 }
 
-function ChoXuat() {
+function ChoDinhGia() {
   const goi = useGoi();
-  const { modal, message } = App.useApp();
-  const [ds, setDs] = useState<any[]>([]);
-  const tai = async () => setDs((await goi('don_ban:list', { params: { filter: { trang_thai: 'cho_xuat' }, appends: ['khach', 'don_vi_ban', 'dong', 'dong.mat_hang', 'dong.kho'], sort: ['ngay_giao', 'id'], pageSize: 200 } })).data || []);
+  const { message } = App.useApp();
+  const [ds, setDs] = useState<any[] | null>(null);
+  const [gia, setGia] = useState<Record<string, number>>({});
+  const tai = () => goi('phieu_kho_dong:list', { params: { filter: { trang_thai_gia: 'cho_gia', 'phieu_kho.trang_thai': 'da_ghi' },
+    appends: ['phieu_kho', 'phieu_kho.kho', 'phieu_kho.nha_cung_cap', 'mat_hang'], sort: ['id'], pageSize: 500 }, im: true })
+    .then((r) => setDs(r.data || [])).catch(() => setDs([]));
   useEffect(() => { tai(); }, []);
-  const giao = (don: any) => {
-    let nguoi = don.nguoi_nhan || '';
-    let xe = don.bien_so || '';
-    modal.confirm({
-      title: `Xác nhận đã giao đơn ${don.so}?`, okText: 'Đã giao — trừ kho', cancelText: 'Chưa',
-      content: <Space direction="vertical" style={{ width: '100%' }}>
-        <div>Chỉ bấm khi hàng đã ra khỏi kho và người nhận đã ký phiếu.</div>
-        <Input placeholder="Người nhận / lái xe" defaultValue={nguoi} onChange={(e) => (nguoi = e.target.value)} />
-        <Input placeholder="Biển số xe" defaultValue={xe} onChange={(e) => (xe = e.target.value)} />
-      </Space>,
-      onOk: () => goi('don_ban:giaoHang', { params: { filterByTk: don.id }, data: { nguoi_nhan: nguoi, bien_so: xe } }).then(() => { message.success('Đã ghi giao hàng'); tai(); }),
-    });
+  const dinhGia = async (pkId: any) => {
+    const g = Object.fromEntries((ds || []).filter((d) => d.phieu_kho_id === pkId && Number(gia[d.id]) > 0).map((d) => [d.id, Number(gia[d.id])]));
+    if (!Object.keys(g).length) return message.warning('Nhập đơn giá cho dòng của phiếu này.');
+    await goi('phieu_kho:dinhGia', { params: { filterByTk: pkId }, data: { gia: g } });
+    message.success('Đã định giá — hàng thành khả dụng để bán');
+    tai();
   };
-  return (
-    <>
-      <Space style={{ marginBottom: 12 }}><Typography.Text type="secondary">Đơn đã chốt, chờ kho giao. Giao xong bấm "Đã giao" để trừ kho.</Typography.Text><Button onClick={tai}>Tải lại</Button></Space>
-      <Table size="middle" rowKey="id" dataSource={ds} pagination={false}
-        expandable={{ defaultExpandAllRows: true, expandedRowRender: (d: any) => <Table size="small" rowKey="id" pagination={false} dataSource={d.dong} columns={[
-          { title: 'Mã hàng', render: (_, r: any) => <b>{r.mat_hang?.ma}</b> }, { title: 'Tên hàng', render: (_, r: any) => r.ten_hang || r.mat_hang?.ten },
-          { title: 'Kho', render: (_, r: any) => r.kho?.ten }, { title: 'Số bao', dataIndex: 'so_bao', align: 'right', render: (v) => fmt(v, 2) },
-          { title: 'Số kg', dataIndex: 'so_kg', align: 'right', render: (v) => <b>{fmt(v, 3)}</b> }]} /> }}
-        columns={[
-          { title: 'Đơn', dataIndex: 'so', render: (v) => <b>{v}</b> }, { title: 'Ngày giao', dataIndex: 'ngay_giao', render: ngayVN },
-          { title: 'Khách', render: (_, r) => <span>{r.khach?.ten}<div style={{ fontSize: 12, color: '#888' }}>{r.sdt}</div></span> },
-          { title: 'Cách giao', dataIndex: 'cach_giao', render: (v) => (v === 'van_chuyen' ? 'Vận chuyển' : 'Khách đến lấy') },
-          { render: (_, r) => <Space><Button onClick={() => window.open(`/in/don_ban/${r.id}`, '_blank')}>In phiếu</Button>
-            <Button type="primary" onClick={() => giao(r)}>Đã giao</Button></Space> },
-        ]} />
-    </>
-  );
+  return <>
+    <Typography.Paragraph type="secondary">Hàng đã vào kho nhưng chưa có giá: chưa bán được, chưa vào giá vốn. Chỉ kế toán / quản lý định giá.</Typography.Paragraph>
+    <Table size="small" rowKey="id" loading={!ds} dataSource={ds || []} pagination={false} columns={[
+      { title: 'Phiếu', render: (_, d) => <b>{d.phieu_kho?.so}</b> }, { title: 'Ngày', render: (_, d) => ngayVN(d.phieu_kho?.ngay) },
+      { title: 'Kho', render: (_, d) => d.phieu_kho?.kho?.ten }, { title: 'NCC', render: (_, d) => d.phieu_kho?.nha_cung_cap?.ten },
+      { title: 'Hàng', render: (_, d) => <span><b>{d.mat_hang?.ma}</b> {d.mat_hang?.ten}</span> },
+      { title: 'Số lượng', align: 'right', render: (_, d) => `${fmt(d.so_kg, 3)} ${dvt(d.mat_hang)}` },
+      { title: 'Đơn giá', width: 160, render: (_, d) => <InputNumber min={0} style={{ width: 150 }} value={gia[d.id]} formatter={(v) => fmt(v)}
+        parser={(v: any) => Number(String(v).replace(/\D/g, ''))} onChange={(v) => setGia({ ...gia, [d.id]: Number(v || 0) })} /> },
+      { render: (_, d) => <Button size="small" type="primary" onClick={() => dinhGia(d.phieu_kho_id)}>Định giá phiếu {d.phieu_kho?.so}</Button> },
+    ]} />
+  </>;
 }
 
 function GiaThanh() {
@@ -265,11 +271,12 @@ export function KhoVan() {
   return (
     <Card title="Kho vận">
       <Tabs items={[
-        { key: 'cho', label: 'Đơn chờ xuất', children: <ChoXuat /> },
+        { key: 'cho', label: 'Lượt chờ xuất', children: <LuotChoXuat /> },
         { key: 'ton', label: 'Tồn kho', children: <TonKho /> },
         { key: 'phieu', label: 'Phiếu kho', children: <DanhSachPhieu /> },
         { key: 'so', label: 'Thẻ kho', children: <SoKho /> },
         { key: 'gt', label: 'Giá thành sản xuất', children: <GiaThanh /> },
+        { key: 'dg', label: 'Chờ định giá', children: <ChoDinhGia /> },
         { key: 'gv', label: 'Giá vốn', children: <GiaVon /> },
       ]} />
     </Card>
