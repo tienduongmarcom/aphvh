@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cài / cập nhật APH-VH NocoBase trên máy có Docker (Mac hoặc VM). Chạy lại an toàn.
+# Cài / cập nhật APH-VH NocoBase trên máy có Docker (Mac hoặc VM). Chạy lại an toàn; nâng cấp tại chỗ (không xóa dữ liệu), tự sao lưu trước.
 #   cd nocobase/trien-khai && bash cai-dat.sh
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -24,6 +24,10 @@ echo -n "Chờ NocoBase sẵn sàng"
 for i in $(seq 1 120); do
   curl -fsS "http://localhost:${PORT}/api/__health_check" >/dev/null 2>&1 && break; echo -n "."; sleep 5
 done; echo
+if [ -d pgdata ] && docker compose exec -T db psql -U nocobase -d nocobase -tAc "SELECT 1 FROM ton_kho LIMIT 1" >/dev/null 2>&1; then
+  echo "== 1b. Đã có dữ liệu: sao lưu trước khi nâng cấp"
+  bash sao-luu.sh
+fi
 echo "== 2. Plugin APH-VH"
 rm -rf storage/plugins/@aphvh/plugin-kho && mkdir -p storage/plugins/@aphvh/plugin-kho
 tar xzf plugin-kho-*.tgz -C storage/plugins/@aphvh/plugin-kho

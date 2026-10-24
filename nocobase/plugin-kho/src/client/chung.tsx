@@ -22,7 +22,7 @@ export const TRANG_THAI_PHIEU: Record<string, [string, string]> = {
 };
 export const LOAI_PHIEU_KHO: Record<string, string> = {
   nhap: 'Nhập kho', xuat: 'Xuất kho khác', chuyen: 'Chuyển kho', dau_ky: 'Tồn đầu kỳ', kiem_ke: 'Điều chỉnh kiểm kê',
-  san_xuat: 'Sản xuất', dong_goi: 'Đóng gói / đổi bao',
+  san_xuat: 'Sản xuất (một bước)', dong_goi: 'Đóng gói / đổi bao', cap_nvl: 'Cấp NVL cho mẻ', thu_hoi: 'Thu hồi thành phẩm từ mẻ',
 };
 
 /** Gọi API, báo lỗi nghiệp vụ bằng tiếng Việt. */

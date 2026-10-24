@@ -1,0 +1,802 @@
+/**
+ * 0.3.1 — Go-Live & số dư đầu kỳ, quản lý tài sản, mẻ sản xuất (dở dang, chi phí đến sau, chốt / chốt lại giá thành).
+ *
+ * Nguyên tắc:
+ * - Không ghi thẳng vào sổ kho / tồn / sổ quỹ / giá vốn. Lô nhập → kiểm tra → duyệt → ghi sổ qua chứng từ và lõi nghiệp vụ sẵn có.
+ * - Mỗi số dư có KHÓA CHỐNG TRÙNG (bảng mo_so_khoa, unique): dán lại cùng file / lập tay trùng đều bị chặn.
+ * - Ghi một lô = một giao dịch: lỗi một dòng thì không ghi dòng nào.
+ * - Chỉ kế toán / quản lý mở sổ, duyệt, ghi; kiểm ở máy chủ, không chỉ ẩn nút.
+ * - Mẻ sản xuất chỉ tập hợp chi phí và phân bổ; số lượng, giá trị kho vẫn qua sổ kho / sổ giá trị.
+ */
+import { Transaction } from 'sequelize';
+import { homNay, kg, loi, tien, vnd } from './tienich';
+
+type H = Record<string, (ctx: any, t: Transaction) => Promise<any>>;
+
+// ---------------- Cột theo loại dữ liệu ----------------
+type Cot = { k: string; ten: string[]; kieu?: 'so' | 'ngay' | 'chu'; bat_buoc?: boolean };
+const C = (k: string, ten: string | string[], kieu?: Cot['kieu'], bat_buoc = false): Cot => ({ k, ten: ([] as string[]).concat(ten), kieu, bat_buoc });
+export const COT: Record<string, Cot[]> = {
+  mat_hang: [C('ma', ['Mã hàng', 'Item Code', 'Mã'], 'chu', true), C('ten', ['Tên hàng', 'Tên'], 'chu', true), C('dvt_ton', ['ĐVT tồn', 'ĐVT', 'UOM']),
+    C('loai_hang', ['Loại hàng']), C('kg_bao', ['Kg/bao', 'Quy cách kg'], 'so'), C('gia_ban', ['Giá bán'], 'so'), C('gia_san', ['Giá sàn'], 'so')],
+  khach_hang: [C('ma', ['Mã khách', 'Mã'], 'chu', true), C('ten', ['Tên khách', 'Tên'], 'chu', true), C('sdt', ['Điện thoại', 'SĐT']),
+    C('dia_chi', ['Địa chỉ']), C('mst', ['MST', 'Mã số thuế']), C('han_muc', ['Hạn mức'], 'so'), C('ghi_chu', ['Ghi chú'])],
+  nha_cung_cap: [C('ma', ['Mã NCC', 'Mã'], 'chu', true), C('ten', ['Tên nhà cung cấp', 'Tên NCC', 'Tên'], 'chu', true), C('sdt', ['Điện thoại', 'SĐT']),
+    C('dia_chi', ['Địa chỉ']), C('mst', ['MST', 'Mã số thuế']), C('ghi_chu', ['Ghi chú'])],
+  kho: [C('ma', ['Mã kho', 'Mã'], 'chu', true), C('ten', ['Tên kho', 'Tên'], 'chu', true), C('loai_kho', ['Loại kho']), C('dia_diem', ['Địa điểm']),
+    C('trung_chuyen', ['Kho đang vận chuyển'])],
+  quy: [C('ma', ['Mã quỹ', 'Mã'], 'chu', true), C('ten', ['Tên quỹ / tài khoản', 'Tên quỹ', 'Tên'], 'chu', true), C('don_vi', ['Đơn vị', 'Mã đơn vị'], 'chu', true),
+    C('loai', ['Loại'], 'chu', true), C('nguoi_giu', ['Người giữ quỹ', 'Người giữ'])],
+  tai_san: [C('ma', ['Mã tài sản', 'Mã'], 'chu', true), C('ten', ['Tên tài sản', 'Tên'], 'chu', true), C('loai', ['Loại']), C('serial', ['Serial', 'Số serial']),
+    C('dia_diem', ['Địa điểm']), C('nguoi_quan_ly', ['Người quản lý', 'Người giữ']), C('bo_phan', ['Bộ phận']), C('tinh_trang', ['Tình trạng']),
+    C('ngay_mua', ['Ngày mua'], 'ngay'), C('nguyen_gia', ['Nguyên giá'], 'so'), C('so_thang_sd', ['Số tháng sử dụng', 'Thời gian sử dụng (tháng)'], 'so'),
+    C('so_luong', ['Số lượng'], 'so'), C('don_vi', ['Đơn vị đứng tên', 'Pháp nhân']), C('chung_tu_mua', ['Chứng từ mua']),
+    C('dung_cho_san_xuat', ['Dùng cho sản xuất'])],
+  ton_dau_ky: [C('kho', ['Mã kho', 'Kho'], 'chu', true), C('mat_hang', ['Mã hàng', 'Item Code'], 'chu', true), C('so_luong', ['Số lượng', 'Số lượng tồn'], 'so', true),
+    C('so_bao', ['Số bao', 'Số bao/thùng'], 'so'), C('gia_tri', ['Giá trị', 'Giá trị tồn'], 'so'),
+    C('tinh_trang_gia', ['Tình trạng giá']), C('tinh_trang_hang', ['Tình trạng hàng']), C('ghi_chu', ['Ghi chú', 'Người xác nhận'])],
+  no_khach: [C('khach', ['Mã khách'], 'chu', true), C('don_vi', ['Đơn vị', 'Mã đơn vị', 'Pháp nhân'], 'chu', true), C('so_tien', ['Số dư', 'Số tiền', 'Số nợ'], 'so', true),
+    C('chung_tu_goc', ['Chứng từ gốc', 'Số chứng từ']), C('ngay_ct', ['Ngày phát sinh', 'Ngày chứng từ'], 'ngay'), C('han_tt', ['Hạn thanh toán'], 'ngay'),
+    C('doi_chieu', ['Đối chiếu']), C('ghi_chu', ['Ghi chú'])],
+  no_ncc: [C('ncc', ['Mã NCC'], 'chu', true), C('don_vi', ['Đơn vị', 'Mã đơn vị', 'Pháp nhân'], 'chu', true), C('so_tien', ['Số dư', 'Số tiền', 'Số nợ'], 'so', true),
+    C('chung_tu_goc', ['Chứng từ gốc', 'Số chứng từ']), C('ngay_ct', ['Ngày phát sinh', 'Ngày chứng từ'], 'ngay'), C('han_tt', ['Hạn thanh toán'], 'ngay'),
+    C('doi_chieu', ['Đối chiếu']), C('ghi_chu', ['Ghi chú'])],
+  quy_dau_ky: [C('quy', ['Mã quỹ', 'Mã tài khoản'], 'chu', true), C('so_tien', ['Số dư', 'Số tiền'], 'so', true), C('ghi_chu', ['Ghi chú', 'Căn cứ'])],
+  tien_chua_pb: [C('quy', ['Mã quỹ', 'Mã tài khoản'], 'chu', true), C('loai_thu', ['Loại'], 'chu', true), C('so_tien', ['Số tiền'], 'so', true),
+    C('ma_tham_chieu', ['Mã tham chiếu', 'Mã GD', 'Mã giao dịch'], 'chu', true), C('khach', ['Mã khách']), C('muc_dich_coc', ['Mục đích cọc', 'Thỏa thuận']),
+    C('ngay', ['Ngày nhận'], 'ngay'), C('ghi_chu', ['Ghi chú'])],
+  thu_ho_dau_ky: [C('don_vi_giu', ['Đơn vị giữ tiền'], 'chu', true), C('don_vi_chu_no', ['Đơn vị được trả', 'Giữ hộ cho'], 'chu', true),
+    C('so_tien', ['Số tiền'], 'so', true), C('ma_tham_chieu', ['Mã tham chiếu'], 'chu', true), C('ghi_chu', ['Ghi chú', 'Căn cứ'])],
+  don_chuyen_tiep: [C('so_don_cu', ['Số đơn cũ', 'Số đơn'], 'chu', true), C('khach', ['Mã khách'], 'chu', true), C('don_vi', ['Đơn vị bán', 'Mã đơn vị'], 'chu', true),
+    C('mat_hang', ['Mã hàng'], 'chu', true), C('kho', ['Mã kho', 'Kho xuất'], 'chu', true), C('so_luong', ['Số lượng còn giao', 'Số lượng'], 'so', true),
+    C('don_gia', ['Đơn giá'], 'so', true), C('tinh_trang', ['Tình trạng']), C('cach_giao', ['Cách giao']), C('ngay', ['Ngày đặt'], 'ngay'),
+    C('nguoi_nhan', ['Người nhận / xe', 'Người nhận']), C('ghi_chu', ['Ghi chú'])],
+};
+const DANH_MUC = ['mat_hang', 'khach_hang', 'nha_cung_cap', 'kho', 'quy', 'tai_san'];
+const MO_SO = ['ton_dau_ky', 'no_khach', 'no_ncc', 'quy_dau_ky', 'tien_chua_pb', 'thu_ho_dau_ky', 'don_chuyen_tiep'];
+
+const boDau = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+/** Đọc số kiểu Việt / Excel: 1.234.567 | 1,5 | 1.234,5 | 25.5 */
+export const docSo = (v: string) => {
+  v = String(v ?? '').replace(/\s|đ|VND/gi, '');
+  if (!v) return null;
+  let n: number;
+  if (v.includes('.') && v.includes(',')) n = v.lastIndexOf(',') > v.lastIndexOf('.') ? Number(v.replace(/\./g, '').replace(',', '.')) : Number(v.replace(/,/g, ''));
+  else if (v.includes(',')) n = /^-?\d{1,3}(,\d{3})+$/.test(v) ? Number(v.replace(/,/g, '')) : Number(v.replace(',', '.'));
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(v)) n = Number(v.replace(/\./g, ''));
+  else n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+};
+const docNgay = (v: string) => {
+  v = String(v || '').trim();
+  if (!v) return null;
+  let m = v.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  return 'SAI';
+};
+const co = (v: any) => /^(1|x|có|co|true|yes|đúng)$/i.test(String(v || '').trim());
+/** Chọn giá trị theo nhãn tiếng Việt hoặc mã. */
+const chon = (v: string, m: Record<string, string[]>, macDinh?: string) => {
+  const b = boDau(v);
+  if (!b) return macDinh;
+  for (const [k, ds] of Object.entries(m)) if (b === k || ds.some((x) => boDau(x) === b)) return k;
+  return 'SAI';
+};
+const M_DVT = { kg: ['kg', 'kilogram'], cai: ['cái', 'chiếc', 'pcs'], goi: ['gói'], bao: ['bao'], thung: ['thùng'] };
+const M_LOAI_HANG = { hang_hoa: ['hàng hóa'], nguyen_lieu: ['nguyên liệu', 'nvl'], thanh_pham: ['thành phẩm'], phu_pham: ['phụ phẩm'], bao_bi: ['bao bì', 'vật tư', 'bao bì / vật tư'] };
+const M_LOAI_KHO = { ban_duoc: ['bán được', 'kho bán được'], nha_may: ['nhà máy', 'kho nhà máy'], cho_xu_ly: ['chờ xử lý', 'kho chờ xử lý'] };
+const M_LOAI_QUY = { tien_mat: ['tiền mặt', 'tm'], ngan_hang: ['ngân hàng', 'nh', 'ck', 'chuyển khoản'] };
+const M_GIA = { co_gia: ['đã chốt', 'có giá', 'chốt'], tam: ['tạm tính', 'tạm', 'tạm tính được duyệt'], cho_gia: ['chưa xác định', 'chờ định giá', 'chưa có giá', 'chưa'] };
+const M_HANG = { ban_duoc: ['bán được'], cho_xu_ly: ['chờ xử lý', 'hỏng'], dang_van_chuyen: ['đang vận chuyển'] };
+const M_THU = { coc: ['cọc', 'đặt cọc'], chua_ro: ['chưa rõ', 'chưa rõ người nộp'], thu_no: ['chưa phân bổ', 'tiền thừa', 'khách đã nộp chưa phân bổ', 'trả nợ'] };
+const M_DC = { da: ['đã đối chiếu', 'đã', 'rồi'], cho: ['chờ đối chiếu', 'chờ', 'chưa'] };
+const M_TS = { tscd: ['tài sản cố định', 'tscđ', 'tscd'], ccdc: ['công cụ dụng cụ', 'ccdc'], van_phong: ['thiết bị văn phòng', 'văn phòng'] };
+const M_TT_TS = { dang_dung: ['đang dùng'], trong_kho: ['trong kho'], hong: ['hỏng'], cho_thanh_ly: ['chờ thanh lý'], da_thanh_ly: ['đã thanh lý'], mat: ['mất'] };
+const M_DON = { cho_giao: ['chưa giao', 'chờ giao', 'đã chốt'], dang_van_chuyen: ['đang vận chuyển', 'đã bàn giao xe', 'trên xe'] };
+const M_GIAO = { khach_den_lay: ['khách đến lấy', 'khách lấy'], van_chuyen: ['vận chuyển', 'giao xe'] };
+
+/** Tách bảng dán từ Excel / Google Sheets (tab) hoặc CSV. Dòng đầu là tiêu đề. */
+export function tachBang(goc: string, cot: Cot[]) {
+  const dong = String(goc || '').replace(/\r/g, '').split('\n').filter((l) => l.trim());
+  if (dong.length < 2) loi('Dán cả dòng tiêu đề và ít nhất một dòng dữ liệu.');
+  const sep = dong[0].includes('\t') ? '\t' : dong[0].includes(';') ? ';' : ',';
+  const dau = dong[0].split(sep).map((x) => boDau(x.replace(/^"|"$/g, '')));
+  const viTri: Record<string, number> = {};
+  for (const c of cot) {
+    const i = dau.findIndex((h) => c.ten.some((t) => boDau(t) === h) || h === c.k);
+    if (i >= 0) viTri[c.k] = i;
+    else if (c.bat_buoc) loi(`Thiếu cột bắt buộc "${c.ten[0]}". Tiêu đề phải có: ${cot.filter((x) => x.bat_buoc).map((x) => x.ten[0]).join(', ')}.`);
+  }
+  return dong.slice(1).map((l, i) => {
+    const o = l.split(sep).map((x) => x.replace(/^"|"$/g, '').trim());
+    const r: any = { _stt: i + 2 };
+    for (const c of cot) if (viTri[c.k] !== undefined) r[c.k] = o[viTri[c.k]] ?? '';
+    return r;
+  }).filter((r) => cot.some((c) => r[c.k]));
+}
+
+export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx: any) => any; lyDo: (ctx: any) => any }) {
+  const { id, val, lyDo } = h;
+  const bang = (n: string) => p.bang(n);
+  const canQuyen = (ctx: any, viec = 'thao tác này') => { if (!p.xemGia(ctx)) loi(`Chỉ kế toán / quản lý được ${viec}.`); };
+  /** Gọi một thao tác nghiệp vụ có sẵn với cùng người dùng (giữ kiểm quyền / nghiệp vụ của thao tác đó). */
+  const goi = (ten: string, ctx: any, t: Transaction, filterByTk: any, values: any = {}) =>
+    H[ten]({ ...ctx, action: { ...ctx.action, params: { filterByTk, values } } }, t);
+
+  const timMa = async (b: string, ma: any, t: Transaction) => (ma ? bang(b).findOne({ where: { ma: String(ma).trim() }, transaction: t }) : null);
+  const kyMo = async (t: Transaction) => {
+    const k = await bang('ky_mo_so').findOne({ where: { trang_thai: 'mo' }, order: [['id', 'DESC']], transaction: t });
+    if (!k) loi('Chưa có kỳ mở sổ đang mở (Go-Live → Kỳ mở sổ), hoặc kỳ đã khóa: không ghi số dư đầu kỳ được nữa.');
+    return k;
+  };
+  p.kyMo = kyMo;
+  /** Ghi khóa chống trùng; trùng thì báo lỗi rõ ràng. */
+  const giuKhoa = async (t: Transaction, khoa: string, nhap_lo_id: any, ket_qua: string) => {
+    const [d] = await p.sql(`SELECT ket_qua FROM mo_so_khoa WHERE khoa = :k`, { k: khoa }, t);
+    if (d) loi(`Số dư này đã được ghi trước đó (${d.ket_qua}). Khóa: ${khoa}. Sai thì lập chứng từ điều chỉnh / hủy chứng từ cũ, không nhập lại.`);
+    await bang('mo_so_khoa').create({ khoa, nhap_lo_id, ket_qua }, { transaction: t, hooks: false });
+  };
+  p.giuKhoa = giuKhoa;
+  const boKhoa = (t: Transaction, ket_qua: string) => p.sql(`DELETE FROM mo_so_khoa WHERE ket_qua = :k`, { k: ket_qua }, t);
+  p.boKhoa = boKhoa;
+
+  // ---------------- KỲ MỞ SỔ ----------------
+  H['ky_mo_so:khoa'] = async (ctx, t) => {
+    canQuyen(ctx, 'khóa kỳ mở sổ');
+    const k = await p.khoa('ky_mo_so', id(ctx), t);
+    if (k.trang_thai === 'da_khoa') return { ok: true };
+    const [r] = await p.sql(`SELECT COUNT(*)::int AS n FROM nhap_lo WHERE ky_mo_so_id = :k AND trang_thai IN ('nhap','da_kiem','da_duyet')`, { k: k.id }, t);
+    if (r.n > 0 && !val(ctx).bo_qua_lo_dang_do) loi(`Còn ${r.n} lô nhập chưa ghi / chưa hủy trong kỳ này.`);
+    await k.update({ trang_thai: 'da_khoa', khoa_boi: p.nguoi(ctx) }, { transaction: t, hooks: false });
+    return { ok: true };
+  };
+
+  // ---------------- LÔ NHẬP ----------------
+  /** Kiểm từng dòng: tra mã, tính khóa chống trùng, gom tổng đối chiếu. Không ghi sổ. */
+  const kiemLo = async (ctx: any, t: Transaction, lo: any, ky: any) => {
+    const cot = COT[lo.loai] || loi('Loại dữ liệu không hợp lệ.');
+    const rows = tachBang(lo.du_lieu_goc, cot);
+    const kq: any[] = [];
+    const daThay = new Set<string>();
+    const tong: Record<string, { so_luong: number; gia_tri: number; so_dong: number }> = {};
+    const cong = (nhom: string, sl: number, gt: number) => {
+      tong[nhom] = tong[nhom] || { so_luong: 0, gia_tri: 0, so_dong: 0 };
+      tong[nhom].so_luong = kg(tong[nhom].so_luong + (sl || 0));
+      tong[nhom].gia_tri = tien(tong[nhom].gia_tri + (gt || 0));
+      tong[nhom].so_dong++;
+    };
+    const cache: Record<string, any> = {};
+    const tra = async (b: string, ma: string) => {
+      const k = `${b}:${ma}`;
+      if (!(k in cache)) cache[k] = await timMa(b, ma, t);
+      return cache[k];
+    };
+    for (const r of rows) {
+      const L: string[] = [];
+      const d: any = { ...r };
+      for (const c of cot) {
+        if (c.bat_buoc && !String(r[c.k] ?? '').trim()) L.push(`thiếu "${c.ten[0]}"`);
+        if (c.kieu === 'so' && String(r[c.k] ?? '').trim()) { d[c.k] = docSo(r[c.k]); if (Number.isNaN(d[c.k])) L.push(`"${c.ten[0]}" không phải số`); }
+        if (c.kieu === 'ngay' && String(r[c.k] ?? '').trim()) { d[c.k] = docNgay(r[c.k]); if (d[c.k] === 'SAI') L.push(`"${c.ten[0]}" sai ngày (dd/mm/yyyy)`); }
+        if ((c.kieu === 'ngay' || c.kieu === 'so') && !String(r[c.k] ?? '').trim()) d[c.k] = null;
+      }
+      let khoa = '';
+      let trung = '';
+      const L2 = async () => {
+        if (DANH_MUC.includes(lo.loai)) {
+          const cu = await tra(lo.loai, d.ma);
+          khoa = `dm|${lo.loai}|${d.ma}`;
+          if (lo.loai === 'mat_hang') {
+            if (r.dvt_ton !== undefined) { d.dvt_ton = chon(r.dvt_ton, M_DVT, 'kg'); if (d.dvt_ton === 'SAI') L.push('ĐVT tồn phải là Kg / Cái / Gói / Bao / Thùng'); }
+            if (r.loai_hang !== undefined) { d.loai_hang = chon(r.loai_hang, M_LOAI_HANG, 'hang_hoa'); if (d.loai_hang === 'SAI') L.push('Loại hàng không hợp lệ'); }
+          }
+          if (lo.loai === 'kho') {
+            d.loai_kho = chon(r.loai_kho, M_LOAI_KHO, 'ban_duoc'); if (d.loai_kho === 'SAI') L.push('Loại kho: Bán được / Nhà máy / Chờ xử lý');
+            d.trung_chuyen = co(r.trung_chuyen);
+          }
+          if (lo.loai === 'quy') {
+            const dv = await tra('don_vi', d.don_vi); if (!dv) L.push(`không có đơn vị mã "${d.don_vi}"`); else d.don_vi_id = dv.id;
+            d.loai = chon(r.loai, M_LOAI_QUY); if (!d.loai || d.loai === 'SAI') L.push('Loại quỹ: Tiền mặt / Ngân hàng');
+            delete d.don_vi;
+          }
+          if (lo.loai === 'tai_san') {
+            d.loai = chon(r.loai, M_TS, 'tscd'); if (d.loai === 'SAI') L.push('Loại: TSCĐ / CCDC / Thiết bị văn phòng');
+            d.tinh_trang = chon(r.tinh_trang, M_TT_TS, 'dang_dung'); if (d.tinh_trang === 'SAI') L.push('Tình trạng không hợp lệ');
+            if (d.don_vi) { const dv = await tra('don_vi', d.don_vi); if (!dv) L.push(`không có đơn vị mã "${d.don_vi}"`); else d.don_vi_so_huu_id = dv.id; }
+            delete d.don_vi;
+            d.dung_cho_san_xuat = co(r.dung_cho_san_xuat);
+          }
+          if (cu) {
+            const khac = Object.keys(d).filter((k) => !k.startsWith('_') && d[k] !== '' && d[k] !== null && d[k] !== undefined && String(cu[k] ?? '') !== String(d[k]));
+            trung = khac.length ? `Mã đã có, khác ở: ${khac.join(', ')}` + (lo.che_do === 'cap_nhat' ? ' → sẽ CẬP NHẬT' : ' → bỏ qua (chọn "Cập nhật theo file" nếu muốn ghi đè)') : 'Mã đã có, không khác';
+            d._co_id = cu.id;
+          }
+          return;
+        }
+        const kyMa = ky.ma;
+        if (lo.loai === 'ton_dau_ky') {
+          const kho = await tra('kho', d.kho); const mh = await tra('mat_hang', d.mat_hang);
+          if (!kho) L.push(`không có kho mã "${d.kho}"`);
+          if (!mh) L.push(`không có mặt hàng mã "${d.mat_hang}"`);
+          if (!(d.so_luong > 0)) L.push('số lượng phải lớn hơn 0');
+          d.tinh_trang_gia = chon(r.tinh_trang_gia, M_GIA, d.gia_tri > 0 ? 'co_gia' : 'cho_gia');
+          if (d.tinh_trang_gia === 'SAI') L.push('Tình trạng giá: Đã chốt / Tạm tính / Chưa xác định');
+          if (d.tinh_trang_gia !== 'cho_gia' && !(d.gia_tri > 0)) L.push('đã chốt / tạm tính thì phải có giá trị > 0 (chưa có giá: ghi "Chưa xác định", không ghi 0)');
+          if (d.tinh_trang_gia === 'cho_gia' && d.gia_tri) L.push('chưa xác định giá thì để trống giá trị');
+          d.tinh_trang_hang = chon(r.tinh_trang_hang, M_HANG, 'ban_duoc');
+          if (d.tinh_trang_hang === 'SAI') L.push('Tình trạng hàng: Bán được / Chờ xử lý / Đang vận chuyển');
+          if (kho && d.tinh_trang_hang === 'cho_xu_ly' && kho.loai_kho !== 'cho_xu_ly') L.push('hàng chờ xử lý phải nhập vào kho loại "Chờ xử lý"');
+          if (kho && d.tinh_trang_hang === 'dang_van_chuyen' && !kho.trung_chuyen) L.push('hàng đang vận chuyển phải nhập vào kho "đang vận chuyển"');
+          if (kho && d.tinh_trang_hang === 'ban_duoc' && kho.loai_kho === 'cho_xu_ly') L.push('kho chờ xử lý không chứa hàng bán được');
+          if (kho && mh) { d.kho_id = kho.id; d.mat_hang_id = mh.id; khoa = `ton|${kyMa}|${kho.id}|${mh.id}`; cong(kho.ma, d.so_luong, d.gia_tri || 0); }
+        } else if (lo.loai === 'no_khach' || lo.loai === 'no_ncc') {
+          const ben = lo.loai === 'no_khach' ? await tra('khach_hang', d.khach) : await tra('nha_cung_cap', d.ncc);
+          const dv = await tra('don_vi', d.don_vi);
+          if (!ben) L.push(`không có ${lo.loai === 'no_khach' ? 'khách' : 'NCC'} mã "${d.khach || d.ncc}"`);
+          if (!dv) L.push(`không có đơn vị mã "${d.don_vi}" (APH / VH / MK / TL)`);
+          if (!(d.so_tien > 0)) L.push('số dư phải lớn hơn 0 (khách trả trước / NCC ứng trước: nhập ở "Tiền cọc / chưa phân bổ")');
+          d.doi_chieu = chon(r.doi_chieu, M_DC, 'cho'); if (d.doi_chieu === 'SAI') L.push('Đối chiếu: Đã đối chiếu / Chờ đối chiếu');
+          if (ben && dv) { d.ben_id = ben.id; d.don_vi_id = dv.id; khoa = `${lo.loai}|${kyMa}|${ben.id}|${dv.id}|${boDau(d.chung_tu_goc) || 'tong'}`; cong(dv.ma, 0, d.so_tien); }
+        } else if (lo.loai === 'quy_dau_ky') {
+          const q = await tra('quy', d.quy);
+          if (!q) L.push(`không có quỹ mã "${d.quy}"`);
+          if (d.so_tien === null || d.so_tien === undefined || d.so_tien < 0) L.push('số dư phải ≥ 0');
+          if (q) {
+            d.quy_id = q.id; khoa = `quy|${kyMa}|${q.id}`; cong(q.ma, 0, d.so_tien);
+            const [x] = await p.sql(`SELECT COUNT(*)::int AS n FROM so_quy WHERE quy_id = :q`, { q: q.id }, t);
+            if (x.n > 0) L.push(`quỹ đã có ${x.n} dòng sổ quỹ: số dư đầu kỳ phải ghi trước mọi phát sinh`);
+          }
+        } else if (lo.loai === 'tien_chua_pb') {
+          const q = await tra('quy', d.quy);
+          if (!q) L.push(`không có quỹ mã "${d.quy}"`);
+          d.loai_thu = chon(r.loai_thu, M_THU); if (!d.loai_thu || d.loai_thu === 'SAI') L.push('Loại: Cọc / Chưa rõ / Chưa phân bổ');
+          if (!(d.so_tien > 0)) L.push('số tiền phải lớn hơn 0');
+          if (d.khach) { const k = await tra('khach_hang', d.khach); if (!k) L.push(`không có khách mã "${d.khach}"`); else d.khach_id = k.id; }
+          if (d.loai_thu !== 'chua_ro' && !d.khach_id) L.push('cọc / tiền thừa phải có mã khách (không rõ khách: loại "Chưa rõ")');
+          if (d.loai_thu === 'chua_ro' && d.khach_id) L.push('loại "Chưa rõ" thì để trống mã khách');
+          if (q) { d.quy_id = q.id; d.don_vi_id = q.don_vi_id; d.hinh_thuc = q.loai === 'tien_mat' ? 'tien_mat' : 'chuyen_khoan'; khoa = `tpb|${kyMa}|${q.id}|${boDau(d.ma_tham_chieu)}`; cong(q.ma, 0, d.so_tien); }
+        } else if (lo.loai === 'thu_ho_dau_ky') {
+          const a = await tra('don_vi', d.don_vi_giu); const b = await tra('don_vi', d.don_vi_chu_no);
+          if (!a || !b) L.push('mã đơn vị không đúng (APH / VH / MK / TL)');
+          if (a && b && a.id === b.id) L.push('hai đơn vị phải khác nhau');
+          if (!(d.so_tien > 0)) L.push('số tiền phải lớn hơn 0');
+          if (a && b) { d.don_vi_nhan_id = a.id; d.don_vi_chu_no_id = b.id; khoa = `thuho|${kyMa}|${boDau(d.ma_tham_chieu)}`; cong(`${a.ma}→${b.ma}`, 0, d.so_tien); }
+        } else if (lo.loai === 'don_chuyen_tiep') {
+          const k = await tra('khach_hang', d.khach); const dv = await tra('don_vi', d.don_vi);
+          const mh = await tra('mat_hang', d.mat_hang); const kho = await tra('kho', d.kho);
+          if (!k) L.push(`không có khách mã "${d.khach}"`); if (!dv) L.push(`không có đơn vị mã "${d.don_vi}"`);
+          if (!mh) L.push(`không có mặt hàng mã "${d.mat_hang}"`); if (!kho) L.push(`không có kho mã "${d.kho}"`);
+          if (!(d.so_luong > 0)) L.push('số lượng còn giao phải > 0');
+          if (!(d.don_gia >= 0)) L.push('thiếu đơn giá');
+          d.tinh_trang = chon(r.tinh_trang, M_DON, 'cho_giao'); if (d.tinh_trang === 'SAI') L.push('Tình trạng: Chưa giao / Đang vận chuyển');
+          d.cach_giao = chon(r.cach_giao, M_GIAO, d.tinh_trang === 'dang_van_chuyen' ? 'van_chuyen' : 'khach_den_lay');
+          if (k && dv && mh && kho) {
+            Object.assign(d, { khach_id: k.id, don_vi_ban_id: dv.id, mat_hang_id: mh.id, kho_id: kho.id });
+            const [x] = await p.sql(`SELECT so FROM don_ban WHERE so_don_cu = :s AND trang_thai <> 'da_huy' LIMIT 1`, { s: d.so_don_cu }, t);
+            if (x) trung = `Đơn cũ ${d.so_don_cu} đã chuyển thành ${x.so}`;
+            cong(`${dv.ma} · ${d.tinh_trang === 'dang_van_chuyen' ? 'đang vận chuyển' : 'chưa giao'}`, d.so_luong, tien(d.so_luong * d.don_gia));
+          }
+          khoa = `don|${kyMa}|${boDau(d.so_don_cu)}|${r._stt}`;
+        }
+      };
+      await L2();
+      if (khoa && !DANH_MUC.includes(lo.loai) && lo.loai !== 'don_chuyen_tiep') {
+        if (daThay.has(khoa)) L.push('trùng với một dòng khác trong cùng file');
+        daThay.add(khoa);
+        const [x] = await p.sql(`SELECT ket_qua FROM mo_so_khoa WHERE khoa = :k`, { k: khoa }, t);
+        if (x) trung = `Đã ghi trước đó (${x.ket_qua})`;
+      }
+      if (DANH_MUC.includes(lo.loai)) {
+        if (daThay.has(khoa)) L.push('mã trùng trong cùng file');
+        daThay.add(khoa);
+      }
+      kq.push({ stt: r._stt, du_lieu: d, khoa_trung: khoa, loi: [...L, ...(trung ? [trung] : [])].join('; '),
+        trang_thai: L.length ? 'loi' : trung && !(DANH_MUC.includes(lo.loai) && lo.che_do === 'cap_nhat' && !/không khác/.test(trung)) ? 'trung' : 'hop_le' });
+    }
+    // Đơn chuyển tiếp: các dòng cùng số đơn phải cùng khách / đơn vị / tình trạng.
+    if (lo.loai === 'don_chuyen_tiep') {
+      const g: Record<string, any> = {};
+      for (const x of kq) {
+        const d = x.du_lieu;
+        const k = d.so_don_cu;
+        g[k] = g[k] || d;
+        if (g[k].khach_id !== d.khach_id || g[k].don_vi_ban_id !== d.don_vi_ban_id || g[k].tinh_trang !== d.tinh_trang) {
+          x.trang_thai = 'loi'; x.loi = [x.loi, 'các dòng cùng số đơn phải cùng khách, đơn vị, tình trạng'].filter(Boolean).join('; ');
+        }
+      }
+      const loiDon = new Set(kq.filter((x) => x.trang_thai !== 'hop_le').map((x) => x.du_lieu.so_don_cu));
+      for (const x of kq) if (x.trang_thai === 'hop_le' && loiDon.has(x.du_lieu.so_don_cu)) { x.trang_thai = 'loi'; x.loi = 'dòng khác của cùng đơn bị lỗi / trùng'; }
+    }
+    return { kq, tong };
+  };
+
+  /** Số trong hệ thống để đối chiếu trước / sau (theo cùng nhóm với tổng của file). */
+  const tongHeThong = async (t: Transaction, loai: string, nhom: string[]) => {
+    const r: Record<string, any> = {};
+    for (const n of nhom) {
+      let x: any = null;
+      if (loai === 'ton_dau_ky') [x] = await p.sql(`SELECT COALESCE(SUM(tk.so_kg),0) AS so_luong, COALESCE((SELECT SUM(g.gia_tri) FROM gia_von g WHERE g.kho_id = k.id),0) AS gia_tri
+          FROM kho k LEFT JOIN ton_kho tk ON tk.kho_id = k.id WHERE k.ma = :n GROUP BY k.id`, { n }, t);
+      else if (loai === 'no_khach') [x] = await p.sql(`SELECT 0 AS so_luong, COALESCE(SUM(d.con_no),0) AS gia_tri FROM don_ban d JOIN don_vi v ON v.id = d.don_vi_ban_id
+          WHERE v.ma = :n AND d.loai = 'dau_ky' AND d.trang_thai <> 'da_huy'`, { n }, t);
+      else if (loai === 'no_ncc') [x] = await p.sql(`SELECT 0 AS so_luong, COALESCE(SUM(n.so_tien - COALESCE(n.da_tra,0)),0) AS gia_tri FROM no_ncc_dau_ky n
+          JOIN don_vi v ON v.id = n.don_vi_id WHERE v.ma = :n AND n.trang_thai = 'da_ghi'`, { n }, t);
+      else if (loai === 'quy_dau_ky') [x] = await p.sql(`SELECT 0 AS so_luong, COALESCE(SUM(s.so_tien),0) AS gia_tri FROM quy q LEFT JOIN so_quy s ON s.quy_id = q.id
+          WHERE q.ma = :n GROUP BY q.id`, { n }, t);
+      else if (loai === 'tien_chua_pb') [x] = await p.sql(`SELECT 0 AS so_luong, COALESCE(SUM(pt.chua_phan_bo),0) AS gia_tri,
+          (SELECT COALESCE(SUM(s.so_tien),0) FROM so_quy s WHERE s.quy_id = q.id) AS so_du_quy
+          FROM quy q LEFT JOIN phieu_thu pt ON pt.quy_id = q.id AND pt.trang_thai = 'da_ghi' WHERE q.ma = :n GROUP BY q.id`, { n }, t);
+      r[n] = x ? { so_luong: kg(x.so_luong), gia_tri: tien(x.gia_tri), ...(x.so_du_quy !== undefined ? { so_du_quy: tien(x.so_du_quy) } : {}) } : null;
+    }
+    return r;
+  };
+
+  H['nhap_lo:kiem'] = async (ctx, t) => {
+    canQuyen(ctx, 'nhập số dư / danh mục hàng loạt');
+    const lo = await p.khoa('nhap_lo', id(ctx), t);
+    if (!['nhap', 'da_kiem', 'da_duyet'].includes(lo.trang_thai)) loi('Lô đã ghi sổ hoặc đã hủy.');
+    const ky = MO_SO.includes(lo.loai) ? await kyMo(t) : null;
+    const { kq, tong } = await kiemLo(ctx, t, lo, ky || { ma: '-' });
+    await p.sql(`DELETE FROM nhap_dong WHERE nhap_lo_id = :l`, { l: lo.id }, t);
+    for (const x of kq) {
+      await bang('nhap_dong').create({ nhap_lo_id: lo.id, stt: x.stt, du_lieu: JSON.stringify(x.du_lieu), khoa_trung: x.khoa_trung,
+        trang_thai: x.trang_thai, loi: x.loi }, { transaction: t, hooks: false });
+    }
+    const dem = (s: string) => kq.filter((x) => x.trang_thai === s).length;
+    const tong_kiem = { file: tong, truoc: MO_SO.includes(lo.loai) ? await tongHeThong(t, lo.loai, Object.keys(tong)) : {} };
+    // Tiền chưa phân bổ / cọc đầu kỳ không được vượt số dư quỹ đã mở (tránh đếm đôi).
+    if (lo.loai === 'tien_chua_pb') {
+      for (const [n, v] of Object.entries<any>(tong)) {
+        const ht = (tong_kiem.truoc as any)[n];
+        if (ht && v.gia_tri + ht.gia_tri > ht.so_du_quy) (tong_kiem as any).canh_bao = [...((tong_kiem as any).canh_bao || []),
+          `Quỹ ${n}: tiền chưa phân bổ ${vnd(v.gia_tri + ht.gia_tri)} đ lớn hơn số dư quỹ ${vnd(ht.so_du_quy)} đ — nhập số dư quỹ trước / kiểm tra đếm đôi.`];
+      }
+    }
+    await lo.update({ trang_thai: 'da_kiem', so_dong: kq.length, so_hop_le: dem('hop_le'), so_loi: dem('loi'), so_trung: dem('trung'),
+      ky_mo_so_id: ky?.id || null, tong_kiem: JSON.stringify(tong_kiem), nguoi_nhap: lo.nguoi_nhap || p.nguoi(ctx), nguoi_duyet: null },
+    { transaction: t, hooks: false });
+    return { ok: true, so_dong: kq.length, hop_le: dem('hop_le'), loi: dem('loi'), trung: dem('trung'), tong_kiem };
+  };
+  H['nhap_lo:duyet'] = async (ctx, t) => {
+    canQuyen(ctx, 'duyệt lô nhập');
+    const lo = await p.khoa('nhap_lo', id(ctx), t);
+    if (lo.trang_thai !== 'da_kiem') loi('Bấm "Kiểm tra" trước khi duyệt (hoặc lô đã duyệt / đã ghi).');
+    if (Number(lo.so_loi) > 0) loi(`Còn ${lo.so_loi} dòng lỗi: sửa dữ liệu, dán lại và kiểm tra lại.`);
+    if (!Number(lo.so_hop_le)) loi('Không có dòng hợp lệ để ghi.');
+    await lo.update({ trang_thai: 'da_duyet', nguoi_duyet: p.nguoi(ctx) }, { transaction: t, hooks: false });
+    return { ok: true };
+  };
+  H['nhap_lo:huy'] = async (ctx, t) => {
+    canQuyen(ctx, 'hủy lô nhập');
+    const lo = await p.khoa('nhap_lo', id(ctx), t);
+    if (lo.trang_thai === 'da_ghi') loi('Lô đã ghi sổ: không hủy lô. Sai thì hủy / điều chỉnh từng chứng từ đã tạo (giữ lịch sử).');
+    await lo.update({ trang_thai: 'da_huy' }, { transaction: t, hooks: false });
+    return { ok: true };
+  };
+
+  H['nhap_lo:ghi'] = async (ctx, t) => {
+    canQuyen(ctx, 'ghi sổ lô nhập');
+    const lo = await p.khoa('nhap_lo', id(ctx), t);
+    if (lo.trang_thai === 'da_ghi') return { ok: true, da_ghi_truoc: true };
+    if (lo.trang_thai !== 'da_duyet') loi('Lô phải được duyệt trước khi ghi sổ.');
+    const ky = MO_SO.includes(lo.loai) ? await kyMo(t) : null;
+    if (ky && lo.ky_mo_so_id && ky.id !== lo.ky_mo_so_id) loi('Kỳ mở sổ đã đổi từ lúc kiểm tra: kiểm tra lại.');
+    // Kiểm lại ngay trong giao dịch ghi (có thể có người ghi trùng giữa lúc kiểm và lúc ghi).
+    const { kq } = await kiemLo(ctx, t, lo, ky || { ma: '-' });
+    if (kq.some((x) => x.trang_thai === 'loi')) loi('Dữ liệu có lỗi mới phát sinh từ lúc kiểm tra: bấm Kiểm tra lại.');
+    const dong = await bang('nhap_dong').findAll({ where: { nhap_lo_id: lo.id }, transaction: t, order: [['stt', 'ASC']] });
+    const theoStt = new Map(dong.map((x: any) => [x.stt, x]));
+    const ghiDong = async (x: any, trang_thai: string, ket_qua = '') => {
+      const d = theoStt.get(x.stt) as any;
+      if (d) await d.update({ trang_thai, ket_qua, loi: x.loi }, { transaction: t, hooks: false });
+    };
+    const ngay = ky?.ngay_chot || homNay();
+    const nguon = `${lo.so}${lo.nguon ? ' · ' + lo.nguon : ''}`;
+    let so = 0;
+    const hopLe = kq.filter((x) => x.trang_thai === 'hop_le');
+    for (const x of kq.filter((x) => x.trang_thai !== 'hop_le')) await ghiDong(x, 'bo_qua');
+
+    if (DANH_MUC.includes(lo.loai)) {
+      for (const x of hopLe) {
+        const d = { ...x.du_lieu };
+        const coId = d._co_id;
+        for (const k of Object.keys(d)) if (k.startsWith('_') || d[k] === '' || d[k] === null) delete d[k];
+        if (coId) {
+          await bang(lo.loai).update(d, { where: { id: coId }, transaction: t, individualHooks: true, choPhep: true } as any);
+          await ghiDong(x, 'da_ghi', `cập nhật ${d.ma}`);
+        } else {
+          await bang(lo.loai).create(d, { transaction: t });
+          await ghiDong(x, 'da_ghi', `thêm ${d.ma}`);
+        }
+        so++;
+      }
+    } else if (lo.loai === 'ton_dau_ky') {
+      const theoKho: Record<string, any[]> = {};
+      for (const x of hopLe) (theoKho[x.du_lieu.kho_id] = theoKho[x.du_lieu.kho_id] || []).push(x);
+      for (const [kho_id, ds] of Object.entries(theoKho)) {
+        const pk = await bang('phieu_kho').create({ loai: 'dau_ky', kho_id, ngay, nhap_lo_id: lo.id, ghi_chu: `Tồn đầu kỳ ${ky.ma} — ${nguon}` }, { transaction: t });
+        for (const x of ds) {
+          const d = x.du_lieu;
+          await bang('phieu_kho_dong').create({ phieu_kho_id: pk.id, mat_hang_id: d.mat_hang_id, so_kg: d.so_luong, so_bao: d.so_bao || 0,
+            don_gia: d.tinh_trang_gia === 'cho_gia' ? null : Math.round((d.gia_tri / d.so_luong) * 10000) / 10000,
+            trang_thai_gia: d.tinh_trang_gia === 'tam' ? 'tam' : null, tinh_trang_hang: d.tinh_trang_hang, ghi_chu: d.ghi_chu || `dòng ${x.stt}` }, { transaction: t });
+        }
+        await goi('phieu_kho:ghiSo', ctx, t, pk.id);
+        // Giá trị đúng theo file (đơn giá làm tròn có thể lệch vài đồng): chỉnh phần lệch bằng một dòng giá trị.
+        for (const x of ds) {
+          const d = x.du_lieu;
+          if (d.tinh_trang_gia === 'cho_gia') continue;
+          const [g] = await p.sql(`SELECT COALESCE(SUM(gia_tri),0) AS v FROM so_gia_von WHERE chung_tu = :c AND mat_hang_id = :m AND kho_id = :k`,
+            { c: pk.so, m: d.mat_hang_id, k: kho_id }, t);
+          const lech = tien(d.gia_tri) - tien(g.v);
+          if (lech) await p.capNhatGia(t, { ngay, mat_hang_id: d.mat_hang_id, kho_id, so_luong: 0, gia_tri: lech, loai: 'dau_ky_lam_tron', chung_tu: pk.so });
+          await ghiDong(x, 'da_ghi', pk.so);
+          so++;
+        }
+        for (const x of ds) if (x.du_lieu.tinh_trang_gia === 'cho_gia') { await ghiDong(x, 'da_ghi', pk.so + ' (chờ định giá)'); so++; }
+      }
+    } else if (lo.loai === 'no_khach') {
+      for (const x of hopLe) {
+        const d = x.du_lieu;
+        const don = await bang('don_ban').create({ loai: 'dau_ky', khach_id: d.ben_id, don_vi_ban_id: d.don_vi_id, tong_tien: d.so_tien,
+          ngay: d.ngay_ct || ngay, ngay_giao: d.ngay_ct || ngay, han_tt: d.han_tt, chung_tu_goc: d.chung_tu_goc, doi_chieu: d.doi_chieu,
+          nhap_lo_id: lo.id, ghi_chu: [`Nợ đầu kỳ ${ky.ma}`, d.ghi_chu, nguon].filter(Boolean).join(' — ') }, { transaction: t, choPhep: true } as any);
+        await giuKhoa(t, x.khoa_trung, lo.id, don.so);
+        await ghiDong(x, 'da_ghi', don.so); so++;
+      }
+    } else if (lo.loai === 'no_ncc') {
+      for (const x of hopLe) {
+        const d = x.du_lieu;
+        const n = await bang('no_ncc_dau_ky').create({ nha_cung_cap_id: d.ben_id, don_vi_id: d.don_vi_id, so_tien: tien(d.so_tien), da_tra: 0,
+          chung_tu_goc: d.chung_tu_goc, ngay_ct: d.ngay_ct || ngay, han_tt: d.han_tt, doi_chieu: d.doi_chieu, trang_thai: 'da_ghi', nhap_lo_id: lo.id,
+          ghi_chu: [d.ghi_chu, nguon].filter(Boolean).join(' — ') }, { transaction: t, choPhep: true } as any);
+        await giuKhoa(t, x.khoa_trung, lo.id, n.so);
+        await ghiDong(x, 'da_ghi', n.so); so++;
+      }
+    } else if (lo.loai === 'quy_dau_ky') {
+      for (const x of hopLe) {
+        const d = x.du_lieu;
+        const ct = `${lo.so}-${x.stt}`;
+        await giuKhoa(t, x.khoa_trung, lo.id, ct);
+        if (tien(d.so_tien)) await p.ghiQuy(t, { ngay, quy_id: d.quy_id, so_tien: tien(d.so_tien), loai: 'dau_ky', chung_tu: ct,
+          dien_giai: [`Số dư đầu kỳ ${ky.ma}`, d.ghi_chu].filter(Boolean).join(' — ') });
+        await ghiDong(x, 'da_ghi', ct); so++;
+      }
+    } else if (lo.loai === 'tien_chua_pb') {
+      for (const x of hopLe) {
+        const d = x.du_lieu;
+        const pt = await bang('phieu_thu').create({ dau_ky: true, loai_thu: d.loai_thu, khach_id: d.khach_id || null, don_vi_id: d.don_vi_id,
+          quy_id: d.quy_id, hinh_thuc: d.hinh_thuc, so_tien: tien(d.so_tien), ma_gd: d.ma_tham_chieu, ma_tham_chieu: d.ma_tham_chieu,
+          muc_dich_coc: d.muc_dich_coc, ngay: d.ngay || ngay, nhap_lo_id: lo.id, ghi_chu: [`Đầu kỳ ${ky.ma}`, d.ghi_chu, nguon].filter(Boolean).join(' — ') },
+        { transaction: t, choPhep: true } as any);
+        // Tiền đã nằm trong số dư quỹ đầu kỳ: KHÔNG ghi sổ quỹ lần nữa, chỉ ghi khoản chưa phân bổ.
+        await pt.update({ trang_thai: 'da_ghi', chua_phan_bo: tien(d.so_tien), ghi_boi: p.nguoi(ctx) }, { transaction: t, choPhep: true } as any);
+        await giuKhoa(t, x.khoa_trung, lo.id, pt.so);
+        await ghiDong(x, 'da_ghi', pt.so); so++;
+      }
+    } else if (lo.loai === 'thu_ho_dau_ky') {
+      for (const x of hopLe) {
+        const d = x.du_lieu;
+        const th = await bang('thu_ho').create({ dau_ky: true, don_vi_nhan_id: d.don_vi_nhan_id, don_vi_chu_no_id: d.don_vi_chu_no_id, so_tien: tien(d.so_tien),
+          trang_thai: 'dang_giu_ho', ma_tham_chieu: d.ma_tham_chieu, nguoi_phan_bo: p.nguoi(ctx),
+          ghi_chu: [`Đầu kỳ ${ky.ma}`, d.ghi_chu, nguon].filter(Boolean).join(' — ') }, { transaction: t, choPhep: true } as any);
+        await giuKhoa(t, x.khoa_trung, lo.id, `thu_ho#${th.id}`);
+        await ghiDong(x, 'da_ghi', `thu_ho#${th.id}`); so++;
+      }
+    } else if (lo.loai === 'don_chuyen_tiep') {
+      const g: Record<string, any[]> = {};
+      for (const x of hopLe) (g[x.du_lieu.so_don_cu] = g[x.du_lieu.so_don_cu] || []).push(x);
+      for (const [soCu, ds] of Object.entries(g)) {
+        const d0 = ds[0].du_lieu;
+        await giuKhoa(t, `don|${ky.ma}|${boDau(soCu)}`, lo.id, soCu);
+        const don = await bang('don_ban').create({ loai: 'ban', khach_id: d0.khach_id, don_vi_ban_id: d0.don_vi_ban_id, ngay: d0.ngay || ngay,
+          cach_giao: d0.cach_giao, nguoi_nhan: d0.nguoi_nhan, so_don_cu: soCu, nhap_lo_id: lo.id,
+          ghi_chu: [`Chuyển tiếp từ đơn ${soCu}`, d0.ghi_chu, nguon].filter(Boolean).join(' — ') }, { transaction: t });
+        const dongDon: any[] = [];
+        for (const x of ds) {
+          const d = x.du_lieu;
+          dongDon.push(await bang('don_ban_dong').create({ don_ban_id: don.id, mat_hang_id: d.mat_hang_id, kho_id: d.kho_id, so_kg: d.so_luong,
+            don_gia: d.don_gia }, { transaction: t }));
+        }
+        // Đơn đã được chốt ở hệ thống cũ: vào thẳng trạng thái đã chốt (không qua duyệt lại).
+        await don.update({ trang_thai: 'cho_xuat', duyet_boi: `Chuyển tiếp ${lo.so}` }, { transaction: t, choPhep: true } as any);
+        if (d0.tinh_trang === 'dang_van_chuyen') {
+          // Hàng đã rời kho trước mốc chốt (không nằm trong tồn đầu kỳ): lượt "đã bàn giao xe", KHÔNG trừ kho lần nữa.
+          let gia_tri = 0;
+          const lg = await bang('luot_giao').create({ don_ban_id: don.id, ngay, cach_giao: 'van_chuyen', nguoi_nhan: d0.nguoi_nhan || '',
+            trang_thai: 'da_ban_giao_xe', xuat_boi: `Chuyển tiếp ${lo.so} (xuất trước Go-Live)` }, { transaction: t, choPhep: true } as any);
+          for (const dd of dongDon) {
+            const tt = tien(kg(dd.so_kg) * Number(dd.don_gia || 0));
+            gia_tri += tt;
+            await bang('luot_giao_dong').create({ luot_giao_id: lg.id, don_ban_dong_id: dd.id, mat_hang_id: dd.mat_hang_id, kho_id: dd.kho_id,
+              so_kg: kg(dd.so_kg), don_gia: dd.don_gia, thanh_tien: tt, gia_von: 0 }, { transaction: t, choPhep: true } as any);
+            await dd.update({ da_giao: kg(dd.so_kg) }, { transaction: t, hooks: false });
+          }
+          await lg.update({ gia_tri, gia_von: 0 }, { transaction: t, choPhep: true } as any);
+        }
+        const m = await p.khoa('don_ban', don.id, t);
+        await p.tinhCongNo(t, m);
+        await p.capNhatTrangThaiDon(t, m);
+        for (const x of ds) { await ghiDong(x, 'da_ghi', don.so); so++; }
+      }
+    }
+    const tk = JSON.parse(lo.tong_kiem || '{}');
+    if (MO_SO.includes(lo.loai)) tk.sau = await tongHeThong(t, lo.loai, Object.keys(tk.file || {}));
+    await lo.update({ trang_thai: 'da_ghi', ghi_boi: p.nguoi(ctx), tong_kiem: JSON.stringify(tk) }, { transaction: t, hooks: false });
+    return { ok: true, da_ghi: so, tong_kiem: tk };
+  };
+
+  H['no_ncc_dau_ky:huy'] = async (ctx, t) => {
+    canQuyen(ctx, 'hủy nợ NCC đầu kỳ');
+    const n = await p.khoa('no_ncc_dau_ky', id(ctx), t);
+    if (n.trang_thai === 'da_huy') return { ok: true };
+    if (tien(n.da_tra) > 0) loi('Khoản nợ đã có phiếu chi trả: hủy phiếu chi trước.');
+    if (!lyDo(ctx)) loi('Hủy cần lý do.');
+    await n.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) }, { transaction: t, hooks: false });
+    await boKhoa(t, n.so);
+    return { ok: true };
+  };
+
+  // ---------------- TÀI SẢN ----------------
+  H['tai_san_su_kien:ghi'] = async (ctx, t) => {
+    const e = await p.khoa('tai_san_su_kien', id(ctx), t);
+    if (e.trang_thai === 'da_ghi') return { ok: true, da_ghi_truoc: true };
+    if (e.trang_thai !== 'nhap') loi('Sự kiện đã hủy.');
+    const ts = await p.khoa('tai_san', e.tai_san_id, t);
+    if (['da_thanh_ly', 'mat'].includes(ts.tinh_trang) && e.loai !== 'thu_hoi') loi('Tài sản đã thanh lý / báo mất.');
+    const v: any = {};
+    switch (e.loai) {
+      case 'ban_giao': if (!e.nguoi_nhan) loi('Ghi người nhận.'); v.nguoi_quan_ly = e.nguoi_nhan; v.tinh_trang = 'dang_dung'; if (e.dia_diem_moi) v.dia_diem = e.dia_diem_moi; break;
+      case 'dieu_chuyen': if (!e.dia_diem_moi) loi('Ghi địa điểm mới.'); v.dia_diem = e.dia_diem_moi; if (e.nguoi_nhan) v.nguoi_quan_ly = e.nguoi_nhan; break;
+      case 'cap_phat': {
+        if (!e.nguoi_nhan) loi('Ghi người nhận.');
+        const sl = Number(e.so_luong || 1);
+        if (ts.loai === 'ccdc' && Number(ts.so_luong || 0) > 0 && sl > Number(ts.so_luong)) loi(`Chỉ còn ${ts.so_luong} trong kho.`);
+        if (ts.loai === 'ccdc' && Number(ts.so_luong || 0) > 0) v.so_luong = Number(ts.so_luong) - sl;
+        if (!(ts.loai === 'ccdc' && Number(ts.so_luong || 0) > sl)) { v.nguoi_quan_ly = e.nguoi_nhan; v.tinh_trang = 'dang_dung'; }
+        break;
+      }
+      case 'thu_hoi': v.nguoi_quan_ly = ''; v.tinh_trang = 'trong_kho'; if (ts.loai === 'ccdc' && e.so_luong) v.so_luong = Number(ts.so_luong || 0) + Number(e.so_luong); if (e.dia_diem_moi) v.dia_diem = e.dia_diem_moi; break;
+      case 'bao_tri': case 'sua_chua': v.tinh_trang = 'dang_dung'; if (e.ngay_bao_tri_tiep) v.ngay_bao_tri = e.ngay_bao_tri_tiep; break;
+      case 'bao_hong': v.tinh_trang = 'hong'; break;
+      case 'de_nghi_thanh_ly': if (!e.ghi_chu) loi('Ghi lý do đề nghị thanh lý.'); v.tinh_trang = 'cho_thanh_ly'; break;
+      case 'thanh_ly': canQuyen(ctx, 'duyệt thanh lý tài sản'); if (ts.tinh_trang !== 'cho_thanh_ly') loi('Phải có đề nghị thanh lý trước.'); v.tinh_trang = 'da_thanh_ly'; break;
+      case 'bao_mat': if (!e.ghi_chu) loi('Ghi tình huống mất.'); v.tinh_trang = 'mat'; break;
+      default: loi('Chọn nghiệp vụ.');
+    }
+    await ts.update(v, { transaction: t, hooks: false });
+    await e.update({ trang_thai: 'da_ghi', ghi_boi: p.nguoi(ctx) }, { transaction: t, choPhep: true } as any);
+    return { ok: true };
+  };
+  H['tai_san_su_kien:huy'] = async (ctx, t) => {
+    const e = await p.khoa('tai_san_su_kien', id(ctx), t);
+    if (e.trang_thai === 'da_ghi') loi('Sự kiện đã ghi: lập sự kiện mới để sửa (giữ lịch sử).');
+    await e.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) || '' }, { transaction: t, choPhep: true } as any);
+    return { ok: true };
+  };
+  /** Chi phí sử dụng tài sản ƯỚC TÍNH (quản trị, cho giá thành) — không phải khấu hao kế toán, không sinh bút toán. */
+  H['tai_san:uocTinh'] = async (ctx, t) => {
+    canQuyen(ctx, 'xem chi phí tài sản ước tính');
+    const thang = String(val(ctx).thang || homNay().slice(0, 7));
+    const cuoi = `${thang}-28`;
+    return p.sql(`SELECT id, ma, ten, dia_diem, nguyen_gia, so_thang_sd, ngay_mua, dung_cho_san_xuat,
+        CASE WHEN COALESCE(so_thang_sd,0) > 0 AND COALESCE(nguyen_gia,0) > 0 AND ngay_mua IS NOT NULL
+             AND ngay_mua <= :cuoi::date AND (ngay_mua + (so_thang_sd || ' month')::interval) > :cuoi::date
+             THEN ROUND(nguyen_gia / so_thang_sd) ELSE 0 END AS chi_phi_thang
+      FROM tai_san WHERE loai = 'tscd' AND tinh_trang NOT IN ('da_thanh_ly','mat') ORDER BY dung_cho_san_xuat DESC, ma`, { cuoi }, t);
+  };
+
+  // ---------------- MẺ SẢN XUẤT ----------------
+  /** Tính lại toàn bộ số liệu mẻ từ các phiếu đã ghi + chi phí (không cộng dồn → hủy phiếu không làm sai). */
+  const tinhLaiMe = async (t: Transaction, me: any) => {
+    const [a] = await p.sql(`SELECT
+      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
+        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS nvl,
+      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
+        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') <> 'kg'),0) AS bb,
+      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS kg_nvl,
+      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
+        AND k.trang_thai = 'da_ghi' AND d.huong = 'ra'),0) AS kg_tp,
+      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
+        AND k.trang_thai = 'da_ghi' AND d.huong = 'phu_pham'),0) AS kg_pp,
+      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
+        AND k.trang_thai = 'da_ghi' AND d.huong = 'hao_hut' AND d.loai_hao = 'bat_thuong'),0) AS kg_bt,
+      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
+        AND k.trang_thai = 'da_ghi' AND d.huong = 'hao_hut' AND COALESCE(d.loai_hao,'tu_nhien') = 'tu_nhien'),0) AS kg_tn,
+      COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu WHERE k.me_sx_id = :m AND k.trang_thai = 'da_ghi'
+        AND g.loai = 'thu_hoi_phu_pham'),0) + COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g WHERE g.chung_tu = :so AND g.loai = 'gia_phu_pham_dc'),0) AS pp,
+      COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu WHERE k.me_sx_id = :m AND k.trang_thai = 'da_ghi'
+        AND g.loai = 'thu_hoi_ra'),0) + COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g WHERE g.chung_tu = :so AND g.loai = 'gia_thanh_dc'),0) AS vao_kho,
+      COALESCE((SELECT SUM(so_tien) FROM me_sx_chi_phi WHERE me_sx_id = :m),0) AS cp`, { m: me.id, so: me.so }, t);
+    const v = { gia_tri_nvl: tien(a.nvl), gia_tri_bao_bi: tien(a.bb), kg_nvl: kg(a.kg_nvl), kg_tp: kg(a.kg_tp), kg_phu_pham: kg(a.kg_pp),
+      kg_hao_bat_thuong: kg(a.kg_bt), kg_hao_tu_nhien: kg(a.kg_tn), gia_tri_phu_pham: tien(a.pp), da_vao_kho: tien(a.vao_kho), chi_phi: tien(a.cp) };
+    await me.update(v, { transaction: t, hooks: false });
+    return v;
+  };
+  p.tinhLaiMe = tinhLaiMe;
+
+  /** Ghi phiếu cấp NVL / thu hồi thành phẩm của mẻ (gọi từ phieu_kho:ghiSo). */
+  p.ghiPhieuMe = async (ctx: any, t: Transaction, pk: any, dong: any[]) => {
+    if (!pk.me_sx_id) loi('Phiếu cấp NVL / thu hồi phải chọn mẻ sản xuất.');
+    const me = await p.khoa('me_sx', pk.me_sx_id, t);
+    if (me.trang_thai === 'da_huy') loi('Mẻ đã hủy.');
+    if (pk.kho_id !== me.kho_id) loi('Phiếu của mẻ phải dùng kho nhà máy của mẻ.');
+    const c = (d: any) => ({ ngay: pk.ngay, mat_hang_id: d.mat_hang_id, chung_tu: pk.so, nguon: 'phieu_kho_dong', nguon_id: d.id });
+    if (dong.some((d) => !(kg(d.so_kg) > 0))) loi('Số lượng mỗi dòng phải lớn hơn 0.');
+    if (pk.loai === 'cap_nvl') {
+      for (const d of dong) {
+        const v = await p.ghiSo(t, { ...c(d), kho_id: pk.kho_id, so_luong: -kg(d.so_kg), so_bao: -kg(d.so_bao), loai: 'cap_nvl' });
+        await d.update({ huong: 'vao', don_gia: Math.round((-v / kg(d.so_kg)) * 100) / 100 }, { transaction: t, hooks: false });
+      }
+    } else {
+      if (dong.some((d) => !['ra', 'phu_pham', 'hao_hut'].includes(d.huong))) loi('Mỗi dòng thu hồi chọn: Thành phẩm ra / Phụ phẩm ra / Hao hụt.');
+      if (dong.some((d) => d.huong === 'hao_hut' && !d.loai_hao)) loi('Dòng hao hụt phải chọn Tự nhiên / Bất thường.');
+      if (dong.some((d) => d.huong === 'hao_hut' && d.loai_hao === 'bat_thuong') && !pk.ghi_chu) loi('Hao hụt bất thường: ghi nguyên nhân ở ô Ghi chú.');
+      if (dong.some((d) => d.huong === 'phu_pham' && (d.don_gia === null || d.don_gia === undefined || Number(d.don_gia) < 0)))
+        loi('Phụ phẩm cần đơn giá thu hồi (0 nếu chưa có — kế toán chỉnh khi chốt mẻ).');
+      const s = await tinhLaiMe(t, me);
+      // Giá trị TẠM khi thu hồi = chi phí đã tập hợp / kg NVL đã cấp (giả định hiệu suất 100%); chốt mẻ sẽ điều chỉnh về giá thành thực.
+      const tam = s.kg_nvl > 0 ? Math.max(0, (s.gia_tri_nvl + s.gia_tri_bao_bi + s.chi_phi - s.gia_tri_phu_pham) / s.kg_nvl) : 0;
+      const kho_ra = me.kho_tp_id || me.kho_id;
+      for (const d of dong) {
+        if (d.huong === 'hao_hut') continue;
+        const gt = d.huong === 'phu_pham' ? tien(kg(d.so_kg) * Number(d.don_gia || 0)) : tien(kg(d.so_kg) * tam);
+        await p.ghiSo(t, { ...c(d), kho_id: kho_ra, so_luong: kg(d.so_kg), so_bao: kg(d.so_bao), loai: d.huong === 'ra' ? 'thu_hoi_ra' : 'thu_hoi_phu_pham', gia_tri: gt });
+        if (d.huong === 'ra') await d.update({ don_gia: Math.round(tam * 100) / 100, trang_thai_gia: 'tam' }, { transaction: t, hooks: false });
+      }
+    }
+    await pk.update({ kho_dich_id: pk.loai === 'thu_hoi' ? me.kho_tp_id || me.kho_id : null }, { transaction: t, choPhep: true } as any);
+    const s = await tinhLaiMe(t, me);
+    if (me.trang_thai === 'da_chot') await me.update({ trang_thai: 'can_chot_lai' }, { transaction: t, hooks: false });
+    return { kg_vao: s.kg_nvl, kg_ra: s.kg_tp };
+  };
+
+  H['me_sx:chot'] = async (ctx, t) => {
+    canQuyen(ctx, 'chốt giá thành');
+    const me = await p.khoa('me_sx', id(ctx), t);
+    if (me.trang_thai === 'da_huy') loi('Mẻ đã hủy.');
+    const v = val(ctx);
+    const ngay = homNay();
+    // 1. Chỉnh giá phụ phẩm (nếu kế toán nhập lại): chỉ chỉnh giá trị, không đổi số lượng.
+    for (const [dongId, gia] of Object.entries<any>(v.gia_phu_pham || {})) {
+      const d = await p.khoa('phieu_kho_dong', dongId, t);
+      const pk = await bang('phieu_kho').findByPk(d.phieu_kho_id, { transaction: t });
+      if (!pk || pk.me_sx_id !== me.id || d.huong !== 'phu_pham' || pk.trang_thai !== 'da_ghi') loi('Dòng phụ phẩm không thuộc mẻ.');
+      if (!(Number(gia) >= 0)) loi('Giá phụ phẩm không hợp lệ.');
+      const delta = tien(kg(d.so_kg) * Number(gia)) - tien(kg(d.so_kg) * Number(d.don_gia || 0));
+      if (delta) await p.capNhatGia(t, { ngay, mat_hang_id: d.mat_hang_id, kho_id: pk.kho_dich_id || me.kho_tp_id || me.kho_id, so_luong: 0, gia_tri: delta,
+        loai: 'gia_phu_pham_dc', chung_tu: me.so });
+      await d.update({ don_gia: Number(gia) }, { transaction: t, hooks: false });
+    }
+    for (const [dongId, hs] of Object.entries<any>(v.he_so || {})) {
+      const d = await p.khoa('phieu_kho_dong', dongId, t);
+      if (!(Number(hs) > 0)) loi('Hệ số phải lớn hơn 0.');
+      await d.update({ he_so: Number(hs) }, { transaction: t, hooks: false });
+    }
+    if (v.phuong_phap) await me.update({ phuong_phap: v.phuong_phap }, { transaction: t, hooks: false });
+    const do_dang = tien(v.do_dang_cuoi ?? me.do_dang_cuoi ?? 0);
+    if (do_dang < 0) loi('Dở dang cuối không âm.');
+    const s = await tinhLaiMe(t, me);
+    if (!(s.kg_tp > 0)) loi('Mẻ chưa có thành phẩm thu hồi.');
+    const tongCp = s.gia_tri_nvl + s.gia_tri_bao_bi + s.chi_phi;
+    const goc = tongCp - s.gia_tri_phu_pham - do_dang;
+    if (goc < 0) loi(`Phụ phẩm + dở dang (${vnd(s.gia_tri_phu_pham + do_dang)}) lớn hơn tổng chi phí (${vnd(tongCp)}).`);
+    // Hao hụt bất thường không vào giá thành: tách phần chi phí tương ứng theo kg.
+    const hao_bt = s.kg_hao_bat_thuong > 0 ? tien((goc * s.kg_hao_bat_thuong) / (s.kg_tp + s.kg_hao_bat_thuong)) : 0;
+    const tong_pb = goc - hao_bt;
+    const ra = await p.sql(`SELECT d.id, d.mat_hang_id, d.so_kg, d.he_so, k.kho_dich_id, k.so, m.gia_ban, m.ma FROM phieu_kho_dong d
+      JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+      WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi' AND k.trang_thai = 'da_ghi' AND d.huong = 'ra' ORDER BY d.id`, { m: me.id }, t);
+    const pp = me.phuong_phap || 'kg';
+    const w = ra.map((d: any) => {
+      if (pp === 'he_so') return kg(d.so_kg) * Number(d.he_so || 1);
+      if (pp === 'gia_tri') { if (!(Number(d.gia_ban) > 0)) loi(`Phân bổ theo giá trị: mặt hàng ${d.ma} chưa có giá bán.`); return kg(d.so_kg) * Number(d.gia_ban); }
+      return kg(d.so_kg);
+    });
+    const tw = w.reduce((a: number, b: number) => a + b, 0);
+    let con = tong_pb;
+    const chiTiet: any[] = [];
+    const muc: Record<string, number> = {};
+    ra.forEach((d: any, i: number) => {
+      const gt = i === ra.length - 1 ? con : tien((tong_pb * w[i]) / tw);
+      con -= gt;
+      const k = `${d.mat_hang_id}|${d.kho_dich_id || me.kho_tp_id || me.kho_id}`;
+      muc[k] = (muc[k] || 0) + gt;
+      chiTiet.push({ dong: d.id, phieu: d.so, ma: d.ma, so_kg: kg(d.so_kg), trong_so: w[i], gia_tri: gt, gia_thanh: Math.round((gt / kg(d.so_kg)) * 100) / 100 });
+    });
+    for (const c of chiTiet) await bang('phieu_kho_dong').update({ don_gia: c.gia_thanh, trang_thai_gia: 'co_gia' }, { where: { id: c.dong }, transaction: t, hooks: false });
+    // Điều chỉnh giá trị kho = phân bổ mới − đã ghi vào kho (theo mặt hàng × kho). Hàng đã bán hết: chênh lệch nằm ở sổ giá trị, vào giá vốn kỳ.
+    let dieu_chinh = 0;
+    for (const [k, gt] of Object.entries(muc)) {
+      const [mh, kho] = k.split('|');
+      const [x] = await p.sql(`SELECT COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho pk ON pk.so = g.chung_tu
+          WHERE pk.me_sx_id = :m AND pk.trang_thai = 'da_ghi' AND g.loai = 'thu_hoi_ra' AND g.mat_hang_id = :mh AND g.kho_id = :kho),0)
+        + COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g WHERE g.chung_tu = :so AND g.loai = 'gia_thanh_dc' AND g.mat_hang_id = :mh AND g.kho_id = :kho),0) AS v`,
+      { m: me.id, so: me.so, mh, kho }, t);
+      const delta = tien(gt) - tien(x.v);
+      if (delta) { await p.capNhatGia(t, { ngay, mat_hang_id: mh, kho_id: kho, so_luong: 0, gia_tri: delta, loai: 'gia_thanh_dc', chung_tu: me.so }); dieu_chinh += delta; }
+    }
+    const phien = Number(me.phien_ban || 0) + 1;
+    const gia_thanh = Math.round((tong_pb / s.kg_tp) * 100) / 100;
+    await bang('me_sx_phien_ban').create({ me_sx_id: me.id, phien_ban: phien, ngay, tong_chi_phi: tongCp, phu_pham: s.gia_tri_phu_pham, do_dang_cuoi: do_dang,
+      hao_bat_thuong: hao_bt, tong_phan_bo: tong_pb, dieu_chinh, chi_tiet: JSON.stringify({ phuong_phap: pp, dong: chiTiet }), nguoi: p.nguoi(ctx) },
+    { transaction: t, hooks: false });
+    await me.update({ trang_thai: 'da_chot', do_dang_cuoi: do_dang, kg_do_dang: kg(v.kg_do_dang ?? me.kg_do_dang), hao_bat_thuong_gt: hao_bt,
+      tong_phan_bo: tong_pb, gia_thanh, phien_ban: phien, chot_boi: p.nguoi(ctx) }, { transaction: t, hooks: false });
+    await tinhLaiMe(t, me);
+    return { ok: true, phien_ban: phien, tong_phan_bo: tong_pb, gia_thanh, dieu_chinh, hao_bat_thuong: hao_bt, chi_tiet: chiTiet };
+  };
+  H['me_sx:huy'] = async (ctx, t) => {
+    const me = await p.khoa('me_sx', id(ctx), t);
+    const [r] = await p.sql(`SELECT COUNT(*)::int AS n FROM phieu_kho WHERE me_sx_id = :m AND trang_thai = 'da_ghi'`, { m: me.id }, t);
+    if (r.n) loi('Mẻ đã có phiếu cấp / thu hồi đã ghi: hủy các phiếu đó trước.');
+    await me.update({ trang_thai: 'da_huy' }, { transaction: t, hooks: false });
+    return { ok: true };
+  };
+}
+
+/** Hook cho các bảng mới (gọi trong beforeLoad). */
+export function hookMoRong(p: any) {
+  const db = p.db;
+  db.on('tai_san.beforeSave', (m: any) => m.set('nhan', [m.get('ma'), m.get('ten')].filter(Boolean).join(' – ')));
+  db.on('tai_san_su_kien.beforeCreate', (m: any) => { if (!m.get('ngay')) m.set('ngay', homNay()); m.set('trang_thai', 'nhap'); });
+  db.on('tai_san_su_kien.beforeUpdate', (m: any, o: any) => {
+    if (!o?.choPhep && m.previous('trang_thai') && m.previous('trang_thai') !== 'nhap') loi('Sự kiện đã ghi: không sửa được.');
+  });
+  db.on('tai_san.beforeUpdate', (m: any, o: any) => {
+    // Người giữ / tình trạng / địa điểm chỉ đổi qua sự kiện (giữ lịch sử bàn giao).
+    if (o?.hooks === false || o?.choPhep) return;
+    const doi = (m.changed() || []).filter((k: string) => ['nguoi_quan_ly', 'tinh_trang', 'dia_diem', 'so_luong'].includes(k));
+    if (doi.length && m.previous('ma')) loi('Người giữ / địa điểm / tình trạng / số lượng thay đổi qua "Sự kiện tài sản" (bàn giao, điều chuyển, báo hỏng…).');
+  });
+  db.on('me_sx.beforeCreate', (m: any) => { if (!m.get('ngay_mo')) m.set('ngay_mo', homNay()); m.set('trang_thai', 'mo'); m.set('phien_ban', 0); });
+  db.on('me_sx.beforeUpdate', (m: any, o: any) => {
+    if (o?.hooks === false) return;
+    const doi = (m.changed() || []).filter((k: string) => !['ghi_chu', 'san_pham_du_kien', 'xuong', 'phuong_phap', 'do_dang_cuoi', 'kg_do_dang', 'updatedAt', 'updatedById'].includes(k));
+    if (doi.length) loi('Số liệu mẻ do hệ thống tính từ phiếu và chi phí: không sửa tay.');
+  });
+  const capNhatMe = async (m: any, o: any) => {
+    const t = o?.transaction;
+    const me = await p.bang('me_sx').findByPk(m.get('me_sx_id'), { transaction: t });
+    if (!me) return;
+    if (me.trang_thai === 'da_huy') loi('Mẻ đã hủy.');
+    await p.tinhLaiMe(t, me);
+    if (me.trang_thai === 'da_chot') await me.update({ trang_thai: 'can_chot_lai' }, { transaction: t, hooks: false });
+  };
+  db.on('me_sx_chi_phi.beforeSave', (m: any, o: any) => {
+    if (!m.get('ngay')) m.set('ngay', homNay());
+    if (!(Number(m.get('so_tien')) > 0) && m.get('loai') !== 'do_dang_dau_ky') loi('Số tiền chi phí phải lớn hơn 0.');
+    if (!m.get('loai')) loi('Chọn khoản chi phí.');
+    return o;
+  });
+  for (const sk of ['afterSave', 'afterDestroy']) db.on(`me_sx_chi_phi.${sk}`, capNhatMe);
+  for (const b of ['me_sx_phien_ban', 'mo_so_khoa', 'nhap_dong']) {
+    for (const sk of ['beforeCreate', 'beforeUpdate', 'beforeDestroy']) db.on(`${b}.${sk}`, (_m: any, o: any) => { if (o?.hooks !== false) loi('Chỉ thay đổi qua thao tác nghiệp vụ.'); });
+  }
+  db.on('nhap_lo.beforeCreate', (m: any) => { m.set('trang_thai', 'nhap'); });
+  db.on('nhap_lo.beforeUpdate', (m: any, o: any) => {
+    if (o?.hooks === false) return;
+    const tr = m.previous('trang_thai');
+    if (tr && !['nhap', 'da_kiem'].includes(tr)) loi('Lô đã duyệt / đã ghi: không sửa được dữ liệu.');
+    if ((m.changed() || []).some((k: string) => ['du_lieu_goc', 'loai', 'che_do'].includes(k))) m.set('trang_thai', 'nhap');
+  });
+  db.on('nhap_lo.beforeDestroy', (m: any) => { if (m.get('trang_thai') === 'da_ghi') loi('Lô đã ghi sổ không xóa được.'); });
+  db.on('no_ncc_dau_ky.beforeCreate', (_m: any, o: any) => { if (!o?.choPhep) loi('Nợ NCC đầu kỳ nhập qua Go-Live (lô nhập có kiểm tra, duyệt).'); });
+  db.on('no_ncc_dau_ky.beforeUpdate', (m: any, o: any) => {
+    if (o?.choPhep || o?.hooks === false) return;
+    if ((m.changed() || []).some((k: string) => !['ghi_chu', 'doi_chieu', 'han_tt', 'updatedAt', 'updatedById'].includes(k))) loi('Chỉ sửa ghi chú / đối chiếu / hạn; số tiền sai thì hủy và nhập lại.');
+  });
+  db.on('ky_mo_so.beforeUpdate', (m: any, o: any) => {
+    if (o?.hooks === false) return;
+    if (m.previous('trang_thai') === 'da_khoa') loi('Kỳ mở sổ đã khóa.');
+    if (m.changed('trang_thai')) loi('Khóa kỳ bằng nút "Khóa kỳ".');
+  });
+  db.on('ky_mo_so.beforeCreate', async (m: any, o: any) => {
+    const co = await p.bang('ky_mo_so').findOne({ where: { trang_thai: 'mo' }, transaction: o?.transaction });
+    if (co) loi(`Kỳ ${co.ma} đang mở: khóa kỳ đó trước khi mở kỳ mới.`);
+    m.set('trang_thai', 'mo');
+  });
+}

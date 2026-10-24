@@ -16,6 +16,8 @@ MENU = [
     ("Thu chi và công nợ", "dollaroutlined", "/admin/aph/thu-chi"),
     ("Danh mục", "unorderedlistoutlined", "/admin/aph/danh-muc"),
     ("Báo cáo", "barchartoutlined", "/admin/aph/bao-cao"),
+    ("Tài sản", "tooloutlined", "/admin/aph/tai-san"),
+    ("Go-Live & số dư đầu kỳ", "rocketoutlined", "/admin/aph/go-live"),
 ]
 
 DON_VI = [
@@ -36,24 +38,28 @@ NHOM = {
         "don_ban": SUA + ["chotDon", "moLai", "dongPhanCon"], "don_ban_dong": SUA, "luot_giao": DOC + ["taoLuot", "huy", "update"],
         "luot_giao_dong": DOC, "tra_hang": SUA + ["ghi"], "tra_hang_dong": SUA, "dieu_chinh_gia": DOC + ["create"],
         "ton_kho": DOC, "phieu_thu": DOC, "phieu_thu_phan_bo": DOC}),
-    "kho": ("Kho vận", ["Kho vận"], {**DOC_DANH_MUC,
+    "kho": ("Kho vận", ["Kho vận", "Tài sản"], {**DOC_DANH_MUC,
         "don_ban": DOC, "don_ban_dong": DOC, "luot_giao": DOC + ["banGiaoXe", "khachNhan", "update"], "luot_giao_dong": DOC,
         "tra_hang": SUA + ["ghi"], "tra_hang_dong": SUA,
-        "phieu_kho": SUA + ["ghiSo"], "phieu_kho_dong": SUA, "so_kho": DOC, "ton_kho": DOC}),
-    "nha_may": ("Nhà máy", ["Kho vận"], {**DOC_DANH_MUC,
         "phieu_kho": SUA + ["ghiSo"], "phieu_kho_dong": SUA, "so_kho": DOC, "ton_kho": DOC,
+        "tai_san": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"]}),
+    "nha_may": ("Nhà máy", ["Kho vận", "Tài sản"], {**DOC_DANH_MUC,
+        "phieu_kho": SUA + ["ghiSo"], "phieu_kho_dong": SUA, "so_kho": DOC, "ton_kho": DOC,
+        "me_sx": DOC + ["create", "update"], "tai_san": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"],
         "phieu_chi": DOC + ["create", "ghi"], "so_quy": DOC, "chot_ca": DOC + ["chot"]}),
     "thu_chi": ("Thu chi và công nợ", ["Thu chi và công nợ", "Danh mục"], {**DOC_DANH_MUC,
         "khach_hang": DOC + ["create", "update"],
         "phieu_thu": SUA + ["ghi", "phanBo", "nhanDien"], "phieu_thu_phan_bo": SUA, "don_ban": DOC, "don_ban_dong": DOC,
         "luot_giao": DOC, "tra_hang": DOC, "dieu_chinh_gia": DOC, "thu_ho": DOC,
-        "so_quy": DOC, "phieu_chi": SUA + ["ghi"], "chuyen_tien": SUA + ["ghi"], "chot_ca": DOC + ["chot"], "phieu_kho": DOC}),
+        "so_quy": DOC, "no_ncc_dau_ky": DOC, "nha_cung_cap": DOC, "phieu_chi": SUA + ["ghi"], "chuyen_tien": SUA + ["ghi"], "chot_ca": DOC + ["chot"], "phieu_kho": DOC}),
 }
 TAT_CA = ["don_ban", "don_ban_dong", "luot_giao", "luot_giao_dong", "tra_hang", "tra_hang_dong", "dieu_chinh_gia", "phieu_kho", "phieu_kho_dong",
           "phieu_thu", "phieu_thu_phan_bo", "phieu_chi", "chuyen_tien", "thu_ho", "chot_ca", "so_kho", "ton_kho", "so_quy",
-          "gia_von", "so_gia_von"] + DANH_MUC
+          "gia_von", "so_gia_von", "ky_mo_so", "nhap_lo", "nhap_dong", "mo_so_khoa", "no_ncc_dau_ky", "tai_san", "tai_san_su_kien",
+          "me_sx", "me_sx_chi_phi", "me_sx_phien_ban"] + DANH_MUC
 NGHIEP_VU = ["ghiSo", "huy", "dinhGia", "chotDon", "duyetGia", "moLai", "dongPhanCon", "ghiHoaDon", "taoLuot", "banGiaoXe", "khachNhan",
-             "ghi", "phanBo", "phanBoThuHo", "nhanDien", "tatToan", "chot", "baoCao"]
+             "ghi", "phanBo", "phanBoThuHo", "nhanDien", "tatToan", "chot", "baoCao",
+             "kiem", "duyet", "khoa", "uocTinh"]
 for ten, tieu_de in (("ke_toan", "Kế toán"), ("quan_ly", "Quản lý")):
     NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU for b in TAT_CA})
 
