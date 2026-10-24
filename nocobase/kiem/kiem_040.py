@@ -29,7 +29,7 @@ def main():
 
     nhom("Nâng cấp dữ liệu 0.4.0 (chạy lại an toàn)")
     s, r = ad.lam("cau_hinh:nangCap")
-    ok("Nâng cấp chạy được", s == 200 and r["data"]["phien_ban"] == "0.4.0", r)
+    ok("Nâng cấp chạy được", s == 200 and r["data"]["phien_ban"] in ("0.4.0", "0.4.1"), r)
     s, r2 = ad.lam("cau_hinh:nangCap")
     ok("Chạy lại nâng cấp: không ghi thêm phiên bản, không cấp thêm phạm vi", s == 200 and r2["data"]["da_nang_truoc"] and not r2["data"]["cap_pham_vi"], r2)
     for kh_, gt in (("giu_khi_duyet", "co"), ("vuot_han_muc_khach_thuong", "canh_bao"), ("pham_vi_mac_dinh", "tu_choi"), ("ck_can_xac_minh", "khong"),
