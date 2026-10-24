@@ -81,9 +81,9 @@ jobs:
           test -s "$target/dist/client/index.js"
           node --check "$target/dist/server/index.js"
 
-          # Gate fail-closed: nếu câu cảnh báo 403 không nằm trong client build thì từ chối phát hành.
-          if ! grep -RaqF 'Không thể tải dữ liệu sản xuất' "$target/dist/client"; then
-            echo "FAIL: fresh client did not include MES 403 warning"; exit 1
+          # Gate fail-closed: marker ASCII trong Alert 403, khong phu thuoc ma hoa Unicode cua Rspack.
+          if ! grep -RaqF 'APHVH_MES_403_ERROR_PANEL_V1' "$target/dist/client"; then
+            echo "FAIL: fresh client did not include MES 403 error panel"; exit 1
           fi
           printf '%s\n' "$GITHUB_SHA" > "$target/BUILD_SOURCE_SHA"
           (cd "$target" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
