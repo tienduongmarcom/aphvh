@@ -37,9 +37,16 @@ function chanKhoHangGui(p: any, H: H, h: any) {
   const ghiPk = H['phieu_kho:ghiSo'];
   H['phieu_kho:ghiSo'] = async (ctx, t) => {
     const pk = await p.bang('phieu_kho').findByPk(h.id(ctx), { transaction: t });
-    if (pk && pk.trang_thai === 'nhap' && ['nhap', 'chuyen', 'dau_ky', 'san_xuat', 'dong_goi'].includes(pk.loai) && !pk.ho_so_gia_cong_id
+    if (pk && pk.trang_thai === 'nhap'
       && ((await laHangGui(t, pk.kho_id)) || (await laHangGui(t, pk.kho_dich_id)))) {
-      loi('Kho hàng gửi gia công chỉ nhận qua hồ sơ gia công (Nhận hàng gửi).');
+      const me = pk.me_sx_id ? await p.bang('me_sx').findByPk(pk.me_sx_id, { transaction: t }) : null;
+      const meGiaCong = !!me?.ho_so_gia_cong_id && me.kho_id === pk.kho_id
+        && (!pk.kho_dich_id || pk.kho_dich_id === me.kho_id)
+        && ['cap_nvl', 'thu_hoi'].includes(pk.loai);
+      const traGiaCong = pk.loai === 'xuat' && !!pk.ho_so_gia_cong_id
+        && ctx.state?.aphGiaCongPosting === pk.id;
+      if (!meGiaCong && !traGiaCong)
+        loi('Kho hàng gửi chỉ ghi qua mẻ/hồ sơ gia công. Không nhập, xuất, kiểm kê hoặc chuyển kho thủ công.');
     }
     return ghiPk(ctx, t);
   };
