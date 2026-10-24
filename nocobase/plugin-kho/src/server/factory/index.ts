@@ -21,10 +21,33 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     H[ten]({ ...ctx, action: { ...ctx.action, params: { filterByTk, values } } }, t);
   const canQuyen = (ctx: any, viec: string) => { if (!p.xemGia(ctx)) loi(`Chỉ kế toán / quản lý được ${viec}.`); };
 
+  /**
+   * Khóa idempotency ở PostgreSQL: INSERT ... ON CONFLICT đợi transaction đồng thời,
+   * đọc lại KẾT QUẢ đã commit; mọi tác động kho + kết quả nằm cùng transaction.
+   */
+  const batDau = async (t: Transaction, loai: string, request: any, meId?: any, hoSoId?: any) => {
+    const r = String(request || '').trim();
+    if (!/^[A-Za-z0-9_-]{4,128}$/.test(r)) loi('Mã yêu cầu bắt buộc, 4–128 ký tự chữ/số/_/-.');
+    const key = [loai, meId || 0, hoSoId || 0, r].join(':');
+    const moi = await p.sql(`INSERT INTO sx_thao_tac (request_id, loai, me_sx_id, ho_so_gia_cong_id, "createdAt", "updatedAt")
+      VALUES (:k, :l, :m, :h, now(), now()) ON CONFLICT (request_id) DO NOTHING RETURNING id`,
+      { k: key, l: loai, m: meId || null, h: hoSoId || null }, t);
+    if (moi.length) return { id: moi[0].id };
+    const [cu] = await p.sql(`SELECT ket_qua FROM sx_thao_tac WHERE request_id = :k FOR UPDATE`, { k: key }, t);
+    if (!cu?.ket_qua) loi('Yêu cầu đang xử lý, gửi lại với cùng mã sau khi hoàn tất.');
+    return { cu: JSON.parse(cu.ket_qua) };
+  };
+  const ketThuc = async (t: Transaction, op: any, result: any) => {
+    if (op?.id) await p.sql(`UPDATE sx_thao_tac SET ket_qua = :r, "updatedAt" = now() WHERE id = :i`,
+      { r: JSON.stringify(result), i: op.id }, t);
+    return result;
+  };
+
+
   /** Quy về kg: hàng tồn theo kg → chính nó; ĐVT khác cần "kg cho 1 ĐVT" có căn cứ; thiếu → null (chưa đủ căn cứ). */
   const kgCua = (mh: any, sl: number): number | null => {
     if (!mh) return null;
-    if (!mh.dvt_ton || mh.dvt_ton === 'kg') return kg(sl);
+    if (!mh.dvt_ton || String(mh.dvt_ton).toLowerCase() === 'kg') return kg(sl);
     if (Number(mh.kg_moi_dvt) > 0 && mh.kg_dvt_can_cu) return kg(sl * Number(mh.kg_moi_dvt));
     return null;
   };
@@ -61,9 +84,12 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
   // ---------------- MỞ MẺ TỪ MẪU ----------------
   H['me_sx:moTuMau'] = async (ctx, t) => {
     const v = val(ctx);
+    const op = v.request_id ? await batDau(t, 'mo_me', v.request_id) : null; // legacy API không truyền key: tương thích, UI mới luôn có key
+    if (op?.cu) return { ...op.cu, da_mo_truoc: true };
     if (v.request_id) {
+      // Tương thích với những mẻ đã mở trước khi có bảng idempotency.
       const [co] = await p.sql(`SELECT id, so FROM me_sx WHERE ghi_chu LIKE :r LIMIT 1`, { r: `%[${v.request_id}]%` }, t);
-      if (co) return { ok: true, da_mo_truoc: true, id: co.id, so: co.so };
+      if (co) return ketThuc(t, op, { ok: true, da_mo_truoc: true, id: co.id, so: co.so });
     }
     const mau = await bang('mau_sx').findByPk(v.mau_sx_id, { transaction: t });
     if (!mau || mau.ngung) loi('Chọn mẫu sản xuất đang dùng.');
@@ -91,7 +117,7 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
       loai_cn: mau.loai_cn, ben_gui_id, ho_so_gia_cong_id: v.ho_so_gia_cong_id || null, sl_ke_hoach: v.sl_ke_hoach ?? null, tt_van_hanh: 'dang_sx' },
     { transaction: t, hooks: false });
     const moi = await bang('me_sx').findByPk(me.id, { transaction: t });
-    return { ok: true, id: me.id, so: moi.so, phien_ban: pb.phien_ban, goi_y: goiY(s, { nvl_kg: v.nvl_kg, tp_sl: v.sl_ke_hoach }) };
+    return ketThuc(t, op, { ok: true, id: me.id, so: moi.so, phien_ban: pb.phien_ban, goi_y: goiY(s, { nvl_kg: v.nvl_kg, tp_sl: v.sl_ke_hoach }) });
   };
 
   /** Lượng dự kiến theo snapshot: định mức × (kg NVL vào | số ĐVT thành phẩm chính). Không ghi gì. */
@@ -181,8 +207,12 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     const v = val(ctx);
     if (!v.request_id) loi('Thiếu mã yêu cầu (chống ghi hai lần).');
     const me = await p.khoa('me_sx', id(ctx), t);
-    const [daCo] = await p.sql(`SELECT so FROM phieu_kho WHERE request_id LIKE :r AND me_sx_id = :m LIMIT 1`, { r: `${v.request_id}%`, m: me.id }, t);
-    if (daCo) return { ok: true, da_ghi_truoc: true, phieu: daCo.so, ...(await p.canDoiMe(t, me)) };
+    const op = await batDau(t, 'ghi_thuc_te', v.request_id, me.id);
+    if (op.cu) return { ...op.cu, da_ghi_truoc: true };
+    // Tương thích ghi trước nâng cấp: so khớp suffix ĐÚNG, không dùng LIKE prefix dễ đụng mã.
+    const [daCo] = await p.sql(`SELECT so FROM phieu_kho WHERE me_sx_id = :m AND request_id IN (:cap, :thu) LIMIT 1`,
+      { m: me.id, cap: `${v.request_id}-cap0`, thu: `${v.request_id}-thu` }, t);
+    if (daCo) return ketThuc(t, op, { ok: true, da_ghi_truoc: true, phieu: [daCo.so], ...(await p.canDoiMe(t, me)) });
     if (['da_huy', 'da_khoa'].includes(me.trang_thai)) loi('Mẻ đã hủy / khóa kỳ.');
     if (me.tt_van_hanh === 'hoan_thanh' && !p.xemGia(ctx)) loi('Mẻ đã hoàn thành thực tế: ghi thêm cần kế toán mở lại.');
     const s = snap(me);
@@ -263,7 +293,7 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     await luuDoiChieu(ctx, t, meMoi, c, chiTiet);
     const tt = v.ket_thuc ? (c.ket_qua === 'can' ? 'hoan_thanh' : 'cho_can_doi') : 'dang_sx';
     await meMoi.update({ tt_van_hanh: tt }, { transaction: t, hooks: false });
-    return { ok: true, phieu: so, tt_van_hanh: tt, ...c, bao_bi: chiTiet.bao_bi };
+    return ketThuc(t, op, { ok: true, phieu: so, tt_van_hanh: tt, ...c, bao_bi: chiTiet.bao_bi });
   };
   H['me_sx:ketThuc'] = async (ctx, t) => {
     const me = await p.khoa('me_sx', id(ctx), t);
@@ -404,10 +434,11 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     const hs = await p.khoa('sx_ho_so_gia_cong', id(ctx), t);
     if (hs.trang_thai !== 'mo') loi('Hồ sơ đã quyết toán.');
     const v = val(ctx);
-    if (v.request_id) {
-      const co = await bang('phieu_kho').findOne({ where: { request_id: v.request_id }, transaction: t });
-      if (co) return { ok: true, da_nhan_truoc: true, so: co.so };
-    }
+    kiemKho(ctx, hs.kho_id);
+    const op = await batDau(t, 'nhan_gia_cong', v.request_id, null, hs.id);
+    if (op.cu) return { ...op.cu, da_nhan_truoc: true };
+    const co = await bang('phieu_kho').findOne({ where: { request_id: v.request_id, ho_so_gia_cong_id: hs.id }, transaction: t });
+    if (co) return ketThuc(t, op, { ok: true, da_nhan_truoc: true, so: co.so });
     const ds = (v.dong || []).filter((d: any) => Number(d.so_kg) > 0);
     if (!ds.length) loi('Nhập hàng nhận (theo cân thực).');
     // Hàng của bên gửi: vào KHO HÀNG GỬI, giá trị sở hữu 0 (không phải hàng của bên nhận); không bán, không tạo công nợ / doanh thu.
@@ -420,17 +451,28 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
       await x.update({ don_gia: 0, trang_thai_gia: 'co_gia' }, { transaction: t, hooks: false });
     }
     await pk.update({ trang_thai: 'da_ghi', ghi_boi: p.nguoi(ctx) }, { transaction: t, choPhep: true } as any);
-    return { ok: true, so: pk.so };
+    return ketThuc(t, op, { ok: true, so: pk.so });
   };
   H['sx_ho_so_gia_cong:traHang'] = async (ctx, t) => {
     canQuyen(ctx, 'trả hàng gia công');
     const hs = await p.khoa('sx_ho_so_gia_cong', id(ctx), t);
+    if (hs.trang_thai !== 'mo') loi('Hồ sơ đã quyết toán.');
+    kiemKho(ctx, hs.kho_id);
     const v = val(ctx);
+    const op = await batDau(t, 'tra_gia_cong', v.request_id, null, hs.id);
+    if (op.cu) return { ...op.cu, da_tra_truoc: true };
+    const dong = (v.dong || []).filter((d: any) => Number(d.so_kg) > 0);
+    if (!dong.length) loi('Phải chọn ít nhất một mặt hàng có lượng trả dương.');
     const pk = await bang('phieu_kho').create({ loai: 'xuat', ngay: v.ngay || homNay(), kho_id: hs.kho_id, ho_so_gia_cong_id: hs.id, request_id: v.request_id || null,
       ghi_chu: `Trả hàng gia công ${hs.so} cho bên gửi${v.ghi_chu ? ': ' + v.ghi_chu : ''}` }, { transaction: t });
-    for (const d of (v.dong || []).filter((x: any) => Number(x.so_kg) > 0)) await bang('phieu_kho_dong').create({ phieu_kho_id: pk.id, mat_hang_id: d.mat_hang_id, so_kg: kg(d.so_kg) }, { transaction: t });
-    await goi('phieu_kho:ghiSo', ctx, t, pk.id);
-    return { ok: true, so: pk.so };
+    for (const d of dong) await bang('phieu_kho_dong').create({ phieu_kho_id: pk.id, mat_hang_id: d.mat_hang_id, so_kg: kg(d.so_kg) }, { transaction: t });
+    // Chỉ action hồ sơ được phép ghi xuất kho hàng gửi; chứng từ thủ công bị chặn.
+    ctx.state = ctx.state || {};
+    const cu = ctx.state.aphGiaCongPosting;
+    ctx.state.aphGiaCongPosting = pk.id;
+    try { await goi('phieu_kho:ghiSo', ctx, t, pk.id); }
+    finally { ctx.state.aphGiaCongPosting = cu; }
+    return ketThuc(t, op, { ok: true, so: pk.so });
   };
   H['sx_ho_so_gia_cong:xacNhanSoHuu'] = async (ctx, t) => {
     canQuyen(ctx, 'xác nhận chủ sở hữu');
@@ -443,12 +485,15 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
   H['sx_ho_so_gia_cong:baoCao'] = async (ctx, t) => {
     const hs = await bang('sx_ho_so_gia_cong').findByPk(id(ctx), { transaction: t });
     if (!hs) loi('Không thấy hồ sơ.');
+    kiemKho(ctx, hs.kho_id);
     const ds = await p.sql(`SELECT m.ma, m.ten,
         COALESCE(SUM(s.so_kg) FILTER (WHERE s.loai = 'nhan_gia_cong'),0) AS da_nhan,
         COALESCE(-SUM(s.so_kg) FILTER (WHERE s.loai = 'cap_nvl'),0) AS da_dung,
         COALESCE(SUM(s.so_kg) FILTER (WHERE s.loai IN ('thu_hoi_ra','thu_hoi_phu_pham')),0) AS da_ra,
         COALESCE(-SUM(s.so_kg) FILTER (WHERE s.loai = 'xuat'),0) AS da_tra, COALESCE(SUM(s.so_kg),0) AS dang_giu
-      FROM so_kho s JOIN mat_hang m ON m.id = s.mat_hang_id WHERE s.kho_id = :k GROUP BY m.ma, m.ten ORDER BY m.ma`, { k: hs.kho_id }, t);
+      FROM so_kho s JOIN mat_hang m ON m.id = s.mat_hang_id JOIN phieu_kho pk ON pk.so = s.chung_tu
+      WHERE s.kho_id = :k AND (pk.ho_so_gia_cong_id = :h OR pk.me_sx_id IN (SELECT id FROM me_sx WHERE ho_so_gia_cong_id = :h))
+      GROUP BY m.ma, m.ten ORDER BY m.ma`, { k: hs.kho_id, h: hs.id }, t);
     const [me] = await p.sql(`SELECT COUNT(*)::int AS n FROM me_sx WHERE ho_so_gia_cong_id = :h AND trang_thai <> 'da_huy'`, { h: hs.id }, t);
     return { ok: true, ho_so: hs.so, so_me: me.n, chu_so_huu_xac_nhan: hs.chu_so_huu_id || null, hang: ds };
   };
@@ -488,12 +533,15 @@ export function hookNhaMay041(p: any) {
   db.on('sx_ho_so_gia_cong.beforeSave', async (m: any, o: any) => {
     if (o?.hooks === false) return;
     const k = await p.bang('kho').findByPk(m.get('kho_id'), { transaction: o?.transaction });
+    const [chung] = await p.sql(`SELECT id FROM sx_ho_so_gia_cong WHERE kho_id = :k AND id <> :id LIMIT 1`,
+      { k: m.get('kho_id'), id: m.get('id') || -1 }, o?.transaction);
+    if (chung) loi('Một kho hàng gửi chỉ gắn một hồ sơ gia công; tạo kho logic riêng cho hồ sơ mới.');
     if (!k || k.loai_kho !== 'hang_gui') loi('Hồ sơ gia công phải gắn KHO HÀNG GỬI riêng (loại kho "hàng gửi gia công").');
     if (m.get('ben_gui_id') === m.get('ben_nhan_id')) loi('Bên gửi và bên nhận gia công phải khác nhau.');
     if (m.changed('chu_so_huu_id') && !m.isNewRecord) loi('Chủ sở hữu chỉ xác nhận qua thao tác có căn cứ.');
     if (m.isNewRecord && m.get('chu_so_huu_id')) loi('Chủ sở hữu chỉ xác nhận qua thao tác có căn cứ.');
   });
-  for (const b of ['sx_doi_chieu', 'sx_giai_trinh', 'sx_nguon_lo']) {
+  for (const b of ['sx_doi_chieu', 'sx_giai_trinh', 'sx_nguon_lo', 'sx_thao_tac']) {
     db.on(`${b}.beforeCreate`, (_m: any, o: any) => { if (o?.hooks !== false) loi('Chỉ tạo qua thao tác sản xuất.'); });
     db.on(`${b}.beforeUpdate`, (_m: any, o: any) => { if (o?.hooks !== false) loi('Chỉ thay đổi qua thao tác sản xuất.'); });
     db.on(`${b}.beforeDestroy`, () => loi('Không xóa (giữ lịch sử).'));
