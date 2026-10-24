@@ -42,6 +42,7 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     canQuyen(ctx, 'duyệt định mức');
     const pb = await p.khoa('mau_sx_phien_ban', id(ctx), t);
     if (pb.trang_thai === 'da_duyet') return { ok: true, da_duyet_truoc: true };
+    if (pb.trang_thai !== 'de_xuat') loi('Chỉ được duyệt phiên bản định mức còn ở trạng thái Đề xuất.');
     const dong = await bang('mau_sx_dong').findAll({ where: { mau_sx_phien_ban_id: pb.id }, transaction: t });
     if (!dong.some((d: any) => d.vai_tro === 'tp')) loi('Phiên bản định mức cần ít nhất một dòng thành phẩm.');
     if (!dong.some((d: any) => d.vai_tro === 'nvl')) loi('Phiên bản định mức cần ít nhất một dòng nguyên liệu.');
@@ -288,9 +289,11 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     if (!['do_sai', 'hao_bat_thuong', 'khac'].includes(v.phan_loai)) loi('Chọn phân loại.');
     if (!v.ly_do) loi('Ghi lý do / căn cứ.');
     const c = await p.canDoiMe(t, me);
-    const [cho] = await p.sql(`SELECT COALESCE(SUM(so_kg),0) AS kg FROM sx_giai_trinh WHERE me_sx_id = :m AND trang_thai = 'cho_duyet'`, { m: me.id }, t);
+    const [cho] = await p.sql(`SELECT COALESCE(SUM(ABS(so_kg)),0) AS kg FROM sx_giai_trinh WHERE me_sx_id = :m AND trang_thai = 'cho_duyet'`, { m: me.id }, t);
     if (kg(v.so_kg) > Math.abs(c.con_lai) - Number(cho.kg) + 0.0005) loi(`Chỉ còn ${kg(Math.abs(c.con_lai) - Number(cho.kg))} kg chưa giải trình.`);
-    const g = await bang('sx_giai_trinh').create({ me_sx_id: me.id, so_kg: kg(v.so_kg), phan_loai: v.phan_loai, ly_do: v.ly_do, trang_thai: 'cho_duyet', nguoi: p.nguoi(ctx) },
+    if (v.phan_loai === 'hao_bat_thuong' && c.con_lai <= 0) loi('Chênh thừa không thể giải trình thành hao hụt bất thường.');
+    const soKgCoDau = Math.sign(c.con_lai) * kg(v.so_kg);
+    const g = await bang('sx_giai_trinh').create({ me_sx_id: me.id, so_kg: soKgCoDau, phan_loai: v.phan_loai, ly_do: v.ly_do, trang_thai: 'cho_duyet', nguoi: p.nguoi(ctx) },
       { transaction: t, hooks: false });
     return { ok: true, id: g.id };
   };
@@ -300,6 +303,10 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     if (g.trang_thai === 'da_duyet') return { ok: true, da_duyet_truoc: true };
     if (g.trang_thai !== 'cho_duyet') loi('Giải trình đã bị từ chối.');
     const me = await p.khoa('me_sx', g.me_sx_id, t);
+    const truocDuyet = await p.canDoiMe(t, me);
+    if (Math.sign(Number(g.so_kg)) !== Math.sign(truocDuyet.con_lai) || Math.abs(Number(g.so_kg)) > Math.abs(truocDuyet.con_lai) + 0.0005)
+      loi('Chênh lệch đã thay đổi sau khi gửi giải trình: cần lập giải trình mới theo số đo hiện tại.');
+    if (g.phan_loai === 'hao_bat_thuong' && Number(g.so_kg) <= 0) loi('Hao hụt bất thường chỉ áp dụng cho lượng thiếu đã xác nhận.');
     if (g.phan_loai === 'hao_bat_thuong') {
       // Ghi nhận hao hụt bất thường bằng phiếu thu hồi (không vào giá thành), có lịch sử chứng từ.
       const s = snap(me);
@@ -337,9 +344,14 @@ export function dangKyNhaMay041(p: any, H: H, h: any) {
     const [dd] = await p.sql(`SELECT COUNT(*)::int AS n FROM me_sx_chi_phi WHERE me_sx_id = :m AND loai = 'do_dang_dau_ky'`, { m: me.id }, t);
     if (!cap.n && !dd.n && !me.me_goc_id) loi('Mẻ chỉ có thành phẩm, thiếu phiếu cấp nguyên liệu: không chốt giá thành chính thức.');
     const v = ctx.action.params.values = { ...(ctx.action.params.values || {}) };
-    if (['cho_can_doi', 'dang_sx'].includes(me.tt_van_hanh) && !v.chap_nhan_chenh) {
-      loi(me.tt_van_hanh === 'dang_sx' ? 'Mẻ chưa kết thúc sản xuất (bấm "Kết thúc" để kiểm cân đối).'
-        : 'Mẻ còn chênh lệch khối lượng chưa giải trình: duyệt giải trình hoặc chọn "chấp nhận chênh" kèm lý do.');
+    if (me.mau_sx_id) {
+      // Chấp nhận chênh KHÔNG thay thế bước kết thúc sản xuất và không được miễn thiếu căn cứ.
+      if (['dang_sx', 'nhap'].includes(me.tt_van_hanh)) loi('Mẻ chưa kết thúc sản xuất: không được chốt giá thành.');
+      const canDoi = await p.canDoiMe(t, me);
+      if (canDoi.ket_qua === 'chua_du') loi('Thiếu căn cứ cân đối: không được chốt giá thành, kể cả khi chấp nhận chênh.');
+      if (canDoi.ket_qua === 'vuot_nguong') loi('Hao hụt vượt ngưỡng: cần xử lý và phê duyệt trước khi chốt giá thành.');
+      if ((me.tt_van_hanh === 'cho_can_doi' || canDoi.ket_qua === 'co_chenh') && !v.chap_nhan_chenh)
+        loi('Mẻ còn chênh lệch khối lượng chưa giải trình: duyệt giải trình hoặc chọn chấp nhận chênh kèm lý do.');
     }
     if (v.chap_nhan_chenh && !v.ly_do_chenh) loi('Chấp nhận chênh lệch: ghi lý do.');
     const sg = snapGia(me);
