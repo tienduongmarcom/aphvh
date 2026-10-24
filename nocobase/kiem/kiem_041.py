@@ -28,7 +28,10 @@ def main():
         ad.lam("cau_hinh:dat", None, {"khoa": kh_, "gia_tri": gt})
 
     pw = "Thu" + uuid.uuid4().hex[:10]
-    VT = {"nha_may": ["nha_may", "khong_xem_gia"], "ke_toan": ["ke_toan"], "kho": ["kho"]}
+    # Tài khoản thử Nhà máy chỉ chọn một vai trò nghiệp vụ. Với hai vai trò,
+    # NocoBase có thể tự chọn khong_xem_gia làm X-Role và trả 403 khi mở Phiếu SX.
+    # Server vẫn chặn giá cho nha_may; các ca kiểm giá vốn ở mục 12 bảo đảm điều đó.
+    VT = {"nha_may": ["nha_may"], "ke_toan": ["ke_toan"], "kho": ["kho"]}
     uid = {}
     for ten, roles in VT.items():
         em = f"t041-{ten}@aphvh.local"
