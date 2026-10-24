@@ -1,5 +1,5 @@
 /**
- * APH-VH — sổ vận hành trên NocoBase (0.3.0, 24/10/2026).
+ * APH-VH — sổ vận hành trên NocoBase (0.3.1, 24/10/2026).
  *
  * Nguyên tắc (không tự suy diễn ngoài các điểm này):
  * - Tồn kho = mã hàng × kho vật lý, KHÔNG chia đơn vị sở hữu. Số lượng theo ĐVT tồn của mặt hàng (Kg, Cái, Gói…).
@@ -16,23 +16,15 @@
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
-const kg = (v: any) => Math.round(Number(v || 0) * 1000) / 1000;
-const tien = (v: any) => Math.round(Number(v || 0));
-const homNay = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-const vnd = (v: any) => tien(v).toLocaleString('vi-VN');
-
-class LoiNghiepVu extends Error {
-  status = 400;
-}
-const loi = (msg: string): never => {
-  throw new LoiNghiepVu(msg);
-};
+import { LoiNghiepVu, homNay, kg, loi, tien, vnd } from './tienich';
+import { dangKyMoRong, hookMoRong } from './mo_rong';
 
 export const NHOM_XEM_GIA = ['root', 'admin', 'quan_ly', 'ke_toan'];
-const TRUONG_GIA_VON = new Set(['gia_von', 'gia_von_da_giao', 'gia_bq', 'gia_bq_sau', 'gia_tri_nvl', 'gia_thanh', 'chi_phi_sx']);
+const TRUONG_GIA_VON = new Set(['gia_von', 'gia_von_da_giao', 'gia_bq', 'gia_bq_sau', 'gia_tri_nvl', 'gia_thanh', 'chi_phi_sx', 'gia_tri_bao_bi',
+  'chi_phi', 'gia_tri_phu_pham', 'do_dang_cuoi', 'hao_bat_thuong_gt', 'tong_phan_bo', 'da_vao_kho', 'nguyen_gia']);
 const TRUONG_GIA_MUA = new Set(['don_gia', 'phai_tra', 'da_tra', 'gia_tri', 'thanh_tien']);
-const BANG_KHO = new Set(['phieu_kho', 'phieu_kho_dong', 'so_kho', 'ton_kho']);
-const BANG_CAM = new Set(['gia_von', 'so_gia_von']);
+const BANG_KHO = new Set(['phieu_kho', 'phieu_kho_dong', 'so_kho', 'ton_kho', 'me_sx']);
+const BANG_CAM = new Set(['gia_von', 'so_gia_von', 'me_sx_chi_phi', 'me_sx_phien_ban', 'nhap_lo', 'nhap_dong', 'ky_mo_so', 'mo_so_khoa']);
 
 /** Cắt trường giá vốn ở mọi mức; cắt thêm giá mua khi đọc chứng từ kho (kể cả dòng / phiếu kho được nhúng). */
 export function catGia(v: any, catMua: boolean): any {
@@ -53,6 +45,12 @@ export function catGia(v: any, catMua: boolean): any {
 
 export class PluginKhoServer extends Plugin {
   daCoKhoa = false;
+  // Gắn trong mo_rong.ts
+  kyMo: any;
+  giuKhoa: any;
+  boKhoa: any;
+  ghiPhieuMe: any;
+  tinhLaiMe: any;
 
   bang(name: string) {
     return this.db.getCollection(name).model as any;
@@ -240,6 +238,13 @@ export class PluginKhoServer extends Plugin {
 
   async beforeLoad() {
     const db = this.db;
+    hookMoRong(this);
+    db.on('don_ban.beforeCreate', (m: any, o: any) => {
+      if (m.get('loai') === 'dau_ky' && !o?.choPhep) loi('Công nợ đầu kỳ nhập qua Go-Live & số dư đầu kỳ (có kiểm tra trùng, duyệt).');
+    });
+    db.on('phieu_thu.beforeCreate', (m: any, o: any) => {
+      if (m.get('dau_ky') && !o?.choPhep) loi('Tiền đầu kỳ nhập qua Go-Live & số dư đầu kỳ.');
+    });
     const tenHienThi = (b: string, f: (m: any) => string) => db.on(`${b}.beforeSave`, (m: any) => m.set('nhan', f(m)));
     tenHienThi('mat_hang', (m) => [m.get('ma'), m.get('ten')].filter(Boolean).join(' – '));
     tenHienThi('khach_hang', (m) => [m.get('ten'), m.get('sdt')].filter(Boolean).join(' – '));
@@ -399,7 +404,14 @@ export class PluginKhoServer extends Plugin {
       if (!dong.length) loi('Phiếu chưa có dòng hàng.');
       if (pk.loai === 'chuyen' && (!pk.kho_dich_id || pk.kho_dich_id === pk.kho_id)) loi('Chuyển kho cần kho nhận khác kho xuất.');
       let capNhat: any = {};
-      if (pk.loai === 'san_xuat' || pk.loai === 'dong_goi') capNhat = await this.ghiSanXuat(t, pk, dong);
+      if (pk.loai === 'dau_ky') {
+        // Mở sổ: chỉ kế toán / quản lý, trong kỳ mở sổ đang mở, mỗi mặt hàng × kho một lần trong kỳ.
+        if (!this.xemGia(ctx)) loi('Chỉ kế toán / quản lý ghi tồn đầu kỳ.');
+        const ky = await this.kyMo(t);
+        for (const d of dong) await this.giuKhoa(t, `ton|${ky.ma}|${pk.kho_id}|${d.mat_hang_id}`, pk.nhap_lo_id || null, pk.so);
+      }
+      if (pk.loai === 'cap_nvl' || pk.loai === 'thu_hoi') capNhat = await this.ghiPhieuMe(ctx, t, pk, dong);
+      else if (pk.loai === 'san_xuat' || pk.loai === 'dong_goi') capNhat = await this.ghiSanXuat(t, pk, dong);
       else {
         let phai_tra = 0;
         for (const d of dong) {
@@ -412,7 +424,7 @@ export class PluginKhoServer extends Plugin {
             // Người không thuộc kế toán không được nhập giá mua: mọi dòng thành chờ định giá.
             const gia = coGia && this.xemGia(ctx);
             await this.ghiSo(t, { ...c, kho_id: pk.kho_id, so_luong: q, so_bao: b, loai: pk.loai, gia: gia ? d.don_gia : null, choGia: !gia });
-            await d.update({ trang_thai_gia: gia ? 'co_gia' : 'cho_gia', ...(gia ? {} : { don_gia: null }) }, { transaction: t, hooks: false });
+            await d.update({ trang_thai_gia: gia ? (d.trang_thai_gia === 'tam' ? 'tam' : 'co_gia') : 'cho_gia', ...(gia ? {} : { don_gia: null }) }, { transaction: t, hooks: false });
             if (gia) phai_tra += tien(q * Number(d.don_gia));
           } else if (pk.loai === 'xuat') {
             if (q <= 0) loi('Phiếu xuất cần số lượng dương.');
@@ -443,8 +455,14 @@ export class PluginKhoServer extends Plugin {
           await ton.update({ so_cho_gia: Math.max(0, kg(Number(ton.so_cho_gia) - kg(d.so_kg))) }, { transaction: t, hooks: false });
         }
         await this.daoSo(t, pk.so, homNay(), 'huy_' + pk.loai);
+        if (pk.loai === 'dau_ky') await this.boKhoa(t, pk.so);
       }
       await pk.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) || '' }, { transaction: t, choPhep: true } as any);
+      if (pk.me_sx_id) {
+        const me = await this.khoa('me_sx', pk.me_sx_id, t);
+        await this.tinhLaiMe(t, me);
+        if (me.trang_thai === 'da_chot') await me.update({ trang_thai: 'can_chot_lai' }, { transaction: t, hooks: false });
+      }
       return { ok: true };
     };
     H['phieu_kho:dinhGia'] = async (ctx, t) => {
@@ -452,18 +470,29 @@ export class PluginKhoServer extends Plugin {
       const pk = await this.khoa('phieu_kho', id(ctx), t);
       if (pk.trang_thai !== 'da_ghi' || !['nhap', 'dau_ky'].includes(pk.loai)) loi('Chỉ định giá phiếu nhập đã ghi sổ.');
       const gia = val(ctx).gia || {};
+      const tam = !!val(ctx).tam;
       let them = 0;
       let so = 0;
       for (const [dongId, g] of Object.entries(gia)) {
         const d = await this.khoa('phieu_kho_dong', dongId, t);
         if (d.phieu_kho_id !== pk.id) loi('Dòng không thuộc phiếu.');
-        if (d.trang_thai_gia !== 'cho_gia') continue;
         if (!(Number(g) > 0)) loi('Đơn giá phải lớn hơn 0.');
+        if (d.trang_thai_gia === 'tam') {
+          // Giá tạm → giá chính thức (hoặc tạm mới): chỉ điều chỉnh giá trị phần chênh, không đổi số lượng.
+          const delta = tien(kg(d.so_kg) * Number(g)) - tien(kg(d.so_kg) * Number(d.don_gia || 0));
+          if (delta) await this.capNhatGia(t, { ngay: homNay(), mat_hang_id: d.mat_hang_id, kho_id: pk.kho_id, so_luong: 0, gia_tri: delta,
+            loai: 'dinh_gia_lai', chung_tu: pk.so });
+          await d.update({ don_gia: Number(g), trang_thai_gia: tam ? 'tam' : 'co_gia', dinh_gia_boi: this.nguoi(ctx) }, { transaction: t, hooks: false });
+          them += delta;
+          so++;
+          continue;
+        }
+        if (d.trang_thai_gia !== 'cho_gia') continue;
         const ton = await this.dongTon(t, pk.kho_id, d.mat_hang_id);
         await ton.update({ so_cho_gia: Math.max(0, kg(Number(ton.so_cho_gia) - kg(d.so_kg))) }, { transaction: t, hooks: false });
         await this.capNhatGia(t, { ngay: homNay(), mat_hang_id: d.mat_hang_id, kho_id: pk.kho_id, so_luong: kg(d.so_kg), gia: Number(g),
           loai: 'dinh_gia', chung_tu: pk.so });
-        await d.update({ don_gia: Number(g), trang_thai_gia: 'co_gia', dinh_gia_boi: this.nguoi(ctx) }, { transaction: t, hooks: false });
+        await d.update({ don_gia: Number(g), trang_thai_gia: tam ? 'tam' : 'co_gia', dinh_gia_boi: this.nguoi(ctx) }, { transaction: t, hooks: false });
         them += tien(kg(d.so_kg) * Number(g));
         so++;
       }
@@ -521,7 +550,9 @@ export class PluginKhoServer extends Plugin {
       if (r.n > 0) loi('Đơn đã có lượt giao: không hủy được. Hàng khách trả lập phiếu Trả hàng theo lượng thực nhận; hàng chưa giao dùng "Đóng phần chưa giao".');
       if (tien(don.da_thu) > 0) loi('Đơn đã có tiền phân bổ: hủy phiếu thu liên quan trước.');
       if (don.loai === 'dau_ky' && !lyDo(ctx)) loi('Hủy công nợ đầu kỳ cần lý do.');
+      if (don.loai === 'dau_ky' && !this.xemGia(ctx)) loi('Chỉ kế toán / quản lý hủy công nợ đầu kỳ.');
       await don.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) || '', phai_thu: 0, con_no: 0 }, { transaction: t, choPhep: true } as any);
+      if (don.loai === 'dau_ky') await this.boKhoa(t, don.so);
       return { ok: true };
     };
     H['don_ban:dongPhanCon'] = async (ctx, t) => {
@@ -566,6 +597,8 @@ export class PluginKhoServer extends Plugin {
         const con = kg(Number(dd.so_kg) - Number(dd.da_giao || 0) - Number(dd.dang_giu || 0));
         if (kg(x.so_kg) > con + 0.0005) loi(`${dd.ten_hang}: chỉ còn ${con} chưa giao / chưa lập lượt, không lập ${kg(x.so_kg)}.`);
         const kho_id = x.kho_id || dd.kho_id;
+        const khoX = await this.bang('kho').findByPk(kho_id, { transaction: t });
+        if (khoX?.loai_kho === 'cho_xu_ly' || khoX?.trung_chuyen) loi(`Kho ${khoX.ten} là kho chờ xử lý / đang vận chuyển: không xuất bán từ kho này.`);
         const ton = await this.dongTon(t, kho_id, dd.mat_hang_id);
         const khaDung = kg(Number(ton.so_kg) - Number(ton.so_giu || 0) - Number(ton.so_cho_gia || 0));
         if (khaDung < kg(x.so_kg) - 0.0005) {
@@ -761,7 +794,9 @@ export class PluginKhoServer extends Plugin {
       if (pt.trang_thai === 'da_huy') return { ok: true, da_huy_truoc: true };
       if (pt.trang_thai === 'da_ghi') {
         if (!lyDo(ctx)) loi('Hủy phiếu thu đã ghi cần lý do.');
+        if (pt.dau_ky && !this.xemGia(ctx)) loi('Chỉ kế toán / quản lý hủy số dư tiền đầu kỳ.');
         await this.daoQuy(t, pt.so, homNay());
+        if (pt.dau_ky) await this.boKhoa(t, pt.so);
         await this.sql(`UPDATE thu_ho SET trang_thai = 'da_huy', "updatedAt" = now() WHERE phieu_thu_id = :p`, { p: pt.id }, t);
       }
       await pt.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) || '', chua_phan_bo: 0 }, { transaction: t, choPhep: true } as any);
@@ -795,6 +830,16 @@ export class PluginKhoServer extends Plugin {
         if (tien(pc.so_tien) > con) loi(`Phiếu nhập ${pk.so} còn phải trả ${vnd(con)} đ (hàng chờ định giá chưa tính).`);
         await pk.update({ da_tra: tien(pk.da_tra) + tien(pc.so_tien) }, { transaction: t, choPhep: true } as any);
       }
+      if (pc.no_ncc_dau_ky_id) {
+        if (pc.phieu_kho_id) loi('Một phiếu chi trả cho phiếu nhập HOẶC nợ đầu kỳ, không cả hai.');
+        const n = await this.khoa('no_ncc_dau_ky', pc.no_ncc_dau_ky_id, t);
+        if (n.trang_thai !== 'da_ghi') loi('Khoản nợ đầu kỳ đã hủy.');
+        if (pc.nha_cung_cap_id && n.nha_cung_cap_id !== pc.nha_cung_cap_id) loi('Khoản nợ đầu kỳ không phải của nhà cung cấp này.');
+        if (n.don_vi_id !== pc.don_vi_id) loi('Khoản nợ đầu kỳ thuộc đơn vị khác: đơn vị nào nợ thì đơn vị đó trả.');
+        const con = tien(n.so_tien) - tien(n.da_tra);
+        if (tien(pc.so_tien) > con) loi(`Nợ đầu kỳ ${n.so} còn ${vnd(con)} đ.`);
+        await n.update({ da_tra: tien(n.da_tra) + tien(pc.so_tien) }, { transaction: t, choPhep: true } as any);
+      }
       await this.ghiQuy(t, { ngay: pc.ngay, quy_id: pc.quy_id, so_tien: -tien(pc.so_tien), loai: 'chi', chung_tu: pc.so, dien_giai: pc.ly_do });
       await pc.update({ trang_thai: 'da_ghi', ghi_boi: this.nguoi(ctx) }, { transaction: t, choPhep: true } as any);
       return { ok: true, so: pc.so };
@@ -808,6 +853,10 @@ export class PluginKhoServer extends Plugin {
         if (pc.phieu_kho_id) {
           const pk = await this.khoa('phieu_kho', pc.phieu_kho_id, t);
           await pk.update({ da_tra: tien(pk.da_tra) - tien(pc.so_tien) }, { transaction: t, choPhep: true } as any);
+        }
+        if (pc.no_ncc_dau_ky_id) {
+          const n = await this.khoa('no_ncc_dau_ky', pc.no_ncc_dau_ky_id, t);
+          await n.update({ da_tra: tien(n.da_tra) - tien(pc.so_tien) }, { transaction: t, choPhep: true } as any);
         }
       }
       await pc.update({ trang_thai: 'da_huy', ly_do_huy: lyDo(ctx) || '' }, { transaction: t, choPhep: true } as any);
@@ -861,6 +910,7 @@ export class PluginKhoServer extends Plugin {
         { tu: p.tu || '2000-01-01', den: p.den || '2999-12-31' }, t);
     };
 
+    dangKyMoRong(this, H, { id, val, lyDo });
     const handlers: Record<string, any> = {};
     for (const [ten, fn] of Object.entries(H)) {
       handlers[ten] = async (ctx: any, next: any) => {
@@ -873,7 +923,8 @@ export class PluginKhoServer extends Plugin {
       ghiSo: 'Ghi sổ kho', huy: 'Hủy chứng từ', dinhGia: 'Định giá hàng nhập', chotDon: 'Chốt đơn', duyetGia: 'Duyệt đơn (giá sàn / hạn mức)',
       moLai: 'Mở lại đơn', dongPhanCon: 'Đóng phần chưa giao', ghiHoaDon: 'Ghi số hóa đơn', taoLuot: 'Tạo lượt giao', banGiaoXe: 'Bàn giao xe',
       khachNhan: 'Khách đã nhận', ghi: 'Ghi chứng từ', phanBo: 'Phân bổ tiền', phanBoThuHo: 'Phân bổ thu hộ', nhanDien: 'Nhận diện khách',
-      tatToan: 'Tất toán thu hộ', chot: 'Chốt ca tiền', baoCao: 'Báo cáo lãi gộp',
+      tatToan: 'Tất toán thu hộ', chot: 'Chốt ca tiền / chốt giá thành mẻ', baoCao: 'Báo cáo lãi gộp',
+      kiem: 'Kiểm tra lô nhập', duyet: 'Duyệt lô nhập', khoa: 'Khóa kỳ mở sổ', uocTinh: 'Chi phí tài sản ước tính',
     };
     for (const [k, v] of Object.entries(tenThaoTac)) this.app.acl.setAvailableAction(k, { displayName: v, type: 'old-data', onNewRecord: false } as any);
   }

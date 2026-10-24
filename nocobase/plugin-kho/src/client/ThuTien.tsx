@@ -285,6 +285,9 @@ function PhieuChi() {
         {loaiChi === 'mua_hang' && <Row gutter={12}>
           <Col span={8}><Form.Item name="nha_cung_cap_id" label="Nhà cung cấp" rules={[{ required: true, message: 'Chọn NCC' }]}>
             <ChonDanhMuc bang="nha_cung_cap" timTheo={['ma', 'ten', 'sdt', 'nhan']} style={{ width: '100%' }} /></Form.Item></Col>
+          <Col span={8}><Form.Item name="no_ncc_dau_ky_id" label="Hoặc trả khoản nợ đầu kỳ">
+            <ChonDanhMuc bang="no_ncc_dau_ky" nhan="so" timTheo={['so', 'chung_tu_goc']} style={{ width: '100%' }}
+              locThem={{ trang_thai: 'da_ghi', nha_cung_cap_id: ncc || 0, don_vi_id: donVi || 0 }} /></Form.Item></Col>
           <Col span={8}><Form.Item name="phieu_kho_id" label="Trả cho phiếu nhập (trống = trả chung NCC)">
             <ChonDanhMuc bang="phieu_kho" nhan="so" timTheo={['so', 'chung_tu_ncc']} style={{ width: '100%' }}
               locThem={{ loai: 'nhap', trang_thai: 'da_ghi', nha_cung_cap_id: ncc || 0 }} /></Form.Item></Col>
@@ -421,14 +424,21 @@ function CongNoNcc() {
   const [ds, setDs] = useState<any[] | null>(null);
   useEffect(() => { goi('phieu_kho:list', { params: { filter: { loai: 'nhap', trang_thai: 'da_ghi' }, appends: ['nha_cung_cap', 'kho'], sort: ['-ngay'], pageSize: 2000 }, im: true })
     .then((r) => setDs((r.data || []).filter((x: any) => x.phai_tra === undefined || Number(x.phai_tra || 0) - Number(x.da_tra || 0) !== 0))).catch(() => setDs([])); }, []);
+  const [dk, setDk] = useState<any[]>([]);
+  useEffect(() => { goi('no_ncc_dau_ky:list', { params: { filter: { trang_thai: 'da_ghi' }, appends: ['nha_cung_cap', 'don_vi'], pageSize: 2000 }, im: true })
+    .then((r) => setDk((r.data || []).filter((x: any) => Number(x.so_tien) - Number(x.da_tra || 0) !== 0))).catch(() => setDk([])); }, []);
   const anGia = (ds || []).some((x) => x.phai_tra === undefined);
   if (anGia) return <Typography.Text type="secondary">Chỉ kế toán / quản lý xem số phải trả nhà cung cấp.</Typography.Text>;
-  return <Table size="small" rowKey="id" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 50 }} columns={[
+  return <><Table size="small" rowKey="id" pagination={false} title={() => <b>Nợ NCC đầu kỳ</b>} dataSource={dk} columns={[
+    { title: 'Số', dataIndex: 'so' }, { title: 'NCC', render: (_, r) => r.nha_cung_cap?.ten }, { title: 'Đơn vị', render: (_, r) => r.don_vi?.ma },
+    { title: 'Chứng từ gốc', dataIndex: 'chung_tu_goc' }, { title: 'Hạn', dataIndex: 'han_tt', render: ngayVN },
+    { title: 'Còn phải trả', align: 'right', render: (_, r) => <b>{fmt(Number(r.so_tien) - Number(r.da_tra || 0))}</b> }]} />
+  <Table size="small" rowKey="id" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 50 }} title={() => <b>Theo phiếu nhập</b>} columns={[
     { title: 'Phiếu nhập', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'NCC', render: (_, r) => r.nha_cung_cap?.ten || '—' },
     { title: 'Chứng từ NCC', dataIndex: 'chung_tu_ncc' }, { title: 'Phải trả', dataIndex: 'phai_tra', align: 'right', render: (v) => fmt(v) },
     { title: 'Đã trả', dataIndex: 'da_tra', align: 'right', render: (v) => fmt(v) },
     { title: 'Còn phải trả', align: 'right', render: (_, r) => <b>{fmt(Number(r.phai_tra || 0) - Number(r.da_tra || 0))}</b> },
-  ]} />;
+  ]} /></>;
 }
 
 export function ThuTien() {

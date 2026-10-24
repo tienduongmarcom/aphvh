@@ -1,7 +1,7 @@
 /** Danh mục: mặt hàng, khách hàng, kho, đơn vị; công nợ đầu kỳ. Thêm/sửa và dán nhanh từ Excel (cập nhật theo mã). */
 import { App, Button, Card, Checkbox, Form, Input, InputNumber, Modal, Select, Space, Table, Tabs, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { ChonDanhMuc, fmt, homNay, ngayVN, useGoi } from './chung';
+import { ChonDanhMuc, fmt, useGoi } from './chung';
 
 /** Đọc số dán từ Excel: "1.234.567" / "1,5" / "25.5" / "1.234,5". */
 export const docSo = (v: string) => {
@@ -80,15 +80,22 @@ function BangDanhMuc({ bang }: { bang: string }) {
         if (!k || c[i] === undefined) return;
         const cot = cfg.cot.find((x) => x.key === k)!;
         const v = c[i].trim();
-        if (cot.kieu === 'don_vi') return;
+        if (cot.kieu === 'don_vi') { o._ma_don_vi = v; return; }
         if (cot.kieu === 'chon') { const m = Object.entries(cot.chon || {}).find(([a, b]) => a === v || b.toLowerCase() === v.toLowerCase()); if (m) o[k] = m[0]; return; }
         o[k] = cot.kieu === 'so' ? docSo(v) : cot.kieu === 'co' ? /^(1|x|có|co|true)$/i.test(v) : v;
       });
       return o;
     }).filter((o) => o.ma);
     let moi = 0, cap = 0, loi = 0;
+    const dv = (await goi('don_vi:list', { params: { pageSize: 100 } })).data || [];
     for (const o of hang) {
       try {
+        if ('_ma_don_vi' in o) {
+          const x = dv.find((d: any) => d.ma === o._ma_don_vi || d.ten === o._ma_don_vi);
+          delete o._ma_don_vi;
+          if (!x) { loi++; continue; }
+          o.don_vi_id = x.id;
+        }
         const co = await goi(`${bang}:list`, { params: { filter: { ma: o.ma }, pageSize: 1 }, im: true });
         if (co.data?.[0]) { await goi(`${bang}:update`, { params: { filterByTk: co.data[0].id }, data: o, im: true }); cap++; }
         else { await goi(`${bang}:create`, { data: o, im: true }); moi++; }
@@ -130,44 +137,12 @@ function BangDanhMuc({ bang }: { bang: string }) {
   );
 }
 
-/** Công nợ đầu kỳ: một dòng cho mỗi khách × đơn vị, ghi như đơn "Công nợ đầu kỳ" đã giao (thu tiền trừ vào được). */
-function CongNoDauKy() {
-  const goi = useGoi();
-  const { message } = App.useApp();
-  const [ds, setDs] = useState<any[]>([]);
-  const [khach, setKhach] = useState<any>();
-  const [dv, setDv] = useState<any>();
-  const [tien, setTien] = useState<number | null>(null);
-  const tai = async () => setDs((await goi('don_ban:list', { params: { filter: { loai: 'dau_ky' }, appends: ['khach', 'don_vi_ban'], sort: ['-id'], pageSize: 2000 } })).data || []);
-  useEffect(() => { tai(); }, []);
-  const them = async () => {
-    if (!khach || !dv || !tien) return message.warning('Chọn khách, đơn vị và nhập số nợ.');
-    await goi('don_ban:create', { data: { loai: 'dau_ky', khach_id: khach, don_vi_ban_id: dv, tong_tien: tien, ngay: homNay(), ngay_giao: homNay(), ghi_chu: 'Công nợ đầu kỳ' } });
-    setTien(null); tai();
-  };
-  return (
-    <>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <ChonDanhMuc bang="khach_hang" value={khach} onChange={setKhach} timTheo={['ma', 'ten', 'sdt', 'nhan']} placeholder="Khách" style={{ width: 300 }} />
-        <ChonDanhMuc bang="don_vi" value={dv} onChange={setDv} placeholder="Đơn vị" />
-        <InputNumber placeholder="Số nợ (đ)" value={tien} onChange={(v) => setTien(v as any)} style={{ width: 180 }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))} />
-        <Button type="primary" onClick={them}>Thêm nợ đầu kỳ</Button>
-      </Space>
-      <Table size="small" rowKey="id" dataSource={ds} columns={[
-        { title: 'Số', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Khách', render: (_, r) => r.khach?.ten },
-        { title: 'Đơn vị', render: (_, r) => r.don_vi_ban?.ten }, { title: 'Nợ đầu kỳ', dataIndex: 'tong_tien', align: 'right', render: (v) => fmt(v) },
-        { title: 'Còn nợ', dataIndex: 'con_no', align: 'right', render: (v) => fmt(v) },
-      ]} />
-    </>
-  );
-}
-
 export function DanhMuc() {
   return (
     <Card title="Danh mục">
       <Tabs items={[
         ...Object.entries(BANG).map(([k, v]) => ({ key: k, label: v.ten, children: <BangDanhMuc bang={k} /> })),
-        { key: 'no', label: 'Công nợ đầu kỳ', children: <CongNoDauKy /> },
+        { key: 'no', label: 'Công nợ / tồn đầu kỳ', children: <Typography.Paragraph>Số dư đầu kỳ (tồn kho, công nợ khách / NCC, quỹ, tiền cọc, đơn chuyển tiếp) nhập ở menu <b>Go-Live &amp; số dư đầu kỳ</b> — có kiểm tra, chống nhập trùng, duyệt và khóa kỳ.</Typography.Paragraph> },
       ]} />
     </Card>
   );

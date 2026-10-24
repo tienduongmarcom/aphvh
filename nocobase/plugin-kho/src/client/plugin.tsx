@@ -8,6 +8,8 @@ import { KhoVan } from './Kho';
 import { ThuTien } from './ThuTien';
 import { DanhMuc } from './DanhMuc';
 import { BaoCao } from './BaoCao';
+import { GoLive } from './GoLive';
+import { TaiSan } from './TaiSan';
 
 const boc = (C: any) => () => (
   <App>
@@ -26,6 +28,8 @@ export class PluginKhoClient extends Plugin {
     this.router.add('admin.aph-ban-hang', { path: '/admin/aph/ban-hang', Component: boc(BanHang) });
     this.router.add('admin.aph-kho-van', { path: '/admin/aph/kho-van', Component: boc(KhoVan) });
     this.router.add('admin.aph-thu-chi', { path: '/admin/aph/thu-chi', Component: boc(ThuTien) });
+    this.router.add('admin.aph-go-live', { path: '/admin/aph/go-live', Component: boc(GoLive) });
+    this.router.add('admin.aph-tai-san', { path: '/admin/aph/tai-san', Component: boc(TaiSan) });
     this.router.add('admin.aph-bao-cao', { path: '/admin/aph/bao-cao', Component: boc(BaoCao) });
     this.router.add('admin.aph-danh-muc', { path: '/admin/aph/danh-muc', Component: boc(DanhMuc) });
   }

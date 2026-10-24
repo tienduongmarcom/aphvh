@@ -1,5 +1,5 @@
 /** Báo cáo (kế toán / quản lý): lãi gộp theo lượt đã xuất; hàng đợi hóa đơn MISA. */
-import { App, Button, Card, DatePicker, Input, Segmented, Space, Table, Tabs, Typography } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Input, Segmented, Space, Table, Tabs, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { fmt, homNay, ngayVN, useGoi } from './chung';
@@ -14,6 +14,14 @@ function LaiGop() {
     .then((r) => { setLoi(''); setDs(r.data || []); })
     .catch((e) => { setLoi(e?.response?.data?.errors?.[0]?.message || 'Không xem được'); setDs([]); });
   useEffect(() => { tai(); }, [theo, khoang?.[0]?.valueOf(), khoang?.[1]?.valueOf()]);
+  const [tam, setTam] = useState<string[]>([]);
+  useEffect(() => {
+    Promise.all([goi('me_sx:list', { params: { filter: { trang_thai: { $in: ['mo', 'can_chot_lai'] } }, pageSize: 1 }, im: true }).catch(() => ({ meta: { count: 0 } })),
+      goi('phieu_kho_dong:list', { params: { filter: { trang_thai_gia: 'tam' }, pageSize: 1 }, im: true }).catch(() => ({ meta: { count: 0 } })),
+      goi('phieu_kho_dong:list', { params: { filter: { trang_thai_gia: 'cho_gia', 'phieu_kho.trang_thai': 'da_ghi' }, pageSize: 1 }, im: true }).catch(() => ({ meta: { count: 0 } }))])
+      .then(([a, b, c]: any) => setTam([a.meta?.count ? `${a.meta.count} mẻ sản xuất chưa chốt / cần chốt lại giá thành` : '',
+        b.meta?.count ? `${b.meta.count} dòng hàng đang giá tạm` : '', c.meta?.count ? `${c.meta.count} dòng hàng chờ định giá` : ''].filter(Boolean)));
+  }, []);
   if (loi) return <Typography.Text type="secondary">{loi}</Typography.Text>;
   const tong = (k: string) => (ds || []).reduce((s, r) => s + Number(r[k] || 0), 0);
   return <>
@@ -22,6 +30,7 @@ function LaiGop() {
         { value: 'mat_hang', label: 'Theo mặt hàng' }, { value: 'ngay', label: 'Theo ngày' }]} />
       <DatePicker.RangePicker format="DD/MM/YYYY" value={khoang} onChange={setKhoang} />
     </Space>
+    {tam.length > 0 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Lãi gộp TẠM TÍNH — chưa phải số chốt" description={tam.join(' · ')} />}
     <Typography.Paragraph type="secondary">Tính trên các lượt đã xuất kho (bàn giao xe / khách nhận), giá vốn bình quân theo kho tại lúc xuất. Chưa trừ hàng trả và giảm giá sau bán.</Typography.Paragraph>
     <Table size="small" rowKey="nhom" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 100 }} columns={[
       { title: 'Nhóm', dataIndex: 'nhom', render: (v) => (theo === 'ngay' ? ngayVN(v) : v) },
@@ -63,10 +72,42 @@ function HoaDon() {
   </>;
 }
 
+function TuoiNo() {
+  const goi = useGoi();
+  const [ds, setDs] = useState<any[] | null>(null);
+  useEffect(() => {
+    goi('don_ban:list', { params: { filter: { trang_thai: { $in: ['dang_giao', 'da_giao', 'da_dong'] }, con_no: { $gt: 0 } }, appends: ['khach', 'don_vi_ban'], pageSize: 10000 } }).then((r) => {
+      const hn = new Date(homNay()).getTime();
+      const m: Record<string, any> = {};
+      for (const d of r.data || []) {
+        const han = d.han_tt || d.ngay_giao || d.ngay;
+        const qua = Math.floor((hn - new Date(han).getTime()) / 86400000);
+        const nhom = qua <= 0 ? 'chua' : qua <= 30 ? 'd30' : qua <= 60 ? 'd60' : qua <= 90 ? 'd90' : 'tren90';
+        const k = `${d.khach_id}-${d.don_vi_ban_id}`;
+        m[k] = m[k] || { k, khach: d.khach, dv: d.don_vi_ban, chua: 0, d30: 0, d60: 0, d90: 0, tren90: 0, tong: 0 };
+        m[k][nhom] += Number(d.con_no); m[k].tong += Number(d.con_no);
+      }
+      setDs(Object.values(m).sort((a: any, b: any) => b.tren90 - a.tren90 || b.tong - a.tong));
+    }).catch(() => setDs([]));
+  }, []);
+  const c = (k: string, t: string) => ({ title: t, dataIndex: k, align: 'right' as const, render: (v: number) => (v ? fmt(v) : '') });
+  const tong = (k: string) => (ds || []).reduce((s, r) => s + r[k], 0);
+  return <>
+    <Typography.Paragraph type="secondary">Tính từ hạn thanh toán (nợ đầu kỳ có hạn) hoặc ngày giao. Theo khách × đơn vị, không cấn chéo đơn vị.</Typography.Paragraph>
+    <Table size="small" rowKey="k" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 100 }} columns={[
+      { title: 'Khách', render: (_, r) => <span><b>{r.khach?.ten}</b><div style={{ fontSize: 12, color: '#888' }}>{r.khach?.ma}</div></span> },
+      { title: 'Đơn vị', render: (_, r) => r.dv?.ma }, c('chua', 'Chưa đến hạn'), c('d30', 'Quá 1–30 ngày'), c('d60', '31–60'), c('d90', '61–90'),
+      { ...c('tren90', 'Trên 90 ngày'), render: (v: number) => (v ? <b style={{ color: '#cf1322' }}>{fmt(v)}</b> : '') }, { ...c('tong', 'Tổng còn nợ'), render: (v: number) => <b>{fmt(v)}</b> },
+    ]} summary={() => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={2}><b>Cộng</b></Table.Summary.Cell>
+      {['chua', 'd30', 'd60', 'd90', 'tren90', 'tong'].map((k, i) => <Table.Summary.Cell key={k} index={i + 2} align="right"><b>{fmt(tong(k))}</b></Table.Summary.Cell>)}</Table.Summary.Row>} />
+  </>;
+}
+
 export function BaoCao() {
   return (
     <Card title="Báo cáo">
-      <Tabs items={[{ key: 'lg', label: 'Lãi gộp', children: <LaiGop /> }, { key: 'hd', label: 'Hàng đợi hóa đơn MISA', children: <HoaDon /> }]} />
+      <Tabs items={[{ key: 'lg', label: 'Lãi gộp', children: <LaiGop /> }, { key: 'tn', label: 'Tuổi nợ khách', children: <TuoiNo /> },
+      { key: 'hd', label: 'Hàng đợi hóa đơn MISA', children: <HoaDon /> }]} />
     </Card>
   );
 }
