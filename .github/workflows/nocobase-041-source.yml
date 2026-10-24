@@ -60,7 +60,7 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > "$root/BUILD_SOURCE_SHA"
           (cd "$root" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
           sha256sum plugin-kho-0.4.1.tgz > plugin-kho-0.4.1.tgz.sha256
-          tar tzf plugin-kho-0.4.1.tgz | head -15
+          tar tzf plugin-kho-0.4.1.tgz | sed -n '1,15p'
           echo "UAT CANDIDATE: server compiled from $GITHUB_SHA; original 0.4.1 client retained."
           echo "NOT an official NocoBase production release; run database UAT and build using official CLI for release."
       - uses: actions/upload-artifact@v4
