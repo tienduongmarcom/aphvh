@@ -72,6 +72,7 @@ BACKUP="storage/plugins/@aphvh/.uat041-before-gui-${STAMP}"
 [ -d "$CURRENT" ] && [ ! -e "$BACKUP" ] || { echo "PLUGIN UAT THIEU HOAC BACKUP DA CO"; exit 1; }
 
 SWAPPED=0
+APP_STOPPED=0
 rollback() {
   rc=$?
   trap - EXIT
@@ -81,12 +82,16 @@ rollback() {
     if [ -d "$CURRENT" ]; then mv "$CURRENT" "$EVIDENCE/plugin-loi"; fi
     if [ -d "$BACKUP" ]; then mv "$BACKUP" "$CURRENT"; fi
     docker compose up -d app </dev/null || true
+  elif [ "$APP_STOPPED" = 1 ]; then
+    # Neu loi sau stop nhung truoc mv plugin, khoi dong lai ban UAT cu.
+    docker compose up -d app </dev/null || true
   fi
   exit "$rc"
 }
 trap rollback EXIT
 
 docker compose stop app </dev/null
+APP_STOPPED=1
 mv "$CURRENT" "$BACKUP"
 SWAPPED=1
 mv "$NEW" "$CURRENT"
@@ -113,6 +118,7 @@ print("Mẻ 67: PASS, khong ghi du lieu")
 PY
 
 SWAPPED=0
+APP_STOPPED=0
 trap - EXIT
 echo "=== UAT 13041 DOI GIAO DIEN PASS ==="
 echo "Commit: $HEAD"
