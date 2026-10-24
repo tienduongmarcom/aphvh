@@ -45,26 +45,48 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Repackage test-only 0.4.1 plugin from current server source
+      - name: Build full plugin with NocoBase 2.2.31 (client + server)
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/aphvh-041"
-          tar xzf nocobase/trien-khai/plugin-kho-0.4.1.tgz -C "$RUNNER_TEMP/aphvh-041"
-          pkg="$(find "$RUNNER_TEMP/aphvh-041" -maxdepth 3 -name package.json -print -quit)"
-          [ -n "$pkg" ] || { echo "Missing plugin package.json"; exit 1; }
-          root="$(dirname "$pkg")"
-          [ -f "$root/dist/server/index.js" ] || { echo "Missing original dist/server/index.js"; exit 1; }
-          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/server/index.ts \
-            --bundle --packages=external --platform=node --format=cjs --target=node20 \
-            --outfile="$root/dist/server/index.js"
-          node --check "$root/dist/server/index.js"
-          printf '%s\n' "$GITHUB_SHA" > "$root/BUILD_SOURCE_SHA"
-          (cd "$root" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
+          # Không thay thế dist/client bằng esbuild ESM: NocoBase cần định dạng build plugin chính thức.
+          npm install --global yarn@1.22.22
+          npx --yes create-nocobase-app@2.2.31 "$RUNNER_TEMP/nb-build-041" -d postgres \
+            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_DATABASE=nbuild \
+            -e DB_USER=nbuild -e DB_PASSWORD=not-a-real-database
+          app="$RUNNER_TEMP/nb-build-041"
+          test -f "$app/package.json"
+          (cd "$app" && yarn install --non-interactive)
+
+          stage="$RUNNER_TEMP/aphvh-041"
+          mkdir -p "$stage"
+          tar xzf nocobase/trien-khai/plugin-kho-0.4.1.tgz -C "$stage"
+          pkg="$(find "$stage" -maxdepth 3 -name package.json -print -quit)"
+          [ -n "$pkg" ] || { echo "Missing original plugin package.json"; exit 1; }
+          original="$(dirname "$pkg")"
+          target="$app/packages/plugins/@aphvh/plugin-kho"
+          mkdir -p "$target"
+          cp -a "$original/." "$target/"
+          rm -rf "$target/src" "$target/dist"
+          cp -a "$GITHUB_WORKSPACE/nocobase/plugin-kho/src" "$target/src"
+          cp "$GITHUB_WORKSPACE/nocobase/plugin-kho/package.json" "$target/package.json"
+
+          # Build chuẩn cho đúng bản NocoBase đang chạy, không giữ lại client từ gói cũ.
+          (cd "$app" && yarn postinstall && yarn build @aphvh/plugin-kho)
+          test -s "$target/dist/server/index.js"
+          test -s "$target/dist/client/index.js"
+          node --check "$target/dist/server/index.js"
+
+          # Gate fail-closed: nếu câu cảnh báo 403 không nằm trong client build thì từ chối phát hành.
+          if ! grep -RaqF 'Không thể tải dữ liệu sản xuất' "$target/dist/client"; then
+            echo "FAIL: fresh client did not include MES 403 warning"; exit 1
+          fi
+          printf '%s\n' "$GITHUB_SHA" > "$target/BUILD_SOURCE_SHA"
+          (cd "$target" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
           sha256sum plugin-kho-0.4.1.tgz > plugin-kho-0.4.1.tgz.sha256
-          tar tzf plugin-kho-0.4.1.tgz | sed -n '1,15p'
-          echo "UAT CANDIDATE: server compiled from $GITHUB_SHA; original 0.4.1 client retained."
-          echo "NOT an official NocoBase production release; run database UAT and build using official CLI for release."
+          tar tzf plugin-kho-0.4.1.tgz | sed -n '1,20p'
+          echo "UAT CANDIDATE: NocoBase 2.2.31 built client + server from $GITHUB_SHA."
+          echo "Only install to isolated UAT 13041 after artifact + checksum verification."
       - uses: actions/upload-artifact@v4
         with:
           name: nocobase-041-uat-package
