@@ -3,6 +3,7 @@ import { Alert, App, Button, Card, DatePicker, Input, Segmented, Space, Table, T
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { fmt, homNay, ngayVN, useGoi } from './chung';
+import { HangDoiHD, TongQuan } from './Them040';
 
 function LaiGop() {
   const goi = useGoi();
@@ -107,8 +108,9 @@ function TuoiNo() {
 export function BaoCao() {
   return (
     <Card title="Báo cáo">
-      <Tabs items={[{ key: 'lg', label: 'Lãi gộp', children: <LaiGop /> }, { key: 'tn', label: 'Tuổi nợ khách', children: <TuoiNo /> },
-      { key: 'hd', label: 'Hàng đợi hóa đơn MISA', children: <HoaDon /> }]} />
+      <Tabs items={[{ key: 'tq', label: 'Tổng quan vận hành', children: <TongQuan /> }, { key: 'lg', label: 'Lãi gộp', children: <LaiGop /> },
+      { key: 'tn', label: 'Tuổi nợ khách', children: <TuoiNo /> }, { key: 'hq', label: 'Hàng đợi hóa đơn MISA (theo bên bán)', children: <HangDoiHD /> },
+      { key: 'hd', label: 'Hóa đơn đơn cũ (trước 0.4.0)', children: <HoaDon /> }]} />
     </Card>
   );
 }

@@ -10,6 +10,9 @@ import { DanhMuc } from './DanhMuc';
 import { BaoCao } from './BaoCao';
 import { GoLive } from './GoLive';
 import { TaiSan } from './TaiSan';
+import { TrangBanHang } from './DonGop';
+import { BanNhanh } from './BanNhanh';
+import { DuLieu } from './DuLieu';
 
 const boc = (C: any) => () => (
   <App>
@@ -25,7 +28,9 @@ export class PluginKhoClient extends Plugin {
     // Trang in riêng (không khung menu): /in/don_ban/<id>, /in/luot_giao/<id>, /in/phieu_thu/<id>
     this.router.add('in-phieu', { path: '/in/:loai/:id', Component: () => <App><InPhieu /></App> });
     // Màn hình nghiệp vụ trong khung quản trị; menu trỏ tới bằng mục "Liên kết".
-    this.router.add('admin.aph-ban-hang', { path: '/admin/aph/ban-hang', Component: boc(BanHang) });
+    this.router.add('admin.aph-ban-hang', { path: '/admin/aph/ban-hang', Component: boc(() => <TrangBanHang BanHang={BanHang} />) });
+    this.router.add('admin.aph-ban-nhanh', { path: '/admin/aph/ban-nhanh', Component: boc(BanNhanh) });
+    this.router.add('admin.aph-du-lieu', { path: '/admin/aph/du-lieu', Component: boc(DuLieu) });
     this.router.add('admin.aph-kho-van', { path: '/admin/aph/kho-van', Component: boc(KhoVan) });
     this.router.add('admin.aph-thu-chi', { path: '/admin/aph/thu-chi', Component: boc(ThuTien) });
     this.router.add('admin.aph-go-live', { path: '/admin/aph/go-live', Component: boc(GoLive) });

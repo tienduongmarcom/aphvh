@@ -1,6 +1,7 @@
 /** Thu chi và công nợ: ghi nhận khách trả tiền (trả đúng đơn được chọn, phần thừa chưa phân bổ), danh sách phiếu thu, công nợ tổng hợp. */
 import { Alert, App, Button, Card, Checkbox, Col, DatePicker, Form, Input, InputNumber, Modal, Radio, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
+import { ChoXacMinh, DoiSoatNH, PhaiHoan } from './DoiSoat';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChonDanhMuc, TRANG_THAI_PHIEU, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
 
@@ -452,6 +453,9 @@ export function ThuTien() {
       <Tabs items={[
         { key: 'thu', label: 'Ghi nhận khách trả tiền', children: <GhiThu key={ban} xong={() => setBan(ban + 1)} /> },
         { key: 'ds', label: 'Phiếu thu', children: <DanhSachThu key={ban} /> },
+        { key: 'xm', label: 'CK chờ xác minh', children: <ChoXacMinh key={ban} /> },
+        { key: 'nh', label: 'Đối soát ngân hàng', children: <DoiSoatNH /> },
+        { key: 'ph', label: 'Khoản phải hoàn', children: <PhaiHoan key={ban} /> },
         { key: 'cn', label: 'Công nợ khách', children: <CongNo key={ban} /> },
         { key: 'th', label: 'Thu hộ giữa đơn vị', children: <ThuHo key={ban} /> },
         { key: 'ncc', label: 'Công nợ NCC', children: <CongNoNcc /> },
