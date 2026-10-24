@@ -53,9 +53,11 @@ jobs:
           set -euo pipefail
           # Không thay thế dist/client bằng esbuild ESM: NocoBase cần định dạng build plugin chính thức.
           npm install --global yarn@1.22.22
-          npx --yes create-nocobase-app@2.2.31 "$RUNNER_TEMP/nb-build-041" -d postgres \
+          # create-nocobase-app su dung doi so lam ten package.json.
+          # Duong dan tuyet doi chua '/' gay "Name contains illegal characters".
+          (cd "$RUNNER_TEMP" && npx --yes create-nocobase-app@2.2.31 nb-build-041 -d postgres \
             -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_DATABASE=nbuild \
-            -e DB_USER=nbuild -e DB_PASSWORD=not-a-real-database
+            -e DB_USER=nbuild -e DB_PASSWORD=not-a-real-database)
           app="$RUNNER_TEMP/nb-build-041"
           test -f "$app/package.json"
           (cd "$app" && yarn install --non-interactive)
