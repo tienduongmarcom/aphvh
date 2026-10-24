@@ -55,8 +55,8 @@ NEW="$EVIDENCE/new-plugin"
 [ -s "$NEW/dist/server/index.js" ] && [ -s "$NEW/dist/client/index.js" ] || {
   echo "GOI KHONG CO CA CLIENT + SERVER"; exit 1;
 }
-grep -RaqF 'Không thể tải dữ liệu sản xuất' "$NEW/dist/client" || {
-  echo "CLIENT KHONG CO MA GIAO DIEN MOI. Dung."; exit 1;
+grep -RaqF 'APHVH_MES_403_ERROR_PANEL_V1' "$NEW/dist/client" || {
+  echo "CLIENT KHONG CO CANH BAO 403 MOI. Dung."; exit 1;
 }
 grep -q '"version": "0.4.1"' "$NEW/package.json" || { echo "SAI VERSION"; exit 1; }
 
