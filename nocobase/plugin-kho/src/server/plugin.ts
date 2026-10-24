@@ -25,7 +25,7 @@ import { dangKy040, hook040 } from './dang_ky_040';
 import { LOC_KHO, LOC_QUY, VAI_TRO_KHONG_GIA, dieuChinhGiaTri, doiChieuBaoToan, kiemKho, kiemQuy, napNguoiDung } from './toan_ven';
 
 export const NHOM_XEM_GIA = ['root', 'admin', 'quan_ly', 'ke_toan'];
-const TRUONG_GIA_VON = new Set(['gia_von', 'gia_von_da_giao', 'gia_bq', 'gia_bq_sau', 'gia_tri_nvl', 'gia_thanh', 'chi_phi_sx', 'gia_tri_bao_bi',
+const TRUONG_GIA_VON = new Set(['gia_tham_chieu', 'nguon_gia_tc', 'snapshot_gia', 'phi_gia_cong', 'gia_von', 'gia_von_da_giao', 'gia_bq', 'gia_bq_sau', 'gia_tri_nvl', 'gia_thanh', 'chi_phi_sx', 'gia_tri_bao_bi',
   'chi_phi', 'gia_tri_phu_pham', 'do_dang_cuoi', 'hao_bat_thuong_gt', 'tong_phan_bo', 'da_vao_kho', 'nguyen_gia']);
 const TRUONG_GIA_MUA = new Set(['don_gia', 'phai_tra', 'da_tra', 'gia_tri', 'thanh_tien']);
 const BANG_KHO = new Set(['phieu_kho', 'phieu_kho_dong', 'so_kho', 'ton_kho', 'me_sx']);
@@ -670,7 +670,7 @@ export class PluginKhoServer extends Plugin {
         const kho_id = x.kho_id || dd.kho_id;
         kiemKho(ctx, kho_id);
         const khoX = await this.bang('kho').findByPk(kho_id, { transaction: t });
-        if (khoX?.loai_kho === 'cho_xu_ly' || khoX?.trung_chuyen) loi(`Kho ${khoX.ten} là kho chờ xử lý / đang vận chuyển: không xuất bán từ kho này.`);
+        if (['cho_xu_ly', 'hang_gui'].includes(khoX?.loai_kho) || khoX?.trung_chuyen) loi(`Kho ${khoX.ten} là kho chờ xử lý / đang vận chuyển / hàng gửi gia công: không xuất bán từ kho này.`);
         const ton = await this.dongTon(t, kho_id, dd.mat_hang_id);
         // Dùng phần đã giữ cấp đơn trước (không cộng giữ lần hai); chỉ phần thiếu mới cần ATP.
         const tuDon = kho_id === dd.kho_id ? Math.min(kg(x.so_kg), kg(dd.giu_don)) : 0;

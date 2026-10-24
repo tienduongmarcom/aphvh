@@ -1,0 +1,100 @@
+name: NocoBase 0.4.1 source gates (khong ghi du lieu)
+on:
+  push:
+    branches: [feat/nocobase-041-factory-mes]
+    paths:
+      - "nocobase/plugin-kho/src/**"
+      - "nocobase/schema/**"
+      - "nocobase/kiem/**"
+      - "nocobase/trien-khai/uat-mac-041.sh"
+      - "nocobase/trien-khai/cap-nhat-uat041-giao-dien.sh"
+      - ".github/workflows/nocobase-041-source.yml"
+  workflow_dispatch:
+jobs:
+  check-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Python schema + test syntax
+        run: |
+          python3 -m py_compile nocobase/schema/tao_bang.py nocobase/schema/cai_dat.py nocobase/schema/nang_cap.py
+          python3 -m py_compile nocobase/kiem/kiem_041.py nocobase/kiem/kiem_040.py
+          bash -n nocobase/trien-khai/uat-mac-041.sh
+          bash -n nocobase/trien-khai/cap-nhat-uat041-giao-dien.sh
+      - name: TypeScript server syntax + relative imports (esbuild, no DB)
+        run: |
+          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/server/index.ts \
+            --bundle --packages=external --platform=node --format=cjs --target=node20 \
+            --outfile=/tmp/aphvh-server-check.js
+      - name: TypeScript JSX client syntax + relative imports (esbuild, no browser)
+        run: |
+          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/client/index.tsx \
+            --bundle --packages=external --platform=browser --format=esm --jsx=automatic \
+            --outfile=/tmp/aphvh-client-check.js
+      - name: Scope explanation
+        run: |
+          echo "STATIC GATE ONLY: no NocoBase DB runtime, no UAT, no package rebuilt."
+          echo "To test behavior run nocobase/kiem/chay_tat_ca.sh and e2e-041.mjs in an isolated clone."
+
+  package-uat:
+    needs: check-source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build full plugin with NocoBase 2.2.31 (client + server)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Không thay thế dist/client bằng esbuild ESM: NocoBase cần định dạng build plugin chính thức.
+          npm install --global yarn@1.22.22
+          # create-nocobase-app su dung doi so lam ten package.json.
+          # Duong dan tuyet doi chua '/' gay "Name contains illegal characters".
+          (cd "$RUNNER_TEMP" && npx --yes create-nocobase-app@2.2.31 nb-build-041 -d postgres \
+            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_DATABASE=nbuild \
+            -e DB_USER=nbuild -e DB_PASSWORD=not-a-real-database)
+          app="$RUNNER_TEMP/nb-build-041"
+          test -f "$app/package.json"
+          (cd "$app" && yarn install --non-interactive)
+
+          stage="$RUNNER_TEMP/aphvh-041"
+          mkdir -p "$stage"
+          tar xzf nocobase/trien-khai/plugin-kho-0.4.1.tgz -C "$stage"
+          pkg="$(find "$stage" -maxdepth 3 -name package.json -print -quit)"
+          [ -n "$pkg" ] || { echo "Missing original plugin package.json"; exit 1; }
+          original="$(dirname "$pkg")"
+          target="$app/packages/plugins/@aphvh/plugin-kho"
+          mkdir -p "$target"
+          cp -a "$original/." "$target/"
+          rm -rf "$target/src" "$target/dist"
+          cp -a "$GITHUB_WORKSPACE/nocobase/plugin-kho/src" "$target/src"
+          cp "$GITHUB_WORKSPACE/nocobase/plugin-kho/package.json" "$target/package.json"
+
+          # Build chuẩn cho đúng bản NocoBase đang chạy, không giữ lại client từ gói cũ.
+          (cd "$app" && yarn postinstall && yarn build @aphvh/plugin-kho)
+          test -s "$target/dist/server/index.js"
+          test -s "$target/dist/client/index.js"
+          node --check "$target/dist/server/index.js"
+
+          # Gate fail-closed: marker ASCII trong Alert 403, khong phu thuoc ma hoa Unicode cua Rspack.
+          if ! grep -RaqF 'APHVH_MES_403_ERROR_PANEL_V1' "$target/dist/client"; then
+            echo "FAIL: fresh client did not include MES 403 error panel"; exit 1
+          fi
+          printf '%s\n' "$GITHUB_SHA" > "$target/BUILD_SOURCE_SHA"
+          (cd "$target" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
+          sha256sum plugin-kho-0.4.1.tgz > plugin-kho-0.4.1.tgz.sha256
+          tar tzf plugin-kho-0.4.1.tgz | sed -n '1,20p'
+          echo "UAT CANDIDATE: NocoBase 2.2.31 built client + server from $GITHUB_SHA."
+          echo "Only install to isolated UAT 13041 after artifact + checksum verification."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nocobase-041-uat-package
+          path: |
+            plugin-kho-0.4.1.tgz
+            plugin-kho-0.4.1.tgz.sha256
+          retention-days: 14

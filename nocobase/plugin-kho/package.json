@@ -1,8 +1,8 @@
 {
   "name": "@aphvh/plugin-kho",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "displayName": "APH-VH: kho, bán hàng, thu tiền",
-  "description": "Vận hành hợp nhất APH–VH–MK–TL: đơn gộp nhiều bên bán, giữ tồn, giao theo cân, chuyển hàng hai đầu, nhà máy, POS, đối soát ngân hàng, trung tâm dữ liệu",
+  "description": "Vận hành hợp nhất APH–VH–MK–TL + Factory MES Lite (mẫu sản xuất, định mức phiên bản, cân đối khối lượng, bao bì, gia công)",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {

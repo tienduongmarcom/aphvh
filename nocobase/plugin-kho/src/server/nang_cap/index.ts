@@ -12,10 +12,17 @@ import { MAC_DINH, cauHinh } from '../security/cau_hinh';
 import { giuDon } from '../inventory';
 
 type H = Record<string, (ctx: any, t: Transaction) => Promise<any>>;
-export const PHIEN_BAN = '0.4.0';
+export const PHIEN_BAN = '0.4.1';
+/** Các bước một lần (cấp phạm vi cho người dùng cũ, giữ tồn đơn cũ) chỉ chạy khi nâng từ 0.3.x (chưa có bản ghi 0.4.0). */
+const MOC_MOT_LAN = '0.4.0';
 
 export async function nangCap(p: any, t: Transaction, nguoi = 'he_thong') {
   const bc: any = { cau_hinh_them: [], cap_pham_vi: [], dong_don: 0, dong_luot: 0 };
+  // Khóa một hồ sơ/một kho gửi gia công ở tầng DB để chống tạo song song.
+  // Nếu dữ liệu cũ dùng chung kho cho hai hồ sơ, nâng cấp DỪNG để đối chiếu trước.
+  await p.sql(`CREATE UNIQUE INDEX IF NOT EXISTS sx_ho_so_kho_duy_nhat ON sx_ho_so_gia_cong (kho_id)`, {}, t);
+  // Dữ liệu chống ghi trùng nằm tại collection sx_thao_tac, request_id UNIQUE do schema khai báo.
+
   for (const [k, [gt, mt]] of Object.entries(MAC_DINH)) {
     const r = await p.sql(`INSERT INTO cau_hinh (khoa, gia_tri, mo_ta, "createdAt", "updatedAt") VALUES (:k, :g, :m, now(), now())
       ON CONFLICT (khoa) DO NOTHING RETURNING khoa`, { k, g: gt, m: mt }, t);
@@ -23,7 +30,8 @@ export async function nangCap(p: any, t: Transaction, nguoi = 'he_thong') {
   }
   const u = await p.sql(`SELECT u.id, u.email FROM users u WHERE NOT EXISTS (SELECT 1 FROM pham_vi v WHERE v.nguoi_dung_id = u.id)
     AND NOT EXISTS (SELECT 1 FROM "rolesUsers" r WHERE r."userId" = u.id AND r."roleName" IN ('root','admin'))`, {}, t);
-  const [daNang] = await p.sql(`SELECT 1 AS c FROM phien_ban_schema WHERE phien_ban = :v`, { v: PHIEN_BAN }, t);
+  const [daNang] = await p.sql(`SELECT 1 AS c FROM phien_ban_schema WHERE phien_ban IN (:v)`, { v: [MOC_MOT_LAN, PHIEN_BAN] }, t);
+  const [daGhi] = await p.sql(`SELECT 1 AS c FROM phien_ban_schema WHERE phien_ban = :v`, { v: PHIEN_BAN }, t);
   if (!daNang) {
     for (const x of u) {
       await p.sql(`INSERT INTO pham_vi (nguoi_dung_id, tat_ca_kho, tat_ca_quy, ghi_chu, "createdAt", "updatedAt")
@@ -53,10 +61,10 @@ export async function nangCap(p: any, t: Transaction, nguoi = 'he_thong') {
       for (const x of r.thieu) bc.giu_don_cu.thieu.push(`${d.so}: ${x}`);
     }
   }
-  if (!daNang) await p.sql(`INSERT INTO phien_ban_schema (phien_ban, ngay, ghi_chu, "createdAt", "updatedAt") VALUES (:v, :n, :g, now(), now())`,
+  if (!daGhi) await p.sql(`INSERT INTO phien_ban_schema (phien_ban, ngay, ghi_chu, "createdAt", "updatedAt") VALUES (:v, :n, :g, now(), now())`,
     { v: PHIEN_BAN, n: new Date().toISOString(), g: JSON.stringify({ ...bc, nguoi, ngay: homNay() }) }, t);
   bc.phien_ban = PHIEN_BAN;
-  bc.da_nang_truoc = !!daNang;
+  bc.da_nang_truoc = !!daGhi;
   return bc;
 }
 

@@ -5,7 +5,7 @@
 #           → đổi plugin (giữ bản cũ) → khởi động, kiểm sức khỏe → lỗi thì TỰ QUAY LUI plugin cũ → bảng / quyền → đối chiếu bảo toàn.
 set -euo pipefail
 cd "$(dirname "$0")"
-PHIEN_BAN="0.4.0"
+PHIEN_BAN="0.4.1"
 GOI="plugin-kho-${PHIEN_BAN}.tgz"
 command -v docker >/dev/null || { echo "Chưa có Docker. Cài Docker Desktop (Mac) hoặc docker engine (VM) rồi chạy lại."; exit 1; }
 [ -f "$GOI" ] || { echo "Không thấy $GOI (git pull chưa?)."; exit 1; }
@@ -66,10 +66,15 @@ cho 60 || quay_lui
 echo "== 4. Bảng dữ liệu, menu, nhóm quyền, 4 đơn vị (chỉ thêm, không xóa)"
 python3 ../schema/tao_bang.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD"
 python3 ../schema/cai_dat.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD"
-echo "== 4b. Nâng cấp dữ liệu 0.4.0 (cấu hình mặc định, giữ quyền cũ, bổ sung số liệu dòng cũ, giữ tồn đơn đang chờ giao)"
+echo "== 4b. Nâng cấp dữ liệu ${PHIEN_BAN} (cấu hình mặc định, giữ quyền cũ, bổ sung số liệu dòng cũ, giữ tồn đơn đang chờ giao)"
 mkdir -p sao-luu
-python3 ../schema/nang_cap.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD" | tee "sao-luu/nang-cap-0.4.0-$(date +%Y%m%d-%H%M%S).json"
+python3 ../schema/nang_cap.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD" | tee "sao-luu/nang-cap-${PHIEN_BAN}-$(date +%Y%m%d-%H%M%S).json"
 echo "== 5. Đối chiếu bảo toàn sau nâng cấp"
-(cd ../kiem && python3 doi_chieu.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD") || echo "!! Đối chiếu có lệch — xem chi tiết ở trên, chưa dùng thật."
+if ! (cd ../kiem && python3 doi_chieu.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD"); then
+  echo "!! FAIL-CLOSED: Đối chiếu bảo toàn thất bại. KHÔNG được coi nâng cấp thành công."
+  echo "!! Khóa ứng dụng, giữ nguyên backup để điều tra hoặc khôi phục DB + plugin ĐỒNG BỘ."
+  docker compose stop app || true
+  exit 1
+fi
 [ -n "$CU" ] && echo "Plugin cũ giữ ở $CU (quay lui tay: bash quay-lui.sh)."
 echo "=== XONG $PHIEN_BAN: mở http://localhost:${PORT} — đăng nhập $ADMIN_EMAIL, mật khẩu xem trong tệp .env ==="

@@ -15,7 +15,7 @@ export const TRANG_THAI_DON: Record<string, [string, string]> = {
 export const TRANG_THAI_LUOT: Record<string, [string, string]> = {
   cho_xuat: ['Chờ xuất (đang giữ hàng)', 'orange'], da_ban_giao_xe: ['Đã bàn giao xe', 'blue'], khach_da_nhan: ['Khách đã nhận', 'green'], da_huy: ['Đã hủy', 'red'],
 };
-export const DVT: Record<string, string> = { kg: 'kg', cai: 'cái', goi: 'gói', bao: 'bao', thung: 'thùng' };
+export const DVT: Record<string, string> = { kg: 'kg', cai: 'cái', goi: 'gói', bao: 'bao', thung: 'thùng', lit: 'lít' };
 export const dvt = (mh: any) => DVT[mh?.dvt_ton || 'kg'] || 'kg';
 export const TRANG_THAI_PHIEU: Record<string, [string, string]> = {
   nhap: ['Nháp', 'default'], da_ghi: ['Đã ghi', 'green'], da_huy: ['Đã hủy', 'red'],

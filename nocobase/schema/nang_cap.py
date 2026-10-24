@@ -17,5 +17,5 @@ o = a.parse_args()
 r = API(o.url, o.email, o.password).call("cau_hinh:nangCap", {})
 d = r.get("data") or {}
 print(json.dumps(d, ensure_ascii=False, indent=1))
-if d.get("phien_ban") != "0.4.0":
+if not str(d.get("phien_ban", "")).startswith("0.4"):
     sys.exit("Nâng cấp dữ liệu KHÔNG thành công.")

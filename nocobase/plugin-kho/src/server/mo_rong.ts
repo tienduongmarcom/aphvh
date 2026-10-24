@@ -92,7 +92,7 @@ const chon = (v: string, m: Record<string, string[]>, macDinh?: string) => {
   for (const [k, ds] of Object.entries(m)) if (b === k || ds.some((x) => boDau(x) === b)) return k;
   return 'SAI';
 };
-const M_DVT = { kg: ['kg', 'kilogram'], cai: ['cái', 'chiếc', 'pcs'], goi: ['gói'], bao: ['bao'], thung: ['thùng'] };
+const M_DVT = { kg: ['kg', 'kilogram'], cai: ['cái', 'chiếc', 'pcs'], goi: ['gói'], bao: ['bao'], thung: ['thùng'], lit: ['lít', 'lit', 'l'] };
 const M_LOAI_HANG = { hang_hoa: ['hàng hóa'], nguyen_lieu: ['nguyên liệu', 'nvl'], thanh_pham: ['thành phẩm'], phu_pham: ['phụ phẩm'], bao_bi: ['bao bì', 'vật tư', 'bao bì / vật tư'] };
 const M_LOAI_KHO = { ban_duoc: ['bán được', 'kho bán được'], nha_may: ['nhà máy', 'kho nhà máy'], cho_xu_ly: ['chờ xử lý', 'kho chờ xử lý'] };
 const M_LOAI_QUY = { tien_mat: ['tiền mặt', 'tm'], ngan_hang: ['ngân hàng', 'nh', 'ck', 'chuyển khoản'] };
@@ -765,15 +765,34 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
   // ---------------- MẺ SẢN XUẤT ----------------
   /** Tính lại toàn bộ số liệu mẻ từ các phiếu đã ghi + chi phí (không cộng dồn → hủy phiếu không làm sai). */
   const tinhLaiMe = async (t: Transaction, me: any) => {
-    const [a] = await p.sql(`SELECT
-      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS nvl,
-      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') <> 'kg'),0) AS bb,
-      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS kg_nvl,
-      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
-        AND k.trang_thai = 'da_ghi' AND d.huong = 'ra'),0) AS kg_tp,
+    // 0.4.1: PHÂN LOẠI THEO VAI TRÒ DÒNG, KHÔNG THEO ĐVT.
+    // Cùng Item có thể dùng theo các vai trò khác nhau; phân bổ trị giá ghi sổ theo SL từng vai trò.
+    // Dòng cũ chưa có vai trò giữ cách phân loại legacy để không đổi giá trị lịch sử.
+    const [a] = await p.sql(`WITH cap AS (
+      SELECT k.id, k.so FROM phieu_kho k WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi'
+    ), cap_dong AS (
+      SELECT k.so, d.mat_hang_id, SUM(d.so_kg) AS tong_sl,
+        SUM(CASE WHEN COALESCE(d.vai_tro,
+            CASE WHEN m.loai_hang = 'bao_bi' OR LOWER(COALESCE(m.dvt_ton,'kg')) <> 'kg' THEN 'bao_bi' ELSE 'nvl' END
+          ) = 'nvl' THEN d.so_kg ELSE 0 END) AS sl_nvl
+      FROM cap k JOIN phieu_kho_dong d ON d.phieu_kho_id = k.id
+        JOIN mat_hang m ON m.id = d.mat_hang_id GROUP BY k.so, d.mat_hang_id
+    )
+    SELECT
+      COALESCE((SELECT -SUM(g.gia_tri * x.sl_nvl / NULLIF(x.tong_sl,0))
+        FROM so_gia_von g JOIN cap_dong x ON x.so = g.chung_tu AND x.mat_hang_id = g.mat_hang_id
+        WHERE g.loai = 'cap_nvl'),0) AS nvl,
+      COALESCE((SELECT -SUM(g.gia_tri * (x.tong_sl - x.sl_nvl) / NULLIF(x.tong_sl,0))
+        FROM so_gia_von g JOIN cap_dong x ON x.so = g.chung_tu AND x.mat_hang_id = g.mat_hang_id
+        WHERE g.loai = 'cap_nvl'),0) AS bb,
+      COALESCE((SELECT SUM(CASE WHEN LOWER(COALESCE(m.dvt_ton,'kg')) = 'kg' THEN d.so_kg
+                  WHEN m.kg_moi_dvt > 0 AND NULLIF(TRIM(m.kg_dvt_can_cu),'') IS NOT NULL THEN d.so_kg * m.kg_moi_dvt ELSE 0 END)
+        FROM phieu_kho_dong d JOIN cap k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+        WHERE COALESCE(d.vai_tro, CASE WHEN m.loai_hang = 'bao_bi' OR LOWER(COALESCE(m.dvt_ton,'kg')) <> 'kg' THEN 'bao_bi' ELSE 'nvl' END) = 'nvl'),0) AS kg_nvl,
+      COALESCE((SELECT SUM(CASE WHEN LOWER(COALESCE(m.dvt_ton,'kg')) = 'kg' THEN d.so_kg
+                  WHEN m.kg_moi_dvt > 0 AND NULLIF(TRIM(m.kg_dvt_can_cu),'') IS NOT NULL THEN d.so_kg * m.kg_moi_dvt ELSE 0 END)
+        FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+        WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi' AND k.trang_thai = 'da_ghi' AND d.huong = 'ra'),0) AS kg_tp,
       COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
         AND k.trang_thai = 'da_ghi' AND d.huong = 'phu_pham'),0) AS kg_pp,
       COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
@@ -784,7 +803,8 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
         AND g.loai = 'thu_hoi_phu_pham'),0) + COALESCE((SELECT SUM(a.chenh_lech) FROM dieu_chinh_gia_tri a WHERE a.nguon = :npp),0) AS pp,
       COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu WHERE k.me_sx_id = :m AND k.trang_thai = 'da_ghi'
         AND g.loai = 'thu_hoi_ra'),0) + COALESCE((SELECT SUM(a.chenh_lech) FROM dieu_chinh_gia_tri a WHERE a.nguon = :ntp),0) AS vao_kho,
-      COALESCE((SELECT SUM(so_tien) FROM me_sx_chi_phi WHERE me_sx_id = :m),0) AS cp`, { m: me.id, npp: `me#${me.id}:pp`, ntp: `me#${me.id}:tp` }, t);
+      COALESCE((SELECT SUM(so_tien) FROM me_sx_chi_phi WHERE me_sx_id = :m),0) AS cp`,
+      { m: me.id, npp: `me#${me.id}:pp`, ntp: `me#${me.id}:tp` }, t);
     const v = { gia_tri_nvl: tien(a.nvl), gia_tri_bao_bi: tien(a.bb), kg_nvl: kg(a.kg_nvl), kg_tp: kg(a.kg_tp), kg_phu_pham: kg(a.kg_pp),
       kg_hao_bat_thuong: kg(a.kg_bt), kg_hao_tu_nhien: kg(a.kg_tn), gia_tri_phu_pham: tien(a.pp), da_vao_kho: tien(a.vao_kho), chi_phi: tien(a.cp) };
     await me.update(v, { transaction: t, hooks: false });
@@ -798,7 +818,11 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
     const me = await p.khoa('me_sx', pk.me_sx_id, t);
     if (me.trang_thai === 'da_huy') loi('Mẻ đã hủy.');
     if (me.trang_thai === 'da_khoa') loi('Mẻ đã khóa kỳ: không cấp / thu hồi thêm. Mở mẻ mới (gắn mẻ gốc) nếu sản xuất tiếp.');
-    if (pk.kho_id !== me.kho_id) loi('Phiếu của mẻ phải dùng kho nhà máy của mẻ.');
+    if (pk.kho_id !== me.kho_id) {
+      // 0.4.1: được cấp từ kho nhà máy khác (vd. kho vật tư - bao bì); mẻ gia công chỉ dùng kho hàng gửi của hồ sơ.
+      const k = await p.bang('kho').findByPk(pk.kho_id, { transaction: t });
+      if (me.ho_so_gia_cong_id || k?.loai_kho !== 'nha_may') loi('Phiếu của mẻ phải dùng kho nhà máy (mẻ gia công: kho hàng gửi của hồ sơ).');
+    }
     const c = (d: any) => ({ ngay: pk.ngay, mat_hang_id: d.mat_hang_id, chung_tu: pk.so, nguon: 'phieu_kho_dong', nguon_id: d.id });
     if (dong.some((d) => !(kg(d.so_kg) > 0))) loi('Số lượng mỗi dòng phải lớn hơn 0.');
     if (pk.loai === 'cap_nvl') {
@@ -818,7 +842,12 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
       const kho_ra = me.kho_tp_id || me.kho_id;
       for (const d of dong) {
         if (d.huong === 'hao_hut') continue;
-        const gt = d.huong === 'phu_pham' ? tien(kg(d.so_kg) * Number(d.don_gia || 0)) : tien(kg(d.so_kg) * tam);
+        // Giá tạm cơ sở kg NVL; thành phẩm thùng/chai phải quy về kg trước khi tính.
+        const mh = await bang('mat_hang').findByPk(d.mat_hang_id, { transaction: t });
+        const heSo = !mh?.dvt_ton || String(mh.dvt_ton).toLowerCase() === 'kg' ? 1
+          : Number(mh.kg_moi_dvt) > 0 && mh.kg_dvt_can_cu ? Number(mh.kg_moi_dvt) : null;
+        const gt = d.huong === 'phu_pham' ? tien(kg(d.so_kg) * Number(d.don_gia || 0))
+          : tien(kg(d.so_kg) * (heSo ?? 1) * tam);
         await p.ghiSo(t, { ...c(d), kho_id: kho_ra, so_luong: kg(d.so_kg), so_bao: kg(d.so_bao), loai: d.huong === 'ra' ? 'thu_hoi_ra' : 'thu_hoi_phu_pham', gia_tri: gt });
         if (d.huong === 'ra') await d.update({ don_gia: Math.round(tam * 100) / 100, trang_thai_gia: 'tam' }, { transaction: t, hooks: false });
       }
@@ -867,14 +896,17 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
     // Hao hụt bất thường không vào giá thành: tách phần chi phí tương ứng theo kg.
     const hao_bt = s.kg_hao_bat_thuong > 0 ? tien((goc * s.kg_hao_bat_thuong) / (s.kg_tp + s.kg_hao_bat_thuong)) : 0;
     const tong_pb = goc - hao_bt;
-    const ra = await p.sql(`SELECT d.id, d.mat_hang_id, d.so_kg, d.he_so, k.kho_dich_id, k.so, m.gia_ban, m.ma FROM phieu_kho_dong d
+    const ra = await p.sql(`SELECT d.id, d.mat_hang_id, d.so_kg, d.he_so, k.kho_dich_id, k.so, m.gia_ban, m.ma, m.dvt_ton, m.kg_moi_dvt, m.kg_dvt_can_cu FROM phieu_kho_dong d
       JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
       WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi' AND k.trang_thai = 'da_ghi' AND d.huong = 'ra' ORDER BY d.id`, { m: me.id }, t);
     const pp = me.phuong_phap || 'kg';
     const w = ra.map((d: any) => {
-      if (pp === 'he_so') return kg(d.so_kg) * Number(d.he_so || 1);
+      const slKg = !d.dvt_ton || String(d.dvt_ton).toLowerCase() === 'kg' ? kg(d.so_kg)
+        : Number(d.kg_moi_dvt) > 0 && d.kg_dvt_can_cu ? kg(Number(d.so_kg) * Number(d.kg_moi_dvt)) : null;
+      if (slKg === null) loi(`Thành phẩm ${d.ma} thiếu hệ số kg cho 1 ĐVT có căn cứ; không chốt giá thành.`);
+      if (pp === 'he_so') return slKg * Number(d.he_so || 1);
       if (pp === 'gia_tri') { if (!(Number(d.gia_ban) > 0)) loi(`Phân bổ theo giá trị: mặt hàng ${d.ma} chưa có giá bán.`); return kg(d.so_kg) * Number(d.gia_ban); }
-      return kg(d.so_kg);
+      return slKg;
     });
     const tw = w.reduce((a: number, b: number) => a + b, 0);
     let con = tong_pb;

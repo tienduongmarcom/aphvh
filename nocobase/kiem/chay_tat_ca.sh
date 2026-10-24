@@ -12,6 +12,7 @@ for f in kiem_api kiem_quyen kiem_golive kiem_032; do
 done
 python3 cau_hinh.py "${A[@]}" moi || exit 1
 echo "===== kiem_040"; python3 kiem_040.py "${A[@]}" | tail -4; [ "${PIPESTATUS[0]}" = 0 ] || loi=1
+echo "===== kiem_041"; python3 kiem_041.py "${A[@]}" | tail -4; [ "${PIPESTATUS[0]}" = 0 ] || loi=1
 echo "===== đối chiếu"; python3 doi_chieu.py "${A[@]}" | tail -1 || loi=1
 [ $loi = 0 ] && echo "TẤT CẢ ĐẠT" || echo "CÓ BỘ KIỂM LỖI"
 exit $loi

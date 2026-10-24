@@ -1,7 +1,8 @@
 /** Màn hình Kho vận: tồn theo kho, phiếu kho (nhập / xuất khác / chuyển / đầu kỳ / kiểm kê), sổ kho, đơn chờ xuất. */
 import { App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
-import { ChuyenHang, RaSoatSX } from './ChuyenHang';
+import { ChuyenHang } from './ChuyenHang';
+import { SanXuat } from './SanXuat';
 import React, { useEffect, useState } from 'react';
 import { ChonDanhMuc, LOAI_PHIEU_KHO, TRANG_THAI_PHIEU, dvt, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
 import { LuotChoXuat } from './LuotGiao';
@@ -285,7 +286,7 @@ export function KhoVan() {
       <Tabs items={[
         { key: 'cho', label: 'Lượt chờ xuất', children: <LuotChoXuat /> },
         { key: 'ch', label: 'Chuyển hàng hai đầu', children: <ChuyenHang /> },
-        { key: 'rs', label: 'Phiếu SX / cần rà soát', children: <RaSoatSX /> },
+        { key: 'sx', label: 'Sản xuất (nhà máy)', children: <SanXuat /> },
         { key: 'ton', label: 'Tồn kho', children: <TonKho /> },
         { key: 'phieu', label: 'Phiếu kho', children: <DanhSachPhieu /> },
         { key: 'so', label: 'Thẻ kho', children: <SoKho /> },

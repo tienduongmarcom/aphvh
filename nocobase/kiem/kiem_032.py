@@ -277,6 +277,8 @@ def main():
     ok("Đối chiếu bảo toàn toàn hệ thống: số lượng, giá trị, điều chỉnh đều cân", cn, d)
     loi = [x for x in KQ if not x[1]]
     print(f"\nTỔNG {len(KQ)} ca, LỖI {len(loi)}")
+    for ten, _ in loi:
+        print("  LỖI:", ten)
     sys.exit(1 if loi else 0)
 
 

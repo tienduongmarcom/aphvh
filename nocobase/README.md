@@ -12,7 +12,7 @@ MISA vẫn là sổ kế toán/thuế chính thức; NocoBase chỉ là sổ v�
 | `schema/cai_dat.py` | Menu, 8 nhóm quyền (bán hàng / kho / nhà máy / thu chi / thu ngân bán nhanh / kế toán / quản lý / không xem giá vốn), 4 đơn vị APH, VH, MK, TL |
 | `schema/nang_cap.py` | Nâng cấp dữ liệu 0.4.0 tại chỗ (chạy lại an toàn) — gọi trong `cai-dat.sh` bước 4b |
 | `trien-khai/` | `docker-compose.yml` (NocoBase 2.2.31 + Postgres 16), `cai-dat.sh`, `sao-luu.sh`, `phuc-hoi.sh`, `quay-lui.sh`, gói plugin `.tgz` |
-| `kiem/` | `kiem_040.py` (139 ca 0.4.0), `kiem_032.py` (47), `kiem_golive.py` (72), `kiem_api.py` (53), `kiem_quyen.py` (10), `doi_chieu.py`, `chay_tat_ca.sh` (chạy tất cả: bộ 0.3.2 với cấu hình tương thích + bộ 0.4.0), `e2e-040.mjs` + kịch bản trình duyệt |
+| `kiem/` | `kiem_041.py` (60 ca 0.4.1), `kiem_040.py` (139 ca 0.4.0), `kiem_032.py` (47), `kiem_golive.py` (72), `kiem_api.py` (53), `kiem_quyen.py` (10), `doi_chieu.py`, `chay_tat_ca.sh` (chạy tất cả: bộ 0.3.2 với cấu hình tương thích + bộ 0.4.0), `e2e-040.mjs` + kịch bản trình duyệt |
 
 ## Quy tắc nghiệp vụ đã làm (không tự suy diễn thêm)
 - Tồn chỉ thay đổi qua **Sổ kho**; không sửa tay tồn. Hai người cùng xuất một mặt hàng/kho: khóa dòng, không âm kho.
@@ -202,6 +202,15 @@ Chi tiết bàn giao (phạm vi, ma trận quyền, mapping dữ liệu, bằng 
 **phục hồi** bản sao lưu sau nâng cấp vào CSDL riêng: 35 bảng khớp số dòng, số dư khớp, app chạy + đối chiếu CÂN · quét giao diện 13 màn mới
 + lập / chốt / in đơn gộp không lỗi trang, không lỗi 5xx · diễn tập bộ cài (docker giả): đạt; sai checksum: dừng.
 
+## Bản 0.4.1 (24/10/2026) — Factory MES Lite (Nhà máy Phú Thọ)
+Chi tiết: **[BAN-GIAO-0.4.1.md](BAN-GIAO-0.4.1.md)**. Nâng cấp: `git pull` rồi `bash trien-khai/cai-dat.sh` (gói `plugin-kho-0.4.1.tgz`).
+Kho vận → **Sản xuất (nhà máy)**: mẫu sản xuất 4 công nghệ (đỗ / phồng tôm / đóng gói / dầu) với định mức có phiên bản (đề xuất → kế toán duyệt, mẻ giữ snapshot);
+phiếu sản xuất 3 khu vực (nguyên liệu · thành phẩm–phụ phẩm–hao hụt đã đo · bao bì–vật tư) tự gợi ý định mức, ghi lượng thực tế nhiều lần;
+**cân đối khối lượng theo công nghệ** (chênh lệch không tự thành hao hụt, giải trình → kế toán duyệt; thiếu số đo / quy đổi → "chưa đủ căn cứ");
+bao bì theo định mức + hỏng có lý do; giá thành theo phương pháp và giá tham chiếu phụ phẩm của mẫu; không chốt khi thiếu phiếu cấp NVL;
+**hàng gửi gia công** (kho hàng gửi riêng, chủ sở hữu xác nhận có căn cứ); đề xuất mã hàng; báo cáo hiệu suất.
+Kiểm: `kiem_041.py` 60/60 + toàn bộ bộ cũ đạt; nâng cấp 0.3.2 → 0.4.1 bằng `nocobase upgrade` trên bản sao: đạt.
+
 ## Chưa làm
 Hồ sơ bản ký (ảnh phiếu đã ký); đồng bộ trực tiếp Google Sheets bằng API (hiện tải .xlsx); đối soát MISA tự động; nối cân điện tử
-(để 0.4.1 khi có thiết bị); thông báo qua Workflow; FEFO theo lô / hạn dùng (đã lưu số lô, hạn dùng trên lượt giao / chuyến, chưa ràng buộc chọn lô).
+(để 0.4.2 khi có thiết bị); thông báo qua Workflow; FEFO theo lô / hạn dùng (đã lưu số lô, hạn dùng trên lượt giao / chuyến, chưa ràng buộc chọn lô).
