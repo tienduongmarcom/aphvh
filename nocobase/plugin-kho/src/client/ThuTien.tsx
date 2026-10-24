@@ -191,13 +191,17 @@ function ThuHo() {
       { title: 'Phiếu thu', render: (_, r) => r.phieu_thu?.so }, { title: 'Đơn được trả', render: (_, r) => r.don_ban?.so },
       { title: 'Đơn vị giữ tiền', render: (_, r) => r.don_vi_nhan?.ten }, { title: 'Giữ hộ cho', render: (_, r) => r.don_vi_chu_no?.ten },
       { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => <b>{fmt(v)}</b> },
+      { title: 'Đã tất toán', dataIndex: 'da_tat_toan', align: 'right', render: (v) => (Number(v) ? fmt(v) : '') },
+      { title: 'Chứng từ tất toán', dataIndex: 'chung_tu_tat_toan' },
       { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => <Tag color={({ dang_giu_ho: 'orange', da_tat_toan: 'green', da_huy: 'red' } as any)[v]}>
         {({ dang_giu_ho: 'Đang giữ hộ', da_tat_toan: 'Đã tất toán', da_huy: 'Đã hủy' } as any)[v]}</Tag> },
       { title: 'Ghi chú', dataIndex: 'ghi_chu' },
-      { render: (_, r) => r.trang_thai === 'dang_giu_ho' && <Button size="small" onClick={() => { let ghi_chu = ''; modal.confirm({
-        title: 'Tất toán khoản thu hộ?', okText: 'Tất toán', cancelText: 'Thôi',
-        content: <Input.TextArea placeholder="Căn cứ (số phiếu chi / UNC giữa hai đơn vị)" onChange={(e) => (ghi_chu = e.target.value)} />,
-        onOk: () => goi('thu_ho:tatToan', { params: { filterByTk: r.id }, data: { ghi_chu } }).then(tai) }); }}>Tất toán</Button> },
+      { render: (_, r) => r.trang_thai === 'dang_giu_ho' && <Button size="small" onClick={() => { let ghi_chu = ''; let so_tien: any = Number(r.so_tien) - Number(r.da_tat_toan || 0); modal.confirm({
+        title: 'Tất toán khoản thu hộ (được tất toán một phần)', okText: 'Tất toán', cancelText: 'Thôi',
+        content: <Space direction="vertical" style={{ width: '100%' }}><InputNumber min={1} max={so_tien} defaultValue={so_tien} style={{ width: '100%' }} formatter={(v) => fmt(v)}
+          parser={(v: any) => Number(String(v).replace(/\D/g, ''))} onChange={(v) => (so_tien = v)} />
+          <Input.TextArea placeholder="Căn cứ: số UNC / phiếu chi chuyển trả, hoặc biên bản bù trừ đã duyệt" onChange={(e) => (ghi_chu = e.target.value)} /></Space>,
+        onOk: () => goi('thu_ho:tatToan', { params: { filterByTk: r.id }, data: { ghi_chu, so_tien } }).then(tai) }); }}>Tất toán</Button> },
     ]} />
   </>;
 }

@@ -35,7 +35,7 @@ def main():
     # Kỳ mở sổ thử (đóng kỳ cũ còn mở nếu có — chỉ trên CSDL thử)
     for x in ad.ds("ky_mo_so", {"trang_thai": "mo"}):
         ad.lam("ky_mo_so:khoa", x["id"], {"bo_qua_lo_dang_do": True})
-    ky = kt.tao("ky_mo_so", {"ma": k, "ngay_chot": "2026-10-25"})
+    ky = kt.tao("ky_mo_so", {"ma": k, "ngay_chot": "2026-10-25", "tach_nguoi_duyet": False})
     ok("Không mở hai kỳ mở sổ cùng lúc", kt.call("ky_mo_so:create", {"ma": k + "x"})[0] >= 400)
 
     def lo(api, loai, bang, nguon="thử", che_do="bo_qua"):
@@ -212,12 +212,15 @@ def main():
 
     # ---- Đơn chuyển tiếp ----
     DON = (f"Số đơn cũ\tMã khách\tĐơn vị bán\tMã hàng\tMã kho\tSố lượng còn giao\tĐơn giá\tTình trạng\n"
-           f"SO-OLD-1\t{k}-KA\tAPH\t{k}-DX\t{k}-HN\t300\t40000\tChưa giao\n"
-           f"SO-OLD-2\t{k}-KB\tTL\t{k}-DX\t{k}-HN\t75\t41000\tĐang vận chuyển")
+           f"{k}-SO1\t{k}-KA\tAPH\t{k}-DX\t{k}-HN\t300\t40000\tChưa giao\n"
+           f"{k}-SO2\t{k}-KB\tTL\t{k}-PP\t{k}-HN\t75\t41000\tĐang vận chuyển")
+    _, r = chay("don_chuyen_tiep", DON.replace(f"{k}-PP", f"{k}-DX"))
+    ok("0.3.2 — Đơn đang vận chuyển trùng hàng đã có trong tồn đầu kỳ ở kho đang vận chuyển: báo lỗi tính hai lần", r.get("loi") == 1, r)
+    kt.lam("nhap_lo:huy", ad.ds("nhap_lo", {"loai": "don_chuyen_tiep"})[-1]["id"])
     _, r = chay("don_chuyen_tiep", DON)
     lid = ad.ds("nhap_lo", {"loai": "don_chuyen_tiep"})[-1]["id"]; kt.lam("nhap_lo:duyet", lid); kt.lam("nhap_lo:ghi", lid)
-    d1 = ad.ds("don_ban", {"so_don_cu": "SO-OLD-1"})[0]
-    d2 = ad.ds("don_ban", {"so_don_cu": "SO-OLD-2"})[0]
+    d1 = ad.ds("don_ban", {"so_don_cu": f"{k}-SO1"})[0]
+    d2 = ad.ds("don_ban", {"so_don_cu": f"{k}-SO2"})[0]
     ok("Đơn chưa giao chuyển sang: đã chốt, chưa trừ kho, chưa ghi nợ", d1["trang_thai"] == "cho_xuat" and d1["phai_thu"] == 0 and ton(k + "-HN", k + "-DX")["so_kg"] == 1000)
     ok("Đơn đang vận chuyển: lượt 'đã bàn giao xe', ghi nợ 3.075.000, KHÔNG trừ kho lần nữa",
        d2["phai_thu"] == 3075000 and ton(k + "-HN", k + "-DX")["so_kg"] == 1000 and ad.ds("luot_giao", {"don_ban_id": d2["id"]})[0]["trang_thai"] == "da_ban_giao_xe")

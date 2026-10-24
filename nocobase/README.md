@@ -10,8 +10,8 @@ MISA vẫn là sổ kế toán/thuế chính thức; NocoBase chỉ là sổ v�
 | `plugin-kho/` | Plugin NocoBase `@aphvh/plugin-kho`: nghiệp vụ trên máy chủ (sổ kho có khóa, chốt/giao/hủy đơn, ghi/hủy phiếu thu) + 7 màn hình (Bán hàng, Kho vận, Thu chi và công nợ, Danh mục, Báo cáo, Tài sản, Go-Live & số dư đầu kỳ) + trang in A5 `/in/don_ban|luot_giao|phieu_thu|phieu_chi|phieu_kho/<id>` |
 | `schema/tao_bang.py` | Tạo 12 bảng qua API quản lý bảng (vẫn sửa được trong NocoBase) |
 | `schema/cai_dat.py` | Menu, 6 nhóm quyền (bán hàng / kho / nhà máy / thu chi / kế toán / quản lý), 4 đơn vị APH, VH, MK, TL |
-| `trien-khai/` | `docker-compose.yml` (NocoBase 2.2.31 + Postgres 16), `cai-dat.sh`, `sao-luu.sh`, `phuc-hoi.sh`, gói plugin `.tgz` |
-| `kiem/` | `kiem_golive.py` (71 ca Go-Live / tài sản / mẻ), `kiem_api.py` (53 ca nghiệp vụ), `kiem_quyen.py` (10 ca quyền), kịch bản trình duyệt |
+| `trien-khai/` | `docker-compose.yml` (NocoBase 2.2.31 + Postgres 16), `cai-dat.sh`, `sao-luu.sh`, `phuc-hoi.sh`, `quay-lui.sh`, gói plugin `.tgz` |
+| `kiem/` | `kiem_032.py` (47 ca toàn vẹn), `doi_chieu.py`, `kiem_golive.py` (72 ca Go-Live / tài sản / mẻ), `kiem_api.py` (53 ca nghiệp vụ), `kiem_quyen.py` (10 ca quyền), kịch bản trình duyệt |
 
 ## Quy tắc nghiệp vụ đã làm (không tự suy diễn thêm)
 - Tồn chỉ thay đổi qua **Sổ kho**; không sửa tay tồn. Hai người cùng xuất một mặt hàng/kho: khóa dòng, không âm kho.
@@ -112,6 +112,47 @@ chứng từ đầu kỳ bằng API; truy nguồn + tổng trước / sau), tài
 (3 phiên bản) · `kiem_api.py` 53/53 · `kiem_quyen.py` 10/10 (không hồi quy) · quét 17 màn không lỗi · trình duyệt: mở kỳ → dán → kiểm
 (1 lỗi) → sửa → duyệt → ghi sổ đạt · sao lưu → phục hồi vào CSDL riêng: 11 bảng chính khớp số dòng và mã băm.
 
+## Bản 0.3.2 (24/10/2026) — toàn vẹn dữ liệu & an toàn (theo audit PR #43)
+**Nâng cấp tại chỗ:** `git pull` rồi `bash cai-dat.sh`. Bộ cài mới: kiểm SHA-256 gói đích danh `plugin-kho-0.3.2.tgz` (bỏ qua gói cũ còn
+trong thư mục) → dừng app (khóa ghi) → sao lưu + **kiểm bản sao lưu đọc được** → giải nén ra thư mục tạm, kiểm đúng phiên bản →
+đổi plugin (giữ bản cũ `.cu-*`) → khởi động, lỗi thì **tự quay lui** plugin cũ → bảng / quyền → **đối chiếu bảo toàn**.
+`quay-lui.sh` (plugin cũ, tùy chọn kèm CSDL từ bản sao lưu, hỏi xác nhận). Đã diễn tập: thư mục còn gói 0.3.0 → dùng đúng 0.3.2;
+sai checksum → dừng; `pm enable` lỗi → tự quay lui về 0.3.0.
+
+**P0 đã sửa**
+- **Điều chỉnh giá trị thống nhất** (`dieu_chinh_gia_tri`): chốt / chốt lại giá thành, giá tạm → giá chính thức, giá phụ phẩm. Chênh lệch chia
+  thành phần **còn tồn** (vào giá trị tồn), phần đã **chuyển kho mà kho nhận còn giữ** (vào tồn kho nhận), phần **đã bán / tiêu hao**
+  (vào giá vốn kỳ, không đổi tồn). Kiểm cân: chênh = vào tồn + vào giá vốn, làm tròn = 0. Ví dụ đã kiểm: bán 600/1.000 kg rồi chốt
+  +1 triệu → 400.000 vào tồn, 600.000 vào giá vốn, giá BQ tồn 21.000; bán hết rồi chốt lại → toàn bộ vào giá vốn, tồn 0 / 0 đ.
+- Tồn về 0 còn giá trị lẻ: không xóa im lặng nữa — ghi sổ giá trị + điều chỉnh vào giá vốn.
+- **Tồn đầu kỳ** bị chặn nếu mã × kho đã có phát sinh ngoài mở sổ; kỳ phải có ngày chốt.
+- **Đơn đang vận chuyển chuyển tiếp**: nhập "Giá vốn" có căn cứ, hoặc lượt "giá vốn chưa xác định" — tách khỏi lãi gộp cho tới khi kế toán
+  nhập (có căn cứ). Đối chiếu: hàng đã có trong tồn đầu kỳ ở kho đang vận chuyển → lỗi tính hai lần.
+- **Tiền chưa phân bổ vượt số dư quỹ: CHẶN** duyệt và ghi (kiểm lại trong giao dịch ghi); chỉ **quản lý** duyệt ngoại lệ có căn cứ.
+- **Chốt mẻ**: hệ số / giá phụ phẩm của dòng không thuộc mẻ (khác mẻ, chưa ghi, không phải thành phẩm) bị từ chối.
+- **Vai trò "Không xem giá vốn (phủ quyết)"**: gán thêm thì dù có vai trò kế toán vẫn không lấy được giá vốn / lãi gộp / chốt giá thành.
+- **Phạm vi kho / quỹ theo người dùng** (Danh mục → Phạm vi): kiểm ở máy chủ khi ghi phiếu kho, giao / nhận, trả hàng, mẻ, thu / chi /
+  chuyển tiền / chốt ca; đọc tồn, sổ kho, phiếu kho, sổ quỹ, phiếu thu / chi bị lọc (cả in phiếu). Người chưa khai phạm vi: không giới hạn.
+- Hai người cùng bấm ghi một lô: chỉ ghi một lần.
+
+**P1 đã làm**: đọc **.xlsx thật** (chọn trang tính) và CSV chuẩn (dấu phẩy / ngoặc kép / xuống dòng trong ô); lưu **tệp gốc + SHA-256 +
+thời điểm lấy + mã nguồn** (Google Sheet tải .xlsx = ảnh chụp, không tự ghi khi Sheet đổi) · **tách người nhập / người duyệt** cho lô tiền
+và công nợ (cấu hình theo kỳ) · danh mục mặc định **không ghi đè**, ô trống không xóa dữ liệu cũ · **quy đổi ĐVT** theo mặt hàng (bao /
+thùng / gói / cái; bán theo thùng, tồn theo kg) · **dở dang đầu kỳ** nhập theo lô (mở mẻ có kg + giá trị) · đơn chuyển tiếp **đang giữ hàng**
+và **đã thu một phần** (tiền nằm trong số dư quỹ, không ghi sổ quỹ lại) · **số đối tác xác nhận** cho đối chiếu nợ đầu kỳ · **CCDC theo
+người giữ** (kho / tổ A / tổ B; thu hồi kiểm đúng người đang giữ; tổng không đổi) · TSCĐ: ngày đưa vào sử dụng, bộ phận chịu chi phí,
+số chứng từ sửa chữa / thanh lý · mẻ: **Tạm hoàn thành → Đã chốt → Cần điều chỉnh → Đã khóa kỳ** (khóa: không cấp / thu thêm; chi phí đến
+muộn thành phiên bản điều chỉnh) · chi phí mẻ: số chứng từ + phiếu chi, **chống tính hai lần** · **lãi gộp thuần** (trừ trả hàng, giảm giá,
+cộng điều chỉnh giá vốn) · **thu hộ tất toán một phần** có chứng từ · Go-Live → **Đối chiếu bảo toàn** (Σ sổ kho = tồn, Σ sổ giá trị =
+giá trị tồn, mọi điều chỉnh cân) — cũng chạy cuối `cai-dat.sh` (`kiem/doi_chieu.py`).
+
+**Kiểm (CSDL thử):** `kiem_032.py` 47/47 — đủ 13 ca bắt buộc của audit (trừ ca bộ cài, diễn tập riêng bằng docker giả: đạt) ·
+`kiem_golive.py` 72/72 · `kiem_api.py` 53/53 · `kiem_quyen.py` 10/10 · đối chiếu bảo toàn toàn CSDL: CÂN · quét 16 màn không lỗi ·
+trình duyệt: lập đơn → chốt → khách nhận; Go-Live dán → kiểm → duyệt → ghi; tải .xlsx → kiểm · sao lưu → phục hồi CSDL riêng:
+23/23 bảng khớp số dòng và mã băm toàn bộ nội dung (gồm mở sổ, mẻ, phiên bản, tài sản, người giữ, điều chỉnh giá trị).
+
+**Giới hạn còn lại (ghi rõ):** truy vết chênh lệch qua chuyển kho một bậc; hàng đã đi tiếp từ kho nhận được coi là đã tiêu thụ. Phân
+bổ phần đã xuất theo tỷ trọng lượng ra (không theo từng lô) — đúng với bình quân gia quyền, không phải FIFO.
+
 ## Chưa làm
-Hồ sơ bản ký (ảnh phiếu đã ký); nhập tệp .xlsx trực tiếp (hiện dán từ Excel / Sheets hoặc tệp CSV); báo cáo lãi gộp trừ hàng trả / giảm giá;
-đối soát MISA tự động.
+Hồ sơ bản ký (ảnh phiếu đã ký); đồng bộ trực tiếp Google Sheets bằng API (hiện tải .xlsx); đối soát MISA tự động.

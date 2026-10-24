@@ -109,8 +109,15 @@ export function GiaoHangDon({ don, dong, tai }: any) {
         { title: 'Hàng', render: (_, l: any) => (l.dong || []).map((x: any) => `${x.mat_hang?.ma} ${fmt(x.so_kg, 3)}`).join('; ') },
         { title: 'Giá trị', dataIndex: 'gia_tri', align: 'right', render: (v) => fmt(v) },
         { title: 'Người nhận / xe', render: (_, l: any) => [l.nguoi_nhan, l.bien_so].filter(Boolean).join(' · ') },
-        { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_LUOT, v); return <Tag color={m}>{t}</Tag>; } },
-        { render: (_, l: any) => <NutLuot luot={l} xong={lai} /> },
+        { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v, l: any) => { const [t, m] = theTrangThai(TRANG_THAI_LUOT, v);
+          return <Space size={4}><Tag color={m}>{t}</Tag>{l.tt_gia_von === 'chua_xac_dinh' && <Tag color="red">Giá vốn chưa xác định</Tag>}</Space>; } },
+        { render: (_, l: any) => <Space wrap><NutLuot luot={l} xong={lai} />{l.tt_gia_von === 'chua_xac_dinh' && <Button size="small" onClick={() => {
+          let gia_von = 0; let ghi_chu = '';
+          modal.confirm({ title: `Nhập giá vốn chuyển tiếp ${l.so}`, okText: 'Ghi', cancelText: 'Thôi', content: <Space direction="vertical" style={{ width: '100%' }}>
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="Tổng giá vốn của lượt" formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))} onChange={(v) => (gia_von = Number(v || 0))} />
+            <Input placeholder="Căn cứ (vd. giá vốn MISA tháng 10)" onChange={(e) => (ghi_chu = e.target.value)} /></Space>,
+            onOk: () => goi('luot_giao:nhapGiaVon', { params: { filterByTk: l.id }, data: { gia_von, ghi_chu } }).then(lai) });
+        }}>Nhập giá vốn (kế toán)</Button>}</Space> },
       ]} />
       {(tra.length > 0 || gg.length > 0) && <Table style={{ marginTop: 12 }} size="small" rowKey={(r: any) => r.so} pagination={false}
         dataSource={[...tra.map((x) => ({ ...x, kieu: 'tra' })), ...gg.map((x) => ({ ...x, kieu: 'gg' }))]} columns={[

@@ -137,11 +137,61 @@ function BangDanhMuc({ bang }: { bang: string }) {
   );
 }
 
+const DVT_GD: Record<string, string> = { bao: 'Bao', thung: 'Thùng', goi: 'Gói', cai: 'Cái', kg: 'Kg' };
+function QuyDoi() {
+  const goi = useGoi();
+  const { message } = App.useApp();
+  const [ds, setDs] = useState<any[]>([]);
+  const [f] = Form.useForm();
+  const tai = async () => setDs((await goi('quy_doi_dvt:list', { params: { appends: ['mat_hang'], sort: ['mat_hang_id', 'dvt'], pageSize: 5000 } })).data || []);
+  useEffect(() => { tai(); }, []);
+  return <>
+    <Typography.Paragraph type="secondary">1 đơn vị giao dịch = bao nhiêu ĐVT tồn của mặt hàng (vd. phồng tôm: 1 thùng = 25 gói × 200 g = 5 kg). Tồn và giá vốn luôn theo ĐVT tồn. Nhập hàng loạt: Go-Live → "Quy đổi đơn vị tính".</Typography.Paragraph>
+    <Form form={f} layout="inline" style={{ marginBottom: 12 }} onFinish={async (v) => { await goi('quy_doi_dvt:create', { data: v }); message.success('Đã thêm'); f.resetFields(); tai(); }}>
+      <Form.Item name="mat_hang_id" rules={[{ required: true }]}><ChonDanhMuc bang="mat_hang" placeholder="Mặt hàng" style={{ width: 280 }} /></Form.Item>
+      <Form.Item name="dvt" rules={[{ required: true }]}><Select placeholder="ĐVT" style={{ width: 110 }} options={Object.entries(DVT_GD).map(([value, label]) => ({ value, label }))} /></Form.Item>
+      <Form.Item name="he_so" rules={[{ required: true }]}><InputNumber placeholder="Hệ số" min={0.0001} /></Form.Item>
+      <Form.Item name="mac_dinh" valuePropName="checked"><Checkbox>Mặc định khi bán</Checkbox></Form.Item>
+      <Button htmlType="submit" type="primary">Thêm</Button>
+    </Form>
+    <Table size="small" rowKey="id" dataSource={ds} pagination={{ pageSize: 50 }} columns={[
+      { title: 'Mặt hàng', render: (_, r) => r.mat_hang?.nhan }, { title: 'ĐVT giao dịch', dataIndex: 'dvt', render: (v) => DVT_GD[v] },
+      { title: 'Hệ số', dataIndex: 'he_so', align: 'right', render: (v, r) => `1 ${DVT_GD[r.dvt]} = ${fmt(v, 4)} ${r.mat_hang?.dvt_ton || 'kg'}` },
+      { title: 'Mặc định', dataIndex: 'mac_dinh', render: (v) => (v ? '✓' : '') },
+      { render: (_, r) => <Button size="small" danger onClick={() => goi('quy_doi_dvt:destroy', { params: { filterByTk: r.id }, data: {} }).then(tai)}>Xóa</Button> }]} />
+  </>;
+}
+
+function PhamVi() {
+  const goi = useGoi();
+  const { message } = App.useApp();
+  const [ds, setDs] = useState<any[] | null>(null);
+  const [f] = Form.useForm();
+  const tai = () => goi('pham_vi:list', { params: { appends: ['nguoi_dung', 'kho', 'quy'], sort: ['nguoi_dung_id'], pageSize: 2000 }, im: true })
+    .then((r) => setDs(r.data || [])).catch(() => setDs(null));
+  useEffect(() => { tai(); }, []);
+  if (ds === null) return <Typography.Text type="secondary">Chỉ kế toán / quản lý cấu hình phạm vi.</Typography.Text>;
+  return <>
+    <Typography.Paragraph type="secondary">Người dùng KHÔNG có dòng nào ở đây: không giới hạn kho / quỹ. Có dòng kho: chỉ xác nhận / ghi phiếu và chỉ thấy tồn, phiếu của các kho đó. Có dòng quỹ: chỉ ghi thu / chi / chốt ca của quỹ đó. Kiểm ở máy chủ (cả API, in phiếu). Người không được xem giá vốn: gán thêm vai trò "Không xem giá vốn (phủ quyết)" trong Quản lý người dùng.</Typography.Paragraph>
+    <Form form={f} layout="inline" style={{ marginBottom: 12 }} onFinish={async (v) => { if (!v.kho_id && !v.quy_id) return message.warning('Chọn kho hoặc quỹ.'); await goi('pham_vi:create', { data: v }); f.resetFields(); tai(); }}>
+      <Form.Item name="nguoi_dung_id" rules={[{ required: true }]}><ChonDanhMuc bang="users" nhan="nickname" timTheo={['nickname', 'email']} placeholder="Người dùng" style={{ width: 240 }} /></Form.Item>
+      <Form.Item name="kho_id"><ChonDanhMuc bang="kho" placeholder="Kho" style={{ width: 200 }} /></Form.Item>
+      <Form.Item name="quy_id"><ChonDanhMuc bang="quy" placeholder="Quỹ / tài khoản" style={{ width: 200 }} /></Form.Item>
+      <Button htmlType="submit" type="primary">Thêm</Button>
+    </Form>
+    <Table size="small" rowKey="id" dataSource={ds} pagination={{ pageSize: 50 }} columns={[
+      { title: 'Người dùng', render: (_, r) => `${r.nguoi_dung?.nickname || ''} (${r.nguoi_dung?.email || ''})` }, { title: 'Kho', render: (_, r) => r.kho?.ten },
+      { title: 'Quỹ', render: (_, r) => r.quy?.ten }, { render: (_, r) => <Button size="small" danger onClick={() => goi('pham_vi:destroy', { params: { filterByTk: r.id }, data: {} }).then(tai)}>Bỏ</Button> }]} />
+  </>;
+}
+
 export function DanhMuc() {
   return (
     <Card title="Danh mục">
       <Tabs items={[
         ...Object.entries(BANG).map(([k, v]) => ({ key: k, label: v.ten, children: <BangDanhMuc bang={k} /> })),
+        { key: 'qd', label: 'Quy đổi ĐVT', children: <QuyDoi /> },
+        { key: 'pv', label: 'Phạm vi kho / quỹ', children: <PhamVi /> },
         { key: 'no', label: 'Công nợ / tồn đầu kỳ', children: <Typography.Paragraph>Số dư đầu kỳ (tồn kho, công nợ khách / NCC, quỹ, tiền cọc, đơn chuyển tiếp) nhập ở menu <b>Go-Live &amp; số dư đầu kỳ</b> — có kiểm tra, chống nhập trùng, duyệt và khóa kỳ.</Typography.Paragraph> },
       ]} />
     </Card>

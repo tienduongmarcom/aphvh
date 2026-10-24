@@ -272,7 +272,8 @@ LOAI_LO = [opt("mat_hang", "Danh mục mặt hàng"), opt("khach_hang", "Danh m�
            opt("kho", "Danh mục kho"), opt("quy", "Danh mục quỹ / tài khoản"), opt("ton_dau_ky", "Tồn kho đầu kỳ"),
            opt("no_khach", "Công nợ khách đầu kỳ"), opt("no_ncc", "Công nợ nhà cung cấp đầu kỳ"), opt("quy_dau_ky", "Số dư quỹ / ngân hàng đầu kỳ"),
            opt("tien_chua_pb", "Tiền cọc / chưa phân bổ đầu kỳ"), opt("thu_ho_dau_ky", "Thu hộ còn giữ đầu kỳ"),
-           opt("don_chuyen_tiep", "Đơn chưa giao / đang vận chuyển"), opt("tai_san", "Danh mục tài sản / CCDC")]
+           opt("don_chuyen_tiep", "Đơn chưa giao / đang vận chuyển"), opt("tai_san", "Danh mục tài sản / CCDC"),
+           opt("quy_doi_dvt", "Quy đổi đơn vị tính"), opt("do_dang_dau_ky", "Dở dang sản xuất đầu kỳ")]
 TT_GIA = [opt("co_gia", "Có giá"), opt("cho_gia", "Chờ định giá"), opt("tam", "Giá tạm được duyệt")]
 BANG += [
     {"name": "ky_mo_so", "title": "Kỳ mở sổ", "titleField": "ma", "fields": [
@@ -348,8 +349,9 @@ BANG += [
         m2o("kho", "Kho nhà máy", "kho", required=True), m2o("kho_tp", "Kho thành phẩm (trống = kho nhà máy)", "kho"),
         select("phuong_phap", "Phân bổ giá thành", [opt("kg", "Theo kg tương đương"), opt("he_so", "Theo hệ số định mức"),
                opt("gia_tri", "Theo giá trị tương đối (giá bán)")], "kg"),
-        select("trang_thai", "Trạng thái", [opt("mo", "Đang sản xuất", "blue"), opt("da_chot", "Đã chốt giá thành", "green"),
-               opt("can_chot_lai", "Có chi phí / sản lượng mới — cần chốt lại", "orange"), opt("da_huy", "Đã hủy", "red")], "mo"),
+        select("trang_thai", "Trạng thái", [opt("mo", "Đang sản xuất", "blue"), opt("tam_hoan_thanh", "Tạm hoàn thành (chờ chi phí)", "cyan"),
+               opt("da_chot", "Đã chốt giá thành", "green"), opt("can_chot_lai", "Cần điều chỉnh", "orange"), opt("da_khoa", "Đã khóa kỳ", "default"),
+               opt("da_huy", "Đã hủy", "red")], "mo"),
         number("gia_tri_nvl", "Giá trị NVL tiêu hao", 0, read_only=True), number("gia_tri_bao_bi", "Giá trị bao bì / vật tư (Cái…)", 0, read_only=True),
         number("kg_nvl", "Kg nguyên liệu cấp", 3, read_only=True), number("kg_tp", "Kg thành phẩm thu hồi", 3, read_only=True),
         number("kg_phu_pham", "Kg phụ phẩm", 3, read_only=True), number("kg_hao_tu_nhien", "Hao hụt tự nhiên (kg)", 3, read_only=True),
@@ -373,6 +375,44 @@ BANG += [
         text("chi_tiet", "Chi tiết phân bổ (JSON)"), input_("nguoi", "Người chốt")]},
 ]
 
+# ---------------- 0.3.2: toàn vẹn dữ liệu, phạm vi, điều chỉnh giá trị, CCDC theo người giữ, quy đổi ĐVT ----------------
+BANG += [
+    {"name": "dieu_chinh_gia_tri", "title": "Điều chỉnh giá trị (valuation adjustment)", "fields": [
+        date("ngay", "Ngày"), input_("nguon", "Nguồn (mẻ / phiếu nhập / tồn về 0)"), input_("chung_tu", "Chứng từ"),
+        m2o("mat_hang", "Mặt hàng", "mat_hang"), m2o("kho", "Kho nguồn", "kho"),
+        number("so_luong_goc", "Số lượng gốc chịu điều chỉnh", 3), number("so_luong_con", "Còn tồn tại kho nguồn", 3),
+        number("chenh_lech", "Chênh lệch phải phân bổ", 0), number("vao_ton", "Vào giá trị tồn (kho nguồn + kho nhận)", 0),
+        number("vao_gia_von", "Vào giá vốn / chi phí kỳ (hàng đã xuất)", 0), number("lam_tron", "Sai số làm tròn", 0),
+        text("chi_tiet", "Chi tiết (JSON)"), input_("ly_do", "Lý do")]},
+    {"name": "pham_vi", "title": "Phạm vi kho / quỹ của người dùng", "fields": [
+        m2o("nguoi_dung", "Người dùng", "users", label="nickname", required=True), m2o("kho", "Kho được thao tác", "kho"),
+        m2o("quy", "Quỹ / tài khoản được thao tác", "quy"), text("ghi_chu", "Ghi chú")]},
+    {"name": "quy_doi_dvt", "title": "Quy đổi đơn vị tính", "fields": [
+        m2o("mat_hang", "Mặt hàng", "mat_hang", required=True),
+        select("dvt", "Đơn vị giao dịch", [opt("bao", "Bao"), opt("thung", "Thùng"), opt("goi", "Gói"), opt("cai", "Cái"), opt("kg", "Kg")]),
+        number("he_so", "= bao nhiêu ĐVT tồn", 4), check("mac_dinh", "Mặc định khi bán")]},
+    {"name": "tai_san_giu", "title": "Số lượng tài sản / CCDC theo người giữ", "fields": [
+        m2o("tai_san", "Tài sản", "tai_san"), input_("nguoi_giu", "Người / tổ giữ"), number("so_luong", "Số lượng đang giữ", 0)]},
+    {"name": "nhap_lo", "fields": [
+        text("tep_goc", "Tệp gốc (base64)"), input_("ten_tep", "Tên tệp"), input_("checksum", "SHA-256 tệp / dữ liệu"),
+        input_("thoi_diem_lay", "Thời điểm lấy dữ liệu"), input_("ma_nguon", "Mã nguồn (ID Google Sheet / tệp)"), input_("trang_tinh", "Trang tính"),
+        number("nguoi_nhap_id", "Mã người nhập", 0), text("ngoai_le", "Lý do ngoại lệ đã duyệt"), input_("ngoai_le_boi", "Người duyệt ngoại lệ")]},
+    {"name": "ky_mo_so", "fields": [check("tach_nguoi_duyet", "Người duyệt phải khác người nhập (tiền, công nợ)", True)]},
+    {"name": "luot_giao", "fields": [select("tt_gia_von", "Giá vốn", [opt("co", "Đã có"), opt("chua_xac_dinh", "Chưa xác định")], "co")]},
+    {"name": "thu_ho", "fields": [number("da_tat_toan", "Đã tất toán", 0), text("chung_tu_tat_toan", "Chứng từ tất toán")]},
+    {"name": "don_ban", "fields": [number("so_doi_tac_xac_nhan", "Số đối tác xác nhận (đối chiếu)", 0)]},
+    {"name": "no_ncc_dau_ky", "fields": [number("so_doi_tac_xac_nhan", "Số NCC xác nhận (đối chiếu)", 0)]},
+    {"name": "don_ban_dong", "fields": [input_("dvt_nhap", "ĐVT nhập"), number("sl_nhap", "Số lượng theo ĐVT nhập", 3)]},
+    {"name": "phieu_kho_dong", "fields": [input_("dvt_nhap", "ĐVT nhập"), number("sl_nhap", "Số lượng theo ĐVT nhập", 3)]},
+    {"name": "tai_san", "fields": [date("ngay_su_dung", "Ngày đưa vào sử dụng"), input_("bo_phan_chi_phi", "Bộ phận chịu chi phí")]},
+    {"name": "tai_san_su_kien", "fields": [input_("nguoi_tra", "Người / tổ trả (thu hồi)"), input_("so_chung_tu", "Số chứng từ (sửa chữa / thanh lý)")]},
+    {"name": "me_sx", "fields": [number("kg_do_dang_dau", "Dở dang đầu kỳ (kg)", 3),
+        select("trang_thai", "Trạng thái", [opt("mo", "Đang sản xuất", "blue"), opt("tam_hoan_thanh", "Tạm hoàn thành (chờ chi phí)", "cyan"),
+               opt("da_chot", "Đã chốt giá thành", "green"), opt("can_chot_lai", "Cần điều chỉnh", "orange"), opt("da_khoa", "Đã khóa kỳ", "default"),
+               opt("da_huy", "Đã hủy", "red")], "mo")]},
+    {"name": "me_sx_chi_phi", "fields": [input_("so_chung_tu", "Số chứng từ (hóa đơn / bảng lương)"), m2o("phieu_chi", "Phiếu chi", "phieu_chi", label="so")]},
+]
+
 # Quan hệ cha – con thêm sau khi các bảng đã có.
 QUAN_HE = [
     ("phieu_kho", o2m("dong", "Hàng", "phieu_kho_dong", "phieu_kho_id")),
@@ -389,6 +429,8 @@ QUAN_HE = [
     ("nhap_lo", o2m("dong", "Các dòng", "nhap_dong", "nhap_lo_id")),
     ("tai_san", o2m("su_kien", "Lịch sử", "tai_san_su_kien", "tai_san_id")),
     ("me_sx", m2o("me_goc", "Mẻ gốc (tái chế / sản xuất lại)", "me_sx", label="so")),
+    ("tai_san", o2m("dang_giu", "Đang giữ", "tai_san_giu", "tai_san_id")),
+    ("mat_hang", o2m("quy_doi", "Quy đổi ĐVT", "quy_doi_dvt", "mat_hang_id")),
     ("phieu_kho", m2o("me_sx", "Mẻ sản xuất", "me_sx", label="so")),
     ("me_sx", o2m("chi_phi_ds", "Chi phí", "me_sx_chi_phi", "me_sx_id")),
     ("me_sx", o2m("phieu", "Phiếu kho", "phieu_kho", "me_sx_id", label="so")),

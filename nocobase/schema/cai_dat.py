@@ -29,7 +29,7 @@ DON_VI = [
 
 DOC = ["view"]  # "view" bao cả list/get
 SUA = DOC + ["create", "update", "destroy"]
-DANH_MUC = ["khach_hang", "mat_hang", "kho", "don_vi", "nha_cung_cap", "quy"]
+DANH_MUC = ["khach_hang", "mat_hang", "kho", "don_vi", "nha_cung_cap", "quy", "quy_doi_dvt"]
 DOC_DANH_MUC = {b: DOC for b in DANH_MUC}
 # Quyền theo nhóm: bảng -> các thao tác (thao tác nghiệp vụ do plugin kiểm thêm trạng thái / giá vốn ở máy chủ).
 NHOM = {
@@ -42,10 +42,10 @@ NHOM = {
         "don_ban": DOC, "don_ban_dong": DOC, "luot_giao": DOC + ["banGiaoXe", "khachNhan", "update"], "luot_giao_dong": DOC,
         "tra_hang": SUA + ["ghi"], "tra_hang_dong": SUA,
         "phieu_kho": SUA + ["ghiSo"], "phieu_kho_dong": SUA, "so_kho": DOC, "ton_kho": DOC,
-        "tai_san": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"]}),
+        "tai_san": DOC, "tai_san_giu": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"]}),
     "nha_may": ("Nhà máy", ["Kho vận", "Tài sản"], {**DOC_DANH_MUC,
         "phieu_kho": SUA + ["ghiSo"], "phieu_kho_dong": SUA, "so_kho": DOC, "ton_kho": DOC,
-        "me_sx": DOC + ["create", "update"], "tai_san": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"],
+        "me_sx": DOC + ["create", "update", "baoXong"], "tai_san": DOC, "tai_san_giu": DOC, "tai_san_su_kien": DOC + ["create", "update", "ghi", "huy"],
         "phieu_chi": DOC + ["create", "ghi"], "so_quy": DOC, "chot_ca": DOC + ["chot"]}),
     "thu_chi": ("Thu chi và công nợ", ["Thu chi và công nợ", "Danh mục"], {**DOC_DANH_MUC,
         "khach_hang": DOC + ["create", "update"],
@@ -56,12 +56,16 @@ NHOM = {
 TAT_CA = ["don_ban", "don_ban_dong", "luot_giao", "luot_giao_dong", "tra_hang", "tra_hang_dong", "dieu_chinh_gia", "phieu_kho", "phieu_kho_dong",
           "phieu_thu", "phieu_thu_phan_bo", "phieu_chi", "chuyen_tien", "thu_ho", "chot_ca", "so_kho", "ton_kho", "so_quy",
           "gia_von", "so_gia_von", "ky_mo_so", "nhap_lo", "nhap_dong", "mo_so_khoa", "no_ncc_dau_ky", "tai_san", "tai_san_su_kien",
-          "me_sx", "me_sx_chi_phi", "me_sx_phien_ban"] + DANH_MUC
+          "me_sx", "me_sx_chi_phi", "me_sx_phien_ban", "dieu_chinh_gia_tri", "pham_vi", "tai_san_giu"] + DANH_MUC
 NGHIEP_VU = ["ghiSo", "huy", "dinhGia", "chotDon", "duyetGia", "moLai", "dongPhanCon", "ghiHoaDon", "taoLuot", "banGiaoXe", "khachNhan",
              "ghi", "phanBo", "phanBoThuHo", "nhanDien", "tatToan", "chot", "baoCao",
-             "kiem", "duyet", "khoa", "uocTinh"]
+             "kiem", "duyet", "khoa", "uocTinh", "taiTep", "duyetNgoaiLe", "doiChieu", "nhapGiaVon", "baoXong"]
 for ten, tieu_de in (("ke_toan", "Kế toán"), ("quan_ly", "Quản lý")):
     NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU for b in TAT_CA})
+# Vai trò cờ: gán THÊM cho người không được xem giá vốn (vd. nhân viên nhà máy kiêm việc khác). Phủ quyết mọi vai trò khác ở máy chủ.
+for ten in ("ke_toan", "quan_ly"):
+    NHOM[ten][2]["users"] = DOC  # chọn người dùng khi cấu hình phạm vi kho / quỹ
+NHOM["khong_xem_gia"] = ("Không xem giá vốn (phủ quyết)", [], {})
 
 
 def ds_truong(api, bang, long_con):
