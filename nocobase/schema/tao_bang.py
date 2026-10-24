@@ -104,7 +104,7 @@ BANG = [
     {"name": "mat_hang", "title": "Mặt hàng", "titleField": "nhan", "fields": [
         input_("ma", "Mã hàng", required=True, unique=True), input_("ten", "Tên hàng", required=True),
         input_("nhan", "Mã – tên"), input_("dvt", "Đơn vị tính"), number("kg_bao", "Kg/bao", 3),
-        number("gia_ban", "Giá bán (đ/kg)", 0), check("ngung_dung", "Ngừng dùng")]},
+        number("gia_ban", "Giá bán (đ/kg)", 0), number("gia_san", "Giá sàn (đ/kg)", 0), check("ngung_dung", "Ngừng dùng")]},
     {"name": "khach_hang", "title": "Khách hàng", "titleField": "nhan", "fields": [
         input_("ma", "Mã khách", required=True, unique=True), input_("ten", "Tên khách", required=True),
         input_("nhan", "Tên – SĐT"), input_("sdt", "Điện thoại"), text("dia_chi", "Địa chỉ"),
@@ -112,14 +112,20 @@ BANG = [
     {"name": "phieu_kho", "title": "Phiếu kho", "titleField": "so", "fields": [
         so_ct("PK", 1),
         select("loai", "Loại phiếu", [opt("nhap", "Nhập kho"), opt("xuat", "Xuất kho khác"), opt("chuyen", "Chuyển kho"),
-                                       opt("dau_ky", "Tồn đầu kỳ"), opt("kiem_ke", "Điều chỉnh kiểm kê")], "nhap"),
+                                       opt("dau_ky", "Tồn đầu kỳ"), opt("kiem_ke", "Điều chỉnh kiểm kê"),
+                                       opt("san_xuat", "Sản xuất"), opt("dong_goi", "Đóng gói / đổi bao")], "nhap"),
         date("ngay", "Ngày"), m2o("kho", "Kho", "kho", required=True), m2o("kho_dich", "Kho nhận (chuyển kho)", "kho"),
         input_("nguoi_giao_nhan", "Người giao / nhận"), text("ghi_chu", "Ghi chú"),
         select("trang_thai", "Trạng thái", TRANG_THAI_PHIEU, "nhap"),
-        input_("ghi_boi", "Người ghi sổ"), input_("ly_do_huy", "Lý do hủy")]},
+        input_("ghi_boi", "Người ghi sổ"), input_("ly_do_huy", "Lý do hủy"),
+        number("chi_phi_sx", "Chi phí sản xuất (nhân công, điện, bao bì…)", 0), input_("xuong", "Xưởng / tổ"),
+        number("gia_tri_nvl", "Giá trị nguyên liệu", 0, read_only=True), number("kg_vao", "Kg nguyên liệu", 3, read_only=True),
+        number("kg_ra", "Kg thành phẩm", 3, read_only=True), number("gia_thanh", "Giá thành (đ/kg)", 0, read_only=True)]},
     {"name": "phieu_kho_dong", "title": "Dòng phiếu kho", "fields": [
         m2o("mat_hang", "Mặt hàng", "mat_hang", required=True), input_("ten_hang", "Tên hàng"),
-        number("so_bao", "Số bao", 2), number("so_kg", "Số kg (âm = giảm khi kiểm kê)", 3), text("ghi_chu", "Ghi chú")]},
+        number("so_bao", "Số bao", 2), number("so_kg", "Số kg (âm = giảm khi kiểm kê)", 3), text("ghi_chu", "Ghi chú"),
+        select("huong", "Vào / ra (sản xuất)", [opt("vao", "Nguyên liệu vào"), opt("ra", "Thành phẩm ra"), opt("phu_pham", "Phụ phẩm ra")]),
+        number("don_gia", "Đơn giá (đ/kg)", 0)]},
     {"name": "so_kho", "title": "Sổ kho", "titleField": "chung_tu", "fields": [
         date("ngay", "Ngày"), m2o("kho", "Kho", "kho"), m2o("mat_hang", "Mặt hàng", "mat_hang"),
         number("so_kg", "Số kg (+ nhập / − xuất)", 3), number("so_bao", "Số bao (+/−)", 2),
@@ -138,11 +144,13 @@ BANG = [
         select("cach_giao", "Cách giao", [opt("khach_den_lay", "Khách đến lấy"), opt("van_chuyen", "Vận chuyển")],
                "khach_den_lay"),
         input_("nguoi_nhan", "Người nhận / lái xe"), input_("bien_so", "Biển số xe"),
-        select("trang_thai", "Trạng thái", [opt("nhap", "Nháp", "default"), opt("cho_xuat", "Chờ xuất", "orange"),
+        select("trang_thai", "Trạng thái", [opt("nhap", "Nháp", "default"), opt("cho_duyet", "Chờ duyệt giá", "purple"), opt("cho_xuat", "Chờ xuất", "orange"),
                                             opt("da_giao", "Đã giao", "green"), opt("da_huy", "Đã hủy", "red")], "nhap"),
         number("tong_tien", "Tổng tiền", 0, read_only=True), number("da_thu", "Đã thu", 0, read_only=True),
         number("con_no", "Còn nợ", 0, read_only=True), input_("giao_boi", "Người xác nhận giao"),
-        input_("ly_do_huy", "Lý do hủy"), text("ghi_chu", "Ghi chú")]},
+        input_("ly_do_huy", "Lý do hủy"), text("ghi_chu", "Ghi chú"),
+        input_("duyet_boi", "Người duyệt giá"), input_("ly_do_gia", "Lý do bán dưới giá sàn"),
+        number("gia_von", "Giá vốn hàng bán", 0, read_only=True)]},
     {"name": "don_ban_dong", "title": "Dòng đơn bán", "fields": [
         m2o("mat_hang", "Mã hàng", "mat_hang", label="ma", required=True), input_("ten_hang", "Tên hàng"),
         m2o("kho", "Kho xuất", "kho", required=True), number("so_bao", "Số bao", 2), number("so_kg", "Số kg", 3),
@@ -153,10 +161,45 @@ BANG = [
         select("hinh_thuc", "Hình thức", [opt("tien_mat", "Tiền mặt"), opt("chuyen_khoan", "Chuyển khoản")], "tien_mat"),
         number("so_tien", "Số tiền thực nhận", 0), input_("ma_gd", "Mã giao dịch / nội dung CK"),
         input_("nguoi_nop", "Người nộp"), number("chua_phan_bo", "Chưa phân bổ", 0, read_only=True),
+        m2o("quy", "Quỹ / tài khoản nhận", "quy"),
         select("trang_thai", "Trạng thái", TRANG_THAI_PHIEU, "nhap"), input_("ghi_boi", "Người ghi"),
         input_("ly_do_huy", "Lý do hủy"), text("ghi_chu", "Ghi chú")]},
     {"name": "phieu_thu_phan_bo", "title": "Phân bổ phiếu thu", "fields": [
         m2o("don_ban", "Đơn bán", "don_ban", label="so", required=True), number("so_tien", "Số tiền trả cho đơn", 0)]},
+]
+
+BANG += [
+    {"name": "quy", "title": "Quỹ / tài khoản tiền", "titleField": "nhan", "fields": [
+        input_("ma", "Mã quỹ", required=True, unique=True), input_("ten", "Tên quỹ / tài khoản", required=True),
+        input_("nhan", "Tên hiển thị"), m2o("don_vi", "Đơn vị", "don_vi", required=True),
+        select("loai", "Loại", [opt("tien_mat", "Tiền mặt"), opt("ngan_hang", "Ngân hàng")], "tien_mat"),
+        input_("nguoi_giu", "Người giữ quỹ"), check("ngung_dung", "Ngừng dùng")]},
+    {"name": "so_quy", "title": "Sổ quỹ", "titleField": "chung_tu", "fields": [
+        date("ngay", "Ngày"), m2o("quy", "Quỹ", "quy"), number("so_tien", "Số tiền (+ thu / − chi)", 0),
+        input_("loai", "Nghiệp vụ"), input_("chung_tu", "Chứng từ"), text("dien_giai", "Diễn giải")]},
+    {"name": "phieu_chi", "title": "Phiếu chi", "titleField": "so", "fields": [
+        so_ct("PC", 4), date("ngay", "Ngày chi"), m2o("don_vi", "Đơn vị chi", "don_vi", required=True),
+        m2o("quy", "Chi từ quỹ / tài khoản", "quy", required=True),
+        select("loai_chi", "Loại chi", [opt("mua_hang", "Trả tiền mua hàng"), opt("van_chuyen", "Vận chuyển"), opt("san_xuat", "Chi phí sản xuất"),
+                                        opt("luong", "Lương / công"), opt("hoan_khach", "Hoàn tiền khách"), opt("khac", "Chi khác")], "khac"),
+        input_("nguoi_nhan", "Người nhận tiền", required=True), number("so_tien", "Số tiền", 0), text("ly_do", "Lý do chi"),
+        input_("ma_gd", "Mã giao dịch (nếu chuyển khoản)"), select("trang_thai", "Trạng thái", TRANG_THAI_PHIEU, "nhap"),
+        input_("ghi_boi", "Người ghi"), input_("ly_do_huy", "Lý do hủy")]},
+    {"name": "chuyen_tien", "title": "Chuyển / bàn giao tiền", "titleField": "so", "fields": [
+        so_ct("CT", 5), date("ngay", "Ngày"), m2o("tu_quy", "Từ quỹ", "quy", required=True), m2o("den_quy", "Đến quỹ", "quy", required=True),
+        number("so_tien", "Số tiền", 0), input_("nguoi_giao", "Người giao"), input_("nguoi_nhan", "Người nhận"), text("ghi_chu", "Ghi chú"),
+        select("trang_thai", "Trạng thái", TRANG_THAI_PHIEU, "nhap"), input_("ghi_boi", "Người ghi"), input_("ly_do_huy", "Lý do hủy")]},
+    {"name": "chot_ca", "title": "Chốt ca tiền", "titleField": "so", "fields": [
+        so_ct("CC", 6), date("ngay", "Ngày"), m2o("quy", "Quỹ tiền mặt", "quy", required=True),
+        number("so_sach", "Số theo sổ", 0, read_only=True), number("thuc_dem", "Tiền thực đếm", 0),
+        number("chenh_lech", "Chênh lệch (đếm − sổ)", 0, read_only=True), text("ly_do", "Lý do chênh lệch"),
+        input_("nguoi_chot", "Người chốt")]},
+    {"name": "gia_von", "title": "Giá vốn bình quân", "fields": [
+        m2o("mat_hang", "Mặt hàng", "mat_hang"), number("so_kg", "Tổng tồn (kg)", 3, read_only=True),
+        number("gia_tri", "Tổng giá trị", 0, read_only=True), number("gia_bq", "Giá bình quân (đ/kg)", 2, read_only=True)]},
+    {"name": "so_gia_von", "title": "Sổ giá trị kho", "titleField": "chung_tu", "fields": [
+        date("ngay", "Ngày"), m2o("mat_hang", "Mặt hàng", "mat_hang"), number("so_kg", "Số kg", 3), number("gia_tri", "Giá trị (+/−)", 0),
+        number("gia_bq_sau", "Giá BQ sau", 2), input_("loai", "Nghiệp vụ"), input_("chung_tu", "Chứng từ")]},
 ]
 
 # Quan hệ cha – con thêm sau khi các bảng đã có.
@@ -202,10 +245,17 @@ def main():
     for b in BANG:
         if b["name"] in co:
             ten_truong = {f["name"] for f in co[b["name"]].get("fields") or []}
+            co_truong = {f["name"]: f for f in co[b["name"]].get("fields") or []}
             for f in b["fields"]:
                 if f["name"] not in ten_truong:
                     api.call(f"collections/{b['name']}/fields:create", f)
                     print(f"+ trường {b['name']}.{f['name']}")
+                elif f.get("interface") == "select":
+                    cu = (co_truong[f["name"]].get("uiSchema") or {}).get("enum") or []
+                    if [o["value"] for o in cu] != [o["value"] for o in f["uiSchema"]["enum"]]:
+                        api.call(f"collections/{b['name']}/fields:update", {"uiSchema": f["uiSchema"]},
+                                 params=f"?filterByTk={f['name']}")
+                        print(f"~ lựa chọn {b['name']}.{f['name']}")
             continue
         body = {"name": b["name"], "title": b["title"], "logging": True, "autoGenId": True, "createdBy": True,
                 "updatedBy": True, "createdAt": True, "updatedAt": True, "sortable": True, "template": "general",

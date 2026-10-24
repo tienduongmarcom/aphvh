@@ -30,17 +30,20 @@ NHOM = {
     "ban_hang": ("Bán hàng", "/admin/aph/ban-hang", {
         "don_ban": DOC + ["create", "update", "chotDon", "moLai"], "don_ban_dong": DOC + ["create", "update", "destroy"],
         "khach_hang": DOC + ["create", "update"], "mat_hang": DOC, "kho": DOC, "don_vi": DOC, "ton_kho": DOC,
-        "phieu_thu": DOC, "phieu_thu_phan_bo": DOC}),
+        "phieu_thu": DOC, "phieu_thu_phan_bo": DOC, "quy": DOC}),
     "kho": ("Kho vận", "/admin/aph/kho-van", {
         "don_ban": DOC + ["giaoHang"], "don_ban_dong": DOC, "phieu_kho": DOC + ["create", "update", "ghiSo"],
         "phieu_kho_dong": DOC + ["create", "update", "destroy"], "so_kho": DOC, "ton_kho": DOC,
         "mat_hang": DOC, "kho": DOC, "khach_hang": DOC, "don_vi": DOC}),
     "thu_chi": ("Thu chi và công nợ", "/admin/aph/thu-chi", {
         "phieu_thu": DOC + ["create", "ghi"], "phieu_thu_phan_bo": DOC + ["create", "update", "destroy"],
-        "don_ban": DOC, "don_ban_dong": DOC, "khach_hang": DOC + ["create", "update"], "don_vi": DOC, "mat_hang": DOC, "kho": DOC}),
+        "don_ban": DOC, "don_ban_dong": DOC, "khach_hang": DOC + ["create", "update"], "don_vi": DOC, "mat_hang": DOC, "kho": DOC,
+        "quy": DOC, "so_quy": DOC, "phieu_chi": DOC + ["create", "ghi"], "chuyen_tien": DOC + ["create", "ghi"], "chot_ca": DOC + ["chot"]}),
     "quan_ly": ("Quản lý", "/admin/aph/ban-hang", {b: DOC + ["create", "update", "destroy", "ghiSo", "huy", "chotDon", "giaoHang", "moLai", "ghi"]
-        for b in ["don_ban", "don_ban_dong", "phieu_kho", "phieu_kho_dong", "phieu_thu", "phieu_thu_phan_bo", "khach_hang", "mat_hang", "kho", "don_vi"]}
-        | {"so_kho": DOC, "ton_kho": DOC}),
+        for b in ["don_ban", "don_ban_dong", "phieu_kho", "phieu_kho_dong", "phieu_thu", "phieu_thu_phan_bo", "khach_hang", "mat_hang", "kho", "don_vi",
+                  "quy", "phieu_chi", "chuyen_tien"]}
+        | {"so_kho": DOC, "ton_kho": DOC, "so_quy": DOC, "gia_von": DOC, "so_gia_von": DOC, "chot_ca": DOC + ["chot"],
+           "don_ban": DOC + ["create", "update", "destroy", "huy", "chotDon", "giaoHang", "moLai", "duyetGia"]}),
 }
 
 

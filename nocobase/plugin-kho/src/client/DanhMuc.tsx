@@ -1,5 +1,5 @@
 /** Danh mục: mặt hàng, khách hàng, kho, đơn vị; công nợ đầu kỳ. Thêm/sửa và dán nhanh từ Excel (cập nhật theo mã). */
-import { App, Button, Card, Checkbox, Form, Input, InputNumber, Modal, Space, Table, Tabs, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Form, Input, InputNumber, Modal, Select, Space, Table, Tabs, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { ChonDanhMuc, fmt, homNay, ngayVN, useGoi } from './chung';
 
@@ -13,12 +13,13 @@ export const docSo = (v: string) => {
   return Number(v);
 };
 
-type Cot = { key: string; title: string; kieu?: 'so' | 'chu' | 'co' | 'dai'; bat_buoc?: boolean; rong?: number };
+type Cot = { key: string; title: string; kieu?: 'so' | 'chu' | 'co' | 'dai' | 'don_vi' | 'loai_quy'; bat_buoc?: boolean; rong?: number };
 const BANG: Record<string, { ten: string; cot: Cot[]; tim: string[] }> = {
   mat_hang: { ten: 'Mặt hàng', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã hàng', bat_buoc: true, rong: 140 }, { key: 'ten', title: 'Tên hàng', bat_buoc: true },
     { key: 'dvt', title: 'ĐVT', rong: 80 }, { key: 'kg_bao', title: 'Kg/bao', kieu: 'so', rong: 90 },
-    { key: 'gia_ban', title: 'Giá bán (đ/kg)', kieu: 'so', rong: 130 }, { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }] },
+    { key: 'gia_ban', title: 'Giá bán (đ/kg)', kieu: 'so', rong: 130 }, { key: 'gia_san', title: 'Giá sàn (đ/kg)', kieu: 'so', rong: 130 },
+    { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }] },
   khach_hang: { ten: 'Khách hàng', tim: ['ma', 'ten', 'sdt'], cot: [
     { key: 'ma', title: 'Mã khách', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên khách', bat_buoc: true },
     { key: 'sdt', title: 'Điện thoại', rong: 130 }, { key: 'dia_chi', title: 'Địa chỉ', kieu: 'dai' }, { key: 'mst', title: 'MST', rong: 120 },
@@ -26,6 +27,10 @@ const BANG: Record<string, { ten: string; cot: Cot[]; tim: string[] }> = {
   kho: { ten: 'Kho', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã kho', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên kho', bat_buoc: true },
     { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }, { key: 'ghi_chu', title: 'Ghi chú', kieu: 'dai' }] },
+  quy: { ten: 'Quỹ / tài khoản tiền', tim: ['ma', 'ten'], cot: [
+    { key: 'ma', title: 'Mã quỹ', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên quỹ / tài khoản', bat_buoc: true },
+    { key: 'don_vi_id', title: 'Đơn vị', kieu: 'don_vi', bat_buoc: true, rong: 220 }, { key: 'loai', title: 'Loại', kieu: 'loai_quy', bat_buoc: true, rong: 120 },
+    { key: 'nguoi_giu', title: 'Người giữ quỹ', rong: 160 }, { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }] },
   don_vi: { ten: 'Đơn vị bán', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã', bat_buoc: true, rong: 100 }, { key: 'ten', title: 'Tên đơn vị', bat_buoc: true },
     { key: 'mst', title: 'MST', rong: 130 }, { key: 'dia_chi', title: 'Địa chỉ', kieu: 'dai' }, { key: 'dien_thoai', title: 'Điện thoại', rong: 130 }] },
@@ -43,7 +48,7 @@ function BangDanhMuc({ bang }: { bang: string }) {
   const [form] = Form.useForm();
   const tai = async () => {
     const filter = q ? { $or: cfg.tim.map((t) => ({ [t]: { $includes: q } })) } : {};
-    setDs((await goi(`${bang}:list`, { params: { filter, sort: ['ma'], pageSize: 2000 } })).data || []);
+    setDs((await goi(`${bang}:list`, { params: { filter, sort: ['ma'], pageSize: 2000, ...(bang === 'quy' ? { appends: ['don_vi'] } : {}) } })).data || []);
   };
   useEffect(() => { tai(); }, [bang]);
   const luu = async () => {
@@ -66,6 +71,7 @@ function BangDanhMuc({ bang }: { bang: string }) {
         if (!k || c[i] === undefined) return;
         const cot = cfg.cot.find((x) => x.key === k)!;
         const v = c[i].trim();
+        if (cot.kieu === 'don_vi') return;
         o[k] = cot.kieu === 'so' ? docSo(v) : cot.kieu === 'co' ? /^(1|x|có|co|true)$/i.test(v) : v;
       });
       return o;
@@ -92,12 +98,15 @@ function BangDanhMuc({ bang }: { bang: string }) {
       <Table size="small" rowKey="id" dataSource={ds} pagination={{ pageSize: 50 }}
         onRow={(r) => ({ onClick: () => { form.setFieldsValue(r); setSua(r); }, style: { cursor: 'pointer' } })}
         columns={cfg.cot.map((c) => ({ title: c.title, dataIndex: c.key, width: c.rong, align: c.kieu === 'so' ? 'right' as const : undefined,
-          render: (v: any) => (c.kieu === 'so' ? fmt(v, 3) : c.kieu === 'co' ? (v ? '✓' : '') : v) }))} />
+          render: (v: any, r: any) => (c.kieu === 'so' ? fmt(v, 3) : c.kieu === 'co' ? (v ? '✓' : '') : c.kieu === 'don_vi' ? r.don_vi?.ten
+            : c.kieu === 'loai_quy' ? (v === 'ngan_hang' ? 'Ngân hàng' : 'Tiền mặt') : v) }))} />
       <Modal open={!!sua} title={(sua?.id ? 'Sửa ' : 'Thêm ') + cfg.ten.toLowerCase()} onOk={luu} onCancel={() => setSua(null)} okText="Lưu" cancelText="Thôi" destroyOnClose>
         <Form form={form} layout="vertical">
           {cfg.cot.map((c) => <Form.Item key={c.key} name={c.key} label={c.title} valuePropName={c.kieu === 'co' ? 'checked' : 'value'}
             rules={c.bat_buoc ? [{ required: true, message: 'Bắt buộc' }] : []}>
-            {c.kieu === 'so' ? <InputNumber style={{ width: '100%' }} /> : c.kieu === 'co' ? <Checkbox /> : c.kieu === 'dai' ? <Input.TextArea rows={2} /> : <Input />}
+            {c.kieu === 'don_vi' ? <ChonDanhMuc bang="don_vi" style={{ width: '100%' }} /> : c.kieu === 'loai_quy'
+              ? <Select options={[{ value: 'tien_mat', label: 'Tiền mặt' }, { value: 'ngan_hang', label: 'Ngân hàng' }]} /> :
+              c.kieu === 'so' ? <InputNumber style={{ width: '100%' }} /> : c.kieu === 'co' ? <Checkbox /> : c.kieu === 'dai' ? <Input.TextArea rows={2} /> : <Input />}
           </Form.Item>)}
         </Form>
       </Modal>

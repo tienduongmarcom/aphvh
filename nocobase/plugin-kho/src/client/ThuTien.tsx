@@ -1,5 +1,5 @@
 /** Thu chi và công nợ: ghi nhận khách trả tiền (trả đúng đơn được chọn, phần thừa chưa phân bổ), danh sách phiếu thu, công nợ tổng hợp. */
-import { Alert, App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChonDanhMuc, TRANG_THAI_PHIEU, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
@@ -67,6 +67,11 @@ function GhiThu({ khachBanDau, xong }: any) {
           <Col span={5}><Form.Item name="so_tien" label="Số tiền (đ)" rules={[{ required: true, message: 'Nhập số tiền' }]}>
             <InputNumber min={1} style={{ width: '100%' }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))} /></Form.Item></Col>
           <Col span={4}><Form.Item name="ngay" label="Ngày thu"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
+        </Row>
+        <Row gutter={12}>
+          <Col span={8}><Form.Item name="quy_id" label={hinhThuc === 'chuyen_khoan' ? 'Tài khoản ngân hàng nhận' : 'Quỹ tiền mặt nhận'} rules={[{ required: true, message: 'Chọn quỹ / tài khoản' }]}>
+            <ChonDanhMuc bang="quy" style={{ width: '100%' }} locThem={{ don_vi_id: donVi || 0, loai: hinhThuc === 'chuyen_khoan' ? 'ngan_hang' : 'tien_mat', ngung_dung: { $ne: true } }} />
+          </Form.Item></Col>
         </Row>
         <Row gutter={12}>
           {hinhThuc === 'chuyen_khoan' && <Col span={8}><Form.Item name="ma_gd" label="Mã GD / nội dung CK" rules={[{ required: true, message: 'Bắt buộc với chuyển khoản' }]}><Input /></Form.Item></Col>}
@@ -154,6 +159,168 @@ function CongNo() {
   );
 }
 
+const huyPhieu = (modal: any, goi: any, url: string, r: any, xong: any) => {
+  let ly_do = '';
+  modal.confirm({ title: `Hủy ${r.so}?`, content: <Input.TextArea placeholder="Lý do (bắt buộc)" onChange={(e) => (ly_do = e.target.value)} />,
+    okText: 'Hủy phiếu', cancelText: 'Thôi', okButtonProps: { danger: true }, onOk: () => goi(url, { params: { filterByTk: r.id }, data: { ly_do } }).then(xong) });
+};
+const tienVao = { formatter: (v: any) => fmt(v), parser: (v: any) => Number(String(v).replace(/\D/g, '')) };
+
+function PhieuChi() {
+  const goi = useGoi();
+  const { modal, message } = App.useApp();
+  const [form] = Form.useForm();
+  const [ds, setDs] = useState<any[]>([]);
+  const donVi = Form.useWatch('don_vi_id', form);
+  const tai = async () => setDs((await goi('phieu_chi:list', { params: { appends: ['don_vi', 'quy'], sort: ['-id'], pageSize: 200 } })).data || []);
+  useEffect(() => { tai(); form.setFieldsValue({ ngay: dayjs(homNay()), loai_chi: 'khac' }); }, []);
+  const ghi = async () => {
+    const v = await form.validateFields();
+    modal.confirm({ title: `Chi ${fmt(v.so_tien)} đ cho ${v.nguoi_nhan}?`, okText: 'Ghi & In phiếu chi', cancelText: 'Xem lại', onOk: async () => {
+      const r = await goi('phieu_chi:create', { data: { ...v, ngay: v.ngay.format('YYYY-MM-DD') } });
+      try { await goi('phieu_chi:ghi', { params: { filterByTk: r.data.id }, data: {} }); } catch { tai(); return; }
+      window.open(`/in/phieu_chi/${r.data.id}`, '_blank'); message.success('Đã ghi phiếu chi'); form.resetFields(['so_tien', 'nguoi_nhan', 'ly_do', 'ma_gd']); tai();
+    } });
+  };
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Form form={form} layout="vertical">
+        <Row gutter={12}>
+          <Col span={6}><Form.Item name="don_vi_id" label="Đơn vị chi" rules={[{ required: true }]}><ChonDanhMuc bang="don_vi" style={{ width: '100%' }} /></Form.Item></Col>
+          <Col span={6}><Form.Item name="quy_id" label="Chi từ quỹ / tài khoản" rules={[{ required: true }]}>
+            <ChonDanhMuc bang="quy" style={{ width: '100%' }} locThem={{ don_vi_id: donVi || 0, ngung_dung: { $ne: true } }} /></Form.Item></Col>
+          <Col span={5}><Form.Item name="loai_chi" label="Loại chi"><Select options={[{ value: 'mua_hang', label: 'Trả tiền mua hàng' }, { value: 'van_chuyen', label: 'Vận chuyển' },
+            { value: 'san_xuat', label: 'Chi phí sản xuất' }, { value: 'luong', label: 'Lương / công' }, { value: 'hoan_khach', label: 'Hoàn tiền khách' }, { value: 'khac', label: 'Chi khác' }]} /></Form.Item></Col>
+          <Col span={4}><Form.Item name="so_tien" label="Số tiền (đ)" rules={[{ required: true }]}><InputNumber min={1} style={{ width: '100%' }} {...tienVao} /></Form.Item></Col>
+          <Col span={3}><Form.Item name="ngay" label="Ngày"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
+        </Row>
+        <Row gutter={12}>
+          <Col span={6}><Form.Item name="nguoi_nhan" label="Người nhận tiền" rules={[{ required: true }]}><Input /></Form.Item></Col>
+          <Col span={12}><Form.Item name="ly_do" label="Lý do chi" rules={[{ required: true }]}><Input /></Form.Item></Col>
+          <Col span={6}><Form.Item name="ma_gd" label="Mã GD (nếu chi qua ngân hàng)"><Input /></Form.Item></Col>
+        </Row>
+      </Form>
+      <Button type="primary" size="large" onClick={ghi}>Ghi phiếu chi &amp; In</Button>
+      <Table size="small" rowKey="id" dataSource={ds} columns={[
+        { title: 'Số', dataIndex: 'so', render: (v, r) => <a href={`/in/phieu_chi/${r.id}`} target="_blank" rel="noreferrer">{v}</a> },
+        { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Đơn vị', render: (_, r) => r.don_vi?.ten }, { title: 'Quỹ', render: (_, r) => r.quy?.ten },
+        { title: 'Người nhận', dataIndex: 'nguoi_nhan' }, { title: 'Lý do', dataIndex: 'ly_do' },
+        { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) },
+        { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_PHIEU, v); return <Tag color={m}>{t}</Tag>; } },
+        { render: (_, r) => r.trang_thai !== 'da_huy' && <Button size="small" danger onClick={() => huyPhieu(modal, goi, 'phieu_chi:huy', r, tai)}>Hủy</Button> },
+      ]} />
+    </Space>
+  );
+}
+
+function ChuyenTien() {
+  const goi = useGoi();
+  const { modal, message } = App.useApp();
+  const [form] = Form.useForm();
+  const [ds, setDs] = useState<any[]>([]);
+  const tai = async () => setDs((await goi('chuyen_tien:list', { params: { appends: ['tu_quy', 'den_quy'], sort: ['-id'], pageSize: 200 } })).data || []);
+  useEffect(() => { tai(); form.setFieldsValue({ ngay: dayjs(homNay()) }); }, []);
+  const ghi = async () => {
+    const v = await form.validateFields();
+    const r = await goi('chuyen_tien:create', { data: { ...v, ngay: v.ngay.format('YYYY-MM-DD') } });
+    try { await goi('chuyen_tien:ghi', { params: { filterByTk: r.data.id }, data: {} }); message.success('Đã ghi bàn giao'); form.resetFields(['so_tien', 'ghi_chu']); } catch { /* đã báo */ }
+    tai();
+  };
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Typography.Text type="secondary">Bàn giao / nộp tiền giữa hai quỹ CÙNG một đơn vị (thu ngân nộp kế toán, nộp tiền mặt vào ngân hàng, rút tiền về quỹ).</Typography.Text>
+      <Form form={form} layout="vertical"><Row gutter={12}>
+        <Col span={6}><Form.Item name="tu_quy_id" label="Từ quỹ" rules={[{ required: true }]}><ChonDanhMuc bang="quy" style={{ width: '100%' }} /></Form.Item></Col>
+        <Col span={6}><Form.Item name="den_quy_id" label="Đến quỹ" rules={[{ required: true }]}><ChonDanhMuc bang="quy" style={{ width: '100%' }} /></Form.Item></Col>
+        <Col span={4}><Form.Item name="so_tien" label="Số tiền" rules={[{ required: true }]}><InputNumber min={1} style={{ width: '100%' }} {...tienVao} /></Form.Item></Col>
+        <Col span={4}><Form.Item name="nguoi_giao" label="Người giao"><Input /></Form.Item></Col>
+        <Col span={4}><Form.Item name="nguoi_nhan" label="Người nhận"><Input /></Form.Item></Col>
+      </Row><Row gutter={12}>
+        <Col span={4}><Form.Item name="ngay" label="Ngày"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
+        <Col span={14}><Form.Item name="ghi_chu" label="Ghi chú"><Input /></Form.Item></Col>
+      </Row></Form>
+      <Button type="primary" onClick={() => modal.confirm({ title: 'Ghi bàn giao tiền?', okText: 'Ghi', cancelText: 'Thôi', onOk: ghi })}>Ghi bàn giao</Button>
+      <Table size="small" rowKey="id" dataSource={ds} columns={[
+        { title: 'Số', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN },
+        { title: 'Từ', render: (_, r) => r.tu_quy?.ten }, { title: 'Đến', render: (_, r) => r.den_quy?.ten },
+        { title: 'Giao → nhận', render: (_, r) => `${r.nguoi_giao || ''} → ${r.nguoi_nhan || ''}` },
+        { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) },
+        { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_PHIEU, v); return <Tag color={m}>{t}</Tag>; } },
+        { render: (_, r) => r.trang_thai === 'da_ghi' && <Button size="small" danger onClick={() => huyPhieu(modal, goi, 'chuyen_tien:huy', r, tai)}>Hủy</Button> },
+      ]} />
+    </Space>
+  );
+}
+
+function SoQuy() {
+  const goi = useGoi();
+  const [quy, setQuy] = useState<any[]>([]);
+  const [chon, setChon] = useState<any>();
+  const [dong, setDong] = useState<any[]>([]);
+  useEffect(() => {
+    Promise.all([goi('quy:list', { params: { appends: ['don_vi'], pageSize: 200, sort: ['don_vi_id', 'ma'] } }),
+      goi('so_quy:list', { params: { pageSize: 20000, fields: ['quy_id', 'so_tien'] } })]).then(([q, l]) => {
+      const du: Record<string, number> = {};
+      (l.data || []).forEach((x: any) => (du[x.quy_id] = (du[x.quy_id] || 0) + Number(x.so_tien || 0)));
+      setQuy((q.data || []).map((x: any) => ({ ...x, du: du[x.id] || 0 })));
+    });
+  }, []);
+  useEffect(() => {
+    if (!chon) return setDong([]);
+    goi('so_quy:list', { params: { filter: { quy_id: chon }, sort: ['id'], pageSize: 5000 } }).then((r) => {
+      let du = 0;
+      setDong((r.data || []).map((x: any) => ({ ...x, du: (du += Number(x.so_tien || 0)) })));
+    });
+  }, [chon]);
+  return (
+    <Row gutter={16}>
+      <Col span={9}><Table size="small" rowKey="id" pagination={false} dataSource={quy} rowClassName={(r) => (r.id === chon ? 'ant-table-row-selected' : '')}
+        onRow={(r) => ({ onClick: () => setChon(r.id), style: { cursor: 'pointer' } })} columns={[
+          { title: 'Đơn vị', render: (_, r) => r.don_vi?.ma }, { title: 'Quỹ / tài khoản', dataIndex: 'ten' },
+          { title: 'Số dư', dataIndex: 'du', align: 'right', render: (v) => <b style={{ color: v < 0 ? '#cf1322' : undefined }}>{fmt(v)}</b> }]} /></Col>
+      <Col span={15}>{chon ? <Table size="small" rowKey="id" dataSource={dong} pagination={{ pageSize: 50 }} columns={[
+        { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Chứng từ', dataIndex: 'chung_tu' }, { title: 'Diễn giải', dataIndex: 'dien_giai' },
+        { title: 'Thu', align: 'right', render: (_, r) => (r.so_tien > 0 ? fmt(r.so_tien) : '') },
+        { title: 'Chi', align: 'right', render: (_, r) => (r.so_tien < 0 ? fmt(-r.so_tien) : '') },
+        { title: 'Tồn quỹ', dataIndex: 'du', align: 'right', render: (v) => <b>{fmt(v)}</b> }]} />
+        : <Typography.Text type="secondary">Bấm một quỹ để xem sổ chi tiết.</Typography.Text>}</Col>
+    </Row>
+  );
+}
+
+function ChotCa() {
+  const goi = useGoi();
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [ds, setDs] = useState<any[]>([]);
+  const tai = async () => setDs((await goi('chot_ca:list', { params: { appends: ['quy'], sort: ['-id'], pageSize: 100 } })).data || []);
+  useEffect(() => { tai(); }, []);
+  const chot = async () => {
+    const v = await form.validateFields();
+    try {
+      const r = await goi('chot_ca:chot', { data: v });
+      message.success(`Đã chốt ca: sổ ${fmt(r.data.so_sach)} đ, lệch ${fmt(r.data.chenh_lech)} đ`, 8);
+      form.resetFields(); tai();
+    } catch { /* đã báo */ }
+  };
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Typography.Text type="secondary">Đếm tiền thực có trong két rồi nhập. Hệ thống so với số theo sổ quỹ; lệch phải ghi lý do. Chốt ca chỉ ghi nhận, không tự sửa sổ.</Typography.Text>
+      <Form form={form} layout="inline">
+        <Form.Item name="quy_id" label="Quỹ tiền mặt" rules={[{ required: true }]}><ChonDanhMuc bang="quy" locThem={{ loai: 'tien_mat' }} style={{ width: 260 }} /></Form.Item>
+        <Form.Item name="thuc_dem" label="Tiền thực đếm" rules={[{ required: true }]}><InputNumber min={0} style={{ width: 180 }} {...tienVao} /></Form.Item>
+        <Form.Item name="ly_do" label="Lý do lệch"><Input style={{ width: 260 }} /></Form.Item>
+        <Button type="primary" onClick={chot}>Chốt ca</Button>
+      </Form>
+      <Table size="small" rowKey="id" dataSource={ds} columns={[
+        { title: 'Số', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Quỹ', render: (_, r) => r.quy?.ten },
+        { title: 'Theo sổ', dataIndex: 'so_sach', align: 'right', render: (v) => fmt(v) }, { title: 'Thực đếm', dataIndex: 'thuc_dem', align: 'right', render: (v) => fmt(v) },
+        { title: 'Lệch', dataIndex: 'chenh_lech', align: 'right', render: (v) => <b style={{ color: v ? '#cf1322' : undefined }}>{fmt(v)}</b> },
+        { title: 'Lý do', dataIndex: 'ly_do' }, { title: 'Người chốt', dataIndex: 'nguoi_chot' }]} />
+    </Space>
+  );
+}
+
 export function ThuTien() {
   const [ban, setBan] = useState(0);
   return (
@@ -162,6 +329,10 @@ export function ThuTien() {
         { key: 'thu', label: 'Ghi nhận khách trả tiền', children: <GhiThu key={ban} xong={() => setBan(ban + 1)} /> },
         { key: 'ds', label: 'Phiếu thu', children: <DanhSachThu key={ban} /> },
         { key: 'cn', label: 'Công nợ khách', children: <CongNo key={ban} /> },
+        { key: 'chi', label: 'Phiếu chi', children: <PhieuChi /> },
+        { key: 'ct', label: 'Bàn giao / nộp tiền', children: <ChuyenTien /> },
+        { key: 'sq', label: 'Sổ quỹ', children: <SoQuy /> },
+        { key: 'cc', label: 'Chốt ca tiền', children: <ChotCa /> },
       ]} />
     </Card>
   );

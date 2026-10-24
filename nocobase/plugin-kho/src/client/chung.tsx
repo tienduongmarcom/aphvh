@@ -9,13 +9,14 @@ export const ngayVN = (v?: string) => (v ? String(v).slice(0, 10).split('-').rev
 export const homNay = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 
 export const TRANG_THAI_DON: Record<string, [string, string]> = {
-  nhap: ['Nháp', 'default'], cho_xuat: ['Chờ xuất', 'orange'], da_giao: ['Đã giao', 'green'], da_huy: ['Đã hủy', 'red'],
+  nhap: ['Nháp', 'default'], cho_duyet: ['Chờ duyệt giá', 'purple'], cho_xuat: ['Chờ xuất', 'orange'], da_giao: ['Đã giao', 'green'], da_huy: ['Đã hủy', 'red'],
 };
 export const TRANG_THAI_PHIEU: Record<string, [string, string]> = {
   nhap: ['Nháp', 'default'], da_ghi: ['Đã ghi', 'green'], da_huy: ['Đã hủy', 'red'],
 };
 export const LOAI_PHIEU_KHO: Record<string, string> = {
   nhap: 'Nhập kho', xuat: 'Xuất kho khác', chuyen: 'Chuyển kho', dau_ky: 'Tồn đầu kỳ', kiem_ke: 'Điều chỉnh kiểm kê',
+  san_xuat: 'Sản xuất', dong_goi: 'Đóng gói / đổi bao',
 };
 
 /** Gọi API, báo lỗi nghiệp vụ bằng tiếng Việt. */
