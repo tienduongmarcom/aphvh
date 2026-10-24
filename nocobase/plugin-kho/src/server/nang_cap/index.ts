@@ -18,6 +18,11 @@ const MOC_MOT_LAN = '0.4.0';
 
 export async function nangCap(p: any, t: Transaction, nguoi = 'he_thong') {
   const bc: any = { cau_hinh_them: [], cap_pham_vi: [], dong_don: 0, dong_luot: 0 };
+  // Khóa một hồ sơ/một kho gửi gia công ở tầng DB để chống tạo song song.
+  // Nếu dữ liệu cũ dùng chung kho cho hai hồ sơ, nâng cấp DỪNG để đối chiếu trước.
+  await p.sql(`CREATE UNIQUE INDEX IF NOT EXISTS sx_ho_so_kho_duy_nhat ON sx_ho_so_gia_cong (kho_id)`, {}, t);
+  // Dữ liệu chống ghi trùng nằm tại collection sx_thao_tac, request_id UNIQUE do schema khai báo.
+
   for (const [k, [gt, mt]] of Object.entries(MAC_DINH)) {
     const r = await p.sql(`INSERT INTO cau_hinh (khoa, gia_tri, mo_ta, "createdAt", "updatedAt") VALUES (:k, :g, :m, now(), now())
       ON CONFLICT (khoa) DO NOTHING RETURNING khoa`, { k, g: gt, m: mt }, t);
