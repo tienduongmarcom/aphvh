@@ -74,6 +74,15 @@ TAT_CA_040 = ["cau_hinh", "phien_ban_schema", "dat_giu_ton", "bang_gia", "bang_g
 NGHIEP_VU_040 = ["taoGiao", "xacNhan", "nhan", "xacNhanXuat", "xacNhanNhan", "xuLy", "mo", "ban", "baoChuyen", "xacMinh", "tuChoiXacMinh", "nap",
                  "goiY", "khop", "taoThu", "boQua", "xuLyHoan", "nhapNhanh", "boSung", "hieuSuat", "phanLoai", "timTrung", "goiYAnhXa", "dat",
                  "taoLoTon", "bacBo", "tongQuan", "truyVet", "nangCap"]
+# 0.4.1 Factory MES Lite
+SX_DOC = {"mau_sx": DOC, "mau_sx_dong": DOC, "sx_doi_chieu": DOC, "sx_giai_trinh": DOC, "sx_nguon_lo": DOC, "sx_ho_so_gia_cong": DOC}
+NHOM["nha_may"][2].update({**SX_DOC, "mau_sx_phien_ban": DOC + ["create", "update"], "mau_sx_dong": DOC + ["create", "update", "destroy"],
+                           "ca_sx": DOC + ["create", "update"], "de_xuat_mat_hang": DOC + ["create"]})
+NHOM["nha_may"][2]["me_sx"] = DOC + ["create", "update", "baoXong", "nhapNhanh", "hieuSuat", "moTuMau", "goiY", "ghiThucTe", "ketThuc", "giaiTrinh", "canDoi"]
+NHOM["kho"][2].update({"de_xuat_mat_hang": DOC + ["create"], "ca_sx": DOC})
+TAT_CA_041 = ["mau_sx", "mau_sx_phien_ban", "mau_sx_dong", "ca_sx", "sx_doi_chieu", "sx_giai_trinh", "de_xuat_mat_hang", "sx_ho_so_gia_cong", "sx_nguon_lo"]
+NGHIEP_VU_041 = ["moTuMau", "goiY", "ghiThucTe", "ketThuc", "moLaiVanHanh", "giaiTrinh", "canDoi", "duyet", "ngung", "tuChoi", "nhanHang", "traHang",
+                 "xacNhanSoHuu", "baoCao"]
 TAT_CA = ["don_ban", "don_ban_dong", "luot_giao", "luot_giao_dong", "tra_hang", "tra_hang_dong", "dieu_chinh_gia", "phieu_kho", "phieu_kho_dong",
           "phieu_thu", "phieu_thu_phan_bo", "phieu_chi", "chuyen_tien", "thu_ho", "chot_ca", "so_kho", "ton_kho", "so_quy",
           "gia_von", "so_gia_von", "ky_mo_so", "nhap_lo", "nhap_dong", "mo_so_khoa", "no_ncc_dau_ky", "tai_san", "tai_san_su_kien",
@@ -82,10 +91,10 @@ NGHIEP_VU = ["ghiSo", "huy", "dinhGia", "chotDon", "duyetGia", "moLai", "dongPha
              "ghi", "phanBo", "phanBoThuHo", "nhanDien", "tatToan", "chot", "baoCao",
              "kiem", "duyet", "khoa", "uocTinh", "taiTep", "duyetNgoaiLe", "doiChieu", "nhapGiaVon", "baoXong"]
 for ten, tieu_de in (("ke_toan", "Kế toán"), ("quan_ly", "Quản lý")):
-    NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU + NGHIEP_VU_040 for b in TAT_CA + TAT_CA_040})
+    NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU + NGHIEP_VU_040 + NGHIEP_VU_041 for b in TAT_CA + TAT_CA_040 + TAT_CA_041})
     # Cấu hình chỉ đổi qua thao tác "dat" (ghi vết); dữ liệu nguồn / sao kê không sửa tay.
     NHOM[ten][2]["cau_hinh"] = DOC + ["dat"]
-    for _b in ("phien_ban_schema", "nguon_tep", "nguon_ban_ghi", "sao_ke", "sao_ke_dong", "hoa_don_cho_xuat", "dat_giu_ton", "lich_su_duyet_gia", "chenh_lech_giao_nhan"):
+    for _b in ("sx_doi_chieu", "sx_giai_trinh", "sx_nguon_lo", "phien_ban_schema", "nguon_tep", "nguon_ban_ghi", "sao_ke", "sao_ke_dong", "hoa_don_cho_xuat", "dat_giu_ton", "lich_su_duyet_gia", "chenh_lech_giao_nhan"):
         NHOM[ten][2][_b] = DOC + [x for x in NGHIEP_VU + NGHIEP_VU_040 if x not in ("create", "update", "destroy")]
 # Vai trò cờ: gán THÊM cho người không được xem giá vốn (vd. nhân viên nhà máy kiêm việc khác). Phủ quyết mọi vai trò khác ở máy chủ.
 for ten in ("ke_toan", "quan_ly"):

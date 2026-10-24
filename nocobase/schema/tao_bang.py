@@ -100,14 +100,15 @@ BANG = [
     {"name": "kho", "title": "Kho", "titleField": "nhan", "fields": [
         input_("ma", "Mã kho", required=True, unique=True), input_("ten", "Tên kho", required=True),
         input_("nhan", "Tên hiển thị"), check("trung_chuyen", "Kho hàng đang vận chuyển"),
-        select("loai_kho", "Loại kho", [opt("ban_duoc", "Kho bán được"), opt("nha_may", "Kho nhà máy"), opt("cho_xu_ly", "Kho chờ xử lý (không bán)")], "ban_duoc"),
+        select("loai_kho", "Loại kho", [opt("ban_duoc", "Kho bán được"), opt("nha_may", "Kho nhà máy"), opt("cho_xu_ly", "Kho chờ xử lý (không bán)"),
+               opt("hang_gui", "Kho hàng gửi gia công (của bên gửi, không bán)")], "ban_duoc"),
         input_("dia_diem", "Địa điểm"),
         check("ngung_dung", "Ngừng dùng"), text("ghi_chu", "Ghi chú")]},
     {"name": "mat_hang", "title": "Mặt hàng", "titleField": "nhan", "fields": [
         input_("ma", "Mã hàng", required=True, unique=True), input_("ten", "Tên hàng", required=True),
         input_("nhan", "Mã – tên"), input_("dvt", "Đơn vị tính"), number("kg_bao", "Kg/bao", 3),
         number("gia_ban", "Giá bán (đ/ĐVT)", 0), number("gia_san", "Giá sàn (đ/ĐVT)", 0), check("ngung_dung", "Ngừng dùng"),
-        select("dvt_ton", "ĐVT tồn kho", [opt("kg", "Kg"), opt("cai", "Cái"), opt("goi", "Gói"), opt("bao", "Bao"), opt("thung", "Thùng")], "kg"),
+        select("dvt_ton", "ĐVT tồn kho", [opt("kg", "Kg"), opt("cai", "Cái"), opt("goi", "Gói"), opt("bao", "Bao"), opt("thung", "Thùng"), opt("lit", "Lít")], "kg"),
         select("loai_hang", "Loại hàng", [opt("hang_hoa", "Hàng hóa"), opt("nguyen_lieu", "Nguyên liệu"), opt("thanh_pham", "Thành phẩm"),
                                           opt("phu_pham", "Phụ phẩm"), opt("bao_bi", "Bao bì / vật tư")], "hang_hoa")]},
     {"name": "khach_hang", "title": "Khách hàng", "titleField": "nhan", "fields": [
@@ -577,6 +578,78 @@ QUAN_HE = [
     ("me_sx", o2m("phien_ban_ds", "Phiên bản giá thành", "me_sx_phien_ban", "me_sx_id")),
 ]
 
+
+# ---------------- 0.4.1 Factory MES Lite ----------------
+LOAI_CN = [opt("GRADING", "Xưởng đỗ — phân loại (GRADING)"), opt("BLENDING_COOKING", "Phồng tôm — phối trộn / gia nhiệt / sấy"),
+           opt("REPACKING", "Đóng gói lại (đậu, bột)"), opt("LIQUID_FILLING", "Chiết rót dầu ăn")]
+VAI_TRO_SX = [opt("nvl", "Nguyên liệu (vào cân bằng)"), opt("tp", "Thành phẩm"), opt("phu_pham", "Phụ phẩm"), opt("bao_bi", "Bao bì"),
+              opt("vat_tu", "Vật tư tiêu hao"), opt("nhien_lieu", "Nhiên liệu (củi, than…)"), opt("nuoc", "Nước / phụ gia lỏng")]
+BANG += [
+    {"name": "mat_hang", "fields": [number("kg_moi_dvt", "Kg cho 1 ĐVT tồn (thùng, chai, lít…)", 4), input_("kg_dvt_can_cu", "Căn cứ quy đổi kg (đo / khối lượng riêng)")]},
+    {"name": "mau_sx", "title": "Mẫu sản xuất", "titleField": "ma", "fields": [
+        input_("ma", "Mã mẫu", required=True, unique=True), input_("ten", "Tên mẫu"), select("loai_cn", "Loại công nghệ", LOAI_CN, "GRADING"),
+        input_("xuong", "Xưởng / dây chuyền"), m2o("don_vi", "Đơn vị áp dụng", "don_vi"),
+        select("pp_gia_thanh", "Phương pháp giá thành mặc định (kế toán duyệt)", [opt("kg", "Trừ giá trị phụ phẩm, chia theo kg"),
+               opt("he_so", "Phân bổ theo hệ số"), opt("gia_tri", "Phân bổ theo giá trị tương đối")], "kg"), check("ngung", "Ngừng dùng"), text("ghi_chu", "Ghi chú")]},
+    {"name": "mau_sx_phien_ban", "title": "Phiên bản định mức", "fields": [
+        m2o("mau_sx", "Mẫu", "mau_sx", label="ma", required=True), number("phien_ban", "Phiên bản", 0), date("hieu_luc_tu", "Hiệu lực từ"),
+        select("trang_thai", "Trạng thái", [opt("de_xuat", "Đề xuất (chưa dùng được)", "orange"), opt("da_duyet", "Đã duyệt", "green"), opt("ngung", "Ngừng", "default")], "de_xuat"),
+        number("nguong_chenh_pct", "Chênh lệch chưa giải trình cho phép (%) — trống = phải giải trình mọi chênh", 3),
+        input_("de_xuat_boi", "Người đề xuất"), input_("duyet_boi", "Người duyệt"), text("can_cu", "Căn cứ (thực nghiệm / biên bản)")]},
+    {"name": "mau_sx_dong", "title": "Dòng định mức", "fields": [
+        select("vai_tro", "Vai trò", VAI_TRO_SX, "nvl"), m2o("mat_hang", "Mặt hàng", "mat_hang", required=True),
+        select("co_so", "Định mức tính trên", [opt("nvl", "1 kg nguyên liệu vào"), opt("tp", "1 ĐVT thành phẩm chính")], "nvl"),
+        number("dinh_muc", "Định mức", 6), number("nguong_hao_pct", "Ngưỡng hao hụt tự nhiên (%) — nguyên liệu", 3),
+        number("he_so_gia", "Hệ số phân bổ giá thành (thành phẩm)", 4), number("gia_tham_chieu", "Giá tham chiếu phụ phẩm (đ / ĐVT)", 0),
+        input_("nguon_gia_tc", "Nguồn giá tham chiếu"), input_("cong_doan", "Công đoạn"), number("thu_tu", "Thứ tự", 0)]},
+    {"name": "ca_sx", "title": "Ca sản xuất", "titleField": "so", "fields": [
+        so_ct("CS", 20), date("ngay", "Ngày"), select("ca", "Ca", [opt("sang", "Sáng"), opt("chieu", "Chiều"), opt("dem", "Đêm")], "sang"),
+        input_("xuong", "Xưởng"), input_("nguoi_van_hanh", "Người vận hành"),
+        select("trang_thai", "Trạng thái", [opt("mo", "Đang chạy", "green"), opt("dong", "Đã đóng", "default")], "mo")]},
+    {"name": "sx_doi_chieu", "title": "Cân đối khối lượng mẻ", "fields": [
+        m2o("me_sx", "Mẻ", "me_sx", label="so"), 
+        number("lan", "Lần ghi", 0), select("loai_cn", "Công nghệ", LOAI_CN), number("kg_vao", "Kg nguyên liệu vào", 3), number("nuoc_vao", "Nước / phụ gia thêm (kg)", 3),
+        number("wip_dau", "Dở dang đầu (kg)", 3), number("kg_tp", "Kg thành phẩm", 3), number("kg_pp", "Kg phụ phẩm", 3), number("kg_phe", "Kg phế đã cân", 3),
+        number("kg_hao", "Hao hụt đã đo & xác nhận (kg)", 3), number("nuoc_bay_hoi", "Nước bay hơi (kg)", 3), number("wip_cuoi", "Dở dang cuối (kg)", 3),
+        number("chenh", "Chênh lệch ban đầu (kg)", 3), number("da_giai_trinh", "Đã giải trình (kg)", 3), number("con_lai", "Còn chưa giải trình (kg)", 3),
+        select("ket_qua", "Kết quả", [opt("can", "Cân đối", "green"), opt("co_chenh", "Còn chênh chưa giải trình", "orange"),
+               opt("chua_du", "Chưa đủ căn cứ cân đối", "red"), opt("vuot_nguong", "Hao hụt vượt ngưỡng — chờ duyệt", "purple")]),
+        text("van_de", "Vấn đề"), text("chi_tiet", "Chi tiết (JSON)"), input_("nguoi", "Người ghi")]},
+    {"name": "sx_giai_trinh", "title": "Giải trình chênh lệch mẻ", "fields": [
+        m2o("me_sx", "Mẻ", "me_sx", label="so"), 
+        number("so_kg", "Số kg", 3), select("phan_loai", "Phân loại", [opt("do_sai", "Cân / đo sai (đã kiểm)"), opt("hao_bat_thuong", "Hao hụt bất thường"),
+        opt("khac", "Khác")]), text("ly_do", "Lý do"), select("trang_thai", "Trạng thái", [opt("cho_duyet", "Chờ duyệt", "orange"), opt("da_duyet", "Đã duyệt", "green"),
+        opt("tu_choi", "Từ chối", "red")], "cho_duyet"), input_("nguoi", "Người giải trình"), input_("duyet_boi", "Người duyệt")]},
+    {"name": "de_xuat_mat_hang", "title": "Đề xuất mã hàng mới", "titleField": "so", "fields": [
+        so_ct("DX", 21), input_("ten", "Tên hàng (như nhà máy gọi)", required=True), input_("dvt", "ĐVT"), input_("quy_cach", "Quy cách (bao / thùng = ? kg)"),
+        input_("xuong", "Xưởng"), input_("gap_o_phieu", "Gặp ở phiếu"), text("ghi_chu", "Ghi chú"),
+        select("trang_thai", "Trạng thái", [opt("cho_duyet", "Chờ duyệt", "orange"), opt("da_duyet", "Đã duyệt", "green"), opt("tu_choi", "Từ chối", "red")], "cho_duyet"),
+        m2o("mat_hang", "Mã hàng đã tạo / ghép", "mat_hang"), input_("nguoi_de_xuat", "Người đề xuất"), input_("nguoi_duyet", "Người duyệt"), input_("ly_do", "Lý do")]},
+    {"name": "sx_ho_so_gia_cong", "title": "Hồ sơ hàng gửi gia công", "titleField": "so", "fields": [
+        so_ct("GC", 22), m2o("ben_gui", "Bên gửi / yêu cầu gia công", "don_vi", required=True), m2o("ben_nhan", "Bên nhận gia công", "don_vi", required=True),
+        m2o("kho", "Kho đang giữ (kho hàng gửi)", "kho", required=True), input_("can_cu", "Căn cứ (hợp đồng / biên bản giao nhận)"),
+        m2o("chu_so_huu", "Chủ sở hữu đã xác nhận (trống = chưa xác định)", "don_vi"), number("phi_gia_cong", "Phí gia công thỏa thuận (chưa tạo doanh thu)", 0),
+        select("trang_thai", "Trạng thái", [opt("mo", "Đang gia công", "blue"), opt("dong", "Đã quyết toán", "default")], "mo"), text("ghi_chu", "Ghi chú")]},
+    {"name": "sx_nguon_lo", "title": "Lô nguyên liệu / đầu ra của mẻ", "fields": [
+        m2o("me_sx", "Mẻ", "me_sx", label="so"), 
+        select("huong", "Hướng", [opt("vao", "Vào"), opt("ra", "Ra")]), m2o("mat_hang", "Mặt hàng", "mat_hang"), input_("so_lo", "Số lô"), number("so_kg", "Số lượng", 3)]},
+    {"name": "me_sx", "fields": [
+        m2o("mau_sx", "Mẫu sản xuất", "mau_sx", label="ma"), m2o("mau_phien_ban", "Phiên bản định mức", "mau_sx_phien_ban", label="phien_ban"),
+        text("snapshot_dinh_muc", "Định mức đã áp dụng (snapshot)"), text("snapshot_gia", "Giá tham chiếu / hệ số đã áp dụng (chỉ kế toán)"), m2o("ca_sx", "Ca", "ca_sx", label="so"), select("loai_cn", "Loại công nghệ", LOAI_CN),
+        m2o("ben_gui", "Bên gửi gia công", "don_vi"), m2o("ho_so_gia_cong", "Hồ sơ gia công", "sx_ho_so_gia_cong", label="so"),
+        number("sl_ke_hoach", "Sản lượng kế hoạch (ĐVT thành phẩm chính)", 3),
+        select("tt_van_hanh", "Vận hành", [opt("nhap", "Nháp"), opt("dang_sx", "Đang sản xuất", "blue"), opt("cho_can_doi", "Chờ cân đối", "orange"),
+               opt("hoan_thanh", "Hoàn thành thực tế", "green"), opt("cho_xac_nhan", "Chờ xác nhận hồ sơ", "purple")])]},
+    {"name": "phieu_kho_dong", "fields": [select("vai_tro", "Vai trò sản xuất", VAI_TRO_SX), input_("so_lo", "Số lô"), number("so_hong", "Trong đó hỏng / loại bỏ", 3)]},
+    {"name": "phieu_kho", "fields": [input_("request_id", "Mã yêu cầu", unique=False), m2o("ho_so_gia_cong", "Hồ sơ gia công", "sx_ho_so_gia_cong", label="so")]},
+]
+QUAN_HE += [
+    ("mau_sx", o2m("phien_ban_ds", "Phiên bản", "mau_sx_phien_ban", "mau_sx_id", label="phien_ban")),
+    ("mau_sx_phien_ban", o2m("dong", "Dòng định mức", "mau_sx_dong", "mau_sx_phien_ban_id")),
+    ("me_sx", o2m("doi_chieu_ds", "Cân đối", "sx_doi_chieu", "me_sx_id")),
+    ("me_sx", o2m("giai_trinh_ds", "Giải trình", "sx_giai_trinh", "me_sx_id")),
+    ("me_sx", o2m("nguon_lo_ds", "Lô", "sx_nguon_lo", "me_sx_id")),
+]
 
 class API:
     def __init__(self, url, email, password):

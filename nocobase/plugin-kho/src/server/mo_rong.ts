@@ -92,7 +92,7 @@ const chon = (v: string, m: Record<string, string[]>, macDinh?: string) => {
   for (const [k, ds] of Object.entries(m)) if (b === k || ds.some((x) => boDau(x) === b)) return k;
   return 'SAI';
 };
-const M_DVT = { kg: ['kg', 'kilogram'], cai: ['cái', 'chiếc', 'pcs'], goi: ['gói'], bao: ['bao'], thung: ['thùng'] };
+const M_DVT = { kg: ['kg', 'kilogram'], cai: ['cái', 'chiếc', 'pcs'], goi: ['gói'], bao: ['bao'], thung: ['thùng'], lit: ['lít', 'lit', 'l'] };
 const M_LOAI_HANG = { hang_hoa: ['hàng hóa'], nguyen_lieu: ['nguyên liệu', 'nvl'], thanh_pham: ['thành phẩm'], phu_pham: ['phụ phẩm'], bao_bi: ['bao bì', 'vật tư', 'bao bì / vật tư'] };
 const M_LOAI_KHO = { ban_duoc: ['bán được', 'kho bán được'], nha_may: ['nhà máy', 'kho nhà máy'], cho_xu_ly: ['chờ xử lý', 'kho chờ xử lý'] };
 const M_LOAI_QUY = { tien_mat: ['tiền mặt', 'tm'], ngan_hang: ['ngân hàng', 'nh', 'ck', 'chuyển khoản'] };
@@ -798,7 +798,11 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
     const me = await p.khoa('me_sx', pk.me_sx_id, t);
     if (me.trang_thai === 'da_huy') loi('Mẻ đã hủy.');
     if (me.trang_thai === 'da_khoa') loi('Mẻ đã khóa kỳ: không cấp / thu hồi thêm. Mở mẻ mới (gắn mẻ gốc) nếu sản xuất tiếp.');
-    if (pk.kho_id !== me.kho_id) loi('Phiếu của mẻ phải dùng kho nhà máy của mẻ.');
+    if (pk.kho_id !== me.kho_id) {
+      // 0.4.1: được cấp từ kho nhà máy khác (vd. kho vật tư - bao bì); mẻ gia công chỉ dùng kho hàng gửi của hồ sơ.
+      const k = await p.bang('kho').findByPk(pk.kho_id, { transaction: t });
+      if (me.ho_so_gia_cong_id || k?.loai_kho !== 'nha_may') loi('Phiếu của mẻ phải dùng kho nhà máy (mẻ gia công: kho hàng gửi của hồ sơ).');
+    }
     const c = (d: any) => ({ ngay: pk.ngay, mat_hang_id: d.mat_hang_id, chung_tu: pk.so, nguon: 'phieu_kho_dong', nguon_id: d.id });
     if (dong.some((d) => !(kg(d.so_kg) > 0))) loi('Số lượng mỗi dòng phải lớn hơn 0.');
     if (pk.loai === 'cap_nvl') {
