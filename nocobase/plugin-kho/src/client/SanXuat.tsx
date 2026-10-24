@@ -177,7 +177,7 @@ function PhieuSX() {
     setMo(r.data.id); tai();
   };
   return <>
-    {loiTai && <Alert type="error" showIcon message="Không thể tải dữ liệu sản xuất" description={loiTai}
+    {loiTai && <Alert type="error" showIcon data-mes-error-marker="APHVH_MES_403_ERROR_PANEL_V1" message="Không thể tải dữ liệu sản xuất" description={loiTai}
       action={<Button size="small" onClick={() => void tai()}>Tải lại</Button>} style={{ marginBottom: 12 }} />}
     <Card size="small" title="Mở mẻ từ mẫu" style={{ marginBottom: 12 }}>
       <Space wrap>
