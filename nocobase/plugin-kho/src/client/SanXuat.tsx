@@ -146,11 +146,30 @@ function PhieuSX() {
   const [mau, setMau] = useState<any[]>([]);
   const [mo, setMo] = useState<any>(null);
   const [v, setV] = useState<any>({ ngay: homNay() });
+  const [loiTai, setLoiTai] = useState<string | null>(null);
+  const [dangTai, setDangTai] = useState(false);
   const tai = async () => {
-    setDs((await goi('me_sx:list', { params: { filter: { tt_van_hanh: { $in: ['dang_sx', 'cho_can_doi', 'hoan_thanh'] }, trang_thai: { $ne: 'da_huy' } }, appends: ['mau_sx'], sort: ['-id'], pageSize: 100 } })).data || []);
-    setMau((await goi('mau_sx:list', { params: { filter: { ngung: { $ne: true } }, pageSize: 200, sort: ['ma'] } })).data || []);
+    setDangTai(true);
+    setLoiTai(null);
+    try {
+      const [me, mauMoi] = await Promise.all([
+        goi('me_sx:list', { params: { filter: { tt_van_hanh: { $in: ['dang_sx', 'cho_can_doi', 'hoan_thanh'] }, trang_thai: { $ne: 'da_huy' } }, appends: ['mau_sx'], sort: ['-id'], pageSize: 100 }, im: true }),
+        goi('mau_sx:list', { params: { filter: { ngung: { $ne: true } }, pageSize: 200, sort: ['ma'] }, im: true }),
+      ]);
+      setDs(me.data || []);
+      setMau(mauMoi.data || []);
+    } catch (e: any) {
+      // Không được đánh đồng API 403 với danh sách thật sự rỗng.
+      setDs([]);
+      setMau([]);
+      setLoiTai(e?.response?.status === 403
+        ? 'Vai trò hiện tại không được xem Phiếu sản xuất. Chọn tài khoản ở góc trên bên phải → Chuyển vai trò → Nhà máy (nha_may), sau đó bấm Tải lại.'
+        : 'Không tải được danh sách mẻ/mẫu sản xuất. Kiểm tra kết nối hoặc quyền truy cập, sau đó thử lại.');
+    } finally {
+      setDangTai(false);
+    }
   };
-  useEffect(() => { tai(); }, []);
+  useEffect(() => { void tai(); }, []);
   const moMe = async () => {
     if (!v.mau_sx_id) return message.warning('Chọn mẫu sản xuất.');
     const r = await goi('me_sx:moTuMau', { data: { ...v, request_id: rid() } });
@@ -158,6 +177,8 @@ function PhieuSX() {
     setMo(r.data.id); tai();
   };
   return <>
+    {loiTai && <Alert type="error" showIcon message="Không thể tải dữ liệu sản xuất" description={loiTai}
+      action={<Button size="small" onClick={() => void tai()}>Tải lại</Button>} style={{ marginBottom: 12 }} />}
     <Card size="small" title="Mở mẻ từ mẫu" style={{ marginBottom: 12 }}>
       <Space wrap>
         <Select placeholder="Mẫu sản xuất" style={{ width: 280 }} value={v.mau_sx_id} onChange={(x) => setV({ ...v, mau_sx_id: x })}
@@ -170,7 +191,9 @@ function PhieuSX() {
         <Button type="primary" onClick={moMe}>Mở mẻ</Button>
       </Space>
     </Card>
-    <Table size="small" rowKey="id" dataSource={ds} onRow={(r) => ({ onClick: () => setMo(r.id), style: { cursor: 'pointer' } })} columns={[
+    <Table size="small" rowKey="id" dataSource={ds} loading={dangTai}
+      locale={{ emptyText: loiTai ? 'Không tải được dữ liệu — xem thông báo bên trên' : 'Chưa có mẻ sản xuất' }}
+      onRow={(r) => ({ onClick: () => setMo(r.id), style: { cursor: 'pointer' } })} columns={[
       { title: 'Mẻ', dataIndex: 'so', render: (x) => <b>{x}</b> }, { title: 'Ngày', dataIndex: 'ngay_mo', render: ngayVN }, { title: 'Mẫu', render: (_, r) => r.mau_sx?.ma || '—' },
       { title: 'Công nghệ', dataIndex: 'loai_cn', render: (x) => LOAI_CN[x] || x }, { title: 'Kg NVL', dataIndex: 'kg_nvl', align: 'right', render: (x) => fmt(x, 3) },
       { title: 'Kg thành phẩm', dataIndex: 'kg_tp', align: 'right', render: (x) => fmt(x, 3) },
