@@ -1,5 +1,6 @@
 /** Danh mục: mặt hàng, khách hàng, kho, đơn vị; công nợ đầu kỳ. Thêm/sửa và dán nhanh từ Excel (cập nhật theo mã). */
 import { App, Button, Card, Checkbox, Form, Input, InputNumber, Modal, Select, Space, Table, Tabs, Typography } from 'antd';
+import { BangGia, CauHinh } from './Them040';
 import React, { useEffect, useState } from 'react';
 import { ChonDanhMuc, fmt, useGoi } from './chung';
 
@@ -191,6 +192,8 @@ export function DanhMuc() {
       <Tabs items={[
         ...Object.entries(BANG).map(([k, v]) => ({ key: k, label: v.ten, children: <BangDanhMuc bang={k} /> })),
         { key: 'qd', label: 'Quy đổi ĐVT', children: <QuyDoi /> },
+        { key: 'bg', label: 'Bảng giá', children: <BangGia /> },
+        { key: 'ch', label: 'Cấu hình vận hành', children: <CauHinh /> },
         { key: 'pv', label: 'Phạm vi kho / quỹ', children: <PhamVi /> },
         { key: 'no', label: 'Công nợ / tồn đầu kỳ', children: <Typography.Paragraph>Số dư đầu kỳ (tồn kho, công nợ khách / NCC, quỹ, tiền cọc, đơn chuyển tiếp) nhập ở menu <b>Go-Live &amp; số dư đầu kỳ</b> — có kiểm tra, chống nhập trùng, duyệt và khóa kỳ.</Typography.Paragraph> },
       ]} />

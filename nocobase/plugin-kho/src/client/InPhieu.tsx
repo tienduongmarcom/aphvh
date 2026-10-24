@@ -191,6 +191,46 @@ function PhieuKho({ d, lien, soLien }: any) {
   );
 }
 
+
+/** Đơn gộp — bản cho KHÁCH: một phiếu tổng, ghi rõ bên bán từng dòng (mỗi bên bán là một nghĩa vụ / hóa đơn riêng). */
+function DonGopIn({ d, lien, soLien }: any) {
+  const dong = (d.dong || []).sort((a: any, b: any) => a.id - b.id);
+  const theoBen: Record<string, number> = {};
+  for (const c of d.don_con || []) if (c.trang_thai !== 'da_huy') theoBen[c.don_vi_ban?.ten || c.don_vi_ban_id] = (theoBen[c.don_vi_ban?.ten || c.don_vi_ban_id] || 0) + Number(c.tong_tien || 0);
+  const dd: Record<string, any> = {};
+  for (const c of d.don_con || []) for (const x of c.dong || []) dd[x.id] = x;
+  return (
+    <div className="lien">
+      <div className="dau"><div><b>ĐƠN HÀNG TỔNG HỢP</b><div className="nho">Hàng do nhiều đơn vị bán — xem cột "Bên bán"</div></div>
+        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/{soLien}</span></div></div>
+      <div className="tieu-de">ĐƠN ĐẶT HÀNG</div>
+      <div className="dau"><div>Số: <b>{d.so}</b></div><div>Ngày: {ngay(d.ngay)}</div></div>
+      <div>Khách hàng: <b>{d.khach?.ten}</b> {d.sdt ? '· ĐT ' + d.sdt : ''}</div>
+      <div>Địa chỉ giao: {d.dia_chi_giao}</div>
+      <table>
+        <thead><tr><th>STT</th><th>Bên bán</th><th>Mã hàng</th><th>Tên hàng</th><th>Số lượng</th><th>ĐVT</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+        <tbody>{dong.map((x: any, i: number) => { const c = dd[x.don_ban_dong_id] || {}; return <tr key={x.id}><td className="so">{i + 1}</td><td>{x.don_vi_ban?.ma}</td>
+          <td>{x.mat_hang?.ma}</td><td>{x.mat_hang?.ten}</td><td className="so">{so(x.so_kg, 3)}</td><td>{DVT_IN[x.mat_hang?.dvt_ton || 'kg']}</td>
+          <td className="so">{so(c.don_gia_tt || c.don_gia)}</td><td className="so">{so(c.thanh_tien)}</td></tr>; })}
+          {Object.entries(theoBen).map(([b, v]) => <tr key={b}><td colSpan={7} className="so">Cộng {b}</td><td className="so">{so(v)}</td></tr>)}
+          <tr><td colSpan={7} className="so"><b>TỔNG CỘNG</b></td><td className="so"><b>{so(d.tong_tien)}</b></td></tr></tbody>
+      </table>
+      <div><i>{docTien(d.tong_tien)}</i></div>
+      <div className="nho">Mỗi bên bán xuất hóa đơn / thu tiền theo phần hàng của mình. Thanh toán ghi rõ trả cho bên bán nào.</div>
+      <div className="ky" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div><b>Người lập</b><div className="nho">(ký, ghi rõ họ tên)</div></div><div><b>Khách hàng</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Duyệt</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+      </div>
+    </div>
+  );
+}
+
+/** Chuyến chuyển hàng hai đầu: có cột thực nhận để kho đến ghi tay. */
+function ChuyenHangIn({ d, lien, soLien }: any) {
+  return PhieuKho({ d: { ...d, loai: 'chuyen', kho: d.kho_di, kho_dich: d.kho_den, nguoi_giao_nhan: [d.nguoi_giao, d.xe].filter(Boolean).join(' · '),
+    dong: (d.dong || []).map((x: any) => ({ ...x, ghi_chu: x.so_kg_nhan !== null && x.so_kg_nhan !== undefined ? `Đã nhận ${so(x.so_kg_nhan, 3)}` : x.so_lo ? `Lô ${x.so_lo}` : '' })) }, lien, soLien });
+}
+
 export function InPhieu() {
   const { loai, id } = useParams();
   const api = useAPIClient();
@@ -203,10 +243,23 @@ export function InPhieu() {
       phieu_chi: ['don_vi', 'quy'],
       phieu_kho: ['kho', 'kho_dich', 'dong', 'dong.mat_hang'],
       luot_giao: ['dong', 'dong.mat_hang', 'dong.kho', 'don_ban', 'don_ban.khach', 'don_ban.don_vi_ban'],
+      don_gop: ['khach', 'dong', 'dong.mat_hang', 'dong.don_vi_ban', 'don_con', 'don_con.don_vi_ban', 'don_con.dong'],
+      chuyen_hang: ['kho_di', 'kho_den', 'dong', 'dong.mat_hang'],
     } as any)[loai as string] || [];
+    if (loai === 'giao_gop') {
+      // Chuyến giao gộp: in phiếu xuất của từng lượt (mỗi đơn con / bên bán một phiếu) liền nhau.
+      api.request({ url: 'giao_gop_luot:list', params: { filter: JSON.stringify({ giao_gop_id: id }), pageSize: 50 } })
+        .then((r: any) => Promise.all((r.data.data || []).map((l: any) => api.request({ url: 'luot_giao:get', params: { filterByTk: l.luot_giao_id,
+          appends: ['dong', 'dong.mat_hang', 'dong.kho', 'don_ban', 'don_ban.khach', 'don_ban.don_vi_ban'] } }))))
+        .then((rs: any[]) => setD({ nhieu: rs.map((r) => { const x = r.data.data; return { ...x, so: `${x.so} (đơn ${x.don_ban?.so})`, ngay_giao: x.ngay, khach: x.don_ban?.khach,
+          don_vi_ban: x.don_ban?.don_vi_ban, sdt: x.don_ban?.sdt, dia_chi_giao: x.don_ban?.dia_chi_giao, dong: (x.dong || []).sort((a: any, b: any) => a.id - b.id) }; }) }))
+        .catch((e: any) => setLoi(e?.response?.data?.errors?.[0]?.message || 'Không mở được chuyến giao.'));
+      return;
+    }
     api.request({ url: `${loai}:get`, params: { filterByTk: id, appends } })
       .then((r: any) => {
         const x = r.data.data;
+        if (loai === 'giao_gop') return;
         if (loai !== 'luot_giao') return setD(x);
         // Lượt giao in theo mẫu phiếu xuất của đơn: thông tin khách / đơn vị lấy từ đơn.
         setD({ ...x, so: `${x.so} (đơn ${x.don_ban?.so})`, ngay_giao: x.ngay, khach: x.don_ban?.khach, don_vi_ban: x.don_ban?.don_vi_ban,
@@ -216,8 +269,10 @@ export function InPhieu() {
   }, [loai, id]);
   if (loi) return <div style={{ padding: 24 }}>{loi}</div>;
   if (!d) return <div style={{ padding: 24 }}>Đang tải…</div>;
-  const Mau: any = ({ don_ban: PhieuXuat, luot_giao: PhieuXuat, phieu_thu: PhieuThu, phieu_chi: PhieuChi, phieu_kho: PhieuKho } as any)[loai as string] || PhieuThu;
-  const soLien = (['don_ban', 'luot_giao'].includes(loai as string) && d.cach_giao === 'van_chuyen') || (loai === 'phieu_kho' && d.loai === 'chuyen') ? 3 : 2;
+  if (d.nhieu) return <div><style>{css}</style><div className="nut"><button onClick={() => window.print()} style={{ fontSize: 16, padding: '6px 18px' }}>In chuyến giao (mỗi bên bán một phiếu)</button></div>
+    {d.nhieu.map((x: any) => [1, 2].map((l) => <PhieuXuat key={`${x.id}-${l}`} d={x} lien={l} soLien={2} />))}</div>;
+  const Mau: any = ({ don_ban: PhieuXuat, luot_giao: PhieuXuat, phieu_thu: PhieuThu, phieu_chi: PhieuChi, phieu_kho: PhieuKho, don_gop: DonGopIn, chuyen_hang: ChuyenHangIn } as any)[loai as string] || PhieuThu;
+  const soLien = (['don_ban', 'luot_giao'].includes(loai as string) && d.cach_giao === 'van_chuyen') || (loai === 'phieu_kho' && d.loai === 'chuyen') || loai === 'chuyen_hang' ? 3 : 2;
   return (
     <div>
       <style>{css}</style>

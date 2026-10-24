@@ -7,11 +7,12 @@ MISA vẫn là sổ kế toán/thuế chính thức; NocoBase chỉ là sổ v�
 ## Thành phần
 | Thư mục | Nội dung |
 |---|---|
-| `plugin-kho/` | Plugin NocoBase `@aphvh/plugin-kho`: nghiệp vụ trên máy chủ (sổ kho có khóa, chốt/giao/hủy đơn, ghi/hủy phiếu thu) + 7 màn hình (Bán hàng, Kho vận, Thu chi và công nợ, Danh mục, Báo cáo, Tài sản, Go-Live & số dư đầu kỳ) + trang in A5 `/in/don_ban|luot_giao|phieu_thu|phieu_chi|phieu_kho/<id>` |
+| `plugin-kho/` | Plugin NocoBase `@aphvh/plugin-kho` **0.4.0**: nghiệp vụ trên máy chủ (`src/server/`: lõi `plugin.ts` + phân hệ `sales`, `pricing`, `inventory`, `logistics`, `manufacturing`, `finance`, `pos`, `import`, `reports`, `security`, `migrations`) + 9 màn hình (Bán hàng — đơn gộp, Bán nhanh, Kho vận, Thu chi và công nợ, Danh mục, Báo cáo, Tài sản, Go-Live & số dư đầu kỳ, Trung tâm dữ liệu) + trang in A5 `/in/don_ban|don_gop|giao_gop|luot_giao|chuyen_hang|phieu_thu|phieu_chi|phieu_kho/<id>` |
 | `schema/tao_bang.py` | Tạo 12 bảng qua API quản lý bảng (vẫn sửa được trong NocoBase) |
-| `schema/cai_dat.py` | Menu, 6 nhóm quyền (bán hàng / kho / nhà máy / thu chi / kế toán / quản lý), 4 đơn vị APH, VH, MK, TL |
+| `schema/cai_dat.py` | Menu, 8 nhóm quyền (bán hàng / kho / nhà máy / thu chi / thu ngân bán nhanh / kế toán / quản lý / không xem giá vốn), 4 đơn vị APH, VH, MK, TL |
+| `schema/nang_cap.py` | Nâng cấp dữ liệu 0.4.0 tại chỗ (chạy lại an toàn) — gọi trong `cai-dat.sh` bước 4b |
 | `trien-khai/` | `docker-compose.yml` (NocoBase 2.2.31 + Postgres 16), `cai-dat.sh`, `sao-luu.sh`, `phuc-hoi.sh`, `quay-lui.sh`, gói plugin `.tgz` |
-| `kiem/` | `kiem_032.py` (47 ca toàn vẹn), `doi_chieu.py`, `kiem_golive.py` (72 ca Go-Live / tài sản / mẻ), `kiem_api.py` (53 ca nghiệp vụ), `kiem_quyen.py` (10 ca quyền), kịch bản trình duyệt |
+| `kiem/` | `kiem_040.py` (139 ca 0.4.0), `kiem_032.py` (47), `kiem_golive.py` (72), `kiem_api.py` (53), `kiem_quyen.py` (10), `doi_chieu.py`, `chay_tat_ca.sh` (chạy tất cả: bộ 0.3.2 với cấu hình tương thích + bộ 0.4.0), `e2e-040.mjs` + kịch bản trình duyệt |
 
 ## Quy tắc nghiệp vụ đã làm (không tự suy diễn thêm)
 - Tồn chỉ thay đổi qua **Sổ kho**; không sửa tay tồn. Hai người cùng xuất một mặt hàng/kho: khóa dòng, không âm kho.
@@ -154,5 +155,53 @@ trình duyệt: lập đơn → chốt → khách nhận; Go-Live dán → kiể
 **Giới hạn còn lại (ghi rõ):** truy vết chênh lệch qua chuyển kho một bậc; hàng đã đi tiếp từ kho nhận được coi là đã tiêu thụ. Phân
 bổ phần đã xuất theo tỷ trọng lượng ra (không theo từng lô) — đúng với bình quân gia quyền, không phải FIFO.
 
+## Bản 0.4.0 (24/10/2026) — Unified Operations (vận hành hợp nhất APH – VH – MK – TL)
+Chi tiết bàn giao (phạm vi, ma trận quyền, mapping dữ liệu, bằng chứng kiểm thử, checklist Go-Live, sao lưu / quay lui, giới hạn): **[BAN-GIAO-0.4.0.md](BAN-GIAO-0.4.0.md)**.
+
+**Nâng cấp tại chỗ từ 0.3.2** (không xóa CSDL): `git pull` rồi `cd nocobase/trien-khai && bash cai-dat.sh`. Bộ cài kiểm SHA-256
+`plugin-kho-0.4.0.tgz` → dừng app → sao lưu + kiểm bản sao lưu → đổi plugin (tự quay lui nếu lỗi) → bảng / quyền → **4b. nâng cấp dữ liệu**
+(cấu hình mặc định, giữ quyền người dùng cũ, bổ sung số liệu dòng cũ, giữ tồn cho đơn đã duyệt đang chờ giao; báo cáo lưu ở
+`trien-khai/sao-luu/nang-cap-0.4.0-*.json`) → đối chiếu bảo toàn.
+
+**Thay đổi cách làm việc (báo nhân viên):**
+- **Đơn gộp**: một đơn cho khách, mỗi dòng chọn **bên bán** (APH / VH / MK / TL) + kho; chốt → hệ thống tách **đơn con** theo bên bán
+  (công nợ, thu tiền, trả hàng, hóa đơn theo đơn con). Bốn trạng thái riêng: duyệt · giao · thanh toán · hóa đơn.
+- **Giữ tồn ngay khi duyệt đơn** (không đợi lập lượt); khả dụng = tồn − đang giữ − chờ định giá. Hai người duyệt cùng lúc không giữ vượt.
+- **Giao theo cân thực**: kho nhập số cân / số bao thực khi xác nhận; hàng bao tính tiền **theo quy cách bao nguyên** (cân lệch quá dung sai
+  phải ghi lý do), hàng rời tính theo cân thực; giao thiếu thì phần còn lại về "chưa giao" (tùy chọn giữ lại cho đợt sau).
+- **Chuyển hàng hai đầu** (Kho vận → Chuyển hàng): nhà máy xác nhận xuất → hàng nằm ở kho **"Đang vận chuyển"** → kho Hà Nội xác nhận số
+  thực nhận; chênh lệch **chờ xử lý** (kế toán duyệt hao hụt / bồi thường / nhận bổ sung / trả về), không tự hao hụt.
+- **Nhà máy nhập nhanh phiếu sản xuất** (Kho vận → Phiếu SX): thiếu mã / thiếu lượng / lệch cân bằng > 0,5 % → **hàng đợi rà soát**, không ghi
+  sổ, không tự sinh đầu vào. **Không chốt giá thành 0**. Báo cáo hiệu suất (thu hồi, phụ phẩm, hao hụt theo mẻ / xưởng).
+- **Bảng giá** (Danh mục → Bảng giá) theo nhóm khách / kênh / hiệu lực / bậc số lượng, giá sàn; **VAT theo dòng** (có / không, %, gồm / chưa gồm).
+  Giá chốt lưu trên dòng đơn; bán dưới giá niêm yết cần lý do; dưới giá sàn chờ duyệt.
+- **Tín dụng**: phơi nhiễm = nợ thực + hàng đã duyệt chưa giao + đơn mới (không cộng trùng). **Khách rủi ro** vượt hạn mức / quá hạn → chờ
+  kế toán trưởng / quản lý duyệt; khách thường theo cấu hình (mặc định **cảnh báo, vẫn bán**).
+- **Bán nhanh (POS)** (menu "Bán nhanh", nhóm quyền *Thu ngân*): mở ca → quét mã / gõ mã → nhiều hình thức trả (tiền mặt + chuyển khoản +
+  ghi nợ) → chốt ca đếm tiền. Không có sổ riêng: mỗi lần bán là đơn bán kênh POS + phiếu thu. **Chuyển khoản = chờ xác minh** (chưa vào
+  tài khoản, chưa trừ nợ). Khách lẻ phải trả đủ.
+- **Đối soát ngân hàng** (Thu chi → Đối soát): nạp sao kê .xlsx / .csv (nạp lại không thêm tiền) → khớp phiếu CK chờ xác minh / tạo phiếu
+  thu / bỏ qua. **Khoản phải hoàn**: trả hàng / giảm giá sau khi khách trả đủ → không còn công nợ âm; kế toán chọn giữ làm tiền chưa phân
+  bổ hoặc hoàn bằng phiếu chi. Không tự cấn sang đơn khác.
+- **Hàng đợi hóa đơn MISA theo bên bán** (Báo cáo): giao xong → dòng chờ xuất của đúng bên bán; kế toán nhận xử lý → lập trên MISA → ghi
+  ký hiệu + số (chặn trùng theo bên bán). Trả hàng sau khi đã xuất → "Cần điều chỉnh". Không tự gọi MISA.
+- **Phạm vi kho / quỹ mặc định TỪ CHỐI** với người dùng nghiệp vụ chưa được cấp (cấp ở Danh mục → Phạm vi; có "mọi kho / mọi quỹ").
+  Người dùng đang có lúc nâng cấp được cấp "mọi kho / mọi quỹ" để không gián đoạn — **quản lý rà lại**. Kế toán / quản lý không bị chặn mặc định.
+- **Trung tâm dữ liệu** (menu riêng, kế toán / quản lý): nạp sheet nhà máy + sổ bán hàng → ánh xạ mã → phân loại theo mốc Go-Live
+  (*Nhập được / Chưa đủ căn cứ / Có thể trùng / Bị chặn / Trước mốc*) → xác nhận **cặp chuyến hai nguồn** (một chuyến chỉ thành **một**
+  chứng từ) → ghi sổ từng nhóm (lỗi nhóm nào chỉ nhóm đó bị chặn). Nạp lại bản sửa của chứng từ đã ghi → "Có thể trùng", không ghi lần hai.
+- **Giá vốn**: điều chỉnh giá thành / giá tạm đi theo **vết bình quân di động** qua từng lần nhập / xuất / chuyển kho (cả kho đang vận
+  chuyển, cả chuyển bị hủy), phần NVL đã cấp cho mẻ khác thành chi phí "điều chỉnh NVL" của mẻ đó; không còn dùng tồn hiện tại để chia
+  (mẻ cũ bán hết rồi chốt lại không đội giá trị lô mới).
+- **Truy vết** (`luot_giao:truyVet`): từ một lượt bán lần ngược kho → chuyến → mẻ → NVL → phiếu nhập, và xuôi tới đơn gộp → phiếu thu → tài khoản.
+- Cấu hình vận hành (Danh mục → Cấu hình): giữ khi duyệt, chính sách hạn mức, phạm vi mặc định, CK chờ đối soát, dung sai cân, ngưỡng lệch SX, mã khách lẻ, mốc Go-Live.
+
+**Kiểm (CSDL thử):** `kiem_040.py` 139/139 (17 nhóm nghiệm thu + truy vết xuyên suốt, có số dư trước / sau) · bộ 0.3.2 giữ nguyên
+`kiem_api` 53/53, `kiem_quyen` 10/10, `kiem_golive` 72/72, `kiem_032` 47/47 · đối chiếu bảo toàn CÂN · **nâng cấp 0.3.2 → 0.4.0 trên bản sao**
+(số dư tồn / giá trị / quỹ / công nợ / thu hộ / mẻ trước = sau, chỉ thêm phần giữ tồn của đơn đã duyệt) rồi chạy lại toàn bộ: đạt ·
+**phục hồi** bản sao lưu sau nâng cấp vào CSDL riêng: 35 bảng khớp số dòng, số dư khớp, app chạy + đối chiếu CÂN · quét giao diện 13 màn mới
++ lập / chốt / in đơn gộp không lỗi trang, không lỗi 5xx · diễn tập bộ cài (docker giả): đạt; sai checksum: dừng.
+
 ## Chưa làm
-Hồ sơ bản ký (ảnh phiếu đã ký); đồng bộ trực tiếp Google Sheets bằng API (hiện tải .xlsx); đối soát MISA tự động.
+Hồ sơ bản ký (ảnh phiếu đã ký); đồng bộ trực tiếp Google Sheets bằng API (hiện tải .xlsx); đối soát MISA tự động; nối cân điện tử
+(để 0.4.1 khi có thiết bị); thông báo qua Workflow; FEFO theo lô / hạn dùng (đã lưu số lô, hạn dùng trên lượt giao / chuyến, chưa ràng buộc chọn lô).
