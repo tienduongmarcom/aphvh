@@ -58,6 +58,9 @@ def main():
     k = "KT-" + uuid.uuid4().hex[:6]
     dv1 = api.tao("don_vi", {"ma": k + "-A", "ten": "Đơn vị thử A"})
     dv2 = api.tao("don_vi", {"ma": k + "-B", "ten": "Đơn vị thử B"})
+    q1 = api.tao("quy", {"ma": k + "-Q1", "ten": "Quỹ TM thử A", "don_vi_id": dv1["id"], "loai": "tien_mat"})
+    q2 = api.tao("quy", {"ma": k + "-Q2", "ten": "Quỹ TM thử B", "don_vi_id": dv2["id"], "loai": "tien_mat"})
+    nh1 = api.tao("quy", {"ma": k + "-N1", "ten": "Ngân hàng thử A", "don_vi_id": dv1["id"], "loai": "ngan_hang"})
     kho1 = api.tao("kho", {"ma": k + "-K1", "ten": "Kho thử 1"})
     kho2 = api.tao("kho", {"ma": k + "-K2", "ten": "Kho thử 2"})
     mh = api.tao("mat_hang", {"ma": k + "-DX", "ten": "Đỗ xanh thử", "dvt": "kg", "kg_bao": 25, "gia_ban": 30000})
@@ -114,10 +117,10 @@ def main():
     ok("Hai đơn tranh 20 kg: một đơn giao, một đơn bị chặn, không âm kho",
        sorted(kq) == [200, 400] and api.ton(kho1["id"], mh["id"]) == 5, (kq, api.ton(kho1["id"], mh["id"])))
 
-    pt = api.tao("phieu_thu", {"khach_id": kh["id"], "don_vi_id": dv2["id"], "so_tien": 500000, "phan_bo": [{"don_ban_id": don["id"], "so_tien": 500000}]})
+    pt = api.tao("phieu_thu", {"khach_id": kh["id"], "don_vi_id": dv2["id"], "quy_id": q2["id"], "so_tien": 500000, "phan_bo": [{"don_ban_id": don["id"], "so_tien": 500000}]})
     s, r = api.call("phieu_thu:ghi", {}, q=f"?filterByTk={pt['id']}")
     ok("Tiền vào đơn vị B không trả nợ đơn của đơn vị A", s == 400, r)
-    pt = api.tao("phieu_thu", {"khach_id": kh["id"], "don_vi_id": dv1["id"], "so_tien": 2000000, "phan_bo": [{"don_ban_id": don["id"], "so_tien": 1500000}]})
+    pt = api.tao("phieu_thu", {"khach_id": kh["id"], "don_vi_id": dv1["id"], "quy_id": q1["id"], "so_tien": 2000000, "phan_bo": [{"don_ban_id": don["id"], "so_tien": 1500000}]})
     s, r = api.call("phieu_thu:ghi", {}, q=f"?filterByTk={pt['id']}")
     don = api.lay("don_ban", don["id"])
     pt2 = api.lay("phieu_thu", pt["id"])
@@ -130,6 +133,67 @@ def main():
     ok("Hủy phiếu thu trả lại công nợ", s == 200 and api.lay("don_ban", don["id"])["con_no"] == 1500000)
     s, r = api.call("don_ban:huy", {"ly_do": "khách trả hàng"}, q=f"?filterByTk={don['id']}")
     ok("Hủy đơn đã giao nhập lại kho", s == 200 and api.ton(kho1["id"], mh["id"]) == 55, api.ton(kho1["id"], mh["id"]))
+
+    # ---- Giá vốn bình quân, giá thành sản xuất, giá sàn, quỹ ----
+    def du(q):
+        r = api.call("so_quy:list", q="?pageSize=1000&filter=" + urllib.request.quote(json.dumps({"quy_id": q["id"]})))[1]["data"]
+        return sum(x["so_tien"] for x in r)
+    def gv(m):
+        r = api.call("gia_von:list", q="?filter=" + urllib.request.quote(json.dumps({"mat_hang_id": m["id"]})))[1]["data"]
+        return r[0] if r else {}
+    ok("Thu 2 triệu rồi hủy: quỹ về 0", du(q1) == 0, du(q1))
+    nl = api.tao("mat_hang", {"ma": k + "-NL", "ten": "Nguyên liệu thử", "gia_ban": 0})
+    tp = api.tao("mat_hang", {"ma": k + "-TP", "ten": "Thành phẩm thử", "gia_ban": 40000, "gia_san": 38000})
+    pp = api.tao("mat_hang", {"ma": k + "-PP", "ten": "Phụ phẩm thử"})
+    for gia in (20000, 30000):
+        x = api.tao("phieu_kho", {"loai": "nhap", "kho_id": kho1["id"], "dong": [{"mat_hang_id": nl["id"], "so_kg": 100, "don_gia": gia}]})
+        api.call("phieu_kho:ghiSo", {}, q=f"?filterByTk={x['id']}")
+    ok("Giá bình quân sau 2 lần nhập 100kg×20.000 và 100kg×30.000 = 25.000", gv(nl).get("gia_bq") == 25000, gv(nl))
+    sx = api.tao("phieu_kho", {"loai": "san_xuat", "kho_id": kho1["id"], "kho_dich_id": kho2["id"], "chi_phi_sx": 500000, "dong": [
+        {"mat_hang_id": nl["id"], "huong": "vao", "so_kg": 100}, {"mat_hang_id": tp["id"], "huong": "ra", "so_kg": 90},
+        {"mat_hang_id": pp["id"], "huong": "phu_pham", "so_kg": 8, "don_gia": 5000}]})
+    s1, r = api.call("phieu_kho:ghiSo", {}, q=f"?filterByTk={sx['id']}")
+    ok("Sản xuất hao 2 kg mà không ghi lý do: bị chặn", s1 == 400, r)
+    api.call("phieu_kho:update", {"ghi_chu": "Hao hụt sàng tạp chất"}, q=f"?filterByTk={sx['id']}")
+    s1, r = api.call("phieu_kho:ghiSo", {}, q=f"?filterByTk={sx['id']}")
+    ok("Giá thành = (2.500.000 NVL + 500.000 chi phí − 40.000 phụ phẩm) / 90 kg = 32.888,89 đ/kg",
+       s1 == 200 and r["data"]["gia_thanh"] == 32888.89 and r["data"]["gia_tri_nvl"] == 2500000, r)
+    ok("Thành phẩm nhập kho thành phẩm với giá trị 2.960.000", api.ton(kho2["id"], tp["id"]) == 90 and gv(tp).get("gia_tri") == 2960000, gv(tp))
+    d2 = api.tao("don_ban", {"khach_id": kh["id"], "don_vi_ban_id": dv1["id"], "dong": [{"mat_hang_id": tp["id"], "kho_id": kho2["id"], "so_kg": 30, "don_gia": 35000}]})
+    s1, r = api.call("don_ban:chotDon", {}, q=f"?filterByTk={d2['id']}")
+    ok("Bán 35.000 dưới giá sàn 38.000: đơn chờ duyệt giá", r.get("data", {}).get("cho_duyet") is True and api.lay("don_ban", d2["id"])["trang_thai"] == "cho_duyet", r)
+    s1, _ = api.call("don_ban:giaoHang", {}, q=f"?filterByTk={d2['id']}")
+    ok("Chưa duyệt giá thì không giao được", s1 == 400)
+    s1, _ = api.call("don_ban:duyetGia", {}, q=f"?filterByTk={d2['id']}")
+    ok("Duyệt giá phải có lý do", s1 == 400)
+    api.call("don_ban:duyetGia", {"ly_do": "Khách lấy số lượng lớn"}, q=f"?filterByTk={d2['id']}")
+    s1, _ = api.call("don_ban:giaoHang", {}, q=f"?filterByTk={d2['id']}")
+    d2 = api.lay("don_ban", d2["id"])
+    ok("Giao 30 kg thành phẩm: giá vốn = 30 × 32.888,89 ≈ 986.667", s1 == 200 and abs(d2["gia_von"] - 986667) <= 1, d2.get("gia_von"))
+    pt3 = api.tao("phieu_thu", {"khach_id": kh["id"], "don_vi_id": dv1["id"], "quy_id": q1["id"], "so_tien": 1000000, "phan_bo": [{"don_ban_id": d2["id"], "so_tien": 1000000}]})
+    api.call("phieu_thu:ghi", {}, q=f"?filterByTk={pt3['id']}")
+    ok("Thu tiền mặt 1.000.000 vào quỹ A", du(q1) == 1000000, du(q1))
+    pc = api.tao("phieu_chi", {"don_vi_id": dv1["id"], "quy_id": q1["id"], "nguoi_nhan": "Nhà xe thử", "so_tien": 3000000, "ly_do": "Cước"})
+    s1, r = api.call("phieu_chi:ghi", {}, q=f"?filterByTk={pc['id']}")
+    ok("Chi 3 triệu khi quỹ có 1 triệu: bị chặn", s1 == 400, r)
+    pc = api.tao("phieu_chi", {"don_vi_id": dv1["id"], "quy_id": q1["id"], "nguoi_nhan": "Nhà xe thử", "so_tien": 300000, "ly_do": "Cước"})
+    api.call("phieu_chi:ghi", {}, q=f"?filterByTk={pc['id']}")
+    api.call("phieu_chi:ghi", {}, q=f"?filterByTk={pc['id']}")
+    ok("Chi 300.000 (bấm 2 lần chỉ trừ 1 lần)", du(q1) == 700000, du(q1))
+    ct = api.tao("chuyen_tien", {"tu_quy_id": q1["id"], "den_quy_id": q2["id"], "so_tien": 100000})
+    s1, _ = api.call("chuyen_tien:ghi", {}, q=f"?filterByTk={ct['id']}")
+    ok("Không chuyển tiền giữa hai đơn vị", s1 == 400)
+    ct = api.tao("chuyen_tien", {"tu_quy_id": q1["id"], "den_quy_id": nh1["id"], "so_tien": 500000, "nguoi_giao": "Thu ngân", "nguoi_nhan": "Kế toán"})
+    api.call("chuyen_tien:ghi", {}, q=f"?filterByTk={ct['id']}")
+    ok("Nộp 500.000 tiền mặt vào ngân hàng cùng đơn vị", du(q1) == 200000 and du(nh1) == 500000, (du(q1), du(nh1)))
+    s1, r = api.call("chot_ca:chot", {"quy_id": q1["id"], "thuc_dem": 150000})
+    ok("Chốt ca lệch 50.000 mà không ghi lý do: bị chặn", s1 == 400, r)
+    s1, r = api.call("chot_ca:chot", {"quy_id": q1["id"], "thuc_dem": 150000, "ly_do": "Thiếu tiền lẻ, đang kiểm"})
+    ok("Chốt ca ghi nhận số sổ 200.000, lệch −50.000", s1 == 200 and r["data"]["so_sach"] == 200000 and r["data"]["chenh_lech"] == -50000, r)
+    s1, _ = api.call("so_quy:create", {"quy_id": q1["id"], "so_tien": 999})
+    ok("Không ghi tay được sổ quỹ", s1 >= 400)
+    s1, r = api.call("phieu_kho:huy", {"ly_do": "thử hủy sản xuất"}, q=f"?filterByTk={sx['id']}")
+    ok("Hủy phiếu sản xuất khi thành phẩm đã bán bớt: còn 60 kg nên không đảo được 90 kg", s1 == 400, r)
 
     loi = [x for x in KQ if not x[1]]
     print(f"\nTỔNG {len(KQ)} ca, LỖI {len(loi)}")

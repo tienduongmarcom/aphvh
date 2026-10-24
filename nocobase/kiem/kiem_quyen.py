@@ -14,6 +14,7 @@ def main():
         u = ad.call('users:list', params='?filter=' + urllib.parse.quote(json.dumps({'email': em})))['data']
         if u: ad.call('users:update', {'password': pw, 'roles': [role]}, params=f"?filterByTk={u[0]['id']}")
         else: ad.call('users:create', {'email': em, 'nickname': 'Thử ' + role, 'password': pw, 'roles': [role]})
+    import time; time.sleep(2)  # NocoBase: token cấp cùng giây với lúc đổi mật khẩu bị coi là hết hạn
     def thu(role, action, body=None, params=''):
         api = API(o.url, f'thu-{role}@aphvh.local', pw)
         import urllib.request, urllib.error

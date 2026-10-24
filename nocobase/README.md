@@ -30,5 +30,18 @@ Mật khẩu quản trị sinh ngẫu nhiên trong `trien-khai/.env` (không đ�
 ## Kiểm
 `python3 kiem/kiem_api.py --email … --password …` (21/21 đạt), `python3 kiem/kiem_quyen.py …` (10/10 đạt) — chạy trên CSDL thử, tạo dữ liệu tiền tố `KT-`.
 
-## Chưa làm (tuần sau)
-Nhà máy (nhận, sản xuất, đóng gói), chốt ca / bàn giao tiền, giá sàn & duyệt, mẫu 3 liên, hồ sơ bản ký, phiếu chi, báo cáo doanh số.
+## Bản 0.2.0 (24/10/2026)
+- **Giá vốn bình quân gia quyền** theo mặt hàng (tồn tổng mọi kho): nhập có giá → bình quân lại; xuất/bán/chuyển/kiểm kê theo bình quân.
+  Đơn đã giao lưu giá vốn. Chỉ nhóm quản lý xem giá vốn.
+- **Nhà máy:** phiếu Sản xuất / Đóng gói: nguyên liệu vào (xuất theo bình quân) → thành phẩm + phụ phẩm ra (kho thành phẩm).
+  **Giá thành = (giá trị nguyên liệu + chi phí sản xuất − phụ phẩm × đơn giá nhập tay) / kg thành phẩm.** Kg vào ≠ kg ra bắt buộc ghi lý do.
+  Báo cáo "Giá thành sản xuất" (kg vào/ra, hao hụt %, NVL, chi phí, giá thành).
+- **Giá sàn:** bán dưới giá sàn → đơn "Chờ duyệt giá", quản lý duyệt có lý do mới in / giao.
+- **Tiền:** quỹ / tài khoản theo đơn vị; phiếu thu vào đúng quỹ (tiền mặt ↔ quỹ tiền mặt, CK ↔ ngân hàng); phiếu chi (quỹ tiền mặt không âm);
+  bàn giao / nộp tiền giữa hai quỹ CÙNG đơn vị; sổ quỹ; chốt ca tiền (đếm so sổ, lệch phải ghi lý do, không tự sửa sổ).
+- **In:** đơn "Vận chuyển" in 3 liên (kho / vận chuyển / khách ký); phiếu chuyển kho 3 liên (nguồn / vận chuyển / đích, có cột kg thực nhận);
+  phiếu nhập / xuất / sản xuất 2 liên; phiếu chi 2 liên.
+- Kiểm: API 39/39, quyền 10/10, quét giao diện + mẫu in không lỗi.
+
+## Chưa làm
+Hồ sơ bản ký (ảnh phiếu đã ký), nhận hàng nhà cung cấp chờ định giá, công nợ nhà cung cấp, báo cáo doanh số / lãi gộp theo đơn vị.

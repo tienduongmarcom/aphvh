@@ -24,7 +24,7 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
   const cot: any[] = [
     { title: 'Mã hàng', width: 260, render: (_: any, d: any, i: number) => sua
       ? <ChonDanhMuc bang="mat_hang" value={d.mat_hang_id} style={{ width: 250 }} locThem={{ ngung_dung: { $ne: true } }}
-          onChange={(v, mh) => doi(i, { mat_hang_id: v, ma: mh?.ma, ten_hang: mh?.ten, kg_bao: mh?.kg_bao, don_gia: d.don_gia ?? mh?.gia_ban,
+          onChange={(v, mh) => doi(i, { mat_hang_id: v, ma: mh?.ma, ten_hang: mh?.ten, kg_bao: mh?.kg_bao, gia_san: mh?.gia_san, don_gia: d.don_gia ?? mh?.gia_ban,
             so_kg: d.so_bao && mh?.kg_bao ? d.so_bao * mh.kg_bao : d.so_kg })} placeholder="Gõ mã hoặc tên hàng" />
       : <b>{d.mat_hang?.ma || d.ma}</b> },
     { title: 'Tên hàng', render: (_: any, d: any) => d.ten_hang || d.mat_hang?.ten },
@@ -46,6 +46,8 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
       ? <InputNumber min={0} value={d.don_gia} style={{ width: 120 }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))}
           onChange={(v) => doi(i, { don_gia: v })} />
       : fmt(d.don_gia) },
+    { title: '', width: 90, render: (_: any, d: any) => (Number(d.gia_san) > 0 && Number(d.don_gia || 0) < Number(d.gia_san)
+      ? <Tag color="purple">Dưới giá sàn</Tag> : null) },
     { title: 'Thành tiền', width: 130, align: 'right', render: (_: any, d: any) => fmt(Math.round((d.so_kg || 0) * (d.don_gia || 0))) },
   ];
   if (sua) cot.push({ width: 50, render: (_: any, __: any, i: number) => <Button danger size="small" onClick={() => setDong(dong.filter((_: any, j: number) => j !== i))}>Xóa</Button> });
@@ -54,7 +56,7 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
       <Table size="small" rowKey={(d: any, i: any) => d.id || `moi-${i}`} pagination={false} columns={cot} dataSource={dong}
         summary={() => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><b>Cộng</b></Table.Summary.Cell>
           <Table.Summary.Cell index={1}><b>{fmt(dong.reduce((s: number, d: any) => s + Number(d.so_kg || 0), 0), 3)} kg</b></Table.Summary.Cell>
-          <Table.Summary.Cell index={2} />
+          <Table.Summary.Cell index={2} /><Table.Summary.Cell index={4} />
           <Table.Summary.Cell index={3} align="right"><b>{fmt(dong.reduce((s: number, d: any) => s + Math.round((d.so_kg || 0) * (d.don_gia || 0)), 0))}</b></Table.Summary.Cell>
         </Table.Summary.Row>} />
       {sua && <Button style={{ marginTop: 8 }} onClick={() => setDong([...dong, { kho_id: khoMacDinh }])}>+ Thêm hàng</Button>}
@@ -82,7 +84,7 @@ function DonBan({ id, dong: dongDong, xong }: any) {
     const d = r.data;
     setDon(d);
     setKhach(d.khach);
-    setDong((d.dong || []).sort((a: any, b: any) => a.id - b.id).map((l: any) => ({ ...l, kg_bao: l.mat_hang?.kg_bao })));
+    setDong((d.dong || []).sort((a: any, b: any) => a.id - b.id).map((l: any) => ({ ...l, kg_bao: l.mat_hang?.kg_bao, gia_san: l.mat_hang?.gia_san })));
     form.setFieldsValue({ ...d, ngay: d.ngay ? dayjs(d.ngay) : null, ngay_giao: d.ngay_giao ? dayjs(d.ngay_giao) : null });
   };
   useEffect(() => { tai(); }, [id]);
@@ -113,9 +115,9 @@ function DonBan({ id, dong: dongDong, xong }: any) {
   const luuNhap = () => chay(async () => { const x = await luu(); message.success('Đã lưu nháp'); await tai(x); dongDong?.(x); });
   const chotIn = () => chay(async () => {
     const x = await luu();
-    await goi('don_ban:chotDon', { params: { filterByTk: x }, data: {} });
-    moIn(x);
-    message.success('Đã chốt đơn — chờ kho xuất hàng');
+    const r = await goi('don_ban:chotDon', { params: { filterByTk: x }, data: {} });
+    if (r.data?.cho_duyet) message.warning('Có hàng dưới giá sàn: đơn chuyển quản lý duyệt giá trước khi in và xuất.', 8);
+    else { moIn(x); message.success('Đã chốt đơn — chờ kho xuất hàng'); }
     await tai(x); xong?.();
   });
   const giao = () => {
@@ -179,8 +181,15 @@ function DonBan({ id, dong: dongDong, xong }: any) {
         {sua && <Button onClick={luuNhap} loading={dang}>Lưu nháp</Button>}
         {sua && <Button type="primary" size="large" onClick={chotIn} loading={dang}>Chốt đơn &amp; In phiếu xuất</Button>}
         {don?.trang_thai === 'cho_xuat' && <Button type="primary" size="large" onClick={giao}>Xác nhận đã giao</Button>}
-        {don && don.trang_thai !== 'nhap' && <Button onClick={() => moIn(don.id)}>In lại phiếu</Button>}
-        {don?.trang_thai === 'cho_xuat' && <Button onClick={() => hoi('Mở lại đơn để sửa?', 'don_ban:moLai', 'Mở lại', false)}>Mở lại để sửa</Button>}
+        {don?.trang_thai === 'cho_duyet' && <Button type="primary" size="large" onClick={() => {
+          let ly_do = '';
+          modal.confirm({ title: `Duyệt bán dưới giá sàn đơn ${don.so}?`, okText: 'Duyệt', cancelText: 'Thôi',
+            content: <Input.TextArea placeholder="Lý do đồng ý (bắt buộc)" onChange={(e) => (ly_do = e.target.value)} />,
+            onOk: () => goi('don_ban:duyetGia', { params: { filterByTk: don.id }, data: { ly_do } }).then(() => { message.success('Đã duyệt'); tai(don.id); xong?.(); }) });
+        }}>Duyệt giá (quản lý)</Button>}
+        {don?.duyet_boi && <Tag color="purple">Đã duyệt giá: {don.duyet_boi} — {don.ly_do_gia}</Tag>}
+        {don && ['cho_xuat', 'da_giao'].includes(don.trang_thai) && <Button onClick={() => moIn(don.id)}>In lại phiếu</Button>}
+        {['cho_xuat', 'cho_duyet'].includes(don?.trang_thai) && <Button onClick={() => hoi('Mở lại đơn để sửa?', 'don_ban:moLai', 'Mở lại', false)}>Mở lại để sửa</Button>}
         {don && don.trang_thai !== 'da_huy' && <Button danger onClick={() => hoi(`Hủy đơn ${don.so}?`, 'don_ban:huy', 'Hủy đơn')}>Hủy đơn</Button>}
       </Space>
     </Space>
@@ -208,7 +217,7 @@ export function BanHang() {
     <Card title="Bán hàng" extra={<Button type="primary" size="large" onClick={() => setMo('moi')}>+ Lập đơn bán</Button>}>
       <Space style={{ marginBottom: 12 }} wrap>
         <Segmented value={loc} onChange={(v: any) => { setTrang(1); setLoc(v); }} options={[
-          { value: 'nhap', label: 'Nháp' }, { value: 'cho_xuat', label: 'Chờ xuất' }, { value: 'da_giao', label: 'Đã giao' },
+          { value: 'nhap', label: 'Nháp' }, { value: 'cho_duyet', label: 'Chờ duyệt giá' }, { value: 'cho_xuat', label: 'Chờ xuất' }, { value: 'da_giao', label: 'Đã giao' },
           { value: 'da_huy', label: 'Đã hủy' }, { value: 'tat_ca', label: 'Tất cả' }]} />
         <Input.Search placeholder="Số đơn, tên khách, SĐT" allowClear onSearch={(v) => { setQ(v); setTrang(1); setTimeout(tai); }} style={{ width: 280 }} />
       </Space>

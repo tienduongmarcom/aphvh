@@ -28,6 +28,7 @@ echo "== 2. Plugin APH-VH"
 rm -rf storage/plugins/@aphvh/plugin-kho && mkdir -p storage/plugins/@aphvh/plugin-kho
 tar xzf plugin-kho-*.tgz -C storage/plugins/@aphvh/plugin-kho
 docker compose exec -T app yarn nocobase pm enable @aphvh/plugin-kho
+docker compose restart app   # nạp bản plugin mới khi cập nhật
 for i in $(seq 1 60); do curl -fsS "http://localhost:${PORT}/api/__health_check" >/dev/null 2>&1 && break; sleep 5; done
 echo "== 3. Bảng dữ liệu, menu, nhóm quyền, 4 đơn vị"
 python3 ../schema/tao_bang.py --url "http://localhost:${PORT}" --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD"

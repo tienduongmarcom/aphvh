@@ -58,16 +58,18 @@ th { background: #f0f0f0; }
 .nut { margin: 12px; } @media print { .nut { display: none; } }
 `;
 
-function PhieuXuat({ d, lien }: any) {
+function PhieuXuat({ d, lien, soLien }: any) {
+  const vc = d.cach_giao === 'van_chuyen';
+  const giu = vc ? ['Kho giữ', 'Bên vận chuyển giữ', 'Khách ký nhận — gửi lại kho'][lien - 1] : (lien === 1 ? 'Kho giữ' : 'Khách giữ');
   const tongKg = (d.dong || []).reduce((s: number, x: any) => s + Number(x.so_kg || 0), 0);
   const tongBao = (d.dong || []).reduce((s: number, x: any) => s + Number(x.so_bao || 0), 0);
   return (
     <div className="lien">
       <div className="dau">
         <div><b>{d.don_vi_ban?.ten}</b><div className="nho">{d.don_vi_ban?.dia_chi} {d.don_vi_ban?.mst ? '· MST ' + d.don_vi_ban.mst : ''}</div></div>
-        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/2</span><div className="nho">{lien === 1 ? 'Kho giữ' : 'Khách giữ'}</div></div>
+        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/{soLien}</span><div className="nho">{giu}</div></div>
       </div>
-      <div className="tieu-de">PHIẾU XUẤT KHO KIÊM GIAO NHẬN</div>
+      <div className="tieu-de">{vc ? 'PHIẾU XUẤT KHO GIAO VẬN CHUYỂN' : 'PHIẾU XUẤT KHO KIÊM GIAO NHẬN'}</div>
       <div className="dau"><div>Số: <b>{d.so}</b></div><div>Ngày: {ngay(d.ngay_giao || d.ngay)}</div></div>
       <div>Khách hàng: <b>{d.khach?.ten}</b> {d.sdt ? '· ĐT ' + d.sdt : ''}</div>
       <div>Địa chỉ: {d.dia_chi_giao}</div>
@@ -85,22 +87,27 @@ function PhieuXuat({ d, lien }: any) {
       </table>
       <div className="nho">Phiếu không in giá. Chữ ký nhận hàng chỉ xác nhận số lượng, không xác nhận đã thanh toán.
         {d.trang_thai === 'da_giao' ? ' — IN LẠI SAU KHI ĐÃ GIAO: BẢN SAO.' : ''}</div>
-      <div className="ky">
+      {vc ? <div className="ky">
+        <div><b>Người xuất kho</b><div className="nho">Phần 1 — tại kho, giờ …h…</div></div>
+        <div><b>Bên vận chuyển nhận</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Bên vận chuyển giao</b><div className="nho">Phần 2 — giao khách, …/… …h…</div></div>
+        <div><b>Khách / người nhận</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+      </div> : <div className="ky">
         <div><b>Người lập phiếu</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
         <div><b>Người xuất kho</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
         <div><b>Người nhận hàng</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
         <div><b>Bảo vệ / cổng</b><div className="nho">(nếu có)</div></div>
-      </div>
+      </div>}
     </div>
   );
 }
 
-function PhieuThu({ d, lien }: any) {
+function PhieuThu({ d, lien, soLien }: any) {
   return (
     <div className="lien">
       <div className="dau">
         <div><b>{d.don_vi?.ten}</b><div className="nho">{d.don_vi?.dia_chi}</div></div>
-        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/2</span></div>
+        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/{soLien}</span></div>
       </div>
       <div className="tieu-de">PHIẾU THU</div>
       <div className="dau"><div>Số: <b>{d.so}</b></div><div>Ngày: {ngay(d.ngay)}</div></div>
@@ -124,28 +131,90 @@ function PhieuThu({ d, lien }: any) {
   );
 }
 
+function PhieuChi({ d, lien, soLien }: any) {
+  return (
+    <div className="lien">
+      <div className="dau"><div><b>{d.don_vi?.ten}</b><div className="nho">{d.don_vi?.dia_chi}</div></div>
+        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/{soLien}</span></div></div>
+      <div className="tieu-de">PHIẾU CHI</div>
+      <div className="dau"><div>Số: <b>{d.so}</b></div><div>Ngày: {ngay(d.ngay)}</div></div>
+      <div>Họ tên người nhận tiền: <b>{d.nguoi_nhan}</b></div>
+      <div>Lý do chi: {d.ly_do}</div>
+      <div>Chi từ: {d.quy?.ten}{d.ma_gd ? ' · Mã GD ' + d.ma_gd : ''}</div>
+      <div>Số tiền: <b>{so(d.so_tien)} đ</b> — <i>{docTien(d.so_tien)}</i></div>
+      <div className="ky" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div><b>Người lập phiếu</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Kế toán</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Thủ quỹ</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Người nhận tiền</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+      </div>
+    </div>
+  );
+}
+
+const TEN_LOAI: any = { nhap: 'PHIẾU NHẬP KHO', xuat: 'PHIẾU XUẤT KHO', chuyen: 'PHIẾU CHUYỂN KHO KIÊM GIAO NHẬN NỘI BỘ', dau_ky: 'PHIẾU NHẬP TỒN ĐẦU KỲ',
+  kiem_ke: 'BIÊN BẢN ĐIỀU CHỈNH KIỂM KÊ', san_xuat: 'PHIẾU SẢN XUẤT', dong_goi: 'PHIẾU ĐÓNG GÓI / ĐỔI BAO' };
+function PhieuKho({ d, lien, soLien }: any) {
+  const ck = d.loai === 'chuyen';
+  const sx = d.loai === 'san_xuat' || d.loai === 'dong_goi';
+  const giu = ck ? ['Kho nguồn giữ', 'Người vận chuyển giữ', 'Kho đích giữ'][lien - 1] : '';
+  const dong = (d.dong || []).sort((a: any, b: any) => a.id - b.id);
+  return (
+    <div className="lien">
+      <div className="dau"><div><b>Kho: {d.kho?.ten}</b>{d.kho_dich ? <span> → <b>{d.kho_dich.ten}</b></span> : null}</div>
+        <div style={{ textAlign: 'right' }}><span className="khung">LIÊN {lien}/{soLien}</span><div className="nho">{giu}</div></div></div>
+      <div className="tieu-de">{TEN_LOAI[d.loai] || 'PHIẾU KHO'}</div>
+      <div className="dau"><div>Số: <b>{d.so}</b>{d.trang_thai === 'nhap' ? ' (NHÁP — chưa ghi sổ)' : d.trang_thai === 'da_huy' ? ' (ĐÃ HỦY)' : ''}</div><div>Ngày: {ngay(d.ngay)}</div></div>
+      {d.nguoi_giao_nhan && <div>Người giao / nhận: {d.nguoi_giao_nhan}</div>}
+      {d.xuong && <div>Xưởng / tổ: {d.xuong}</div>}
+      {d.ghi_chu && <div>Ghi chú: {d.ghi_chu}</div>}
+      <table>
+        <thead><tr><th>STT</th>{sx && <th>Vào / ra</th>}<th>Mã hàng</th><th>Tên hàng</th><th>Số bao</th><th>Số kg</th>{ck && <th>Kg thực nhận</th>}<th>Ghi chú</th></tr></thead>
+        <tbody>{dong.map((x: any, i: number) => <tr key={x.id}><td className="so">{i + 1}</td>
+          {sx && <td>{({ vao: 'Nguyên liệu vào', ra: 'Thành phẩm ra', phu_pham: 'Phụ phẩm' } as any)[x.huong]}</td>}
+          <td>{x.mat_hang?.ma}</td><td>{x.ten_hang || x.mat_hang?.ten}</td><td className="so">{so(x.so_bao, 2)}</td><td className="so">{so(x.so_kg, 3)}</td>
+          {ck && <td></td>}<td>{x.ghi_chu}</td></tr>)}</tbody>
+      </table>
+      {ck ? <div className="ky">
+        <div><b>Người xuất (kho nguồn)</b><div className="nho">Phần 1 — giờ …h…</div></div>
+        <div><b>Người vận chuyển nhận</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Người vận chuyển giao</b><div className="nho">Phần 2 — giờ …h…</div></div>
+        <div><b>Người nhận (kho đích)</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+      </div> : <div className="ky" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div><b>Người lập phiếu</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>{sx ? 'Tổ trưởng sản xuất' : 'Người giao / nhận'}</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+        <div><b>Thủ kho</b><div className="nho">(ký, ghi rõ họ tên)</div></div>
+      </div>}
+    </div>
+  );
+}
+
 export function InPhieu() {
   const { loai, id } = useParams();
   const api = useAPIClient();
   const [d, setD] = useState<any>(null);
   const [loi, setLoi] = useState('');
   useEffect(() => {
-    const appends = loai === 'don_ban'
-      ? ['khach', 'don_vi_ban', 'dong', 'dong.mat_hang', 'dong.kho']
-      : ['khach', 'don_vi', 'phan_bo', 'phan_bo.don_ban'];
+    const appends = ({
+      don_ban: ['khach', 'don_vi_ban', 'dong', 'dong.mat_hang', 'dong.kho'],
+      phieu_thu: ['khach', 'don_vi', 'phan_bo', 'phan_bo.don_ban', 'quy'],
+      phieu_chi: ['don_vi', 'quy'],
+      phieu_kho: ['kho', 'kho_dich', 'dong', 'dong.mat_hang'],
+    } as any)[loai as string] || [];
     api.request({ url: `${loai}:get`, params: { filterByTk: id, appends } })
       .then((r: any) => setD(r.data.data))
       .catch((e: any) => setLoi(e?.response?.data?.errors?.[0]?.message || 'Không mở được chứng từ (kiểm tra quyền).'));
   }, [loai, id]);
   if (loi) return <div style={{ padding: 24 }}>{loi}</div>;
   if (!d) return <div style={{ padding: 24 }}>Đang tải…</div>;
-  const Mau = loai === 'don_ban' ? PhieuXuat : PhieuThu;
+  const Mau: any = ({ don_ban: PhieuXuat, phieu_thu: PhieuThu, phieu_chi: PhieuChi, phieu_kho: PhieuKho } as any)[loai as string] || PhieuThu;
+  const soLien = (loai === 'don_ban' && d.cach_giao === 'van_chuyen') || (loai === 'phieu_kho' && d.loai === 'chuyen') ? 3 : 2;
   return (
     <div>
       <style>{css}</style>
-      <div className="nut"><button onClick={() => window.print()} style={{ fontSize: 16, padding: '6px 18px' }}>In (A5 ngang, 2 liên)</button></div>
-      <Mau d={d} lien={1} />
-      <Mau d={d} lien={2} />
+      <div className="nut"><button onClick={() => window.print()} style={{ fontSize: 16, padding: '6px 18px' }}>In (A5 ngang, {soLien} liên)</button>
+        {d.trang_thai === 'da_huy' && <b style={{ color: '#cf1322', marginLeft: 12 }}>CHỨNG TỪ ĐÃ HỦY</b>}</div>
+      {Array.from({ length: soLien }, (_, i) => <Mau key={i} d={d} lien={i + 1} soLien={soLien} />)}
     </div>
   );
 }
