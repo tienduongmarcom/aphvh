@@ -34,3 +34,39 @@ jobs:
         run: |
           echo "STATIC GATE ONLY: no NocoBase DB runtime, no UAT, no package rebuilt."
           echo "To test behavior run nocobase/kiem/chay_tat_ca.sh and e2e-041.mjs in an isolated clone."
+
+  package-uat:
+    needs: check-source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Repackage test-only 0.4.1 plugin from current server source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/aphvh-041"
+          tar xzf nocobase/trien-khai/plugin-kho-0.4.1.tgz -C "$RUNNER_TEMP/aphvh-041"
+          pkg="$(find "$RUNNER_TEMP/aphvh-041" -maxdepth 3 -name package.json -print -quit)"
+          [ -n "$pkg" ] || { echo "Missing plugin package.json"; exit 1; }
+          root="$(dirname "$pkg")"
+          [ -f "$root/dist/server/index.js" ] || { echo "Missing original dist/server/index.js"; exit 1; }
+          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/server/index.ts \
+            --bundle --packages=external --platform=node --format=cjs --target=node20 \
+            --outfile="$root/dist/server/index.js"
+          node --check "$root/dist/server/index.js"
+          printf '%s\n' "$GITHUB_SHA" > "$root/BUILD_SOURCE_SHA"
+          (cd "$root" && tar czf "$GITHUB_WORKSPACE/plugin-kho-0.4.1.tgz" .)
+          sha256sum plugin-kho-0.4.1.tgz > plugin-kho-0.4.1.tgz.sha256
+          tar tzf plugin-kho-0.4.1.tgz | head -15
+          echo "UAT CANDIDATE: server compiled from $GITHUB_SHA; original 0.4.1 client retained."
+          echo "NOT an official NocoBase production release; run database UAT and build using official CLI for release."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nocobase-041-uat-package
+          path: |
+            plugin-kho-0.4.1.tgz
+            plugin-kho-0.4.1.tgz.sha256
+          retention-days: 14
