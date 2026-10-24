@@ -5,7 +5,7 @@ import { dangKyTaiChinh, hookTaiChinh } from './finance';
 import { dangKyPos } from './pos';
 import { dangKyNhaMay } from './manufacturing';
 import { dangKyNguon, hookNguon } from './import';
-import { dangKyNangCap } from './migrations';
+import { dangKyNangCap } from './nang_cap';
 import { dangKyBaoCao } from './reports';
 
 type H = Record<string, (ctx: any, t: any) => Promise<any>>;
