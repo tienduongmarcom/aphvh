@@ -630,6 +630,10 @@ BANG += [
         m2o("kho", "Kho đang giữ (kho hàng gửi)", "kho", required=True), input_("can_cu", "Căn cứ (hợp đồng / biên bản giao nhận)"),
         m2o("chu_so_huu", "Chủ sở hữu đã xác nhận (trống = chưa xác định)", "don_vi"), number("phi_gia_cong", "Phí gia công thỏa thuận (chưa tạo doanh thu)", 0),
         select("trang_thai", "Trạng thái", [opt("mo", "Đang gia công", "blue"), opt("dong", "Đã quyết toán", "default")], "mo"), text("ghi_chu", "Ghi chú")]},
+    {"name": "sx_thao_tac", "title": "Khóa thao tác nhà máy (chống ghi trùng)", "fields": [
+        input_("request_id", "Khóa thao tác duy nhất", required=True, unique=True), input_("loai", "Nghiệp vụ", required=True),
+        m2o("me_sx", "Mẻ liên quan", "me_sx", label="so"), m2o("ho_so_gia_cong", "Hồ sơ gia công", "sx_ho_so_gia_cong", label="so"),
+        text("ket_qua", "Kết quả trả về (JSON)")]},
     {"name": "sx_nguon_lo", "title": "Lô nguyên liệu / đầu ra của mẻ", "fields": [
         m2o("me_sx", "Mẻ", "me_sx", label="so"), 
         select("huong", "Hướng", [opt("vao", "Vào"), opt("ra", "Ra")]), m2o("mat_hang", "Mặt hàng", "mat_hang"), input_("so_lo", "Số lô"), number("so_kg", "Số lượng", 3)]},
