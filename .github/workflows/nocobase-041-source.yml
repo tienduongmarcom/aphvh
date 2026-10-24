@@ -27,7 +27,7 @@ jobs:
             --outfile=/tmp/aphvh-server-check.js
       - name: TypeScript JSX client syntax + relative imports (esbuild, no browser)
         run: |
-          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/client/index.ts \
+          npx --yes esbuild@0.25.12 nocobase/plugin-kho/src/client/index.tsx \
             --bundle --packages=external --platform=browser --format=esm --jsx=automatic \
             --outfile=/tmp/aphvh-client-check.js
       - name: Scope explanation
