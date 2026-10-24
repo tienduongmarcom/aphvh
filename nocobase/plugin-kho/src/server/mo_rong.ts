@@ -765,15 +765,34 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
   // ---------------- MẺ SẢN XUẤT ----------------
   /** Tính lại toàn bộ số liệu mẻ từ các phiếu đã ghi + chi phí (không cộng dồn → hủy phiếu không làm sai). */
   const tinhLaiMe = async (t: Transaction, me: any) => {
-    const [a] = await p.sql(`SELECT
-      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS nvl,
-      COALESCE((SELECT -SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu JOIN mat_hang m ON m.id = g.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') <> 'kg'),0) AS bb,
-      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
-        WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi' AND COALESCE(m.dvt_ton,'kg') = 'kg'),0) AS kg_nvl,
-      COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
-        AND k.trang_thai = 'da_ghi' AND d.huong = 'ra'),0) AS kg_tp,
+    // 0.4.1: PHÂN LOẠI THEO VAI TRÒ DÒNG, KHÔNG THEO ĐVT.
+    // Cùng Item có thể dùng theo các vai trò khác nhau; phân bổ trị giá ghi sổ theo SL từng vai trò.
+    // Dòng cũ chưa có vai trò giữ cách phân loại legacy để không đổi giá trị lịch sử.
+    const [a] = await p.sql(`WITH cap AS (
+      SELECT k.id, k.so FROM phieu_kho k WHERE k.me_sx_id = :m AND k.loai = 'cap_nvl' AND k.trang_thai = 'da_ghi'
+    ), cap_dong AS (
+      SELECT k.so, d.mat_hang_id, SUM(d.so_kg) AS tong_sl,
+        SUM(CASE WHEN COALESCE(d.vai_tro,
+            CASE WHEN m.loai_hang = 'bao_bi' OR LOWER(COALESCE(m.dvt_ton,'kg')) <> 'kg' THEN 'bao_bi' ELSE 'nvl' END
+          ) = 'nvl' THEN d.so_kg ELSE 0 END) AS sl_nvl
+      FROM cap k JOIN phieu_kho_dong d ON d.phieu_kho_id = k.id
+        JOIN mat_hang m ON m.id = d.mat_hang_id GROUP BY k.so, d.mat_hang_id
+    )
+    SELECT
+      COALESCE((SELECT -SUM(g.gia_tri * x.sl_nvl / NULLIF(x.tong_sl,0))
+        FROM so_gia_von g JOIN cap_dong x ON x.so = g.chung_tu AND x.mat_hang_id = g.mat_hang_id
+        WHERE g.loai = 'cap_nvl'),0) AS nvl,
+      COALESCE((SELECT -SUM(g.gia_tri * (x.tong_sl - x.sl_nvl) / NULLIF(x.tong_sl,0))
+        FROM so_gia_von g JOIN cap_dong x ON x.so = g.chung_tu AND x.mat_hang_id = g.mat_hang_id
+        WHERE g.loai = 'cap_nvl'),0) AS bb,
+      COALESCE((SELECT SUM(CASE WHEN LOWER(COALESCE(m.dvt_ton,'kg')) = 'kg' THEN d.so_kg
+                  WHEN m.kg_moi_dvt > 0 AND NULLIF(TRIM(m.kg_dvt_can_cu),'') IS NOT NULL THEN d.so_kg * m.kg_moi_dvt ELSE 0 END)
+        FROM phieu_kho_dong d JOIN cap k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+        WHERE COALESCE(d.vai_tro, CASE WHEN m.loai_hang = 'bao_bi' OR LOWER(COALESCE(m.dvt_ton,'kg')) <> 'kg' THEN 'bao_bi' ELSE 'nvl' END) = 'nvl'),0) AS kg_nvl,
+      COALESCE((SELECT SUM(CASE WHEN LOWER(COALESCE(m.dvt_ton,'kg')) = 'kg' THEN d.so_kg
+                  WHEN m.kg_moi_dvt > 0 AND NULLIF(TRIM(m.kg_dvt_can_cu),'') IS NOT NULL THEN d.so_kg * m.kg_moi_dvt ELSE 0 END)
+        FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
+        WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi' AND k.trang_thai = 'da_ghi' AND d.huong = 'ra'),0) AS kg_tp,
       COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
         AND k.trang_thai = 'da_ghi' AND d.huong = 'phu_pham'),0) AS kg_pp,
       COALESCE((SELECT SUM(d.so_kg) FROM phieu_kho_dong d JOIN phieu_kho k ON k.id = d.phieu_kho_id WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi'
@@ -784,7 +803,8 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
         AND g.loai = 'thu_hoi_phu_pham'),0) + COALESCE((SELECT SUM(a.chenh_lech) FROM dieu_chinh_gia_tri a WHERE a.nguon = :npp),0) AS pp,
       COALESCE((SELECT SUM(g.gia_tri) FROM so_gia_von g JOIN phieu_kho k ON k.so = g.chung_tu WHERE k.me_sx_id = :m AND k.trang_thai = 'da_ghi'
         AND g.loai = 'thu_hoi_ra'),0) + COALESCE((SELECT SUM(a.chenh_lech) FROM dieu_chinh_gia_tri a WHERE a.nguon = :ntp),0) AS vao_kho,
-      COALESCE((SELECT SUM(so_tien) FROM me_sx_chi_phi WHERE me_sx_id = :m),0) AS cp`, { m: me.id, npp: `me#${me.id}:pp`, ntp: `me#${me.id}:tp` }, t);
+      COALESCE((SELECT SUM(so_tien) FROM me_sx_chi_phi WHERE me_sx_id = :m),0) AS cp`,
+      { m: me.id, npp: `me#${me.id}:pp`, ntp: `me#${me.id}:tp` }, t);
     const v = { gia_tri_nvl: tien(a.nvl), gia_tri_bao_bi: tien(a.bb), kg_nvl: kg(a.kg_nvl), kg_tp: kg(a.kg_tp), kg_phu_pham: kg(a.kg_pp),
       kg_hao_bat_thuong: kg(a.kg_bt), kg_hao_tu_nhien: kg(a.kg_tn), gia_tri_phu_pham: tien(a.pp), da_vao_kho: tien(a.vao_kho), chi_phi: tien(a.cp) };
     await me.update(v, { transaction: t, hooks: false });
