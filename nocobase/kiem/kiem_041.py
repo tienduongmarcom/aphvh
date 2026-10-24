@@ -167,6 +167,8 @@ def main():
     s, r = nm.lam("me_sx:ghiThucTe", me1, v1)
     d = r.get("data", {})
     ok("Ghi thực tế: chênh 30 kg, kết quả 'còn chênh', hao hụt ghi sổ = 0", s == 200 and d["chenh"] == 30 and d["ket_qua"] == "co_chenh" and d["kg_hao"] == 0, d)
+    s, r = kt.lam("me_sx:chot", me1, {"chap_nhan_chenh": True, "ly_do_chenh": "Không được bỏ kết thúc"})
+    ok("Đã cấp NVL nhưng chưa kết thúc: không thể chốt qua chấp nhận chênh", s == 400 and "chưa kết thúc" in json.dumps(r, ensure_ascii=False), r)
     ok("Củi 50 kg (ĐVT kg) KHÔNG vào khối lượng nguyên liệu (kg vào = 1.000)", d["kg_vao"] == 1000)
     ok("Kho: đỗ −1.000, tách vỏ +820, bao −33, củi −50", ton("NL", "DO") == do0 - 1000 and ton("TP", "DOTV") == tp0 + 820 and ton("VT", "BAO") == 2000 - 33
        and ton("NL", "CUI") == 950)
@@ -212,6 +214,20 @@ def main():
     ok("Ngày 2: ra thêm 295 + hao 5, dở dang 0 → kg vào vẫn 500, cân, hoàn thành", r["data"]["kg_vao"] == 500 and r["data"]["ket_qua"] == "can"
        and r["data"]["tt_van_hanh"] == "hoan_thanh", r["data"])
 
+    nhom("6b. Thao tác WIP-only: ghi đúng một lần, mã gần giống không va nhau")
+    s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mX["id"], "kho_id": K["NL"]["id"],
+                                                   "kho_tp_id": K["TP"]["id"], "request_id": rid()})
+    me_wip = r["data"]["id"]
+    req_wip = "T41-WIP-" + uuid.uuid4().hex[:10]
+    s, r = nm.lam("me_sx:ghiThucTe", me_wip, {"request_id": req_wip, "wip_cuoi": 12})
+    so_dc = len(ad.ds("sx_doi_chieu", {"me_sx_id": me_wip}))
+    s2, r2 = nm.lam("me_sx:ghiThucTe", me_wip, {"request_id": req_wip, "wip_cuoi": 12})
+    ok("WIP-only retry không tạo thêm cân đối", s == 200 and s2 == 200 and r2["data"].get("da_ghi_truoc")
+       and len(ad.ds("sx_doi_chieu", {"me_sx_id": me_wip})) == so_dc)
+    s, r = nm.lam("me_sx:ghiThucTe", me_wip, {"request_id": req_wip + "1", "wip_cuoi": 15})
+    ok("Hai request ID chung tiền tố nhưng khác nhau đều được xử lý", s == 200 and not r["data"].get("da_ghi_truoc")
+       and len(ad.ds("sx_doi_chieu", {"me_sx_id": me_wip})) == so_dc + 1 and float(ad.lay("me_sx", me_wip)["kg_do_dang"]) == 15)
+
     nhom("7. Phồng tôm: thêm nước, sấy — không báo hao giả, thiếu số đo nước → chưa đủ căn cứ")
     s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mPt["id"], "kho_id": K["NL"]["id"], "kho_tp_id": K["TP"]["id"]})
     me3 = r["data"]["id"]
@@ -237,6 +253,10 @@ def main():
     d = r.get("data", {})
     ok("Thùng quy kg theo quy cách (200 × 10 = 2.000): cân", s == 200 and d["kg_tp"] == 2000 and d["ket_qua"] == "can", d)
     ok("Vỏ thùng trừ 205 (200 dùng + 5 hỏng), túi trừ 4.010 — không ép theo công thức", ton("VT", "VOT") == vot0 - 205 and ton("VT", "TUI") == tui0 - 4010)
+    me4_v = ad.lay("me_sx", me4)
+    ok("Giá thành đóng gói: bột xá 30 triệu là NVL, vỏ/túi 1.622.000 là vật tư",
+       float(me4_v["gia_tri_nvl"]) == 30000000 and float(me4_v["gia_tri_bao_bi"]) == 1622000 and float(me4_v["kg_tp"]) == 2000,
+       [me4_v.get("gia_tri_nvl"), me4_v.get("gia_tri_bao_bi"), me4_v.get("kg_tp")])
     bb = {x["mat_hang_id"]: x for x in d.get("bao_bi", [])}
     ok("Lưu chênh bao bì so định mức + nguyên nhân", bb[M["VOT"]["id"]]["hong"] == 5 and bb[M["TUI"]["id"]]["dinh_muc"] == 4000 and bb[M["TUI"]["id"]]["ly_do"])
 
@@ -246,6 +266,11 @@ def main():
     s, r = nm.lam("me_sx:ghiThucTe", me5, {"request_id": rid(), "nvl": [{"mat_hang_id": M["DAU"]["id"], "so_luong": 100}],
                                             "tp": [{"mat_hang_id": M["CHAI"]["id"], "so_luong": 99}], "hao": [{"so_kg": 0.92}], "ket_thuc": True})
     ok("100 lít × 0,92 = 92 kg vào; 99 chai = 91,08 kg + hao 0,92 → cân", r["data"]["kg_vao"] == 92 and r["data"]["ket_qua"] == "can", r["data"])
+    me5_v = ad.lay("me_sx", me5)
+    ok("100 L dầu trị giá 4.000.000 là nguyên liệu, không phải bao bì",
+       float(me5_v["gia_tri_nvl"]) == 4000000 and float(me5_v["gia_tri_bao_bi"]) == 0
+       and float(me5_v["kg_nvl"]) == 92 and abs(float(me5_v["kg_tp"]) - 91.08) < 0.001,
+       [me5_v.get("gia_tri_nvl"), me5_v.get("gia_tri_bao_bi"), me5_v.get("kg_tp")])
     s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mDau2["id"], "kho_id": K["NL"]["id"], "kho_tp_id": K["TP"]["id"]})
     s, r = nm.lam("me_sx:ghiThucTe", r["data"]["id"], {"request_id": rid(), "nvl": [{"mat_hang_id": M["DAU2"]["id"], "so_luong": 10}],
                                                       "tp": [{"mat_hang_id": M["CHAI"]["id"], "so_luong": 10}], "ket_thuc": True})
@@ -265,6 +290,9 @@ def main():
     hs = kt.tao("sx_ho_so_gia_cong", {"ben_gui_id": dv["VH"]["id"], "ben_nhan_id": dv["APH"]["id"], "kho_id": K["HG"]["id"], "can_cu": "BB giao nhận 24/10"})
     s, r = kt.call("sx_ho_so_gia_cong:create", {"ben_gui_id": dv["VH"]["id"], "ben_nhan_id": dv["APH"]["id"], "kho_id": K["NL"]["id"]})
     ok("Hồ sơ gắn kho thường: bị chặn (phải kho hàng gửi riêng)", s == 400)
+    s, r = kt.call("sx_ho_so_gia_cong:create", {"ben_gui_id": dv["MK"]["id"], "ben_nhan_id": dv["APH"]["id"],
+        "kho_id": K["HG"]["id"], "can_cu": "Không được dùng chung kho"})
+    ok("Hai hồ sơ VH/MK không thể dùng chung một kho gửi (khóa DB)", s == 400, r)
     nl_gt0 = gv("NL", "DO")["gia_tri"]
     s, r = kt.lam("sx_ho_so_gia_cong:nhanHang", hs["id"], {"request_id": f"{k}-GC1", "dong": [{"mat_hang_id": M["DO"]["id"], "so_kg": 1000}]})
     s, r2 = kt.lam("sx_ho_so_gia_cong:nhanHang", hs["id"], {"request_id": f"{k}-GC1", "dong": [{"mat_hang_id": M["DO"]["id"], "so_kg": 1000}]})
@@ -275,6 +303,9 @@ def main():
     pk = kt.tao("phieu_kho", {"loai": "nhap", "kho_id": K["HG"]["id"], "dong": [{"mat_hang_id": M["DO"]["id"], "so_kg": 10, "don_gia": 1}]})
     s, r = kt.lam("phieu_kho:ghiSo", pk["id"])
     ok("Nhập thường vào kho hàng gửi: bị chặn", s == 400, r)
+    pk_x = kt.tao("phieu_kho", {"loai": "xuat", "kho_id": K["HG"]["id"], "dong": [{"mat_hang_id": M["DO"]["id"], "so_kg": 10}]})
+    s, r = kt.lam("phieu_kho:ghiSo", pk_x["id"])
+    ok("Xuất thường từ kho hàng gửi cũng bị chặn", s == 400, r)
     s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mX["id"], "ho_so_gia_cong_id": hs["id"]})
     me7 = r["data"]["id"]
     s, r = nm.lam("me_sx:ghiThucTe", me7, {"request_id": rid(), "nvl": [{"mat_hang_id": M["DO"]["id"], "so_luong": 400}],
@@ -292,6 +323,14 @@ def main():
        and hg["DO"]["dang_giu"] == 600, hg)
     s, r = kt.lam("sx_ho_so_gia_cong:xacNhanSoHuu", hs["id"], {"chu_so_huu_id": dv["VH"]["id"], "can_cu": "HĐ gia công 01/2026"})
     ok("Xác nhận chủ sở hữu chỉ qua thao tác có căn cứ", s == 200 and ad.lay("sx_ho_so_gia_cong", hs["id"])["chu_so_huu_id"] == dv["VH"]["id"])
+    rq_tra = rid()
+    s, r = kt.lam("sx_ho_so_gia_cong:traHang", hs["id"], {"request_id": rq_tra,
+        "dong": [{"mat_hang_id": M["X"]["id"], "so_kg": 5}]})
+    t_tra = ton("HG", "X")
+    s2, r2 = kt.lam("sx_ho_so_gia_cong:traHang", hs["id"], {"request_id": rq_tra,
+        "dong": [{"mat_hang_id": M["X"]["id"], "so_kg": 5}]})
+    ok("Trả gia công lặp mã yêu cầu: chỉ xuất 5 thành phẩm một lần",
+       s == 200 and s2 == 200 and r2["data"].get("da_tra_truoc") and t_tra == 390 and ton("HG", "X") == 390, [r,r2])
 
     nhom("12. Quyền: nhà máy không thấy giá (API, quan hệ, xuất, giá tham chiếu, snapshot giá)")
     s, r = nm.call("gia_von:list")
