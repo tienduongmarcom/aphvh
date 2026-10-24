@@ -1,6 +1,6 @@
 {
   "name": "@aphvh/plugin-kho",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": "APH-VH: kho, bán hàng, thu tiền",
   "description": "Sổ kho có khóa, đơn bán chọn đơn vị, thu tiền theo đơn, in A5",
   "main": "dist/server/index.js",

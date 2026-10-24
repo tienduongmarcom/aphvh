@@ -24,11 +24,11 @@ def main():
             with urllib.request.urlopen(req) as r: return r.status
         except urllib.error.HTTPError as e: return e.code
     don = ad.call('don_ban:list', params='?pageSize=1&sort=-id')['data'][0]['id']
-    ca = [('ban_hang', 'don_ban:list', None, '', 200), ('ban_hang', 'don_ban:giaoHang', {}, f'?filterByTk={don}', 403),
+    ca = [('ban_hang', 'don_ban:list', None, '', 200), ('ban_hang', 'luot_giao:banGiaoXe', {}, '?filterByTk=1', 403),
           ('ban_hang', 'phieu_kho:ghiSo', {}, '?filterByTk=1', 403), ('ban_hang', 'phieu_thu:ghi', {}, '?filterByTk=1', 403),
           ('kho', 'phieu_kho:list', None, '', 200), ('kho', 'don_ban:chotDon', {}, f'?filterByTk={don}', 403),
           ('kho', 'phieu_thu:list', None, '', 403), ('thu_chi', 'phieu_thu:list', None, '', 200),
-          ('thu_chi', 'don_ban:giaoHang', {}, f'?filterByTk={don}', 403), ('thu_chi', 'phieu_kho:list', None, '', 403)]
+          ('thu_chi', 'luot_giao:khachNhan', {}, '?filterByTk=1', 403), ('thu_chi', 'gia_von:list', None, '', 403)]
     loi = 0
     for role, act, body, p, mong in ca:
         s = thu(role, act, body, p)

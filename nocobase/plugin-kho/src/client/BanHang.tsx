@@ -1,10 +1,11 @@
 /** Màn hình Bán hàng: danh sách đơn + lập đơn (chọn đơn vị bán) + chốt & in + xác nhận giao. */
 import {
-  Alert, App, Button, Card, Col, DatePicker, Descriptions, Drawer, Form, Input, InputNumber, Radio, Row, Segmented, Space, Table, Tag, Typography,
+  Alert, App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Segmented, Space, Table, Tag, Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChonDanhMuc, TRANG_THAI_DON, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
+import { ChonDanhMuc, TRANG_THAI_DON, dvt, fmt, homNay, ngayVN, theTrangThai, useGoi } from './chung';
+import { GiaoHangDon, moInLuot, taoLuot } from './LuotGiao';
 
 const moIn = (id: any) => window.open(`/in/don_ban/${id}`, '_blank');
 
@@ -17,14 +18,16 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
       const k = `${d.kho_id}-${d.mat_hang_id}`;
       if (k in ton) return;
       const r = await goi('ton_kho:list', { params: { filter: { kho_id: d.kho_id, mat_hang_id: d.mat_hang_id } }, im: true });
-      setTon((t) => ({ ...t, [k]: r.data?.[0]?.so_kg || 0 }));
+      const x = r.data?.[0];
+      // Khả dụng = tồn − đang giữ cho lượt chưa giao − hàng chờ định giá
+      setTon((t) => ({ ...t, [k]: x ? Number(x.so_kg || 0) - Number(x.so_giu || 0) - Number(x.so_cho_gia || 0) : 0 }));
     });
   }, [JSON.stringify(dong.map((d: any) => [d.kho_id, d.mat_hang_id]))]);
   const doi = (i: number, v: any) => setDong(dong.map((d: any, j: number) => (j === i ? { ...d, ...v } : d)));
   const cot: any[] = [
     { title: 'Mã hàng', width: 260, render: (_: any, d: any, i: number) => sua
       ? <ChonDanhMuc bang="mat_hang" value={d.mat_hang_id} style={{ width: 250 }} locThem={{ ngung_dung: { $ne: true } }}
-          onChange={(v, mh) => doi(i, { mat_hang_id: v, ma: mh?.ma, ten_hang: mh?.ten, kg_bao: mh?.kg_bao, gia_san: mh?.gia_san, don_gia: d.don_gia ?? mh?.gia_ban,
+          onChange={(v, mh) => doi(i, { mat_hang_id: v, ma: mh?.ma, ten_hang: mh?.ten, dvt_ton: mh?.dvt_ton, kg_bao: mh?.kg_bao, gia_san: mh?.gia_san, don_gia: d.don_gia ?? mh?.gia_ban,
             so_kg: d.so_bao && mh?.kg_bao ? d.so_bao * mh.kg_bao : d.so_kg })} placeholder="Gõ mã hoặc tên hàng" />
       : <b>{d.mat_hang?.ma || d.ma}</b> },
     { title: 'Tên hàng', render: (_: any, d: any) => d.ten_hang || d.mat_hang?.ten },
@@ -36,13 +39,13 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
       ? <InputNumber min={0} value={d.so_bao} style={{ width: 90 }}
           onChange={(v) => doi(i, { so_bao: v, so_kg: v && d.kg_bao ? Math.round(v * d.kg_bao * 1000) / 1000 : d.so_kg })} />
       : fmt(d.so_bao, 2) },
-    { title: 'Số kg', width: 120, render: (_: any, d: any, i: number) => {
+    { title: 'Số lượng', width: 130, render: (_: any, d: any, i: number) => {
       const t = ton[`${d.kho_id ?? khoMacDinh}-${d.mat_hang_id}`];
       return sua ? <div><InputNumber min={0} value={d.so_kg} style={{ width: 110 }} onChange={(v) => doi(i, { so_kg: v })} />
-        {t !== undefined && <div style={{ fontSize: 12, color: t < (d.so_kg || 0) ? '#cf1322' : '#888' }}>Tồn: {fmt(t, 3)} kg</div>}</div>
-        : fmt(d.so_kg, 3);
+        {t !== undefined && <div style={{ fontSize: 12, color: t < (d.so_kg || 0) ? '#cf1322' : '#888' }}>Khả dụng: {fmt(t, 3)} {dvt(d.mat_hang || d)}</div>}</div>
+        : `${fmt(d.so_kg, 3)} ${dvt(d.mat_hang || d)}`;
     } },
-    { title: 'Giá (đ/kg)', width: 130, render: (_: any, d: any, i: number) => sua
+    { title: 'Đơn giá', width: 130, render: (_: any, d: any, i: number) => sua
       ? <InputNumber min={0} value={d.don_gia} style={{ width: 120 }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))}
           onChange={(v) => doi(i, { don_gia: v })} />
       : fmt(d.don_gia) },
@@ -55,7 +58,7 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
     <>
       <Table size="small" rowKey={(d: any, i: any) => d.id || `moi-${i}`} pagination={false} columns={cot} dataSource={dong}
         summary={() => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><b>Cộng</b></Table.Summary.Cell>
-          <Table.Summary.Cell index={1}><b>{fmt(dong.reduce((s: number, d: any) => s + Number(d.so_kg || 0), 0), 3)} kg</b></Table.Summary.Cell>
+          <Table.Summary.Cell index={1}><b>{fmt(dong.reduce((s: number, d: any) => s + Number(d.so_kg || 0), 0), 3)}</b></Table.Summary.Cell>
           <Table.Summary.Cell index={2} /><Table.Summary.Cell index={4} />
           <Table.Summary.Cell index={3} align="right"><b>{fmt(dong.reduce((s: number, d: any) => s + Math.round((d.so_kg || 0) * (d.don_gia || 0)), 0))}</b></Table.Summary.Cell>
         </Table.Summary.Row>} />
@@ -116,24 +119,15 @@ function DonBan({ id, dong: dongDong, xong }: any) {
   const chotIn = () => chay(async () => {
     const x = await luu();
     const r = await goi('don_ban:chotDon', { params: { filterByTk: x }, data: {} });
-    if (r.data?.cho_duyet) message.warning('Có hàng dưới giá sàn: đơn chuyển quản lý duyệt giá trước khi in và xuất.', 8);
-    else { moIn(x); message.success('Đã chốt đơn — chờ kho xuất hàng'); }
+    if (r.data?.cho_duyet) message.warning(`Đơn cần quản lý duyệt trước khi giao: ${r.data?.ly_do || 'dưới giá sàn hoặc vượt hạn mức công nợ'}.`, 8);
+    else {
+      message.success('Đã chốt đơn');
+      // Mặc định một lượt giao toàn bộ (đa số khách đến lấy). Giao nhiều đợt: hủy lượt này và tạo lượt theo lượng.
+      const d = (await goi('don_ban:get', { params: { filterByTk: x, appends: ['dong'] } })).data;
+      try { const l = await taoLuot(goi, d, d.dong || []); if (l) moInLuot(l); } catch { /* thiếu hàng khả dụng: đã báo, đơn vẫn chốt */ }
+    }
     await tai(x); xong?.();
   });
-  const giao = () => {
-    let nguoi = don?.nguoi_nhan || '';
-    let xe = don?.bien_so || '';
-    modal.confirm({
-      title: `Xác nhận đã giao đơn ${don.so}?`, okText: 'Đã giao — trừ kho, ghi công nợ', cancelText: 'Chưa',
-      content: <Space direction="vertical" style={{ width: '100%' }}>
-        <div>Chỉ bấm khi hàng đã thực giao. Hệ thống trừ tồn kho và ghi công nợ cho <b>{don.don_vi_ban?.ten}</b>.</div>
-        <Input placeholder="Người nhận / lái xe" defaultValue={nguoi} onChange={(e) => (nguoi = e.target.value)} />
-        <Input placeholder="Biển số xe (nếu có)" defaultValue={xe} onChange={(e) => (xe = e.target.value)} />
-      </Space>,
-      onOk: () => goi('don_ban:giaoHang', { params: { filterByTk: don.id }, data: { nguoi_nhan: nguoi, bien_so: xe } })
-        .then(() => { message.success('Đã ghi giao hàng'); tai(don.id); xong?.(); }),
-    });
-  };
   const hoi = (title: string, url: string, okText: string, canLyDo = true) => {
     let ly_do = '';
     modal.confirm({
@@ -147,7 +141,7 @@ function DonBan({ id, dong: dongDong, xong }: any) {
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
       {don && <Space><Typography.Title level={4} style={{ margin: 0 }}>{don.so}</Typography.Title><Tag color={mau}>{tt}</Tag>
-        {don.trang_thai === 'da_giao' && <span>Còn nợ: <b>{fmt(don.con_no)}</b> đ</span>}</Space>}
+        {Number(don.phai_thu) > 0 && <span>Phải thu <b>{fmt(don.phai_thu)}</b> · Đã thu <b>{fmt(don.da_thu)}</b> · Còn nợ: <b>{fmt(don.con_no)}</b> đ</span>}</Space>}
       <Form form={form} layout="vertical" disabled={!sua}>
         <Row gutter={12}>
           <Col span={10}><Form.Item name="khach_id" label="Khách hàng" rules={[{ required: true, message: 'Chọn khách' }]}>
@@ -171,7 +165,8 @@ function DonBan({ id, dong: dongDong, xong }: any) {
         </Row>
         <Row gutter={12}>
           <Col span={12}><Form.Item name="dia_chi_giao" label="Địa chỉ giao"><Input /></Form.Item></Col>
-          <Col span={12}><Form.Item name="ghi_chu" label="Ghi chú"><Input /></Form.Item></Col>
+          <Col span={8}><Form.Item name="ghi_chu" label="Ghi chú"><Input /></Form.Item></Col>
+          <Col span={4}><Form.Item name="xuat_hoa_don" label="Hóa đơn" valuePropName="checked"><Checkbox>Xuất hóa đơn MISA</Checkbox></Form.Item></Col>
         </Row>
       </Form>
       <Card size="small" title="Hàng bán">
@@ -180,18 +175,19 @@ function DonBan({ id, dong: dongDong, xong }: any) {
       <Space wrap>
         {sua && <Button onClick={luuNhap} loading={dang}>Lưu nháp</Button>}
         {sua && <Button type="primary" size="large" onClick={chotIn} loading={dang}>Chốt đơn &amp; In phiếu xuất</Button>}
-        {don?.trang_thai === 'cho_xuat' && <Button type="primary" size="large" onClick={giao}>Xác nhận đã giao</Button>}
         {don?.trang_thai === 'cho_duyet' && <Button type="primary" size="large" onClick={() => {
           let ly_do = '';
-          modal.confirm({ title: `Duyệt bán dưới giá sàn đơn ${don.so}?`, okText: 'Duyệt', cancelText: 'Thôi',
+          modal.confirm({ title: `Duyệt đơn ${don.so}? (${don.ly_do_duyet || ''})`, okText: 'Duyệt', cancelText: 'Thôi',
             content: <Input.TextArea placeholder="Lý do đồng ý (bắt buộc)" onChange={(e) => (ly_do = e.target.value)} />,
             onOk: () => goi('don_ban:duyetGia', { params: { filterByTk: don.id }, data: { ly_do } }).then(() => { message.success('Đã duyệt'); tai(don.id); xong?.(); }) });
-        }}>Duyệt giá (quản lý)</Button>}
+        }}>Duyệt (quản lý)</Button>}
+        {don?.trang_thai === 'cho_duyet' && <Tag color="purple">Cần duyệt: {don.ly_do_duyet}</Tag>}
         {don?.duyet_boi && <Tag color="purple">Đã duyệt giá: {don.duyet_boi} — {don.ly_do_gia}</Tag>}
-        {don && ['cho_xuat', 'da_giao'].includes(don.trang_thai) && <Button onClick={() => moIn(don.id)}>In lại phiếu</Button>}
+        {don && ['cho_xuat', 'dang_giao', 'da_giao', 'da_dong'].includes(don.trang_thai) && <Button onClick={() => moIn(don.id)}>In đơn hàng</Button>}
         {['cho_xuat', 'cho_duyet'].includes(don?.trang_thai) && <Button onClick={() => hoi('Mở lại đơn để sửa?', 'don_ban:moLai', 'Mở lại', false)}>Mở lại để sửa</Button>}
-        {don && don.trang_thai !== 'da_huy' && <Button danger onClick={() => hoi(`Hủy đơn ${don.so}?`, 'don_ban:huy', 'Hủy đơn')}>Hủy đơn</Button>}
+        {don && ['nhap', 'cho_duyet', 'cho_xuat'].includes(don.trang_thai) && <Button danger onClick={() => hoi(`Hủy đơn ${don.so}?`, 'don_ban:huy', 'Hủy đơn')}>Hủy đơn</Button>}
       </Space>
+      {don && ['cho_xuat', 'dang_giao', 'da_giao', 'da_dong'].includes(don.trang_thai) && <GiaoHangDon don={don} dong={dong} tai={() => tai(don.id)} />}
     </Space>
   );
 }
@@ -217,8 +213,8 @@ export function BanHang() {
     <Card title="Bán hàng" extra={<Button type="primary" size="large" onClick={() => setMo('moi')}>+ Lập đơn bán</Button>}>
       <Space style={{ marginBottom: 12 }} wrap>
         <Segmented value={loc} onChange={(v: any) => { setTrang(1); setLoc(v); }} options={[
-          { value: 'nhap', label: 'Nháp' }, { value: 'cho_duyet', label: 'Chờ duyệt giá' }, { value: 'cho_xuat', label: 'Chờ xuất' }, { value: 'da_giao', label: 'Đã giao' },
-          { value: 'da_huy', label: 'Đã hủy' }, { value: 'tat_ca', label: 'Tất cả' }]} />
+          { value: 'nhap', label: 'Nháp' }, { value: 'cho_duyet', label: 'Chờ duyệt giá' }, { value: 'cho_xuat', label: 'Đã chốt' }, { value: 'dang_giao', label: 'Giao một phần' },
+          { value: 'da_giao', label: 'Đã giao đủ' }, { value: 'da_dong', label: 'Đã đóng' }, { value: 'da_huy', label: 'Đã hủy' }, { value: 'tat_ca', label: 'Tất cả' }]} />
         <Input.Search placeholder="Số đơn, tên khách, SĐT" allowClear onSearch={(v) => { setQ(v); setTrang(1); setTimeout(tai); }} style={{ width: 280 }} />
       </Space>
       <Table size="middle" rowKey="id" dataSource={ds}
@@ -231,7 +227,7 @@ export function BanHang() {
           { title: 'Đơn vị bán', render: (_, r) => r.don_vi_ban?.ten },
           { title: 'Cách giao', dataIndex: 'cach_giao', render: (v) => (v === 'van_chuyen' ? 'Vận chuyển' : 'Khách đến lấy') },
           { title: 'Tổng tiền', dataIndex: 'tong_tien', align: 'right', render: (v) => fmt(v) },
-          { title: 'Còn nợ', dataIndex: 'con_no', align: 'right', render: (v, r) => (r.trang_thai === 'da_giao' ? fmt(v) : '') },
+          { title: 'Còn nợ', dataIndex: 'con_no', align: 'right', render: (v, r) => (Number(r.phai_thu) > 0 ? fmt(v) : '') },
           { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => { const [t, m] = theTrangThai(TRANG_THAI_DON, v); return <Tag color={m}>{t}</Tag>; } },
         ]} />
       <Drawer width="92%" open={!!mo} onClose={() => { setMo(null); tai(); }} title={mo === 'moi' ? 'Lập đơn bán' : 'Đơn bán'} destroyOnClose>

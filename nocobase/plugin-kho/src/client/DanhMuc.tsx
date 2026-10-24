@@ -13,19 +13,28 @@ export const docSo = (v: string) => {
   return Number(v);
 };
 
-type Cot = { key: string; title: string; kieu?: 'so' | 'chu' | 'co' | 'dai' | 'don_vi' | 'loai_quy'; bat_buoc?: boolean; rong?: number };
+type Cot = { key: string; title: string; kieu?: 'so' | 'chu' | 'co' | 'dai' | 'don_vi' | 'loai_quy' | 'chon'; bat_buoc?: boolean; rong?: number; chon?: Record<string, string> };
+const DVT_TON = { kg: 'Kg', cai: 'Cái', goi: 'Gói', bao: 'Bao', thung: 'Thùng' };
+const LOAI_HANG = { hang_hoa: 'Hàng hóa', nguyen_lieu: 'Nguyên liệu', thanh_pham: 'Thành phẩm', phu_pham: 'Phụ phẩm', bao_bi: 'Bao bì / vật tư' };
+const LOAI_KHO = { ban_duoc: 'Kho bán được', nha_may: 'Kho nhà máy', cho_xu_ly: 'Kho chờ xử lý (không bán)' };
 const BANG: Record<string, { ten: string; cot: Cot[]; tim: string[] }> = {
   mat_hang: { ten: 'Mặt hàng', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã hàng', bat_buoc: true, rong: 140 }, { key: 'ten', title: 'Tên hàng', bat_buoc: true },
-    { key: 'dvt', title: 'ĐVT', rong: 80 }, { key: 'kg_bao', title: 'Kg/bao', kieu: 'so', rong: 90 },
-    { key: 'gia_ban', title: 'Giá bán (đ/kg)', kieu: 'so', rong: 130 }, { key: 'gia_san', title: 'Giá sàn (đ/kg)', kieu: 'so', rong: 130 },
+    { key: 'dvt_ton', title: 'ĐVT tồn', kieu: 'chon', chon: DVT_TON, rong: 90 }, { key: 'loai_hang', title: 'Loại hàng', kieu: 'chon', chon: LOAI_HANG, rong: 130 },
+    { key: 'kg_bao', title: 'Kg/bao', kieu: 'so', rong: 90 },
+    { key: 'gia_ban', title: 'Giá bán (đ/ĐVT)', kieu: 'so', rong: 130 }, { key: 'gia_san', title: 'Giá sàn (đ/ĐVT)', kieu: 'so', rong: 130 },
     { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }] },
   khach_hang: { ten: 'Khách hàng', tim: ['ma', 'ten', 'sdt'], cot: [
     { key: 'ma', title: 'Mã khách', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên khách', bat_buoc: true },
     { key: 'sdt', title: 'Điện thoại', rong: 130 }, { key: 'dia_chi', title: 'Địa chỉ', kieu: 'dai' }, { key: 'mst', title: 'MST', rong: 120 },
+    { key: 'han_muc', title: 'Hạn mức nợ (đ, 0 = không)', kieu: 'so', rong: 140 }, { key: 'ghi_chu', title: 'Ghi chú', kieu: 'dai' }] },
+  nha_cung_cap: { ten: 'Nhà cung cấp', tim: ['ma', 'ten', 'sdt'], cot: [
+    { key: 'ma', title: 'Mã NCC', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên nhà cung cấp', bat_buoc: true },
+    { key: 'sdt', title: 'Điện thoại', rong: 130 }, { key: 'dia_chi', title: 'Địa chỉ', kieu: 'dai' }, { key: 'mst', title: 'MST', rong: 120 },
     { key: 'ghi_chu', title: 'Ghi chú', kieu: 'dai' }] },
   kho: { ten: 'Kho', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã kho', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên kho', bat_buoc: true },
+    { key: 'loai_kho', title: 'Loại kho', kieu: 'chon', chon: LOAI_KHO, rong: 190 }, { key: 'dia_diem', title: 'Địa điểm', rong: 160 },
     { key: 'ngung_dung', title: 'Ngừng dùng', kieu: 'co', rong: 100 }, { key: 'ghi_chu', title: 'Ghi chú', kieu: 'dai' }] },
   quy: { ten: 'Quỹ / tài khoản tiền', tim: ['ma', 'ten'], cot: [
     { key: 'ma', title: 'Mã quỹ', bat_buoc: true, rong: 120 }, { key: 'ten', title: 'Tên quỹ / tài khoản', bat_buoc: true },
@@ -72,6 +81,7 @@ function BangDanhMuc({ bang }: { bang: string }) {
         const cot = cfg.cot.find((x) => x.key === k)!;
         const v = c[i].trim();
         if (cot.kieu === 'don_vi') return;
+        if (cot.kieu === 'chon') { const m = Object.entries(cot.chon || {}).find(([a, b]) => a === v || b.toLowerCase() === v.toLowerCase()); if (m) o[k] = m[0]; return; }
         o[k] = cot.kieu === 'so' ? docSo(v) : cot.kieu === 'co' ? /^(1|x|có|co|true)$/i.test(v) : v;
       });
       return o;
@@ -99,13 +109,14 @@ function BangDanhMuc({ bang }: { bang: string }) {
         onRow={(r) => ({ onClick: () => { form.setFieldsValue(r); setSua(r); }, style: { cursor: 'pointer' } })}
         columns={cfg.cot.map((c) => ({ title: c.title, dataIndex: c.key, width: c.rong, align: c.kieu === 'so' ? 'right' as const : undefined,
           render: (v: any, r: any) => (c.kieu === 'so' ? fmt(v, 3) : c.kieu === 'co' ? (v ? '✓' : '') : c.kieu === 'don_vi' ? r.don_vi?.ten
-            : c.kieu === 'loai_quy' ? (v === 'ngan_hang' ? 'Ngân hàng' : 'Tiền mặt') : v) }))} />
+            : c.kieu === 'loai_quy' ? (v === 'ngan_hang' ? 'Ngân hàng' : 'Tiền mặt') : c.kieu === 'chon' ? c.chon?.[v] : v) }))} />
       <Modal open={!!sua} title={(sua?.id ? 'Sửa ' : 'Thêm ') + cfg.ten.toLowerCase()} onOk={luu} onCancel={() => setSua(null)} okText="Lưu" cancelText="Thôi" destroyOnClose>
         <Form form={form} layout="vertical">
           {cfg.cot.map((c) => <Form.Item key={c.key} name={c.key} label={c.title} valuePropName={c.kieu === 'co' ? 'checked' : 'value'}
             rules={c.bat_buoc ? [{ required: true, message: 'Bắt buộc' }] : []}>
             {c.kieu === 'don_vi' ? <ChonDanhMuc bang="don_vi" style={{ width: '100%' }} /> : c.kieu === 'loai_quy'
               ? <Select options={[{ value: 'tien_mat', label: 'Tiền mặt' }, { value: 'ngan_hang', label: 'Ngân hàng' }]} /> :
+              c.kieu === 'chon' ? <Select options={Object.entries(c.chon || {}).map(([value, label]) => ({ value, label }))} /> :
               c.kieu === 'so' ? <InputNumber style={{ width: '100%' }} /> : c.kieu === 'co' ? <Checkbox /> : c.kieu === 'dai' ? <Input.TextArea rows={2} /> : <Input />}
           </Form.Item>)}
         </Form>
