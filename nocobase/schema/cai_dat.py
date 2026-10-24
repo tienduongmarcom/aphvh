@@ -18,6 +18,8 @@ MENU = [
     ("Báo cáo", "barchartoutlined", "/admin/aph/bao-cao"),
     ("Tài sản", "tooloutlined", "/admin/aph/tai-san"),
     ("Go-Live & số dư đầu kỳ", "rocketoutlined", "/admin/aph/go-live"),
+    ("Bán nhanh", "thunderboltoutlined", "/admin/aph/ban-nhanh"),
+    ("Trung tâm dữ liệu", "databaseoutlined", "/admin/aph/du-lieu"),
 ]
 
 DON_VI = [
@@ -53,6 +55,25 @@ NHOM = {
         "luot_giao": DOC, "tra_hang": DOC, "dieu_chinh_gia": DOC, "thu_ho": DOC,
         "so_quy": DOC, "no_ncc_dau_ky": DOC, "nha_cung_cap": DOC, "phieu_chi": SUA + ["ghi"], "chuyen_tien": SUA + ["ghi"], "chot_ca": DOC + ["chot"], "phieu_kho": DOC}),
 }
+# 0.4.0 Unified Operations: bổ sung quyền cho bảng / thao tác mới.
+DOC_GIA = {"bang_gia": DOC, "bang_gia_dong": DOC}
+NHOM["ban_hang"][2].update({**DOC_GIA, "don_gop": SUA + ["chot", "huy", "taoGiao"], "don_gop_dong": SUA, "giao_gop": DOC, "giao_gop_luot": DOC,
+                            "hoa_don_cho_xuat": DOC, "dat_giu_ton": DOC})
+for _n in ("kho", "nha_may"):
+    NHOM[_n][2].update({"chuyen_hang": SUA + ["xacNhanXuat", "xacNhanNhan"], "chuyen_hang_dong": SUA, "chenh_lech_giao_nhan": DOC,
+                        "giao_gop": DOC + ["xacNhan", "huy"], "giao_gop_luot": DOC, "don_gop": DOC, "don_gop_dong": DOC, "dat_giu_ton": DOC})
+NHOM["nha_may"][2]["me_sx"] = DOC + ["create", "update", "baoXong", "nhapNhanh", "hieuSuat"]
+NHOM["nha_may"][2]["sx_ra_soat"] = DOC + ["boSung", "boQua"]
+NHOM["thu_chi"][2]["phieu_thu"] = SUA + ["ghi", "phanBo", "nhanDien", "baoChuyen"]
+NHOM["thu_chi"][2].update({"sao_ke": DOC, "sao_ke_dong": DOC, "ca_pos": DOC, "don_gop": DOC})
+NHOM["pos"] = ("Thu ngân bán nhanh", ["Bán nhanh"], {**DOC_DANH_MUC, **DOC_GIA, "khach_hang": DOC + ["create"], "ca_pos": DOC + ["mo", "ban", "chot"],
+               "ton_kho": DOC, "don_ban": DOC, "don_ban_dong": DOC, "phieu_thu": DOC, "phieu_thu_phan_bo": DOC})
+TAT_CA_040 = ["cau_hinh", "phien_ban_schema", "dat_giu_ton", "bang_gia", "bang_gia_dong", "lich_su_duyet_gia", "don_gop", "don_gop_dong", "giao_gop",
+              "giao_gop_luot", "hoa_don_cho_xuat", "chuyen_hang", "chuyen_hang_dong", "chenh_lech_giao_nhan", "ca_pos", "sao_ke", "sao_ke_dong",
+              "sx_ra_soat", "nguon_tep", "nguon_ban_ghi", "anh_xa_ma", "khop_chung_tu"]
+NGHIEP_VU_040 = ["taoGiao", "xacNhan", "nhan", "xacNhanXuat", "xacNhanNhan", "xuLy", "mo", "ban", "baoChuyen", "xacMinh", "tuChoiXacMinh", "nap",
+                 "goiY", "khop", "taoThu", "boQua", "xuLyHoan", "nhapNhanh", "boSung", "hieuSuat", "phanLoai", "timTrung", "goiYAnhXa", "dat",
+                 "taoLoTon", "bacBo", "tongQuan", "truyVet", "nangCap"]
 TAT_CA = ["don_ban", "don_ban_dong", "luot_giao", "luot_giao_dong", "tra_hang", "tra_hang_dong", "dieu_chinh_gia", "phieu_kho", "phieu_kho_dong",
           "phieu_thu", "phieu_thu_phan_bo", "phieu_chi", "chuyen_tien", "thu_ho", "chot_ca", "so_kho", "ton_kho", "so_quy",
           "gia_von", "so_gia_von", "ky_mo_so", "nhap_lo", "nhap_dong", "mo_so_khoa", "no_ncc_dau_ky", "tai_san", "tai_san_su_kien",
@@ -61,7 +82,11 @@ NGHIEP_VU = ["ghiSo", "huy", "dinhGia", "chotDon", "duyetGia", "moLai", "dongPha
              "ghi", "phanBo", "phanBoThuHo", "nhanDien", "tatToan", "chot", "baoCao",
              "kiem", "duyet", "khoa", "uocTinh", "taiTep", "duyetNgoaiLe", "doiChieu", "nhapGiaVon", "baoXong"]
 for ten, tieu_de in (("ke_toan", "Kế toán"), ("quan_ly", "Quản lý")):
-    NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU for b in TAT_CA})
+    NHOM[ten] = (tieu_de, [m[0] for m in MENU], {b: SUA + NGHIEP_VU + NGHIEP_VU_040 for b in TAT_CA + TAT_CA_040})
+    # Cấu hình chỉ đổi qua thao tác "dat" (ghi vết); dữ liệu nguồn / sao kê không sửa tay.
+    NHOM[ten][2]["cau_hinh"] = DOC + ["dat"]
+    for _b in ("phien_ban_schema", "nguon_tep", "nguon_ban_ghi", "sao_ke", "sao_ke_dong", "hoa_don_cho_xuat", "dat_giu_ton", "lich_su_duyet_gia", "chenh_lech_giao_nhan"):
+        NHOM[ten][2][_b] = DOC + [x for x in NGHIEP_VU + NGHIEP_VU_040 if x not in ("create", "update", "destroy")]
 # Vai trò cờ: gán THÊM cho người không được xem giá vốn (vd. nhân viên nhà máy kiêm việc khác). Phủ quyết mọi vai trò khác ở máy chủ.
 for ten in ("ke_toan", "quan_ly"):
     NHOM[ten][2]["users"] = DOC  # chọn người dùng khi cấu hình phạm vi kho / quỹ
@@ -75,7 +100,7 @@ def ds_truong(api, bang, long_con):
         kq.append(f["name"])
         if f.get("type") == "belongsTo" and f.get("foreignKey"):
             kq.append(f["foreignKey"])
-        if long_con and f.get("type") == "hasMany" and f.get("target"):
+        if long_con and f.get("type") == "hasMany" and f.get("target") and f["name"] not in ("don_con", "luot_ds"):
             kq += [f"{f['name']}.{x}" for x in ds_truong(api, f["target"], False)]
     return sorted(set(kq))
 
