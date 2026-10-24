@@ -23,22 +23,23 @@ function LaiGop() {
         b.meta?.count ? `${b.meta.count} dòng hàng đang giá tạm` : '', c.meta?.count ? `${c.meta.count} dòng hàng chờ định giá` : ''].filter(Boolean)));
   }, []);
   if (loi) return <Typography.Text type="secondary">{loi}</Typography.Text>;
-  const tong = (k: string) => (ds || []).reduce((s, r) => s + Number(r[k] || 0), 0);
+  const tong = (k: string) => (ds || []).filter((r) => !r.chua_xac_dinh).reduce((s, r) => s + Number(r[k] || 0), 0);
   return <>
     <Space style={{ marginBottom: 12 }} wrap>
       <Segmented value={theo} onChange={(v: any) => setTheo(v)} options={[{ value: 'don_vi', label: 'Theo đơn vị' }, { value: 'khach', label: 'Theo khách' },
         { value: 'mat_hang', label: 'Theo mặt hàng' }, { value: 'ngay', label: 'Theo ngày' }]} />
       <DatePicker.RangePicker format="DD/MM/YYYY" value={khoang} onChange={setKhoang} />
     </Space>
+    {(ds || []).some((r: any) => r.chua_xac_dinh) && <Alert type="error" showIcon style={{ marginBottom: 12 }} message="Có doanh số chuyển tiếp CHƯA CÓ GIÁ VỐN: đã tách riêng, không tính vào lãi gộp. Kế toán nhập giá vốn ở lượt giao của đơn." />}
     {tam.length > 0 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Lãi gộp TẠM TÍNH — chưa phải số chốt" description={tam.join(' · ')} />}
-    <Typography.Paragraph type="secondary">Tính trên các lượt đã xuất kho (bàn giao xe / khách nhận), giá vốn bình quân theo kho tại lúc xuất. Chưa trừ hàng trả và giảm giá sau bán.</Typography.Paragraph>
+    <Typography.Paragraph type="secondary">Tính trên các lượt đã xuất kho (bàn giao xe / khách nhận), giá vốn bình quân theo kho tại lúc xuất. Lãi gộp THUẦN: đã trừ hàng trả, giảm giá sau bán và cộng điều chỉnh giá vốn (giá thành / giá tạm của hàng đã xuất). Lượt chuyển tiếp chưa có giá vốn tách riêng, không tính lãi.</Typography.Paragraph>
     <Table size="small" rowKey="nhom" loading={!ds} dataSource={ds || []} pagination={{ pageSize: 100 }} columns={[
       { title: 'Nhóm', dataIndex: 'nhom', render: (v) => (theo === 'ngay' ? ngayVN(v) : v) },
       { title: 'Số lượng', dataIndex: 'so_luong', align: 'right', render: (v) => fmt(v, 3) },
       { title: 'Doanh số', dataIndex: 'doanh_so', align: 'right', render: (v) => fmt(v) },
       { title: 'Giá vốn', dataIndex: 'gia_von', align: 'right', render: (v) => fmt(v) },
-      { title: 'Lãi gộp', align: 'right', render: (_, r) => <b>{fmt(Number(r.doanh_so || 0) - Number(r.gia_von || 0))}</b> },
-      { title: 'Tỷ lệ', align: 'right', render: (_, r) => (Number(r.doanh_so) ? fmt(((r.doanh_so - r.gia_von) / r.doanh_so) * 100, 1) + '%' : '') },
+      { title: 'Lãi gộp', align: 'right', render: (_, r) => (r.chua_xac_dinh ? <span style={{ color: '#cf1322' }}>không tính</span> : <b>{fmt(Number(r.doanh_so || 0) - Number(r.gia_von || 0))}</b>) },
+      { title: 'Tỷ lệ', align: 'right', render: (_, r) => (!r.chua_xac_dinh && Number(r.doanh_so) ? fmt(((r.doanh_so - r.gia_von) / r.doanh_so) * 100, 1) + '%' : '') },
     ]} summary={() => <Table.Summary.Row><Table.Summary.Cell index={0}><b>Cộng</b></Table.Summary.Cell><Table.Summary.Cell index={1} />
       <Table.Summary.Cell index={2} align="right"><b>{fmt(tong('doanh_so'))}</b></Table.Summary.Cell>
       <Table.Summary.Cell index={3} align="right"><b>{fmt(tong('gia_von'))}</b></Table.Summary.Cell>

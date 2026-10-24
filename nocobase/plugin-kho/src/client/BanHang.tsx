@@ -1,6 +1,6 @@
 /** Màn hình Bán hàng: danh sách đơn + lập đơn (chọn đơn vị bán) + chốt & in + xác nhận giao. */
 import {
-  Alert, App, Button, Card, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Segmented, Space, Table, Tag, Typography,
+  Alert, App, Button, Card, Checkbox, Col, Select, DatePicker, Drawer, Form, Input, InputNumber, Radio, Row, Segmented, Space, Table, Tag, Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -24,6 +24,15 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
     });
   }, [JSON.stringify(dong.map((d: any) => [d.kho_id, d.mat_hang_id]))]);
   const doi = (i: number, v: any) => setDong(dong.map((d: any, j: number) => (j === i ? { ...d, ...v } : d)));
+  const [qd, setQd] = useState<Record<string, any[]>>({});
+  useEffect(() => {
+    dong.forEach(async (d: any) => {
+      if (!d.mat_hang_id || d.mat_hang_id in qd) return;
+      const r = await goi('quy_doi_dvt:list', { params: { filter: { mat_hang_id: d.mat_hang_id }, pageSize: 20 }, im: true }).catch(() => ({ data: [] }));
+      setQd((x) => ({ ...x, [d.mat_hang_id]: r.data || [] }));
+    });
+  }, [JSON.stringify(dong.map((d: any) => d.mat_hang_id))]);
+  const heSo = (d: any) => (qd[d.mat_hang_id] || []).find((x: any) => x.dvt === d.dvt_nhap)?.he_so;
   const cot: any[] = [
     { title: 'Mã hàng', width: 260, render: (_: any, d: any, i: number) => sua
       ? <ChonDanhMuc bang="mat_hang" value={d.mat_hang_id} style={{ width: 250 }} locThem={{ ngung_dung: { $ne: true } }}
@@ -39,8 +48,19 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
       ? <InputNumber min={0} value={d.so_bao} style={{ width: 90 }}
           onChange={(v) => doi(i, { so_bao: v, so_kg: v && d.kg_bao ? Math.round(v * d.kg_bao * 1000) / 1000 : d.so_kg })} />
       : fmt(d.so_bao, 2) },
+    { title: 'ĐVT bán', width: 100, render: (_: any, d: any, i: number) => {
+      const ds = qd[d.mat_hang_id] || [];
+      if (!sua) return d.dvt_nhap ? `${fmt(d.sl_nhap, 3)} ${d.dvt_nhap}` : dvt(d.mat_hang || d);
+      if (!ds.length) return dvt(d.mat_hang || d);
+      return <Select size="small" style={{ width: 90 }} value={d.dvt_nhap || ''} onChange={(v) => doi(i, v ? { dvt_nhap: v, sl_nhap: d.sl_nhap || 1,
+        so_kg: Math.round((d.sl_nhap || 1) * Number(ds.find((x: any) => x.dvt === v)?.he_so || 0) * 1000) / 1000 } : { dvt_nhap: null, sl_nhap: null })}
+        options={[{ value: '', label: dvt(d.mat_hang || d) }, ...ds.map((x: any) => ({ value: x.dvt, label: x.dvt }))]} />;
+    } },
     { title: 'Số lượng', width: 130, render: (_: any, d: any, i: number) => {
       const t = ton[`${d.kho_id ?? khoMacDinh}-${d.mat_hang_id}`];
+      if (sua && d.dvt_nhap) return <div><InputNumber min={0} value={d.sl_nhap} style={{ width: 110 }}
+        onChange={(v) => doi(i, { sl_nhap: v, so_kg: Math.round(Number(v || 0) * Number(heSo(d) || 0) * 1000) / 1000 })} />
+        <div style={{ fontSize: 12, color: '#888' }}>= {fmt(d.so_kg, 3)} {dvt(d.mat_hang || d)}{t !== undefined ? ` · khả dụng ${fmt(t, 3)}` : ''}</div></div>;
       return sua ? <div><InputNumber min={0} value={d.so_kg} style={{ width: 110 }} onChange={(v) => doi(i, { so_kg: v })} />
         {t !== undefined && <div style={{ fontSize: 12, color: t < (d.so_kg || 0) ? '#cf1322' : '#888' }}>Khả dụng: {fmt(t, 3)} {dvt(d.mat_hang || d)}</div>}</div>
         : `${fmt(d.so_kg, 3)} ${dvt(d.mat_hang || d)}`;
@@ -57,7 +77,7 @@ function DongHang({ dong, setDong, sua, khoMacDinh }: any) {
   return (
     <>
       <Table size="small" rowKey={(d: any, i: any) => d.id || `moi-${i}`} pagination={false} columns={cot} dataSource={dong}
-        summary={() => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><b>Cộng</b></Table.Summary.Cell>
+        summary={() => <Table.Summary.Row><Table.Summary.Cell index={0} colSpan={5} align="right"><b>Cộng</b></Table.Summary.Cell>
           <Table.Summary.Cell index={1}><b>{fmt(dong.reduce((s: number, d: any) => s + Number(d.so_kg || 0), 0), 3)}</b></Table.Summary.Cell>
           <Table.Summary.Cell index={2} /><Table.Summary.Cell index={4} />
           <Table.Summary.Cell index={3} align="right"><b>{fmt(dong.reduce((s: number, d: any) => s + Math.round((d.so_kg || 0) * (d.don_gia || 0)), 0))}</b></Table.Summary.Cell>
@@ -99,7 +119,8 @@ function DonBan({ id, dong: dongDong, xong }: any) {
     for (const d of hang) if (!(d.kho_id ?? khoMacDinh)) { message.warning('Chọn kho xuất cho mọi dòng.'); throw new Error('thieu'); }
     const values = {
       ...v, ngay: v.ngay?.format('YYYY-MM-DD'), ngay_giao: v.ngay_giao?.format('YYYY-MM-DD'),
-      dong: hang.map((d) => ({ ...(d.id ? { id: d.id } : {}), mat_hang_id: d.mat_hang_id, kho_id: d.kho_id ?? khoMacDinh, so_bao: d.so_bao || 0, so_kg: d.so_kg || 0, don_gia: d.don_gia || 0 })),
+      dong: hang.map((d) => ({ ...(d.id ? { id: d.id } : {}), mat_hang_id: d.mat_hang_id, kho_id: d.kho_id ?? khoMacDinh, so_bao: d.so_bao || 0, so_kg: d.so_kg || 0, don_gia: d.don_gia || 0,
+        dvt_nhap: d.dvt_nhap || null, sl_nhap: d.dvt_nhap ? d.sl_nhap : null })),
     };
     const k = hang[hang.length - 1].kho_id ?? khoMacDinh;
     try { localStorage.setItem('aph_kho_mac_dinh', String(k)); } catch { /* bỏ qua */ }

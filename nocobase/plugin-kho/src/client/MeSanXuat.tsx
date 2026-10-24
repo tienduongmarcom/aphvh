@@ -1,11 +1,11 @@
 /** Mẻ sản xuất: cấp NVL → thu hồi (nhiều lần, dở dang qua ngày) → kế toán tập hợp chi phí → chốt / chốt lại giá thành (giữ phiên bản). */
-import { App, Alert, Button, Col, DatePicker, Drawer, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Alert, Button, Checkbox, Col, DatePicker, Drawer, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { ChonDanhMuc, LOAI_PHIEU_KHO, TRANG_THAI_PHIEU, fmt, ngayVN, theTrangThai, useGoi } from './chung';
 import { PhieuKho } from './Kho';
 
-const TT: Record<string, [string, string]> = { mo: ['Đang sản xuất', 'blue'], da_chot: ['Đã chốt giá thành', 'green'],
-  can_chot_lai: ['Cần chốt lại (có chi phí / sản lượng mới)', 'orange'], da_huy: ['Đã hủy', 'red'] };
+const TT: Record<string, [string, string]> = { mo: ['Đang sản xuất', 'blue'], tam_hoan_thanh: ['Tạm hoàn thành — chờ chi phí', 'cyan'], da_chot: ['Đã chốt giá thành', 'green'],
+  can_chot_lai: ['Cần điều chỉnh (chi phí / sản lượng mới)', 'orange'], da_khoa: ['Đã khóa kỳ', 'default'], da_huy: ['Đã hủy', 'red'] };
 const PP: Record<string, string> = { kg: 'Theo kg tương đương', he_so: 'Theo hệ số định mức', gia_tri: 'Theo giá trị tương đối (giá bán)' };
 const CP: Record<string, string> = { nhan_cong: 'Nhân công trực tiếp', dien: 'Điện / nước', bao_bi: 'Bao bì ngoài phiếu', van_chuyen: 'Vận chuyển / thu mua',
   khau_hao: 'Khấu hao / chi phí tài sản (ước tính)', chung: 'Chi phí sản xuất chung', do_dang_dau_ky: 'Dở dang đầu kỳ / chuyển từ mẻ trước' };
@@ -50,8 +50,10 @@ function ChiTietMe({ id, xong }: any) {
       <Col span={24}>Giá thành bình quân: <b style={{ fontSize: 16 }}>{fmt(me.gia_thanh, 2)} đ/kg</b> {me.phien_ban ? `(phiên bản ${me.phien_ban}, ${me.chot_boi || ''})` : '(chưa chốt — thành phẩm đang mang giá TẠM)'}</Col></Row>}
     {me.trang_thai !== 'da_chot' && me.trang_thai !== 'da_huy' && <Alert type="warning" showIcon message="Giá thành mẻ đang TẠM TÍNH: lãi gộp của hàng từ mẻ này chưa phải số chốt." />}
     <Space wrap>
-      {me.trang_thai !== 'da_huy' && <Button type="primary" onClick={() => setMoPhieu({ loai: 'cap_nvl', kho_id: me.kho_id, me_sx_id: me.id })}>+ Cấp nguyên liệu / bao bì</Button>}
-      {me.trang_thai !== 'da_huy' && <Button type="primary" onClick={() => setMoPhieu({ loai: 'thu_hoi', kho_id: me.kho_id, me_sx_id: me.id })}>+ Thu hồi thành phẩm / phụ phẩm / hao hụt</Button>}
+      {me.trang_thai === 'mo' && <Button onClick={() => goi('me_sx:baoXong', { params: { filterByTk: me.id }, data: {} }).then(() => { message.success('Đã báo tạm hoàn thành'); tai(); })}>Báo tạm hoàn thành</Button>}
+      {xemGia && me.trang_thai === 'da_chot' && <Button onClick={() => goi('me_sx:khoa', { params: { filterByTk: me.id }, data: {} }).then(() => { message.success('Đã khóa kỳ giá thành'); tai(); })}>Khóa kỳ giá thành</Button>}
+      {!['da_huy', 'da_khoa'].includes(me.trang_thai) && <Button type="primary" onClick={() => setMoPhieu({ loai: 'cap_nvl', kho_id: me.kho_id, me_sx_id: me.id })}>+ Cấp nguyên liệu / bao bì</Button>}
+      {!['da_huy', 'da_khoa'].includes(me.trang_thai) && <Button type="primary" onClick={() => setMoPhieu({ loai: 'thu_hoi', kho_id: me.kho_id, me_sx_id: me.id })}>+ Thu hồi thành phẩm / phụ phẩm / hao hụt</Button>}
       {cp !== null && me.trang_thai !== 'da_huy' && <Button onClick={() => { fCp.resetFields(); setMoCp(true); }}>+ Chi phí (kế toán)</Button>}
       {xemGia && me.trang_thai !== 'da_huy' && <Button type="primary" danger onClick={() => { fChot.setFieldsValue({ phuong_phap: me.phuong_phap || 'kg', do_dang_cuoi: me.do_dang_cuoi || 0, kg_do_dang: me.kg_do_dang || 0 }); setHeSo({}); setGiaPp({}); setMoChot(true); }}>
         {me.phien_ban ? 'Chốt lại giá thành' : 'Chốt giá thành'}</Button>}
@@ -63,7 +65,7 @@ function ChiTietMe({ id, xong }: any) {
     ]} />
     {cp !== null && <Table size="small" rowKey="id" pagination={false} title={() => <b>Chi phí tập hợp (kế toán)</b>} dataSource={cp} columns={[
       { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Khoản', dataIndex: 'loai', render: (v) => CP[v] }, { title: 'Kỳ', dataIndex: 'ky' },
-      { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) }, { title: 'Căn cứ', dataIndex: 'ghi_chu' },
+      { title: 'Số tiền', dataIndex: 'so_tien', align: 'right', render: (v) => fmt(v) }, { title: 'Số chứng từ', dataIndex: 'so_chung_tu' }, { title: 'Căn cứ', dataIndex: 'ghi_chu' },
     ]} />}
     {pb !== null && pb.length > 0 && <Table size="small" rowKey="id" pagination={false} title={() => <b>Phiên bản giá thành (không ghi đè lịch sử)</b>} dataSource={pb} columns={[
       { title: 'Phiên bản', dataIndex: 'phien_ban' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Chi phí', dataIndex: 'tong_chi_phi', align: 'right', render: (v) => fmt(v) },
@@ -83,6 +85,8 @@ function ChiTietMe({ id, xong }: any) {
       <Form form={fCp} layout="vertical">
         <Form.Item name="loai" label="Khoản chi phí" rules={[{ required: true }]}><Select options={Object.entries(CP).map(([value, label]) => ({ value, label }))} /></Form.Item>
         <Form.Item name="so_tien" label="Số tiền" rules={[{ required: true }]}><InputNumber min={1} style={{ width: '100%' }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))} /></Form.Item>
+        <Form.Item name="so_chung_tu" label="Số chứng từ (hóa đơn / bảng lương / bảng phân bổ) — chống ghi hai lần"><Input /></Form.Item>
+        <Form.Item name="phieu_chi_id" label="Gắn phiếu chi (nếu có) — không phân bổ quá số tiền phiếu"><ChonDanhMuc bang="phieu_chi" nhan="so" timTheo={['so', 'ly_do', 'nguoi_nhan']} locThem={{ trang_thai: 'da_ghi' }} style={{ width: '100%' }} /></Form.Item>
         <Form.Item name="ky" label="Kỳ (vd 2026-10)"><Input /></Form.Item>
         <Form.Item name="ngay" label="Ngày"><DatePicker format="DD/MM/YYYY" /></Form.Item>
         <Form.Item name="ghi_chu" label="Căn cứ (bảng lương, hóa đơn điện, bảng phân bổ…)"><Input.TextArea /></Form.Item>
@@ -91,7 +95,7 @@ function ChiTietMe({ id, xong }: any) {
     <Modal open={moChot} width={820} title={`Chốt giá thành ${me.so}`} okText="Chốt" cancelText="Thôi" onCancel={() => setMoChot(false)} onOk={async () => {
       const v = await fChot.validateFields();
       const r = await goi('me_sx:chot', { params: { filterByTk: me.id }, data: { ...v, he_so: heSo, gia_phu_pham: giaPp } });
-      message.success(`Đã chốt phiên bản ${r.data.phien_ban}: ${fmt(r.data.gia_thanh, 2)} đ/kg, điều chỉnh kho ${fmt(r.data.dieu_chinh)} đ`, 8);
+      message.success(`Đã chốt phiên bản ${r.data.phien_ban}: ${fmt(r.data.gia_thanh, 2)} đ/kg. Chênh ${fmt(r.data.dieu_chinh)} đ: vào tồn ${fmt(r.data.vao_ton)}, vào giá vốn hàng đã xuất ${fmt(r.data.vao_gia_von)}`, 10);
       setMoChot(false); tai(); xong?.();
     }}>
       <Typography.Paragraph type="secondary">Tổng phân bổ = NVL + bao bì + chi phí − phụ phẩm − dở dang cuối − phần hao hụt bất thường (đưa vào chi phí kỳ). Giá trị thành phẩm trong kho được điều chỉnh đúng phần chênh so với giá tạm / phiên bản trước; hàng đã bán hết thì chênh lệch nằm ở sổ giá trị (giá vốn kỳ).</Typography.Paragraph>
@@ -99,6 +103,8 @@ function ChiTietMe({ id, xong }: any) {
         <Col span={8}><Form.Item name="phuong_phap" label="Phân bổ cho thành phẩm"><Select options={Object.entries(PP).map(([value, label]) => ({ value, label }))} /></Form.Item></Col>
         <Col span={8}><Form.Item name="do_dang_cuoi" label="Dở dang cuối (giá trị còn trên chuyền)"><InputNumber min={0} style={{ width: '100%' }} formatter={(v) => fmt(v)} parser={(v: any) => Number(String(v).replace(/\D/g, ''))} /></Form.Item></Col>
         <Col span={8}><Form.Item name="kg_do_dang" label="Dở dang cuối (kg)"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+        {me.trang_thai === 'da_khoa' || (me.trang_thai === 'can_chot_lai' && me.phien_ban) ? <Col span={24}><Form.Item name="dieu_chinh_ky_sau" valuePropName="checked" initialValue={me.trang_thai !== 'can_chot_lai'}>
+          <Checkbox>Điều chỉnh kỳ sau (mẻ đã khóa kỳ: giữ phiên bản cũ, ghi phiên bản điều chỉnh)</Checkbox></Form.Item></Col> : null}
       </Row></Form>
       {dongRa.length > 0 && <Table size="small" rowKey="id" pagination={false} title={() => 'Hệ số định mức (khi phân bổ theo hệ số)'} dataSource={dongRa} columns={[
         { title: 'Phiếu', dataIndex: 'so' }, { title: 'Thành phẩm', render: (_, d) => d.mat_hang?.ma }, { title: 'Kg', dataIndex: 'so_kg', render: (v) => fmt(v, 3) },

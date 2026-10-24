@@ -35,10 +35,14 @@ export const MAU: Record<string, { ten: string; nhom: string; tieu_de: string[];
     ghi_chu: 'Loại: Cọc / Chưa rõ (không có mã khách) / Chưa phân bổ (khách đã nộp, chưa trừ đơn). KHÔNG cộng thêm vào số dư quỹ.' },
   thu_ho_dau_ky: { ten: 'Thu hộ còn giữ', nhom: '4. Quỹ & ngân hàng', tieu_de: ['Đơn vị giữ tiền', 'Đơn vị được trả', 'Số tiền', 'Mã tham chiếu', 'Ghi chú'],
     vi_du: ['APH', 'TL', '6000000', 'TH-09-01', 'Khách chuyển nhầm TK APH'] },
+  quy_doi_dvt: { ten: 'Quy đổi đơn vị tính', nhom: '1. Danh mục', tieu_de: ['Mã hàng', 'Đơn vị giao dịch', 'Hệ số', 'Mặc định'],
+    vi_du: ['PT-200G', 'Thùng', '5', 'x'], ghi_chu: 'Hệ số = 1 đơn vị giao dịch bằng bao nhiêu ĐVT tồn (vd. 1 thùng = 25 gói × 200 g = 5 kg). Tồn và giá vốn vẫn theo ĐVT tồn.' },
+  do_dang_dau_ky: { ten: 'Dở dang sản xuất đầu kỳ', nhom: '6. Nhà máy & tài sản', tieu_de: ['Mã dở dang', 'Mã kho nhà máy', 'Kg dở dang', 'Giá trị', 'Xưởng / tổ', 'Sản phẩm dự kiến', 'Ghi chú'],
+    vi_du: ['WIP-01', 'PT', '200', '4200000', 'Tổ 2', 'Đỗ tách vỏ', 'Biên bản kiểm kê chuyền 25/10'], ghi_chu: 'Mỗi dòng mở một mẻ với chi phí "dở dang đầu kỳ"; thu hồi / chốt như mẻ thường. Chưa có giá trị thì chưa nhập.' },
   don_chuyen_tiep: { ten: 'Đơn chưa giao / đang vận chuyển', nhom: '5. Đơn hàng chuyển tiếp', tieu_de: ['Số đơn cũ', 'Mã khách', 'Đơn vị bán', 'Mã hàng', 'Mã kho',
-    'Số lượng còn giao', 'Đơn giá', 'Tình trạng', 'Cách giao', 'Ngày đặt', 'Người nhận / xe', 'Ghi chú'],
-    vi_du: ['SO-1023', 'KH001', 'APH', 'DX-25', 'HN', '300', '40000', 'Chưa giao', 'Khách đến lấy', '24/10/2026', '', ''],
-    ghi_chu: 'Chưa giao: hàng còn trong tồn đầu kỳ, đơn vào trạng thái đã chốt. Đang vận chuyển: hàng đã rời kho trước mốc chốt (KHÔNG có trong tồn đầu kỳ), ghi nợ khi chuyển, không trừ kho; KHÔNG nhập khoản này vào công nợ đầu kỳ.' },
+    'Số lượng còn giao', 'Đơn giá', 'Tình trạng', 'Cách giao', 'Ngày đặt', 'Người nhận / xe', 'Ghi chú', 'Giá vốn', 'Đang giữ hàng', 'Đã thu', 'Mã quỹ đã thu'],
+    vi_du: ['SO-1023', 'KH001', 'APH', 'DX-25', 'HN', '300', '40000', 'Chưa giao', 'Khách đến lấy', '24/10/2026', '', '', '', 'x', '', ''],
+    ghi_chu: 'Chưa giao: hàng còn trong tồn đầu kỳ, đơn vào trạng thái đã chốt. Đang vận chuyển: hàng đã rời kho trước mốc chốt (KHÔNG có trong tồn đầu kỳ), ghi nợ khi chuyển, không trừ kho; KHÔNG nhập khoản này vào công nợ đầu kỳ. Giá vốn (tổng của dòng, có căn cứ): để trống thì lượt "giá vốn chưa xác định" và không vào lãi gộp. Đang giữ hàng = x: tạo lượt chờ xuất giữ hàng. Đã thu (chỉ đơn đang vận chuyển): tiền khách trả trước, đã nằm trong số dư quỹ.' },
 };
 const TT_LO: Record<string, [string, string]> = { nhap: ['Mới dán', 'default'], da_kiem: ['Đã kiểm tra', 'blue'], da_duyet: ['Đã duyệt', 'purple'],
   da_ghi: ['Đã ghi sổ', 'green'], da_huy: ['Đã hủy', 'red'] };
@@ -50,17 +54,19 @@ function KyMoSo({ doi }: any) {
   const [ds, setDs] = useState<any[]>([]);
   const [ma, setMa] = useState('GOLIVE-2026');
   const [ngay, setNgay] = useState<any>(dayjs('2026-10-25'));
+  const [tach, setTach] = useState(true);
   const tai = async () => setDs((await goi('ky_mo_so:list', { params: { sort: ['-id'] } })).data || []);
   useEffect(() => { tai(); }, []);
   return <Space direction="vertical" style={{ width: '100%' }}>
     <Typography.Paragraph type="secondary">Một kỳ mở sổ = một mốc chốt số dư. Trong kỳ đang mở mới ghi được tồn / nợ / tiền đầu kỳ. Xong và đối chiếu khớp thì <b>Khóa kỳ</b>: sau đó không ai (kể cả quản trị) ghi thêm số dư đầu kỳ; sai thì lập chứng từ điều chỉnh.</Typography.Paragraph>
     <Space wrap><Input value={ma} onChange={(e) => setMa(e.target.value)} style={{ width: 200 }} addonBefore="Mã kỳ" />
       <DatePicker format="DD/MM/YYYY" value={ngay} onChange={setNgay} />
-      <Button type="primary" onClick={async () => { await goi('ky_mo_so:create', { data: { ma, ngay_chot: ngay?.format('YYYY-MM-DD') } }); message.success('Đã mở kỳ'); tai(); doi?.(); }}>Mở kỳ mở sổ</Button></Space>
+      <Radio.Group value={tach} onChange={(e) => setTach(e.target.value)} options={[{ value: true, label: 'Tiền / công nợ: người duyệt khác người nhập' }, { value: false, label: 'Một người nhập và duyệt' }]} />
+      <Button type="primary" onClick={async () => { await goi('ky_mo_so:create', { data: { ma, ngay_chot: ngay?.format('YYYY-MM-DD'), tach_nguoi_duyet: tach } }); message.success('Đã mở kỳ'); tai(); doi?.(); }}>Mở kỳ mở sổ</Button></Space>
     <Table size="small" rowKey="id" dataSource={ds} pagination={false} columns={[
       { title: 'Mã kỳ', dataIndex: 'ma', render: (v) => <b>{v}</b> }, { title: 'Ngày chốt số dư', dataIndex: 'ngay_chot', render: ngayVN },
       { title: 'Trạng thái', dataIndex: 'trang_thai', render: (v) => <Tag color={v === 'mo' ? 'blue' : 'green'}>{v === 'mo' ? 'Đang mở sổ' : 'Đã khóa'}</Tag> },
-      { title: 'Người khóa', dataIndex: 'khoa_boi' },
+      { title: 'Tách người duyệt', dataIndex: 'tach_nguoi_duyet', render: (v) => (v === false ? 'Không' : 'Có') }, { title: 'Người khóa', dataIndex: 'khoa_boi' },
       { render: (_, r) => r.trang_thai === 'mo' && <Button danger onClick={() => modal.confirm({ title: `Khóa kỳ ${r.ma}?`, okText: 'Khóa kỳ', cancelText: 'Thôi',
         content: 'Sau khi khóa không ghi thêm được số dư đầu kỳ nào. Chỉ khóa khi tồn, công nợ, tiền đã đối chiếu khớp.',
         onOk: () => goi('ky_mo_so:khoa', { params: { filterByTk: r.id }, data: {} }).then(() => { tai(); doi?.(); }) })}>Khóa kỳ</Button> },
@@ -73,7 +79,7 @@ function BangTong({ tk, loai }: any) {
   const tien = !['ton_dau_ky', 'don_chuyen_tiep'].includes(loai) || loai === 'don_chuyen_tiep';
   const rows = Object.entries<any>(tk.file).map(([n, f]) => ({ n, f, tr: tk.truoc?.[n], s: tk.sau?.[n] }));
   return <>
-    {(tk.canh_bao || []).map((c: string) => <Alert key={c} type="warning" showIcon message={c} style={{ marginBottom: 8 }} />)}
+    {(tk.canh_bao || []).map((c: string) => <Alert key={c} type="error" showIcon message={c} description="Lô bị CHẶN duyệt / ghi cho tới khi sửa dữ liệu hoặc quản lý duyệt ngoại lệ có căn cứ." style={{ marginBottom: 8 }} />)}
     <Table size="small" rowKey="n" pagination={false} title={() => <b>Tổng đối chiếu</b>} dataSource={rows} columns={[
       { title: loai === 'ton_dau_ky' ? 'Kho' : loai === 'tien_chua_pb' || loai === 'quy_dau_ky' ? 'Quỹ' : 'Đơn vị / nhóm', dataIndex: 'n' },
       { title: 'Số dòng', render: (_, r) => r.f.so_dong },
@@ -119,7 +125,18 @@ function Lo({ id, xong }: any) {
   const tk = lo?.tong_kiem ? JSON.parse(lo.tong_kiem) : null;
   const buoc = !lo ? 0 : ({ nhap: 0, da_kiem: 1, da_duyet: 2, da_ghi: 3, da_huy: 0 } as any)[lo.trang_thai];
   const dsLoc = dong.filter((d) => loc === 'tat_ca' || d.trang_thai === loc);
-  const docFile = (f: File) => { const r = new FileReader(); r.onload = () => { setText(String(r.result || '')); if (!nguon) setNguon(f.name); }; r.readAsText(f, 'utf-8'); return false; };
+  const [sheets, setSheets] = useState<string[]>([]);
+  const tepRef = React.useRef<any>(null);
+  const guiTep = async (f: File, trang_tinh?: string) => {
+    const b64: string = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.readAsDataURL(f); });
+    let x = lo?.id;
+    if (!x) x = (await goi('nhap_lo:create', { data: { loai, nguon: nguon || f.name, che_do: cheDo } })).data.id;
+    const r = await goi('nhap_lo:taiTep', { params: { filterByTk: x }, data: { ten_tep: f.name, base64: b64, trang_tinh } });
+    tepRef.current = f; setSheets(r.data.trang_tinh || []);
+    message.success(`Đã đọc ${f.name}${r.data.dang_doc ? ' / ' + r.data.dang_doc : ''}: ${r.data.so_dong} dòng (SHA-256 ${String(r.data.checksum).slice(0, 12)}…)`);
+    await tai(x); xong?.(x);
+  };
+  const docFile = (f: File) => { chay(() => guiTep(f)); return false; };
   return <Space direction="vertical" style={{ width: '100%' }} size="middle">
     <Steps size="small" current={buoc} items={[{ title: 'Dán / tải tệp' }, { title: 'Kiểm tra & đối chiếu' }, { title: 'Duyệt' }, { title: 'Ghi sổ' }]} />
     {lo && <Space><Typography.Title level={5} style={{ margin: 0 }}>{lo.so}</Typography.Title><Tag color={TT_LO[lo.trang_thai]?.[1]}>{TT_LO[lo.trang_thai]?.[0]}</Tag>
@@ -134,7 +151,11 @@ function Lo({ id, xong }: any) {
     {mau && <Alert type="info" message={<span><b>Cột cần có (dòng đầu là tiêu đề):</b> {mau.tieu_de.join(' | ')}</span>} description={mau.ghi_chu}
       action={<Button size="small" onClick={() => { const v = mau.tieu_de.join('\t') + '\n' + mau.vi_du.join('\t'); navigator.clipboard?.writeText(v).catch(() => null); if (!text) setText(v); message.success('Đã chép tiêu đề + dòng mẫu: dán vào Excel / Google Sheets'); }}>Chép mẫu</Button>} />}
     {sua && <Space wrap><Typography.Text>Chọn vùng trong Excel / Google Sheets (cả dòng tiêu đề) rồi dán vào ô dưới, hoặc</Typography.Text>
-      <Upload accept=".csv,.tsv,.txt" showUploadList={false} beforeUpload={docFile}><Button>Tải tệp CSV</Button></Upload></Space>}
+      <Upload accept=".xlsx,.xls,.csv,.tsv,.txt" showUploadList={false} beforeUpload={docFile}><Button>Tải tệp .xlsx / .csv</Button></Upload>
+      {sheets.length > 1 && <Select style={{ width: 200 }} placeholder="Trang tính" value={lo?.trang_tinh} onChange={(v) => tepRef.current && chay(() => guiTep(tepRef.current, v))}
+        options={sheets.map((x) => ({ value: x, label: x }))} />}
+      <Typography.Text type="secondary">Google Sheets: Tệp → Tải xuống → .xlsx (ảnh chụp tại thời điểm lấy; Sheet đổi sau không tự ghi sổ).</Typography.Text></Space>}
+    {lo?.checksum && <Typography.Text type="secondary">Nguồn lưu: {lo.ten_tep || 'dữ liệu dán'}{lo.trang_tinh ? ' / ' + lo.trang_tinh : ''} · SHA-256 {lo.checksum.slice(0, 16)}… · lấy lúc {String(lo.thoi_diem_lay || '').slice(0, 16).replace('T', ' ')}{lo.tep_goc ? <> · <a href={`data:application/octet-stream;base64,${lo.tep_goc}`} download={lo.ten_tep}>tải tệp gốc</a></> : null}</Typography.Text>}
     <Input.TextArea rows={8} value={text} disabled={!sua} onChange={(e) => setText(e.target.value)} style={{ fontFamily: 'monospace', fontSize: 12 }} />
     <Space wrap>
       {sua && <Button type="primary" loading={dang} disabled={!text.trim()} onClick={kiem}>Lưu & Kiểm tra</Button>}
@@ -144,6 +165,10 @@ function Lo({ id, xong }: any) {
         content: `Ghi ${lo.so_hop_le} dòng hợp lệ (bỏ qua ${Number(lo.so_trung) || 0} dòng trùng). Cả lô ghi trong một lần: lỗi một dòng thì không ghi dòng nào. Đã ghi thì không xóa lô — sai lập chứng từ điều chỉnh.`,
         onOk: () => chay(async () => { const r = await goi('nhap_lo:ghi', { params: { filterByTk: lo.id }, data: {} }); message.success(`Đã ghi ${r.data.da_ghi} dòng`); await tai(lo.id); xong?.(lo.id); }) })}>Ghi sổ</Button>}
       {lo && !['da_ghi', 'da_huy'].includes(lo.trang_thai) && <Button onClick={() => goi('nhap_lo:huy', { params: { filterByTk: lo.id }, data: {} }).then(() => tai(lo.id))}>Hủy lô</Button>}
+      {lo?.trang_thai === 'da_kiem' && tk?.canh_bao?.length > 0 && !lo.ngoai_le && <Button danger onClick={() => { let ly_do = ''; modal.confirm({ title: 'Duyệt ngoại lệ số dư (chỉ quản lý)',
+        content: <Input.TextArea placeholder="Căn cứ (biên bản đối chiếu, sao kê…)" onChange={(e) => (ly_do = e.target.value)} />, okText: 'Duyệt ngoại lệ', cancelText: 'Thôi',
+        onOk: () => goi('nhap_lo:duyetNgoaiLe', { params: { filterByTk: lo.id }, data: { ly_do } }).then(() => tai(lo.id)) }); }}>Duyệt ngoại lệ (quản lý)</Button>}
+      {lo?.ngoai_le && <Tag color="purple">Ngoại lệ: {lo.ngoai_le} — {lo.ngoai_le_boi}</Tag>}
       {lo?.trang_thai === 'da_kiem' && Number(lo.so_loi) > 0 && <Typography.Text type="danger">Còn {lo.so_loi} dòng lỗi: sửa trong Excel / Sheets, dán lại, Kiểm tra lại.</Typography.Text>}
     </Space>
     {tk && <BangTong tk={tk} loai={lo.loai} />}
@@ -220,6 +245,24 @@ function NoKhachDauKy() {
   ]} />;
 }
 
+function DoiChieu() {
+  const goi = useGoi();
+  const [d, setD] = useState<any>(null);
+  const tai = () => goi('gia_von:doiChieu', { data: {} }).then((r) => setD(r.data));
+  useEffect(() => { tai(); }, []);
+  if (!d) return null;
+  return <Space direction="vertical" style={{ width: '100%' }}>
+    <Alert type={d.can ? 'success' : 'error'} showIcon message={d.can ? 'CÂN: Σ sổ kho = tồn, Σ sổ giá trị = giá trị tồn, mọi điều chỉnh giá trị cân' : 'CÓ LỆCH — xem bảng dưới, chưa dùng số liệu'} />
+    <Descriptions size="small" bordered column={3} items={[
+      { label: 'Σ sổ giá trị', children: fmt(d.tong?.so_gia_tri) }, { label: 'Giá trị tồn', children: fmt(d.tong?.gia_tri_ton) },
+      { label: 'Trong đó mở đầu', children: fmt(d.tong?.mo_dau) }, { label: 'Điều chỉnh vào giá vốn kỳ', children: fmt(d.tong?.dieu_chinh_gia_von) },
+      { label: 'Tổng số dư quỹ', children: fmt(d.tong?.tong_quy) }]} />
+    {['lech_so_luong', 'lech_gia_tri', 'dieu_chinh_khong_can'].map((k) => (d[k] || []).length > 0 && <Table key={k} size="small" title={() => k} rowKey={(r: any) => JSON.stringify(r)}
+      dataSource={d[k]} columns={Object.keys(d[k][0]).map((c) => ({ title: c, dataIndex: c }))} pagination={false} />)}
+    <Button onClick={tai}>Đối chiếu lại</Button>
+  </Space>;
+}
+
 export function GoLive() {
   const [k, setK] = useState(0);
   return (
@@ -230,6 +273,7 @@ export function GoLive() {
         { key: 'lo', label: 'Nhập dữ liệu (lô)', children: <DanhSachLo /> },
         { key: 'nk', label: 'Nợ khách đầu kỳ', children: <NoKhachDauKy /> },
         { key: 'nn', label: 'Nợ NCC đầu kỳ', children: <NoNccDauKy /> },
+        { key: 'dc', label: 'Đối chiếu bảo toàn', children: <DoiChieu /> },
       ]} />
     </Card>
   );

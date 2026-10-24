@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const ctx = await b.newContext({ viewport: { width: 1400, height: 950 } });
+const p = await ctx.newPage();
+const errs = [];
+p.on('pageerror', e => errs.push(String(e).slice(0, 300)));
+await p.goto('http://localhost:13000/signin'); await p.waitForTimeout(6000);
+await p.fill('input[type=text]', process.env.NB_EMAIL); await p.fill('input[type=password]', process.env.NB_PASSWORD); await p.keyboard.press('Enter');
+await p.waitForTimeout(6000);
+await p.goto('http://localhost:13000/admin/aph/kho-van'); await p.waitForTimeout(4000);
+await p.getByRole('tab', { name: 'Mẻ sản xuất' }).click(); await p.waitForTimeout(3000);
+await p.locator('.ant-tabs-tabpane-active .ant-table-row').first().click(); await p.waitForTimeout(4000);
+await p.screenshot({ path: 'gl-3.png', fullPage: true });
+console.log('errors', JSON.stringify(errs));
+await b.close();

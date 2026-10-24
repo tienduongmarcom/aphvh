@@ -17,15 +17,19 @@ function ChiTiet({ id, xong }: any) {
   const [mo, setMo] = useState(false);
   const [form] = Form.useForm();
   const loai = Form.useWatch('loai', form);
-  const tai = async () => setTs((await goi('tai_san:get', { params: { filterByTk: id, appends: ['su_kien', 'don_vi_so_huu'] } })).data);
+  const tai = async () => setTs((await goi('tai_san:get', { params: { filterByTk: id, appends: ['su_kien', 'don_vi_so_huu', 'dang_giu'] } })).data);
   useEffect(() => { tai(); }, [id]);
   if (!ts) return null;
   return <Space direction="vertical" style={{ width: '100%' }}>
     <Typography.Title level={4} style={{ margin: 0 }}>{ts.ma} — {ts.ten} <Tag color={TT[ts.tinh_trang]?.[1]}>{TT[ts.tinh_trang]?.[0]}</Tag></Typography.Title>
     <Row gutter={12}>{[['Loại', LOAI[ts.loai]], ['Serial', ts.serial], ['Địa điểm', ts.dia_diem], ['Người giữ', ts.nguoi_quan_ly], ['Bộ phận', ts.bo_phan],
-      ['Ngày mua', ngayVN(ts.ngay_mua)], ['Nguyên giá', ts.nguyen_gia !== undefined ? fmt(ts.nguyen_gia) : '—'], ['Số lượng', ts.so_luong ? fmt(ts.so_luong) : ''],
+      ['Ngày mua', ngayVN(ts.ngay_mua)], ['Đưa vào sử dụng', ngayVN(ts.ngay_su_dung)], ['Bộ phận chịu chi phí', ts.bo_phan_chi_phi], ['Nguyên giá', ts.nguyen_gia !== undefined ? fmt(ts.nguyen_gia) : '—'], ['Số lượng', ts.so_luong ? fmt(ts.so_luong) : ''],
       ['Đơn vị đứng tên', ts.don_vi_so_huu?.ma || 'Chưa xác định'], ['Bảo trì kế tiếp', ngayVN(ts.ngay_bao_tri)], ['Chứng từ mua', ts.chung_tu_mua]]
       .map(([a, b]) => <Col span={6} key={a}><Typography.Text type="secondary">{a}</Typography.Text><div><b>{b || '—'}</b></div></Col>)}</Row>
+    {(ts.dang_giu || []).length > 0 && <Table size="small" rowKey="id" pagination={false} title={() => <b>Số lượng theo nơi giữ</b>}
+      dataSource={[{ id: 'kho', nguoi_giu: 'Trong kho', so_luong: ts.so_luong || 0 }, ...(ts.dang_giu || []).filter((x: any) => Number(x.so_luong))]} columns={[
+        { title: 'Nơi giữ', dataIndex: 'nguoi_giu' }, { title: 'Số lượng', dataIndex: 'so_luong', align: 'right' }]}
+      summary={(r) => <Table.Summary.Row><Table.Summary.Cell index={0}><b>Tổng</b></Table.Summary.Cell><Table.Summary.Cell index={1} align="right"><b>{r.reduce((a, x: any) => a + Number(x.so_luong || 0), 0)}</b></Table.Summary.Cell></Table.Summary.Row>} />}
     <Button type="primary" onClick={() => { form.resetFields(); form.setFieldsValue({ ngay: dayjs(homNay()), loai: 'ban_giao' }); setMo(true); }}>+ Ghi sự kiện</Button>
     <Table size="small" rowKey="id" pagination={false} dataSource={(ts.su_kien || []).sort((a: any, b: any) => b.id - a.id)} columns={[
       { title: 'Số', dataIndex: 'so' }, { title: 'Ngày', dataIndex: 'ngay', render: ngayVN }, { title: 'Nghiệp vụ', dataIndex: 'loai', render: (v) => SU_KIEN[v] },
@@ -44,7 +48,9 @@ function ChiTiet({ id, xong }: any) {
         <Form.Item name="ngay" label="Ngày"><DatePicker format="DD/MM/YYYY" /></Form.Item>
         {['ban_giao', 'dieu_chuyen', 'cap_phat'].includes(loai) && <Form.Item name="nguoi_nhan" label="Người nhận / người giữ mới"><Input /></Form.Item>}
         {['ban_giao', 'dieu_chuyen', 'thu_hoi'].includes(loai) && <Form.Item name="dia_diem_moi" label="Địa điểm mới"><Input /></Form.Item>}
+        {loai === 'thu_hoi' && <Form.Item name="nguoi_tra" label="Người / tổ trả lại (CCDC theo số lượng)"><Input /></Form.Item>}
         {['cap_phat', 'thu_hoi'].includes(loai) && <Form.Item name="so_luong" label="Số lượng"><InputNumber min={1} /></Form.Item>}
+        {['sua_chua', 'thanh_ly', 'bao_tri'].includes(loai) && <Form.Item name="so_chung_tu" label="Số chứng từ"><Input /></Form.Item>}
         {['bao_tri', 'sua_chua'].includes(loai) && <><Form.Item name="chi_phi" label="Chi phí"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
           <Form.Item name="ngay_bao_tri_tiep" label="Hẹn bảo trì kế tiếp"><DatePicker format="DD/MM/YYYY" /></Form.Item></>}
         <Form.Item name="ghi_chu" label="Ghi chú / lý do" rules={['de_nghi_thanh_ly', 'bao_mat', 'thanh_ly'].includes(loai) ? [{ required: true, message: 'Bắt buộc' }] : []}>
@@ -83,7 +89,7 @@ function DanhSach() {
     <Drawer width="80%" open={!!mo} onClose={() => { setMo(null); tai(); }} title="Tài sản" destroyOnClose>{mo && <ChiTiet id={mo} xong={tai} />}</Drawer>
     <Modal open={them} title="Thêm tài sản / CCDC" okText="Lưu" cancelText="Thôi" onCancel={() => setThem(false)} width={720} onOk={async () => {
       const v = await form.validateFields();
-      await goi('tai_san:create', { data: { ...v, ngay_mua: v.ngay_mua?.format('YYYY-MM-DD') } });
+      await goi('tai_san:create', { data: { ...v, ngay_mua: v.ngay_mua?.format('YYYY-MM-DD'), ngay_su_dung: v.ngay_su_dung?.format('YYYY-MM-DD') } });
       message.success('Đã thêm'); setThem(false); tai();
     }}>
       <Form form={form} layout="vertical"><Row gutter={12}>
@@ -95,6 +101,8 @@ function DanhSach() {
         <Col span={8}><Form.Item name="dia_diem" label="Địa điểm"><Input /></Form.Item></Col>
         <Col span={8}><Form.Item name="nguoi_quan_ly" label="Người giữ"><Input /></Form.Item></Col>
         <Col span={8}><Form.Item name="bo_phan" label="Bộ phận"><Input /></Form.Item></Col>
+        <Col span={8}><Form.Item name="ngay_su_dung" label="Ngày đưa vào sử dụng"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
+        <Col span={8}><Form.Item name="bo_phan_chi_phi" label="Bộ phận chịu chi phí"><Input /></Form.Item></Col>
         <Col span={8}><Form.Item name="ngay_mua" label="Ngày mua"><DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} /></Form.Item></Col>
         <Col span={8}><Form.Item name="nguyen_gia" label="Nguyên giá tham khảo"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
         <Col span={8}><Form.Item name="so_thang_sd" label="Thời gian dùng ước tính (tháng)"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>

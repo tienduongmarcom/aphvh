@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const p = await (await b.newContext({ viewport: { width: 1400, height: 950 } })).newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e).slice(0, 300)));
+await p.goto('http://localhost:13000/signin'); await p.waitForTimeout(6000);
+await p.fill('input[type=text]', process.env.NB_EMAIL); await p.fill('input[type=password]', process.env.NB_PASSWORD); await p.keyboard.press('Enter'); await p.waitForTimeout(6000);
+await p.goto('http://localhost:13000/admin/aph/go-live'); await p.waitForTimeout(5000);
+await p.getByRole('tab', { name: 'Nhập dữ liệu (lô)' }).click(); await p.waitForTimeout(2000);
+await p.getByRole('button', { name: '+ Lô nhập mới' }).click(); await p.waitForTimeout(2000);
+await p.locator('.ant-drawer input[type=file]').setInputFiles('thu.xlsx'); await p.waitForTimeout(5000);
+await p.getByRole('button', { name: 'Lưu & Kiểm tra' }).click(); await p.waitForTimeout(4000);
+await p.screenshot({ path: 'gl-xlsx.png', fullPage: true });
+console.log('errors', JSON.stringify(errs));
+await b.close();
