@@ -842,7 +842,12 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
       const kho_ra = me.kho_tp_id || me.kho_id;
       for (const d of dong) {
         if (d.huong === 'hao_hut') continue;
-        const gt = d.huong === 'phu_pham' ? tien(kg(d.so_kg) * Number(d.don_gia || 0)) : tien(kg(d.so_kg) * tam);
+        // Giá tạm cơ sở kg NVL; thành phẩm thùng/chai phải quy về kg trước khi tính.
+        const mh = await bang('mat_hang').findByPk(d.mat_hang_id, { transaction: t });
+        const heSo = !mh?.dvt_ton || String(mh.dvt_ton).toLowerCase() === 'kg' ? 1
+          : Number(mh.kg_moi_dvt) > 0 && mh.kg_dvt_can_cu ? Number(mh.kg_moi_dvt) : null;
+        const gt = d.huong === 'phu_pham' ? tien(kg(d.so_kg) * Number(d.don_gia || 0))
+          : tien(kg(d.so_kg) * (heSo ?? 1) * tam);
         await p.ghiSo(t, { ...c(d), kho_id: kho_ra, so_luong: kg(d.so_kg), so_bao: kg(d.so_bao), loai: d.huong === 'ra' ? 'thu_hoi_ra' : 'thu_hoi_phu_pham', gia_tri: gt });
         if (d.huong === 'ra') await d.update({ don_gia: Math.round(tam * 100) / 100, trang_thai_gia: 'tam' }, { transaction: t, hooks: false });
       }
@@ -891,14 +896,17 @@ export function dangKyMoRong(p: any, H: H, h: { id: (ctx: any) => any; val: (ctx
     // Hao hụt bất thường không vào giá thành: tách phần chi phí tương ứng theo kg.
     const hao_bt = s.kg_hao_bat_thuong > 0 ? tien((goc * s.kg_hao_bat_thuong) / (s.kg_tp + s.kg_hao_bat_thuong)) : 0;
     const tong_pb = goc - hao_bt;
-    const ra = await p.sql(`SELECT d.id, d.mat_hang_id, d.so_kg, d.he_so, k.kho_dich_id, k.so, m.gia_ban, m.ma FROM phieu_kho_dong d
+    const ra = await p.sql(`SELECT d.id, d.mat_hang_id, d.so_kg, d.he_so, k.kho_dich_id, k.so, m.gia_ban, m.ma, m.dvt_ton, m.kg_moi_dvt, m.kg_dvt_can_cu FROM phieu_kho_dong d
       JOIN phieu_kho k ON k.id = d.phieu_kho_id JOIN mat_hang m ON m.id = d.mat_hang_id
       WHERE k.me_sx_id = :m AND k.loai = 'thu_hoi' AND k.trang_thai = 'da_ghi' AND d.huong = 'ra' ORDER BY d.id`, { m: me.id }, t);
     const pp = me.phuong_phap || 'kg';
     const w = ra.map((d: any) => {
-      if (pp === 'he_so') return kg(d.so_kg) * Number(d.he_so || 1);
+      const slKg = !d.dvt_ton || String(d.dvt_ton).toLowerCase() === 'kg' ? kg(d.so_kg)
+        : Number(d.kg_moi_dvt) > 0 && d.kg_dvt_can_cu ? kg(Number(d.so_kg) * Number(d.kg_moi_dvt)) : null;
+      if (slKg === null) loi(`Thành phẩm ${d.ma} thiếu hệ số kg cho 1 ĐVT có căn cứ; không chốt giá thành.`);
+      if (pp === 'he_so') return slKg * Number(d.he_so || 1);
       if (pp === 'gia_tri') { if (!(Number(d.gia_ban) > 0)) loi(`Phân bổ theo giá trị: mặt hàng ${d.ma} chưa có giá bán.`); return kg(d.so_kg) * Number(d.gia_ban); }
-      return kg(d.so_kg);
+      return slKg;
     });
     const tw = w.reduce((a: number, b: number) => a + b, 0);
     let con = tong_pb;
