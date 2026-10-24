@@ -41,7 +41,7 @@ set -a; . ./.env; set +a
 
 echo "== 3. Tìm gói UAT ở GitHub Actions (BẮT BUỘC đã PASS)"
 RUN_ID="$(gh run list -R "$REPO" --workflow nocobase-041-source.yml --branch "$BRANCH" --limit 15 \
-  --json databaseId,conclusion,headSha --jq '[.[] | select(.conclusion == "success")][0].databaseId // empty')"
+  --json databaseId,conclusion,headSha --jq "[.[] | select(.conclusion == \"success\" and .headSha == \"$SHA\")][0].databaseId // empty")"
 [ -n "$RUN_ID" ] || { echo "Chưa có workflow PASS kèm gói UAT. Dừng."; exit 1; }
 rm -f plugin-kho-0.4.1.tgz plugin-kho-0.4.1.tgz.sha256
 gh run download "$RUN_ID" -R "$REPO" -n nocobase-041-uat-package -D .
@@ -68,6 +68,23 @@ if [ "$STATUS" -ne 0 ]; then
   echo "TEST CHƯA ĐẠT: kiểm log trong $UAT/nocobase/trien-khai/sao-luu/"
   exit 1
 fi
+
+echo "== 6. Sao lưu sau test và thử KHÔI PHỤC vào database phụ, không đè DB UAT"
+bash sao-luu.sh
+DUMP="$(ls -1t sao-luu/csdl-*.dump | sed -n '1p')"
+DB_CHECK="uat041_restorecheck"
+docker compose exec -T db createdb -U nocobase "$DB_CHECK"
+cleanup_restore() { docker compose exec -T db dropdb -U nocobase "$DB_CHECK" >/dev/null 2>&1 || true; }
+trap cleanup_restore EXIT
+docker compose exec -T db pg_restore -U nocobase --no-owner --no-acl -d "$DB_CHECK" < "$DUMP"
+for tbl in so_kho so_gia_von ton_kho phieu_kho me_sx phieu_thu; do
+  src="$(docker compose exec -T db psql -U nocobase -d nocobase -tAc "SELECT COUNT(*) FROM $tbl" | tr -d '[:space:]')"
+  dst="$(docker compose exec -T db psql -U nocobase -d "$DB_CHECK" -tAc "SELECT COUNT(*) FROM $tbl" | tr -d '[:space:]')"
+  [ "$src" = "$dst" ] || { echo "RESTORE LỆCH $tbl: gốc=$src, phục hồi=$dst"; exit 1; }
+done
+echo "Restore vào DB phụ + 6 bảng đối chiếu: PASS."
+cleanup_restore
+trap - EXIT
 
 echo "=== UAT PASS THEO CHAY_TAT_CA (CHUA CO E2E TREN TRINH DUYET) ==="
 echo "Truy cập http://localhost:$PORT"
