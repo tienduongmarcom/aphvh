@@ -137,6 +137,23 @@ def main():
     s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mDo["id"], "kho_id": K["NL"]["id"], "kho_tp_id": K["TP"]["id"], "nvl_kg": 1000})
     ok("Mẻ mở sau dùng định mức mới (850)", [x["du_kien"] for x in r["data"]["goi_y"] if x["vai_tro"] == "tp"] == [850], r)
     me_moi = r["data"]["id"]
+    s, r = kt.lam("me_sx:chot", me_moi, {"chap_nhan_chenh": True, "ly_do_chenh": "Không được bỏ qua kết thúc"})
+    ok("Mẻ đang sản xuất: chấp nhận chênh không thay thế kết thúc mẻ", s == 400, r)
+
+    nhom("3b. Chênh ÂM: đầu ra lớn hơn đầu vào, giải trình có dấu")
+    s, r = nm.lam("me_sx:moTuMau", None, {"mau_sx_id": mX["id"], "kho_id": K["NL"]["id"], "kho_tp_id": K["TP"]["id"]})
+    me_am = r["data"]["id"]
+    s, r = nm.lam("me_sx:ghiThucTe", me_am, {"request_id": rid(),
+        "nvl": [{"mat_hang_id": M["DO"]["id"], "so_luong": 100}],
+        "tp": [{"mat_hang_id": M["X"]["id"], "so_luong": 110}], "ket_thuc": True})
+    ok("Cân âm 10kg khi đầu ra 110kg > đầu vào 100kg", s == 200 and r["data"]["con_lai"] == -10, r)
+    s, r = nm.lam("me_sx:giaiTrinh", me_am, {"so_kg": 10, "phan_loai": "hao_bat_thuong", "ly_do": "Không hợp lý"})
+    ok("Không cho ghi hao bất thường với chênh thừa", s == 400, r)
+    s, r = nm.lam("me_sx:giaiTrinh", me_am, {"so_kg": 10, "phan_loai": "do_sai", "ly_do": "Cân đầu ra cần đối chiếu"})
+    g_am = r.get("data", {}).get("id")
+    ok("Giải trình chênh thừa lưu số kg mang dấu âm", s == 200 and float(ad.lay("sx_giai_trinh", g_am)["so_kg"]) == -10, r)
+    s, r = kt.lam("sx_giai_trinh:duyet", g_am)
+    ok("Duyệt giải trình chênh âm đưa số còn lại về 0", s == 200 and r["data"]["con_lai"] == 0, r)
 
     nhom("4. NVL 1.000 kg, sản lượng 970 kg → báo chênh 30, KHÔNG tự ghi hao hụt")
     rq1 = rid()
